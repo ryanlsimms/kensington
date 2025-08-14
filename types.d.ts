@@ -1,7 +1,7 @@
 import ContentTag from './esm/tag-classes/content-tag.js';
 import LiteralTag from './esm/tag-classes/literal-tag.js';
 import VoidTag from './esm/tag-classes/void-tag.js';
-import SvgVoidTag from './exm/tag-classes/svg-void-tag.js';
+import SvgVoidTag from './esm/tag-classes/svg-void-tag.js';
 
 type NameSpaceAttributes = Record<`${"data" | "aria"}${string}`, string | object>;
 
@@ -1002,6 +1002,7 @@ type ForeignObjectAttributes = {
 
 type FormAttributes = {
   'accept-charset'?: string;
+  'acceptCharset'?: string;
   'action'?: string;
   'autocomplete'?: "on" | "off";
   'enctype'?: "application/x-www-form-urlencoded" | "multipart/form-data" | "text/plain";
@@ -1606,6 +1607,7 @@ type MetaAttributes = {
   'charset'?: "utf-8";
   'content'?: string;
   'http-equiv'?: "content-type" | "default-style" | "refresh" | "x-ua-compatible" | "content-security-policy";
+  'httpEquiv'?: "content-type" | "default-style" | "refresh" | "x-ua-compatible" | "content-security-policy";
   'media'?: string;
   'name'?: string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;

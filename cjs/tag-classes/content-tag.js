@@ -48,7 +48,7 @@ class ContentTag {
   }
 
   attributeIsValid(attr) {
-    return this.allowedAttributes.hasOwnProperty(textUtils.camelToKebab(attr)) || isValidNamespaceAttribute(attr);
+    return this.allowedAttributes.hasOwnProperty(attr) || this.allowedAttributes.hasOwnProperty(textUtils.camelToKebab(attr)) || isValidNamespaceAttribute(attr);
   }
 
   attributeValueIsValid(attr, value) {
@@ -61,7 +61,7 @@ class ContentTag {
     if (attr === 'id' && /^\d/.test(value)) {
       return false
     }
-    const type = this.allowedAttributes[textUtils.camelToKebab(attr)];
+    const type = this.allowedAttributes[attr] ?? this.allowedAttributes[textUtils.camelToKebab(attr)];
     if (type === Boolean) {
       return [true, false, undefined, null].includes(value);
     }
@@ -80,7 +80,7 @@ class ContentTag {
   }
 
   attributeString() {
-    let attrString = attributesFromObject.default(this.attributes);
+    let attrString = attributesFromObject.default(this.attributes, Object.keys(this.allowedAttributes));
     return attrString ? ` ${attrString}` : '';
   }
 

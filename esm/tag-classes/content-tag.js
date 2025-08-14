@@ -45,7 +45,7 @@ export default class ContentTag {
   }
 
   attributeIsValid(attr) {
-    return this.allowedAttributes.hasOwnProperty(camelToKebab(attr)) || isValidNamespaceAttribute(attr);
+    return this.allowedAttributes.hasOwnProperty(attr) || this.allowedAttributes.hasOwnProperty(camelToKebab(attr)) || isValidNamespaceAttribute(attr);
   }
 
   attributeValueIsValid(attr, value) {
@@ -58,7 +58,7 @@ export default class ContentTag {
     if (attr === 'id' && /^\d/.test(value)) {
       return false
     }
-    const type = this.allowedAttributes[camelToKebab(attr)];
+    const type = this.allowedAttributes[attr] ?? this.allowedAttributes[camelToKebab(attr)];
     if (type === Boolean) {
       return [true, false, undefined, null].includes(value);
     }
@@ -77,7 +77,7 @@ export default class ContentTag {
   }
 
   attributeString() {
-    let attrString = attributesFromObject(this.attributes);
+    let attrString = attributesFromObject(this.attributes, Object.keys(this.allowedAttributes));
     return attrString ? ` ${attrString}` : '';
   }
 

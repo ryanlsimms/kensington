@@ -1,9 +1,18 @@
+import { kebabToCamel } from './utils/text-utils.js';
+
 function attributesType({ attributes = [], globalTypes }) {
   if (!attributes.length) {
     return globalTypes.join(' & ')
   }
   return [`{
-  ${attributes.map(a => `'${a.name}'?: ${a.type};`).join('\n  ')}
+  ${attributes.flatMap(a => {
+    const lines = [`'${a.name}'?: ${a.type};`];
+    const camelName = kebabToCamel(a.name);
+    if (a.name !== camelName) {
+      lines.push(`'${camelName}'?: ${a.type};`);
+    }
+    return lines;
+  }).join('\n  ')}
 }`, ...globalTypes].join(' & ');
 }
 
@@ -11,7 +20,7 @@ export default function buildDeclarations({ elements, globalAttributes, globalEv
   return `import ContentTag from './esm/tag-classes/content-tag.js';
 import LiteralTag from './esm/tag-classes/literal-tag.js';
 import VoidTag from './esm/tag-classes/void-tag.js';
-import SvgVoidTag from './exm/tag-classes/svg-void-tag.js';
+import SvgVoidTag from './esm/tag-classes/svg-void-tag.js';
 
 type NameSpaceAttributes = Record<\`\${"data" | "aria"}\${string}\`, string | object>;
 
