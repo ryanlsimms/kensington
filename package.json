@@ -1,0 +1,41 @@
+{
+  "name": "kensington",
+  "version": "1.0.0",
+  "main": "./cjs/kensington.js",
+  "module": "./esm/kensington.js",
+  "types": "./types.d.ts",
+  "license": "ISC",
+  "exports": {
+    "./package.json": "./package.json",
+    "./attributes": {
+      "import": "./esm/attributes.js",
+      "require": "./cjs/attributes.js"
+    },
+    ".": {
+      "import": "./esm/kensington.js",
+      "require": "./cjs/kensington.js"
+    }
+  },
+  "keywords": [
+    "template",
+    "markup",
+    "javascript",
+    "express",
+    "html"
+  ],
+  "author": {
+    "name": "Ryan Lee Simms",
+    "url": "http://www.ryansimms.com"
+  },
+  "dependencies": {
+    "he": "^1.2.0"
+  },
+  "volta": {
+    "node": "23.9.0"
+  },
+  "devDependencies": {
+    "html-validate": "^9.4.1",
+    "jsdom": "^26.0.0",
+    "rollup": "^4.35.0"
+  }
+}
