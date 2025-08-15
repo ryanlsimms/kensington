@@ -33,7 +33,10 @@ htmlElements.forEach(el => {
   if (['template', 'iframe'].includes(el.tag)) {
     el.tagType = 'Content';
   }
-  if (['script', 'pre', 'textarea'].includes(el.tag)) {
+  if (el.tag === 'script') {
+    el.tagType = 'LiteralContent';
+  }
+  if (['textarea', 'pre'].includes(el.tag)) {
     el.tagType = 'LiteralContent';
   }
 });

@@ -122,4 +122,5 @@ import { t } from 'kensington';
 * better monkey patching
 * validation level (throw error vs console vs none)
 * client rendering
-* allow svg/math camelCase attributes
+* allow custom elements to accept array of types [Number, String] or [Number, 'auto']
+* html to kensington transpiler?

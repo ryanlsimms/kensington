@@ -24,14 +24,14 @@ class ContentTag {
     this.attributes = attributes;
     this.allowedAttributes = allowedAttributes;
     this.literalContent = literalContent;
-    if (literalContent) {
-      this.content = content;
-    } else {
-      this.content = [].concat(content)
-        .flat()
-        .filter(Boolean)
-        .map(c => (typeof c === 'string' ? he.encode(c) : c));
+    if (literalContent && typeof content !== 'string') {
+      throw new Error('Only string content can be passed to a <script> tag')
     }
+    this.content = [].concat(content)
+      .flat()
+      .filter(Boolean)
+      .map(c => (typeof c === 'string' && this.tagName !== 'script' ? he.encode(c) : c));
+
   }
 
   validate() {
