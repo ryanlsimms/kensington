@@ -8,6 +8,7 @@ class MyMarkup extends Kensington {
 const t = new MyMarkup({ runValidation: true });
 
 try {
+  const br = t.br();
   const html = t.someCustomElementA({ someCustomAttribute: 'asdf' })
   const html2 = t.someCustomElementB({ someCustomAttribute: 'asdf' })
   // const html2 = t.a({ id: 'something', data: { test: 'some-value' } }, 'a link');
@@ -28,7 +29,7 @@ try {
 //     at Array.forEach (<anonymous>)
 //     at file:///Users/ryansimms/RubymineProjects/pulse-web/app/routes/vpm-routes.js:44:32
 // `));
-  console.log(html.toString());
+  console.log(br.toString());
   console.log(html2.toString());
   // console.log(circleTag.toString());
   // console.log(formTag1.toString());

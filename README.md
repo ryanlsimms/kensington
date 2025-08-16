@@ -4,7 +4,7 @@ This template engine is a way to create html via nested method calls.  Each tag 
 * nested attributes are converted to kebab-case `{ data: { bs: { toggle: 'collapse' } } }` becomes `data-bs-toggle="collapse"`
 * camelCase attibute become kebabcase `{ dataBsToggle: 'collapse' }` becomes `data-bs-toggle="collapse"`
 * attributes are validated against those found [here](https://html.spec.whatwg.org/multipage/indices.html#elements-3)
-* attributes with a boolean value will either show or not: `t.input({ type: 'checkbox', checked: true })` becomes `<input type="checkbox" checked />` or `<input type="checkbox" />` if `checked` is false
+* attributes with a boolean value will either show or not: `t.input({ type: 'checkbox', checked: true })` becomes `<input type="checkbox" checked>` or `<input type="checkbox" />` if `checked` is false
 * [Global attributes](https://html.spec.whatwg.org/multipage/dom.html#global-attributes) are always allowed, along with `aria-*` and `data-*` attributes.
 * the `literal` method allows you to pass in html as a string.
 * call `.toString()` on the outermost method to expicitly convert to string.  This can often be omitted if the output is sent as a string.
@@ -79,13 +79,13 @@ const html = t.htmlWithDoctype({ lang: 'en' }, [
     <main class="container">
       <h1>My Great Project</h1>
       <h3 class="small">a new way</h3>
-      <hr class="fancy-line"/>
+      <hr class="fancy-line">
       <section>
         To Do List
         <ul>
           <li data-bs-toggle="collapse" data-bs-target="#some-id" aria-expanded="false">this</li>
           <li>
-            <input id="coolness" type="checkbox"/>
+            <input id="coolness" type="checkbox">
             <label for="coolness">Cool?</label>
           </li>
           <li>some regular html</li>
