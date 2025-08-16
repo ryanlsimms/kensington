@@ -3849,7 +3849,7 @@ export default class Kensington {
   constructor(options?: { runValidation?: boolean });
   createCustomTag(
     tagName: string,
-    allowedAttributes: Record<string, StringConstructor | NumberConstructor | string[] | number[]>
+    allowedAttributes?: Record<string, StringConstructor | NumberConstructor | string[] | number[]>
   ): (attributesOrContent?: AttributesOrContent, content?: Content) => ContentTag | VoidTag | SvgVoidTag
 
   literal(str: string): LiteralTag
