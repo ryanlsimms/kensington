@@ -9,6 +9,7 @@ const voidTag = require('./tag-classes/void-tag.js');
 const svgVoidTag = require('./tag-classes/svg-void-tag.js');
 const getPrototypeMethods = require('./lib/get-prototype-methods.js');
 const attributes = require('./attributes.js');
+const textUtils = require('./lib/text-utils.js');
 
 class Kensington {
   constructor({ runValidation = false } = {}) {
@@ -18,7 +19,13 @@ class Kensington {
     this.runValidation = runValidation;
   }
   
-  createCustomTag = this.createContentTag;
+  createCustomTag(tagName, allowedAttributes = {}) {
+    const kebabAttributes = Object.fromEntries(Object.entries(allowedAttributes).map(([k,v]) => [textUtils.camelToKebab(k), v]));
+    return this.createTag(tagName, kebabAttributes, contentTag.default, {
+      includeGlobalAttributes: true,
+      includeGlobalEvents: true,
+    });
+  }
 
   createContentTag(tagName, allowedAttributes = {}) {
     return this.createTag(tagName, allowedAttributes, contentTag.default, { 

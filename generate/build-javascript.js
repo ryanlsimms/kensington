@@ -12,6 +12,7 @@ import VoidTag from './tag-classes/void-tag.js';
 import SvgVoidTag from './tag-classes/svg-void-tag.js';
 import getPrototypeMethods from './lib/get-prototype-methods.js';
 import * as allAttributes from './attributes.js';
+import { camelToKebab } from './lib/text-utils.js';
 
 export default class Kensington {
   constructor({ runValidation = false } = {}) {
@@ -21,7 +22,13 @@ export default class Kensington {
     this.runValidation = runValidation;
   }
   
-  createCustomTag = this.createContentTag;
+  createCustomTag(tagName, allowedAttributes = {}) {
+    const kebabAttributes = Object.fromEntries(Object.entries(allowedAttributes).map(([k,v]) => [camelToKebab(k), v]))
+    return this.createTag(tagName, kebabAttributes, ContentTag, {
+      includeGlobalAttributes: true,
+      includeGlobalEvents: true,
+    });
+  }
 
   createContentTag(tagName, allowedAttributes = {}) {
     return this.createTag(tagName, allowedAttributes, ContentTag, { 

@@ -1,14 +1,15 @@
 import Kensington from 'kensington';
-import he from 'he'
 
 class MyMarkup extends Kensington {
-  someCustomElement = this.createCustomTag('custom-element', { 'some-custom-attribute': String });
+  someCustomElementA = this.createCustomTag('custom-element-a', { someCustomAttribute: String });
+  someCustomElementB = this.createCustomTag('custom-element-b', { 'some-custom-attribute': String });
 }
 
 const t = new MyMarkup({ runValidation: true });
 
 try {
-  // const html = t.someCustomElement({ someCustomAttribute: 'asdf' })
+  const html = t.someCustomElementA({ someCustomAttribute: 'asdf' })
+  const html2 = t.someCustomElementB({ someCustomAttribute: 'asdf' })
   // const html2 = t.a({ id: 'something', data: { test: 'some-value' } }, 'a link');
   // const html3 = t.htmlWithDocType({ lang: 'en' }, t.body("hello world"));
   // const html4 = t.div(t.div(t.pre({}, JSON.stringify({ a: 'b', c: 'd' }, null, 2))));
@@ -16,7 +17,7 @@ try {
   // const circleTag = t.circle({ requiredExtensions: 'something' });
   // const formTag1 = t.form({ acceptCharset: 'utf-8' });
   // const formTag2 = t.form({ 'accept-charset': 'ISO-8859-1' });
-  const scriptTag = t.script(`console.log("hello");`)
+  // const scriptTag = t.script(`console.log("hello");`)
 //   const preTag = t.pre((`TypeError: Cannot read properties of undefined (reading 'localDateTimeObj')
 //     at formatActivityGroup (file:///Users/ryansimms/RubymineProjects/pulse-web/app/data-fetchers/utils/format-activity-group.js:11:59)
 //     at file:///Users/ryansimms/RubymineProjects/pulse-web/app/routes/vpm-routes.js:50:56
@@ -27,7 +28,8 @@ try {
 //     at Array.forEach (<anonymous>)
 //     at file:///Users/ryansimms/RubymineProjects/pulse-web/app/routes/vpm-routes.js:44:32
 // `));
-  console.log(scriptTag.toString());
+  console.log(html.toString());
+  console.log(html2.toString());
   // console.log(circleTag.toString());
   // console.log(formTag1.toString());
   // console.log(formTag2.toString());
