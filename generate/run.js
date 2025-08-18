@@ -79,7 +79,11 @@ mathElements.forEach(mathEl => {
 
 const elements = htmlElements.filter(e => !tagsToSkip.includes(e.tag)).sort((a, b) => a.tag.localeCompare(b.tag));
 
-function getAttributeType(values = []) {
+function getAttributeType(attr) {
+  const values = attr.value ?? [];
+  if (attr.attribute === 'value') {
+    return ['[Number,String]', 'number | string']
+  }
   if (values[0] === 'Boolean attribute') {
     return ['Boolean', 'boolean'];
   }
@@ -108,7 +112,7 @@ function getAttributeType(values = []) {
 }
 
 function mapAttr(attr) {
-  const [value, type] = getAttributeType(attr.value);
+  const [value, type] = getAttributeType(attr);
   return {
     name: attr.attribute,
     type,

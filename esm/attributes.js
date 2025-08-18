@@ -502,7 +502,7 @@ export const buttonAttributes = {
   'popovertarget': String,
   'popovertargetaction': ["toggle","show","hide"],
   'type': ["submit","reset","button"],
-  'value': String
+  'value': [Number,String]
 };
 export const canvasAttributes = {
   'height': String,
@@ -607,7 +607,7 @@ export const colgroupAttributes = {
   'span': Number
 };
 export const dataAttributes = {
-  'value': String
+  'value': [Number,String]
 };
 export const datalistAttributes = {};
 export const ddAttributes = {};
@@ -1182,7 +1182,7 @@ export const inputAttributes = {
   'src': String,
   'step': String,
   'type': String,
-  'value': String,
+  'value': [Number,String],
   'width': String
 };
 export const insAttributes = {
@@ -1595,7 +1595,7 @@ export const meterAttributes = {
   'max': String,
   'min': String,
   'optimum': String,
-  'value': String
+  'value': [Number,String]
 };
 export const mfracAttributes = {
   'autofocus': Boolean,
@@ -2088,7 +2088,7 @@ export const optionAttributes = {
   'disabled': Boolean,
   'label': String,
   'selected': Boolean,
-  'value': String
+  'value': [Number,String]
 };
 export const outputAttributes = {
   'for': String,
@@ -2400,7 +2400,7 @@ export const polylineAttributes = {
 export const preAttributes = {};
 export const progressAttributes = {
   'max': String,
-  'value': String
+  'value': [Number,String]
 };
 export const qAttributes = {
   'cite': String

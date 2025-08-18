@@ -526,7 +526,7 @@ type ButtonAttributes = {
   'popovertarget'?: string;
   'popovertargetaction'?: "toggle" | "show" | "hide";
   'type'?: "submit" | "reset" | "button";
-  'value'?: string;
+  'value'?: number | string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type CanvasAttributes = {
@@ -640,7 +640,7 @@ type ColgroupAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type DataAttributes = {
-  'value'?: string;
+  'value'?: number | string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type DatalistAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -1254,7 +1254,7 @@ type InputAttributes = {
   'src'?: string;
   'step'?: string;
   'type'?: string;
-  'value'?: string;
+  'value'?: number | string;
   'width'?: string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
@@ -1688,7 +1688,7 @@ type MeterAttributes = {
   'max'?: string;
   'min'?: string;
   'optimum'?: string;
-  'value'?: string;
+  'value'?: number | string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type MfracAttributes = {
@@ -2212,7 +2212,7 @@ type OptionAttributes = {
   'disabled'?: boolean;
   'label'?: string;
   'selected'?: boolean;
-  'value'?: string;
+  'value'?: number | string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type OutputAttributes = {
@@ -2533,7 +2533,7 @@ type PreAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ProgressAttributes = {
   'max'?: string;
-  'value'?: string;
+  'value'?: number | string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type QAttributes = {

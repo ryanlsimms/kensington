@@ -94,7 +94,7 @@ class ContentTag {
 
     const content = this.content
       .flat(8)
-      .map(node => (typeof node === 'string' ? node.replace(/\r?\n/g, '<br />\n') : node))
+      .map(node => (typeof node === 'string' ? node.replace(/\r?\n/g, '<br>\n') : node))
       .join('\n');
 
     if (!this.content.length || (this.content.length === 1 && typeof this.content[0] === 'string')) {
