@@ -59,6 +59,13 @@ export default class ContentTag {
       return false
     }
     const type = this.allowedAttributes[attr] ?? this.allowedAttributes[camelToKebab(attr)];
+    return this.validateAttributeByType(type, value);
+  }
+
+  validateAttributeByType(type, value) {
+    if (['number', 'string'].includes(typeof type)) {
+      return value === type;
+    }
     if (type === Boolean) {
       return [true, false, undefined, null].includes(value);
     }
@@ -71,8 +78,9 @@ export default class ContentTag {
     if (typeof type === 'function') {
       return type(value);
     }
+
     if (Array.isArray(type)) {
-      return type.includes(value);
+      return type.some(typeItem => this.validateAttributeByType(typeItem, value));
     }
   }
 
