@@ -38,27 +38,39 @@ export const globalAttributes: GlobalAttributes;
 export const globalEvents: GlobalEvents;
 ${elements.map(e => `export const ${e.attributesName}: ${e.attributesTypeName}`).join('\n')}
 
-export type Content = ContentTag | VoidTag | SvgVoidTag | LiteralTag | string | (ContentTag | VoidTag | SvgVoidTag | LiteralTag | string)[];
-export type AttributesOrContent = Record<string, string | number> | Content;
-export type TagArguments<T> = [attributesOrContent?:T | Content, content?: Content];
-export type ContentMethod<T> = (...args: TagArguments<T>) => ContentTag;
+type ContentType = ContentTag | VoidTag | SvgVoidTag | LiteralTag | string;
+export type Content = ContentType | ContentType[];
+type UniversalAttributes = NameSpaceAttributes | GlobalAttributes | GlobalEvents;
+type CustomTagArguments<T = null> = [attributes?: T | UniversalAttributes, content?: Content] | [content: Content];
+export type ContentMethod<T = null> = (...args: CustomTagArguments<T>) => ContentTag;
+type PrimitiveConstructor = StringConstructor | NumberConstructor | BooleanConstructor;
+type Primitive = string | number | boolean;
+type AttributeValue = PrimitiveConstructor | Primitive | (PrimitiveConstructor | Primitive)[];
 
 export default class Kensington {
   constructor(options?: { runValidation?: boolean });
+
   createCustomTag(
     tagName: string,
-    allowedAttributes?: Record<string, StringConstructor | NumberConstructor | string[] | number[]>
-  ): (attributesOrContent?: AttributesOrContent, content?: Content) => ContentTag | VoidTag | SvgVoidTag
+    allowedAttributes?: Record<string,  AttributeValue>
+  ): (...args: CustomTagArguments) => ContentTag
 
   literal(str: string): LiteralTag
 
   unsafeLiteral(str: string): LiteralTag
   
-  htmlWithDocType(attributesOrContent?: HtmlAttributes | Content, content?: Content): ContentTag;
+  htmlWithDocType(attributes: HtmlAttributes, content?: Content): ContentTag;
+  htmlWithDocType(content?: Content): ContentTag;
 
-  ${elements.map(el =>
-    `${el.methodName}(attributesOrContent?: ${el.attributesTypeName} | Content, content?: Content): ${el.returnTagType}Tag;`
-  ).join('\n  ')}
+  ${elements.flatMap(el => {
+    if (el.returnTagType === 'Void') {
+      return [`${el.methodName}(attributes?: ${el.attributesTypeName}): VoidTag;`]
+    }
+    return [
+      `${el.methodName}(attributes: ${el.attributesTypeName}, content?: Content): ${el.returnTagType}Tag;`,
+      `${el.methodName}(content?: Content): ${el.returnTagType}Tag;`
+    ]
+  }).join('\n  ')}
 }
 
 export const t: InstanceType<typeof Kensington>;

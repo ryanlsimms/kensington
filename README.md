@@ -25,7 +25,7 @@ import Kensington from 'kensington';
 import type { ContentMethod } from 'kensington';
 
 class MyTemplateEngine extends Kensington {
-  someCustomElement: ContentMethod<{ someCustomAttribute?: string }> = this.createCustomTag('custom-element', { 'some-custom-attribute': String });
+  someCustomElement: ContentMethod<{ someCustomAttribute?: string }> = this.createCustomTag('custom-element', { 'some-custom-attribute': [Boolean, 42] });
 }
 ```
 ```javascript
@@ -33,7 +33,7 @@ class MyTemplateEngine extends Kensington {
 import Kensington from 'kensington.js';
 
 class MyTemplateEngine extends Kensington {
-  someCustomElement = this.createCustomTag('some-custom-element', { 'some-custom-attribute': string });
+  someCustomElement = this.createCustomTag('some-custom-element', { 'some-custom-attribute': [Boolean, 42] });
 }
 
 const t = new MyTemplateEngine();
@@ -107,12 +107,11 @@ import { t } from 'kensington';
 * better typing of attributes
 * case insensitive attributes
 * function types
+* type declaration file for custom instance
 * validate/type data and aria attributes
 * allow to add attribute namespaces like htmx (how to extend type)
 * skip validation per tag (maybe a bad idea)
 * types for aria attributes
-* better sanitization of literal strings
-* validate that attributes are lowercase
 * readme demos express integration
 * mention use of html-validate
 * clean up error stack
@@ -121,6 +120,5 @@ import { t } from 'kensington';
 * better namespace non-tag methods to avoid potential future collisions
 * better monkey patching
 * validation level (throw error vs console vs none)
-* client rendering
-* allow custom elements to accept array of types [Number, String] or [Number, 'auto']
 * html to kensington transpiler?
+* conditionally allow attributes based on other attributes (multiple allowed only on inputs of type="file")
