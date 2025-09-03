@@ -4,7 +4,7 @@ import VoidTag from './esm/tag-classes/void-tag.js';
 import SvgVoidTag from './esm/tag-classes/svg-void-tag.js';
 
 export interface NameSpaceAttributes {
-  [key: `0${string}`]: string | object
+  [key: `${"data" | "aria"}${string}`]: string | object
 }
 
 type GlobalAttributes = {
