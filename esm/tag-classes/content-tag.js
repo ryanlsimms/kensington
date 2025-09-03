@@ -27,7 +27,7 @@ export default class ContentTag {
 
   }
 
-  validate() {
+  validate(validationLevel) {
     const unallowedAttributes = Object.keys(this.attributes).filter(attr => !this.attributeIsValid(attr));
     if (unallowedAttributes.length) {
       throw new KensingtonError(`attribute(s): ${unallowedAttributes.join(', ')} not allowed for ${this.tagName}`);
@@ -35,8 +35,15 @@ export default class ContentTag {
 
     const invalidAttributeValues = Object.entries(this.attributes).filter(([attr, value]) => !this.attributeValueIsValid(attr, value));
     if (invalidAttributeValues.length) {
-      const attrString = invalidAttributeValues.map(([attr, value]) => `${attr}="${value}"`).join(', ')
-      throw new Error(`invalid attribute \`${attrString}\` given for element \`${this.tagName}\``);
+      const attrString = invalidAttributeValues.map(([attr, value]) => `${attr}="${value}"`).join(', ');
+      const message = `invalid attribute \`${attrString}\` given for element \`${this.tagName}\``;
+      const error = new Error(message);
+      if (validationLevel === 'error') {
+        throw error;
+      } else if (validationLevel === 'warn') {
+        console.error(message);
+        console.error(error.stack);
+      }
     }
   }
 

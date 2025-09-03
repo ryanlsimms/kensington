@@ -14,12 +14,12 @@ class MyMarkup extends Kensington {
   simpleElement: ContentMethod = this.createCustomTag('simple-element');
 }
 
-const t = new MyMarkup({ runValidation: false, additionalNamespaces: ['hx'] });
+const t = new MyMarkup({ validationLevel: 'warn', additionalNamespaces: ['hx'] });
 
 t.htmlWithDocType({ lang: 'en', noGood: 'I Should Fail' }, t.body("hello world"));
 t.htmlWithDocType('content', 'too much')
 t.simpleElement({}, 'some content');
-t.div({ hxSomething: 'a value' }, 'content');
+t.div({ hxSomething: 'a value', ariaLabel: 'something' }, 'content');
 t.someCustomElement({ ariaLabel: 'something', someCustomAttribute: 42, noGood: 'I Should Fail' }, 'content');
 t.someCustomElement('some content', 'some more content'); // should be invalid
 t.someCustomElement(t.div('some content')); // should be invalid

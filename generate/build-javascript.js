@@ -15,12 +15,12 @@ import * as allAttributes from './attributes.js';
 import { camelToKebab } from './lib/text-utils.js';
 
 export default class Kensington {
-  constructor({ additionalNamespaces = [], runValidation = false } = {}) {
+  constructor({ additionalNamespaces = [], validationLevel = 'off' } = {}) {
     getPrototypeMethods(this).forEach(key => {
       this[key] = this[key].bind(this);
     });
     this.namespaces = ['data', 'aria'].concat(additionalNamespaces);
-    this.runValidation = runValidation;
+    this.validationLevel = validationLevel;
   }
   
   createCustomTag(tagName, allowedAttributes = {}) {
@@ -32,22 +32,22 @@ export default class Kensington {
   }
 
   createContentTag(tagName, allowedAttributes = {}) {
-    return this.createTag(tagName, allowedAttributes, ContentTag, { 
-      includeGlobalAttributes: true, 
+    return this.createTag(tagName, allowedAttributes, ContentTag, {
+      includeGlobalAttributes: true,
       includeGlobalEvents: true,
     });
   }
 
   createMathTag(tagName, allowedAttributes = {}) {
-    return this.createTag(tagName, allowedAttributes, ContentTag, { 
-      includeGlobalAttributes: false, 
+    return this.createTag(tagName, allowedAttributes, ContentTag, {
+      includeGlobalAttributes: false,
       includeGlobalEvents: true,
     });
   }
 
   createLiteralContentTag(tagName, allowedAttributes = {}) {
     return this.createTag(tagName, allowedAttributes, ContentTag, { 
-      includeGlobalAttributes: true, 
+      includeGlobalAttributes: true,
       includeGlobalEvents: true,
       literalContent: true,
     });
@@ -55,21 +55,21 @@ export default class Kensington {
 
   createSvgContentTag(tagName, allowedAttributes = {}) {
     return this.createTag(tagName, allowedAttributes, ContentTag, { 
-      includeGlobalAttributes: false, 
+      includeGlobalAttributes: false,
       includeGlobalEvents: true,
     });
   }
 
   createSvgVoidTag(tagName, allowedAttributes = {}) {
     return this.createTag(tagName, allowedAttributes, SvgVoidTag, { 
-      includeGlobalAttributes: false, 
+      includeGlobalAttributes: false,
       includeGlobalEvents: true,
     });
   }
 
   createVoidTag(tagName, allowedAttributes = {}) {
     return this.createTag(tagName, allowedAttributes, VoidTag, { 
-      includeGlobalAttributes: true, 
+      includeGlobalAttributes: true,
       includeGlobalEvents: true,
     });
   }
@@ -81,7 +81,7 @@ export default class Kensington {
     if (invalidTypes.length) {
       throw new Error(\`invalid types for attribute(s): \${invalidTypes.join(', ')} given for \${tagName}\`);
     }
-    
+
     return (attributesOrContent = null, content = '') => {
       let attributes = attributesOrContent;
 
@@ -101,9 +101,9 @@ export default class Kensington {
         literalContent,
         tagName,
       });
-      
-      if (this.runValidation) {
-        instance.validate();
+
+      if (this.validationLevel !== 'off') {
+        instance.validate(this.validationLevel);
       }
       return instance;
     }
@@ -119,7 +119,7 @@ export default class Kensington {
   unsafeLiteral(str) {
     return new LiteralTag(str);
   }
-  
+
   htmlWithDocType = this.createTag('html', allAttributes.htmlAttributes, HtmlWithDoctypeTag, { includeGlobalAttributes: true, includeGlobalEvents: true });
 
   ${elements.map(el => 

@@ -6,7 +6,7 @@ class MyMarkup extends Kensington {
   // someCustomElementB = this.createCustomTag('custom-element-b', { 'some-custom-attribute': String });
 }
 
-const t = new MyMarkup({ runValidation: true, additionalNamespaces: ['hx'] });
+const t = new MyMarkup({ validationLevel: 'warn', additionalNamespaces: ['hx'] });
 
 try {
   // const br = t.br();

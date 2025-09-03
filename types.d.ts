@@ -3301,7 +3301,7 @@ type Primitive = string | number | boolean;
 type AttributeValue = PrimitiveConstructor | Primitive | (PrimitiveConstructor | Primitive)[];
 
 export default class Kensington {
-  constructor(options?: { additionalNamespaces?: string | string[], runValidation?: boolean });
+  constructor(options?: { additionalNamespaces?: string | string[], validationLevel?: 'off' | 'warn' | 'error' });
 
   createCustomTag(
     tagName: string,

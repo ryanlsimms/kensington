@@ -4,9 +4,12 @@ This template engine is a way to create html via nested method calls.  Each tag 
 * nested attributes are converted to kebab-case `{ data: { bs: { toggle: 'collapse' } } }` becomes `data-bs-toggle="collapse"`
 * camelCase attibute become kebabcase `{ dataBsToggle: 'collapse' }` becomes `data-bs-toggle="collapse"`
 * attributes are validated against those found [here](https://html.spec.whatwg.org/multipage/indices.html#elements-3)
-* attributes with a boolean value will either show or not: `t.input({ type: 'checkbox', checked: true })` becomes `<input type="checkbox" checked>` or `<input type="checkbox" />` if `checked` is false
+* attributes with a boolean value will either be included or not: `t.input({ type: 'checkbox', checked: true })` becomes `<input type="checkbox" checked>` or `<input type="checkbox" />` if `checked` is false
 * [Global attributes](https://html.spec.whatwg.org/multipage/dom.html#global-attributes) are always allowed, along with `aria-*` and `data-*` attributes.
-* the `literal` method allows you to pass in html as a string.
+* Additional namespaces (like `hx` when using [htmx](https://htmx.org)) can be added by passing the `additionalNamespaces` property to the constructor
+* `validationLevel` can be set to `off`, `warn`, or `error`.
+* the `.literal` method allows you to pass in html as a string.
+* `.htmlWithDocType` is the same as `.html`, but adds the `<!DOCTYPE html>` tag to the beginning of the string.
 * call `.toString()` on the outermost method to expicitly convert to string.  This can often be omitted if the output is sent as a string.
 * string interpolation automatically converts the tag to string ``` `${t.html(t.body('hello'))}` ```
 * you can add your own custom elements:
@@ -40,7 +43,7 @@ class MyTemplateEngine extends Kensington {
 }
 ```
 ```javascript
-const t = new MyTemplateEngine({ runValidation: true, additionalNamespaces: ['hx'] });
+const t = new MyTemplateEngine({ validationLevel: 'warn', additionalNamespaces: ['hx'] });
 
 const html = t.htmlWithDoctype({ lang: 'en' }, [
   t.head(t.title('My Page Title')),
@@ -121,7 +124,6 @@ import { t } from 'kensington';
 * comments
 * better namespace non-tag methods to avoid potential future collisions
 * better monkey patching
-* validation level (throw error vs console vs none)
 * html to kensington transpiler?
 * conditionally allow attributes based on other attributes (multiple allowed only on inputs of type="file")
 * build dist for browser
