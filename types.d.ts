@@ -3,7 +3,9 @@ import LiteralTag from './esm/tag-classes/literal-tag.js';
 import VoidTag from './esm/tag-classes/void-tag.js';
 import SvgVoidTag from './esm/tag-classes/svg-void-tag.js';
 
-type NameSpaceAttributes = Record<`${"data" | "aria"}${string}`, string | object>;
+export interface NameSpaceAttributes {
+  [key: `0${string}`]: string | object
+}
 
 type GlobalAttributes = {
   accesskey?: string;
@@ -12,7 +14,7 @@ type GlobalAttributes = {
   autofocus?: boolean;
   class?: string;
   contenteditable?: "true" | "plaintext-only" | "false";
-  dir?: "ltr" | "rtl" | "auto";
+  dir?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   draggable?: "true" | "false";
   enterkeyhint?: "enter" | "done" | "go" | "next" | "previous" | "search" | "send";
   hidden?: string;
@@ -424,7 +426,7 @@ type AreaAttributes = {
   'ping'?: string;
   'referrerpolicy'?: string;
   'rel'?: string;
-  'shape'?: "circle" | "default" | "poly" | "rect";
+  'shape'?: "circle" | "CIRCLE" | "default" | "DEFAULT" | "poly" | "POLY" | "rect" | "RECT";
   'target'?: string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
@@ -487,13 +489,13 @@ type ButtonAttributes = {
   'form'?: string;
   'formaction'?: string;
   'formenctype'?: "application/x-www-form-urlencoded" | "multipart/form-data" | "text/plain";
-  'formmethod'?: "get" | "post" | "dialog";
+  'formmethod'?: "get" | "GET" | "post" | "POST" | "dialog" | "DIALOG";
   'formnovalidate'?: boolean;
   'formtarget'?: string;
   'name'?: string;
   'popovertarget'?: string;
   'popovertargetaction'?: "toggle" | "show" | "hide";
-  'type'?: "submit" | "reset" | "button";
+  'type'?: "submit" | "SUBMIT" | "reset" | "RESET" | "button" | "BUTTON";
   'value'?: number | string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
@@ -973,8 +975,8 @@ type FormAttributes = {
   'acceptCharset'?: string;
   'action'?: string;
   'autocomplete'?: "on" | "off";
-  'enctype'?: "application/x-www-form-urlencoded" | "multipart/form-data" | "text/plain";
-  'method'?: "get" | "post" | "dialog";
+  'enctype'?: "application/x-www-form-urlencoded" | "APPLICATION/X-WWW-FORM-URLENCODED" | "multipart/form-data" | "MULTIPART/FORM-DATA" | "text/plain" | "TEXT/PLAIN";
+  'method'?: "get" | "GET" | "post" | "POST" | "dialog" | "DIALOG";
   'name'?: string;
   'novalidate'?: boolean;
   'rel'?: string;
@@ -1201,7 +1203,7 @@ type InputAttributes = {
   'form'?: string;
   'formaction'?: string;
   'formenctype'?: "application/x-www-form-urlencoded" | "multipart/form-data" | "text/plain";
-  'formmethod'?: "get" | "post" | "dialog";
+  'formmethod'?: "get" | "GET" | "post" | "POST" | "dialog" | "DIALOG";
   'formnovalidate'?: boolean;
   'formtarget'?: string;
   'height'?: string;
@@ -1521,10 +1523,10 @@ type MaskAttributes = {
 type MenuAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type MetaAttributes = {
-  'charset'?: "utf-8";
+  'charset'?: "utf-8" | "UTF-8";
   'content'?: string;
-  'http-equiv'?: "content-type" | "default-style" | "refresh" | "x-ua-compatible" | "content-security-policy";
-  'httpEquiv'?: "content-type" | "default-style" | "refresh" | "x-ua-compatible" | "content-security-policy";
+  'http-equiv'?: "content-type" | "CONTENT-TYPE" | "default-style" | "DEFAULT-STYLE" | "refresh" | "REFRESH" | "x-ua-compatible" | "X-UA-COMPATIBLE" | "content-security-policy" | "CONTENT-SECURITY-POLICY";
+  'httpEquiv'?: "content-type" | "CONTENT-TYPE" | "default-style" | "DEFAULT-STYLE" | "refresh" | "REFRESH" | "x-ua-compatible" | "X-UA-COMPATIBLE" | "content-security-policy" | "CONTENT-SECURITY-POLICY";
   'media'?: string;
   'name'?: string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -2863,7 +2865,7 @@ type ThAttributes = {
   'colspan'?: number;
   'headers'?: string;
   'rowspan'?: string;
-  'scope'?: "row" | "col" | "rowgroup" | "colgroup";
+  'scope'?: "row" | "ROW" | "col" | "COL" | "rowgroup" | "ROWGROUP" | "colgroup" | "COLGROUP";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type TheadAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -3299,7 +3301,7 @@ type Primitive = string | number | boolean;
 type AttributeValue = PrimitiveConstructor | Primitive | (PrimitiveConstructor | Primitive)[];
 
 export default class Kensington {
-  constructor(options?: { runValidation?: boolean });
+  constructor(options?: { additionalNamespaces?: string | string[], runValidation?: boolean });
 
   createCustomTag(
     tagName: string,
@@ -3309,7 +3311,7 @@ export default class Kensington {
   literal(str: string): LiteralTag
 
   unsafeLiteral(str: string): LiteralTag
-
+  
   htmlWithDocType(attributes: HtmlAttributes, content?: Content): ContentTag;
   htmlWithDocType(content?: Content): ContentTag;
 

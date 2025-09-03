@@ -8,10 +8,15 @@ export default async function fetchHtmlData() {
   const events = parseTable(dom.querySelector('#ix-event-handlers'), 'event', [['elements', 2]]);
   const globalEvents = events.filter(e => e.elements[0] === 'HTML elements').map(e => e.event);
 
-  const methodAttrs = attributes.filter(a => ['formmethod', 'method'].includes(a.attribute));
-  methodAttrs.forEach(attr => {
-    attr.value = attr.value.map(v => v.toLowerCase());
-  })
+  const attributeSemanticsPage = await fetchAsDom('https://html.spec.whatwg.org/multipage/semantics-other.html');
+  const caseInsensitiveAttrElements = attributeSemanticsPage.querySelectorAll('ul.brief code');
+  const caseInsensitiveAttrList = [...caseInsensitiveAttrElements].map(el => el.textContent).concat('formmethod');
+
+  attributes.forEach(attr => {
+    if (caseInsensitiveAttrList.includes(attr.attribute)) {
+      attr.value = [...new Set(attr.value.flatMap(v => [v.toLowerCase(), v.toUpperCase()]))];
+    }
+  });
 
   return { htmlElements: elements, globalEvents, attributes };
 }

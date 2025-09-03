@@ -22,7 +22,9 @@ import LiteralTag from './esm/tag-classes/literal-tag.js';
 import VoidTag from './esm/tag-classes/void-tag.js';
 import SvgVoidTag from './esm/tag-classes/svg-void-tag.js';
 
-type NameSpaceAttributes = Record<\`\${"data" | "aria"}\${string}\`, string | object>;
+export interface NameSpaceAttributes {
+  [key: \`${"data" | "aria"}\${string}\`]: string | object
+}
 
 type GlobalAttributes = {
   ${globalAttributes.map(a => `${a.name}?: ${a.type};`).join('\n  ')}
@@ -48,7 +50,7 @@ type Primitive = string | number | boolean;
 type AttributeValue = PrimitiveConstructor | Primitive | (PrimitiveConstructor | Primitive)[];
 
 export default class Kensington {
-  constructor(options?: { runValidation?: boolean });
+  constructor(options?: { additionalNamespaces?: string | string[], runValidation?: boolean });
 
   createCustomTag(
     tagName: string,

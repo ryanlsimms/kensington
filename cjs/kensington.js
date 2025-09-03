@@ -12,10 +12,11 @@ const attributes = require('./attributes.js');
 const textUtils = require('./lib/text-utils.js');
 
 class Kensington {
-  constructor({ runValidation = false } = {}) {
+  constructor({ additionalNamespaces = [], runValidation = false } = {}) {
     getPrototypeMethods.default(this).forEach(key => {
       this[key] = this[key].bind(this);
     });
+    this.namespaces = ['data', 'aria'].concat(additionalNamespaces);
     this.runValidation = runValidation;
   }
   
@@ -93,6 +94,7 @@ class Kensington {
         },
         attributes: attributes$1,
         content,
+        namespaces: this.namespaces,
         literalContent,
         tagName,
       });

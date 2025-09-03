@@ -15,10 +15,11 @@ import * as allAttributes from './attributes.js';
 import { camelToKebab } from './lib/text-utils.js';
 
 export default class Kensington {
-  constructor({ runValidation = false } = {}) {
+  constructor({ additionalNamespaces = [], runValidation = false } = {}) {
     getPrototypeMethods(this).forEach(key => {
       this[key] = this[key].bind(this);
     });
+    this.namespaces = ['data', 'aria'].concat(additionalNamespaces);
     this.runValidation = runValidation;
   }
   
@@ -96,6 +97,7 @@ export default class Kensington {
         },
         attributes,
         content,
+        namespaces: this.namespaces,
         literalContent,
         tagName,
       });
@@ -131,7 +133,6 @@ export const t = new Kensington();
 
 export function buildAttributes({ elements, globalEvents, globalAttributes }) {
   return `
-export const VALID_NAMESPACES = ['data', 'aria'];
 export const globalAttributes = {
   ${globalAttributes.map(a => `'${a.name}': ${a.value},`).join('\n  ')}
 };

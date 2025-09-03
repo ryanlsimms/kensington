@@ -11,12 +11,9 @@ This template engine is a way to create html via nested method calls.  Each tag 
 * string interpolation automatically converts the tag to string ``` `${t.html(t.body('hello'))}` ```
 * you can add your own custom elements:
     * extend the `Kensington` class with your own
-    * add your own method
-    * your new method should accept `(attributesOrContent, content)` and and return `this.createCustomTag` with the following arguments
+    * set a property equal to `this.createCustomTag()` with the following arguments
         * `tagName` - the name that is used in the `<some-custom-element></some-custom-element>`
-        * `allowedAttributes` - an array of allowed attributes.  Global and data/aria attributes are always allowed
-        * `attributesOrContent` - passed from method call
-        * `content` - passed from method call
+        * `allowedAttributes` - an optional array of allowed attributes.  Global and data/aria attributes are always allowed
 
 ### Example
 ```typescript
@@ -24,8 +21,14 @@ This template engine is a way to create html via nested method calls.  Each tag 
 import Kensington from 'kensington';
 import type { ContentMethod } from 'kensington';
 
+declare module 'kensington' {
+  interface NameSpaceAttributes {
+    [key: `hx${string}`]: string | object
+  }
+}
+
 class MyTemplateEngine extends Kensington {
-  someCustomElement: ContentMethod<{ someCustomAttribute?: string }> = this.createCustomTag('custom-element', { 'some-custom-attribute': [Boolean, 42] });
+  someCustomElement: ContentMethod<{ someCustomAttribute?: boolean | 42 }> = this.createCustomTag('custom-element', { 'some-custom-attribute': [Boolean, 42] });
 }
 ```
 ```javascript
@@ -35,8 +38,9 @@ import Kensington from 'kensington.js';
 class MyTemplateEngine extends Kensington {
   someCustomElement = this.createCustomTag('some-custom-element', { 'some-custom-attribute': [Boolean, 42] });
 }
-
-const t = new MyTemplateEngine();
+```
+```javascript
+const t = new MyTemplateEngine({ runValidation: true, additionalNamespaces: ['hx'] });
 
 const html = t.htmlWithDoctype({ lang: 'en' }, [
   t.head(t.title('My Page Title')),
@@ -104,14 +108,12 @@ import { t } from 'kensington';
 
 
 ### TODO
+* tests
 * better typing of attributes
-* case insensitive attributes
 * function types
 * type declaration file for custom instance
 * validate/type data and aria attributes
-* allow to add attribute namespaces like htmx (how to extend type)
 * skip validation per tag (maybe a bad idea)
-* types for aria attributes
 * readme demos express integration
 * mention use of html-validate
 * clean up error stack
@@ -122,3 +124,4 @@ import { t } from 'kensington';
 * validation level (throw error vs console vs none)
 * html to kensington transpiler?
 * conditionally allow attributes based on other attributes (multiple allowed only on inputs of type="file")
+* build dist for browser

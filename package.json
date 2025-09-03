@@ -12,8 +12,14 @@
       "require": "./cjs/attributes.js"
     },
     ".": {
-      "import": "./esm/kensington.js",
-      "require": "./cjs/kensington.js"
+      "import": {
+        "default": "./esm/kensington.js",
+        "types": "./types.d.ts"
+      },
+      "require": {
+        "default": "./cjs/kensington.js",
+        "types": "./types.d.ts"
+      }
     }
   },
   "keywords": [

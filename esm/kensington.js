@@ -8,10 +8,11 @@ import * as allAttributes from './attributes.js';
 import { camelToKebab } from './lib/text-utils.js';
 
 export default class Kensington {
-  constructor({ runValidation = false } = {}) {
+  constructor({ additionalNamespaces = [], runValidation = false } = {}) {
     getPrototypeMethods(this).forEach(key => {
       this[key] = this[key].bind(this);
     });
+    this.namespaces = ['data', 'aria'].concat(additionalNamespaces);
     this.runValidation = runValidation;
   }
   
@@ -89,6 +90,7 @@ export default class Kensington {
         },
         attributes,
         content,
+        namespaces: this.namespaces,
         literalContent,
         tagName,
       });

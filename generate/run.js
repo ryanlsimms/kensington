@@ -84,7 +84,7 @@ function getAttributeType(attr) {
   if (attr.attribute === 'value') {
     return ['[Number,String]', 'number | string']
   }
-  if (values[0] === 'Boolean attribute') {
+  if (values[0]?.toLowerCase?.() === 'boolean attribute') {
     return ['Boolean', 'boolean'];
   }
   if (values[0] === 'Valid non-negative integer greater than zero') {

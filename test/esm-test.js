@@ -1,3 +1,4 @@
+/// <reference path="./kensington.d.ts" />
 import Kensington from 'kensington';
 
 class MyMarkup extends Kensington {
@@ -5,15 +6,16 @@ class MyMarkup extends Kensington {
   // someCustomElementB = this.createCustomTag('custom-element-b', { 'some-custom-attribute': String });
 }
 
-const t = new MyMarkup({ runValidation: true });
+const t = new MyMarkup({ runValidation: true, additionalNamespaces: ['hx'] });
 
 try {
   // const br = t.br();
-  t.a({  ariaLabel: 'something' })
+  const button = t.button({ hxPost: '/something' }, 'A Button');
+  const a = t.a({ ariaLabel: 'something' })
   // const option = t.option({ disabled: false, selected: false, value: '-- none --' }, '-- None --');
-  const html = t.someCustomElementA({ ariaLabel: 'good', someCustomAttribute: 'false', noGood: '' })
+  // const html = t.someCustomElementA({ ariaLabel: 'good', someCustomAttribute: 'false', noGood: '' })
   // const html2 = t.a({ id: 'something', data: { test: 'some-value' } }, 'a link');
-  const html3 = t.htmlWithDocType('content', 'too much');
+  // const html3 = t.htmlWithDocType('content', 'too much');
   // const html4 = t.div(t.div(t.pre({}, JSON.stringify({ a: 'b', c: 'd' }, null, 2))));
   // const scriptTag1 = t.script({ async: true, src: 'https://sf-saas.cdn-apple.com/2.2.0/sf-symbol.js' });
   // const circleTag = t.circle({ requiredExtensions: 'something' });
@@ -30,8 +32,8 @@ try {
 //     at Array.forEach (<anonymous>)
 //     at file:///Users/ryansimms/RubymineProjects/pulse-web/app/routes/vpm-routes.js:44:32
 // `));
-//   console.log(br.toString());
-  console.log(html.toString());
+  console.log(button.toString());
+//   console.log(html.toString());
   // console.log(circleTag.toString());
   // console.log(formTag1.toString());
   // console.log(formTag2.toString());

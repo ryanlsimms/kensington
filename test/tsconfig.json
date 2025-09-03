@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "target": "ESNext",
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "lib": [ "esnext" ],
+    "types": [ "node" ],
+    "baseUrl": "./",
+  },
+  "include": [
+    "src/**/*.ts",
+  ]
+}

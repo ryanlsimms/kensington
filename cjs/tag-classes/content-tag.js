@@ -6,20 +6,15 @@ const he = require('he');
 const attributesFromObject = require('../lib/attributes-from-object.js');
 const indent = require('../lib/indent.js');
 const textUtils = require('../lib/text-utils.js');
-const attributes = require('../attributes.js');
 
 // TODO validate via "import elements from 'html-validate/dist/es/html5.js'";
 
 const INDENTATION_LEVEL = 2;
 
-function isValidNamespaceAttribute(attr) {
-  return attributes.VALID_NAMESPACES.includes(attr.match(/[^A-Z]+/u)[0]); // characters before first uppercase
-}
-
 class KensingtonError extends Error {}
 
 class ContentTag {
-  constructor({ allowedAttributes = {}, attributes, content, literalContent, tagName }) {
+  constructor({ allowedAttributes = {}, attributes, content, literalContent, namespaces, tagName }) {
     this.tagName = tagName;
     this.attributes = attributes;
     this.allowedAttributes = allowedAttributes;
@@ -27,6 +22,7 @@ class ContentTag {
     if (literalContent && typeof content !== 'string') {
       throw new Error('Only string content can be passed to a <script> tag')
     }
+    this.namespaces = namespaces;
     this.content = [].concat(content)
       .flat()
       .filter(Boolean)
@@ -47,15 +43,21 @@ class ContentTag {
     }
   }
 
+  isValidNamespaceAttribute(attr) {
+    return this.namespaces.includes(attr.match(/[^A-Z]+/u)[0]); // characters before first uppercase
+  }
+
   attributeIsValid(attr) {
-    return this.allowedAttributes.hasOwnProperty(attr) || this.allowedAttributes.hasOwnProperty(textUtils.camelToKebab(attr)) || isValidNamespaceAttribute(attr);
+    return this.allowedAttributes.hasOwnProperty(attr) ||
+      this.allowedAttributes.hasOwnProperty(textUtils.camelToKebab(attr)) ||
+      this.isValidNamespaceAttribute(attr);
   }
 
   attributeValueIsValid(attr, value) {
     if ([undefined, null].includes(value)) {
       return true;
     }
-    if (isValidNamespaceAttribute(attr)) {
+    if (this.isValidNamespaceAttribute(attr)) {
       return true;
     }
     if (attr === 'id' && /^\d/.test(value)) {

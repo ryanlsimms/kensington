@@ -1,6 +1,5 @@
 'use strict';
 
-const VALID_NAMESPACES = ['data', 'aria'];
 const globalAttributes = {
   'accesskey': String,
   'autocapitalize': ["on","off","none","sentences","words","characters"],
@@ -8,7 +7,7 @@ const globalAttributes = {
   'autofocus': Boolean,
   'class': String,
   'contenteditable': ["true","plaintext-only","false"],
-  'dir': ["ltr","rtl","auto"],
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
   'draggable': ["true","false"],
   'enterkeyhint': ["enter","done","go","next","previous","search","send"],
   'hidden': String,
@@ -414,7 +413,7 @@ const areaAttributes = {
   'ping': String,
   'referrerpolicy': String,
   'rel': String,
-  'shape': ["circle","default","poly","rect"],
+  'shape': ["circle","CIRCLE","default","DEFAULT","poly","POLY","rect","RECT"],
   'target': String
 };
 const articleAttributes = {};
@@ -466,13 +465,13 @@ const buttonAttributes = {
   'form': String,
   'formaction': String,
   'formenctype': ["application/x-www-form-urlencoded","multipart/form-data","text/plain"],
-  'formmethod': ["get","post","dialog"],
+  'formmethod': ["get","GET","post","POST","dialog","DIALOG"],
   'formnovalidate': Boolean,
   'formtarget': String,
   'name': String,
   'popovertarget': String,
   'popovertargetaction': ["toggle","show","hide"],
-  'type': ["submit","reset","button"],
+  'type': ["submit","SUBMIT","reset","RESET","button","BUTTON"],
   'value': [Number,String]
 };
 const canvasAttributes = {
@@ -921,8 +920,8 @@ const formAttributes = {
   'accept-charset': String,
   'action': String,
   'autocomplete': ["on","off"],
-  'enctype': ["application/x-www-form-urlencoded","multipart/form-data","text/plain"],
-  'method': ["get","post","dialog"],
+  'enctype': ["application/x-www-form-urlencoded","APPLICATION/X-WWW-FORM-URLENCODED","multipart/form-data","MULTIPART/FORM-DATA","text/plain","TEXT/PLAIN"],
+  'method': ["get","GET","post","POST","dialog","DIALOG"],
   'name': String,
   'novalidate': Boolean,
   'rel': String,
@@ -1132,7 +1131,7 @@ const inputAttributes = {
   'form': String,
   'formaction': String,
   'formenctype': ["application/x-www-form-urlencoded","multipart/form-data","text/plain"],
-  'formmethod': ["get","post","dialog"],
+  'formmethod': ["get","GET","post","POST","dialog","DIALOG"],
   'formnovalidate': Boolean,
   'formtarget': String,
   'height': String,
@@ -1437,9 +1436,9 @@ const maskAttributes = {
 };
 const menuAttributes = {};
 const metaAttributes = {
-  'charset': ["utf-8"],
+  'charset': ["utf-8","UTF-8"],
   'content': String,
-  'http-equiv': ["content-type","default-style","refresh","x-ua-compatible","content-security-policy"],
+  'http-equiv': ["content-type","CONTENT-TYPE","default-style","DEFAULT-STYLE","refresh","REFRESH","x-ua-compatible","X-UA-COMPATIBLE","content-security-policy","CONTENT-SECURITY-POLICY"],
   'media': String,
   'name': String
 };
@@ -2724,7 +2723,7 @@ const thAttributes = {
   'colspan': Number,
   'headers': String,
   'rowspan': String,
-  'scope': ["row","col","rowgroup","colgroup"]
+  'scope': ["row","ROW","col","COL","rowgroup","ROWGROUP","colgroup","COLGROUP"]
 };
 const theadAttributes = {};
 const timeAttributes = {
@@ -2987,7 +2986,6 @@ const viewAttributes = {
 };
 const wbrAttributes = {};
 
-exports.VALID_NAMESPACES = VALID_NAMESPACES;
 exports.aAttributes = aAttributes;
 exports.abbrAttributes = abbrAttributes;
 exports.addressAttributes = addressAttributes;
