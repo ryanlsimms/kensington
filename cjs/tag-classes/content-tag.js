@@ -36,7 +36,9 @@ class ContentTag {
       showInvalid.default(`attribute(s): ${unallowedAttributes.join(', ')} not allowed for ${this.tagName}`, this.validationLevel);
     }
 
-    const invalidAttributeValues = Object.entries(this.attributes).filter(([attr, value]) => !this.attributeValueIsValid(attr, value));
+    const invalidAttributeValues = Object.entries(this.attributes).filter(([attr, value]) => {
+      return !unallowedAttributes.includes(attr) && !this.attributeValueIsValid(attr, value)
+    });
     if (invalidAttributeValues.length) {
       const attrString = invalidAttributeValues.map(([attr, value]) => `${attr}="${value}"`).join(', ');
       const message = `invalid attribute \`${attrString}\` given for element \`${this.tagName}\``;

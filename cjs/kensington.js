@@ -98,6 +98,7 @@ class Kensington {
         namespaces: this.namespaces,
         literalContent,
         tagName,
+        validationLevel: this.validationLevel,
       });
 
       if (this.validationLevel !== 'off') {
