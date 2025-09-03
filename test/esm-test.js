@@ -6,13 +6,13 @@ class MyMarkup extends Kensington {
   // someCustomElementB = this.createCustomTag('custom-element-b', { 'some-custom-attribute': String });
 }
 
-const t = new MyMarkup({ validationLevel: 'warn', additionalNamespaces: ['hx'] });
+const t = new MyMarkup({ validationLevel: 'error', additionalNamespaces: ['hx'] });
 
 try {
   // const br = t.br();
-  const button = t.button({ hxPost: '/something' }, 'A Button');
-  const a = t.a({ ariaLabel: 'something' })
-  // const option = t.option({ disabled: false, selected: false, value: '-- none --' }, '-- None --');
+  const button = t.button({ hePost: '/something' }, 'A Button');
+  // const a = t.a({ ariaLabel: 'something' })
+  // const option =e t.option({ disabled: false, selected: false, value: '-- none --' }, '-- None --');
   // const html = t.someCustomElementA({ ariaLabel: 'good', someCustomAttribute: 'false', noGood: '' })
   // const html2 = t.a({ id: 'something', data: { test: 'some-value' } }, 'a link');
   // const html3 = t.htmlWithDocType('content', 'too much');

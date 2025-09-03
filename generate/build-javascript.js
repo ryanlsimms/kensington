@@ -13,6 +13,7 @@ import SvgVoidTag from './tag-classes/svg-void-tag.js';
 import getPrototypeMethods from './lib/get-prototype-methods.js';
 import * as allAttributes from './attributes.js';
 import { camelToKebab } from './lib/text-utils.js';
+import showInvalid from './lib/show-invalid.js';
 
 export default class Kensington {
   constructor({ additionalNamespaces = [], validationLevel = 'off' } = {}) {
@@ -79,7 +80,7 @@ export default class Kensington {
       return ![String, Number, Boolean, Function].includes(type) && !Array.isArray(type)
     });
     if (invalidTypes.length) {
-      throw new Error(\`invalid types for attribute(s): \${invalidTypes.join(', ')} given for \${tagName}\`);
+      showInvalid(\`invalid types for attribute(s): \${invalidTypes.join(', ')} given for \${tagName}\`, this.validationLevel);
     }
 
     return (attributesOrContent = null, content = '') => {
@@ -100,6 +101,7 @@ export default class Kensington {
         namespaces: this.namespaces,
         literalContent,
         tagName,
+        validationLevel: this.validationLevel,
       });
 
       if (this.validationLevel !== 'off') {

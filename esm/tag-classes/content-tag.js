@@ -2,24 +2,24 @@ import he from 'he';
 
 import attributesFromObject from '../lib/attributes-from-object.js';
 import indent from '../lib/indent.js';
+import showInvalid from '../lib/show-invalid.js';
 import { camelToKebab } from '../lib/text-utils.js';
 
 // TODO validate via "import elements from 'html-validate/dist/es/html5.js'";
 
 const INDENTATION_LEVEL = 2;
 
-class KensingtonError extends Error {}
-
 export default class ContentTag {
-  constructor({ allowedAttributes = {}, attributes, content, literalContent, namespaces, tagName }) {
+  constructor({ allowedAttributes = {}, attributes, content, literalContent, namespaces, tagName, validationLevel }) {
     this.tagName = tagName;
     this.attributes = attributes;
     this.allowedAttributes = allowedAttributes;
     this.literalContent = literalContent;
     if (literalContent && typeof content !== 'string') {
-      throw new Error('Only string content can be passed to a <script> tag')
+      showInvalid('Only string content can be passed to a <script> tag', validationLevel);
     }
     this.namespaces = namespaces;
+    this.validationLevel = validationLevel;
     this.content = [].concat(content)
       .flat()
       .filter(Boolean)
@@ -27,23 +27,19 @@ export default class ContentTag {
 
   }
 
-  validate(validationLevel) {
+  validate() {
     const unallowedAttributes = Object.keys(this.attributes).filter(attr => !this.attributeIsValid(attr));
     if (unallowedAttributes.length) {
-      throw new KensingtonError(`attribute(s): ${unallowedAttributes.join(', ')} not allowed for ${this.tagName}`);
+      showInvalid(`attribute(s): ${unallowedAttributes.join(', ')} not allowed for ${this.tagName}`, this.validationLevel);
     }
 
-    const invalidAttributeValues = Object.entries(this.attributes).filter(([attr, value]) => !this.attributeValueIsValid(attr, value));
+    const invalidAttributeValues = Object.entries(this.attributes).filter(([attr, value]) => {
+      return !unallowedAttributes.includes(attr) && !this.attributeValueIsValid(attr, value)
+    });
     if (invalidAttributeValues.length) {
       const attrString = invalidAttributeValues.map(([attr, value]) => `${attr}="${value}"`).join(', ');
       const message = `invalid attribute \`${attrString}\` given for element \`${this.tagName}\``;
-      const error = new Error(message);
-      if (validationLevel === 'error') {
-        throw error;
-      } else if (validationLevel === 'warn') {
-        console.error(message);
-        console.error(error.stack);
-      }
+      showInvalid(message, this.validationLevel)
     }
   }
 

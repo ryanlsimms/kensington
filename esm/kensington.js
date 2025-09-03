@@ -6,6 +6,7 @@ import SvgVoidTag from './tag-classes/svg-void-tag.js';
 import getPrototypeMethods from './lib/get-prototype-methods.js';
 import * as allAttributes from './attributes.js';
 import { camelToKebab } from './lib/text-utils.js';
+import showInvalid from './lib/show-invalid.js';
 
 export default class Kensington {
   constructor({ additionalNamespaces = [], validationLevel = 'off' } = {}) {
@@ -15,7 +16,7 @@ export default class Kensington {
     this.namespaces = ['data', 'aria'].concat(additionalNamespaces);
     this.validationLevel = validationLevel;
   }
-  
+
   createCustomTag(tagName, allowedAttributes = {}) {
     const kebabAttributes = Object.fromEntries(Object.entries(allowedAttributes).map(([k,v]) => [camelToKebab(k), v]))
     return this.createTag(tagName, kebabAttributes, ContentTag, {
@@ -39,7 +40,7 @@ export default class Kensington {
   }
 
   createLiteralContentTag(tagName, allowedAttributes = {}) {
-    return this.createTag(tagName, allowedAttributes, ContentTag, { 
+    return this.createTag(tagName, allowedAttributes, ContentTag, {
       includeGlobalAttributes: true,
       includeGlobalEvents: true,
       literalContent: true,
@@ -47,21 +48,21 @@ export default class Kensington {
   }
 
   createSvgContentTag(tagName, allowedAttributes = {}) {
-    return this.createTag(tagName, allowedAttributes, ContentTag, { 
+    return this.createTag(tagName, allowedAttributes, ContentTag, {
       includeGlobalAttributes: false,
       includeGlobalEvents: true,
     });
   }
 
   createSvgVoidTag(tagName, allowedAttributes = {}) {
-    return this.createTag(tagName, allowedAttributes, SvgVoidTag, { 
+    return this.createTag(tagName, allowedAttributes, SvgVoidTag, {
       includeGlobalAttributes: false,
       includeGlobalEvents: true,
     });
   }
 
   createVoidTag(tagName, allowedAttributes = {}) {
-    return this.createTag(tagName, allowedAttributes, VoidTag, { 
+    return this.createTag(tagName, allowedAttributes, VoidTag, {
       includeGlobalAttributes: true,
       includeGlobalEvents: true,
     });
@@ -72,7 +73,7 @@ export default class Kensington {
       return ![String, Number, Boolean, Function].includes(type) && !Array.isArray(type)
     });
     if (invalidTypes.length) {
-      throw new Error(`invalid types for attribute(s): ${invalidTypes.join(', ')} given for ${tagName}`);
+      showInvalid(`invalid types for attribute(s): ${invalidTypes.join(', ')} given for ${tagName}`, this.validationLevel);
     }
 
     return (attributesOrContent = null, content = '') => {
@@ -93,6 +94,7 @@ export default class Kensington {
         namespaces: this.namespaces,
         literalContent,
         tagName,
+        validationLevel: this.validationLevel,
       });
 
       if (this.validationLevel !== 'off') {

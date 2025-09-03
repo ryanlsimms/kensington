@@ -10,6 +10,7 @@ const svgVoidTag = require('./tag-classes/svg-void-tag.js');
 const getPrototypeMethods = require('./lib/get-prototype-methods.js');
 const attributes = require('./attributes.js');
 const textUtils = require('./lib/text-utils.js');
+const showInvalid = require('./lib/show-invalid.js');
 
 class Kensington {
   constructor({ additionalNamespaces = [], validationLevel = 'off' } = {}) {
@@ -76,7 +77,7 @@ class Kensington {
       return ![String, Number, Boolean, Function].includes(type) && !Array.isArray(type)
     });
     if (invalidTypes.length) {
-      throw new Error(`invalid types for attribute(s): ${invalidTypes.join(', ')} given for ${tagName}`);
+      showInvalid.default(`invalid types for attribute(s): ${invalidTypes.join(', ')} given for ${tagName}`, this.validationLevel);
     }
 
     return (attributesOrContent = null, content = '') => {
