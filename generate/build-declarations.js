@@ -40,7 +40,7 @@ export const globalAttributes: GlobalAttributes;
 export const globalEvents: GlobalEvents;
 ${elements.map(e => `export const ${e.attributesName}: ${e.attributesTypeName}`).join('\n')}
 
-type ContentType = ContentTag | VoidTag | SvgVoidTag | LiteralTag | string;
+type ContentType = ContentTag | VoidTag | SvgVoidTag | LiteralTag | string | number;
 export type Content = ContentType | ContentType[];
 type UniversalAttributes = NameSpaceAttributes | GlobalAttributes | GlobalEvents;
 type CustomTagArguments<T = null> = [attributes?: T | UniversalAttributes, content?: Content] | [content: Content];

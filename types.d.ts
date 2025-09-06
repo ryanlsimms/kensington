@@ -3291,7 +3291,7 @@ export const videoAttributes: VideoAttributes
 export const viewAttributes: ViewAttributes
 export const wbrAttributes: WbrAttributes
 
-type ContentType = ContentTag | VoidTag | SvgVoidTag | LiteralTag | string;
+type ContentType = ContentTag | VoidTag | SvgVoidTag | LiteralTag | string | number;
 export type Content = ContentType | ContentType[];
 type UniversalAttributes = NameSpaceAttributes | GlobalAttributes | GlobalEvents;
 type CustomTagArguments<T = null> = [attributes?: T | UniversalAttributes, content?: Content] | [content: Content];

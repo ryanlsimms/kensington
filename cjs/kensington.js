@@ -72,7 +72,8 @@ class Kensington {
     });
   }
 
-  createTag(tagName, allowedAttributes, Klass, { includeGlobalAttributes, includeGlobalEvents, literalContent = false }) {
+  createTag(tagName, allowedAttributes, Klass, options) {
+    const { includeGlobalAttributes, includeGlobalEvents, literalContent = false } = options;
     const invalidTypes = Object.values(allowedAttributes).filter(type => {
       return ![String, Number, Boolean, Function].includes(type) && !Array.isArray(type)
     });
@@ -80,12 +81,22 @@ class Kensington {
       showInvalid.default(`invalid types for attribute(s): ${invalidTypes.join(', ')} given for ${tagName}`, this.validationLevel);
     }
 
-    return (attributesOrContent = null, content = '') => {
+    return (attributesOrContent = null, content, thirdArg) => {
       let attributes$1 = attributesOrContent;
 
+      if (thirdArg) {
+        throw new Error(`Too many arguments given for ${tagName}`);
+      }
+
       if (attributesOrContent?.constructor !== Object) {
+        if (content) {
+          throw new Error(`Invalid arguments given for ${tagName}`);
+        }
         attributes$1 = {};
         content = attributesOrContent;
+      }
+      if (typeof content === 'undefined') {
+        content = '';
       }
       const instance = new Klass({
         allowedAttributes: {

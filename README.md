@@ -127,3 +127,4 @@ import { t } from 'kensington';
 * html to kensington transpiler?
 * conditionally allow attributes based on other attributes (multiple allowed only on inputs of type="file")
 * build dist for browser
+* make line break -> <br> optional

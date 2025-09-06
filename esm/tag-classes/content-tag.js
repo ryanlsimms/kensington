@@ -8,6 +8,7 @@ import { camelToKebab } from '../lib/text-utils.js';
 // TODO validate via "import elements from 'html-validate/dist/es/html5.js'";
 
 const INDENTATION_LEVEL = 2;
+const LINE_BREAK_REGEX = /\r?\n/g;
 
 export default class ContentTag {
   constructor({ allowedAttributes = {}, attributes, content, literalContent, namespaces, tagName, validationLevel }) {
@@ -22,7 +23,7 @@ export default class ContentTag {
     this.validationLevel = validationLevel;
     this.content = [].concat(content)
       .flat()
-      .filter(Boolean)
+      .filter(c => ![undefined, null, ''].includes(c))
       .map(c => (typeof c === 'string' && this.tagName !== 'script' ? he.encode(c) : c));
 
   }
@@ -89,6 +90,34 @@ export default class ContentTag {
     }
   }
 
+  validateContent() {
+    if (this.content.flat(99).some(c => !['string', 'number'].includes(typeof c) && !(c instanceof ContentTag))) {
+      throw new Error('Invalid content passed to tag');
+    }
+  }
+
+  contentIsShort() {
+    if (!this.content.length) {
+      return true;
+    }
+
+    if (this.content.length > 1) {
+      return false;
+    }
+
+    const [content] = this.content;
+
+    if (!['string', 'number'].includes(typeof content)) {
+      return false;
+    }
+
+    if (content.length > 100) {
+      return false;
+    }
+
+    return !LINE_BREAK_REGEX.test(content);
+  }
+
   attributeString() {
     let attrString = attributesFromObject(this.attributes, Object.keys(this.allowedAttributes));
     return attrString ? ` ${attrString}` : '';
@@ -99,17 +128,21 @@ export default class ContentTag {
     const endTag = `</${this.tagName}>`;
 
     if (this.literalContent) {
-      return [startTag, this.content, endTag].join('')
+      if (typeof this.content[0] !== 'string') {
+        throw new Error('Only string content may be passed to a literal tag');
+      }
+      return [startTag, this.content, endTag].join('');
+    }
+    this.validateContent();
+
+    if (this.contentIsShort()) {
+      return [startTag, ...this.content, endTag].join('');
     }
 
-    const content = this.content
-      .flat(8)
-      .map(node => (typeof node === 'string' ? node.replace(/\r?\n/g, '<br>\n') : node))
+    let content = this.content
+      .flat(99)
+      .map(node => (typeof node === 'string' ? node.replace(LINE_BREAK_REGEX, '<br>\n') : node))
       .join('\n');
-
-    if (!this.content.length || (this.content.length === 1 && typeof this.content[0] === 'string')) {
-      return [startTag, content, endTag].join('');
-    }
 
     return [startTag, indent(content, INDENTATION_LEVEL), endTag].join('\n');
   }
