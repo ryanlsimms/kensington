@@ -7,6 +7,7 @@ const attributesFromObject = require('../lib/attributes-from-object.js');
 const indent = require('../lib/indent.js');
 const showInvalid = require('../lib/show-invalid.js');
 const textUtils = require('../lib/text-utils.js');
+const literalTag = require('./literal-tag.js');
 
 // TODO validate via "import elements from 'html-validate/dist/es/html5.js'";
 
@@ -94,7 +95,11 @@ class ContentTag {
   }
 
   validateContent() {
-    if (this.content.flat(99).some(c => !['string', 'number'].includes(typeof c) && !(c instanceof ContentTag))) {
+    if (
+      this.content.flat(99).some(c => !['string', 'number'].includes(typeof c) &&
+        !(c instanceof ContentTag) &&
+        !(c instanceof literalTag.default))
+    ) {
       throw new Error('Invalid content passed to tag');
     }
   }
