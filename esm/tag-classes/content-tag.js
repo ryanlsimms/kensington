@@ -4,6 +4,7 @@ import attributesFromObject from '../lib/attributes-from-object.js';
 import indent from '../lib/indent.js';
 import showInvalid from '../lib/show-invalid.js';
 import { camelToKebab } from '../lib/text-utils.js';
+import LiteralTag from './literal-tag.js';
 
 // TODO validate via "import elements from 'html-validate/dist/es/html5.js'";
 
@@ -91,7 +92,11 @@ export default class ContentTag {
   }
 
   validateContent() {
-    if (this.content.flat(99).some(c => !['string', 'number'].includes(typeof c) && !(c instanceof ContentTag))) {
+    if (
+      this.content.flat(99).some(c => !['string', 'number'].includes(typeof c) &&
+        !(c instanceof ContentTag) &&
+        !(c instanceof LiteralTag))
+    ) {
       throw new Error('Invalid content passed to tag');
     }
   }
