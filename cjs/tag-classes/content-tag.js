@@ -20,9 +20,6 @@ class ContentTag {
     this.attributes = attributes;
     this.allowedAttributes = allowedAttributes;
     this.literalContent = literalContent;
-    if (literalContent && typeof content !== 'string') {
-      showInvalid.default('Only string content can be passed to a <script> tag', validationLevel);
-    }
     this.namespaces = namespaces;
     this.validationLevel = validationLevel;
     this.content = [].concat(content)
@@ -97,10 +94,12 @@ class ContentTag {
   validateContent() {
     if (
       this.content.flat(99).some(c => !['string', 'number'].includes(typeof c) &&
-        !(c instanceof ContentTag) &&
-        !(c instanceof literalTag.default))
+        (this.literalContent ||
+        (!(c instanceof ContentTag) &&
+        !(c instanceof literalTag.default)))
+      )
     ) {
-      throw new Error('Invalid content passed to tag');
+      throw new Error(`Invalid content passed to element \`${this.tagName}\``);
     }
   }
 
@@ -135,13 +134,10 @@ class ContentTag {
     const startTag = `<${this.tagName}${this.attributeString()}>`;
     const endTag = `</${this.tagName}>`;
 
+    this.validateContent();
     if (this.literalContent) {
-      if (typeof this.content[0] !== 'string') {
-        throw new Error('Only string content may be passed to a literal tag');
-      }
       return [startTag, this.content, endTag].join('');
     }
-    this.validateContent();
 
     if (this.contentIsShort()) {
       return [startTag, ...this.content, endTag].join('');

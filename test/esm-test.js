@@ -8,6 +8,8 @@ class MyMarkup extends Kensington {
 const t = new MyMarkup({ validationLevel: 'warn', additionalNamespaces: ['hx'] });
 
 try {
+  const textarea = t.textarea({}, '');
+  console.log(textarea.toString());
   const div = t.div({}, '').toString();
   const br = t.br();
   // const html = t.div('content', 'too much').toString();
