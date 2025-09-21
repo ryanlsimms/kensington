@@ -9,14 +9,14 @@ import LiteralTag from './literal-tag.js';
 // TODO validate via "import elements from 'html-validate/dist/es/html5.js'";
 
 const INDENTATION_LEVEL = 2;
-const LINE_BREAK_REGEX = /\r?\n/g;
+const LINE_BREAK_REGEX = /[\r\n]+/g;
 
 export default class ContentTag {
-  constructor({ allowedAttributes = {}, attributes, content, literalContent, namespaces, tagName, validationLevel }) {
+  constructor({ allowedAttributes = {}, attributes, content, contentIsLiteral, namespaces, tagName, validationLevel }) {
     this.tagName = tagName;
     this.attributes = attributes;
     this.allowedAttributes = allowedAttributes;
-    this.literalContent = literalContent;
+    this.contentIsLiteral = contentIsLiteral;
     this.namespaces = namespaces;
     this.validationLevel = validationLevel;
     this.content = [].concat(content)
@@ -91,7 +91,7 @@ export default class ContentTag {
   validateContent() {
     if (
       this.content.flat(99).some(c => !['string', 'number'].includes(typeof c) &&
-        (this.literalContent ||
+        (this.contentIsLiteral ||
         (!(c instanceof ContentTag) &&
         !(c instanceof LiteralTag)))
       )
@@ -132,7 +132,7 @@ export default class ContentTag {
     const endTag = `</${this.tagName}>`;
 
     this.validateContent();
-    if (this.literalContent) {
+    if (this.contentIsLiteral) {
       return [startTag, this.content, endTag].join('');
     }
 

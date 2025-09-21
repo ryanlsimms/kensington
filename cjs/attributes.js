@@ -731,20 +731,6 @@ const dfnAttributes = {};
 const dialogAttributes = {
   'open': Boolean
 };
-const discardAttributes = {
-  'autofocus': Boolean,
-  'begin': String,
-  'class': String,
-  'href': String,
-  'id': String,
-  'lang': String,
-  'requiredExtensions': String,
-  'role': String,
-  'style': String,
-  'systemLanguage': String,
-  'tabindex': String,
-  'xml:space': ["default","preserve"]
-};
 const divAttributes = {};
 const dlAttributes = {};
 const dtAttributes = {};
@@ -1707,7 +1693,9 @@ const patternAttributes = {
   'onchange': String,
   'onclick': String,
   'onclose': String,
+  'oncopy': String,
   'oncuechange': String,
+  'oncut': String,
   'ondblclick': String,
   'ondrag': String,
   'ondragend': String,
@@ -1738,6 +1726,7 @@ const patternAttributes = {
   'onmouseout': String,
   'onmouseover': String,
   'onmouseup': String,
+  'onpaste': String,
   'onpause': String,
   'onplay': String,
   'onplaying': String,
@@ -3021,7 +3010,6 @@ exports.descAttributes = descAttributes;
 exports.detailsAttributes = detailsAttributes;
 exports.dfnAttributes = dfnAttributes;
 exports.dialogAttributes = dialogAttributes;
-exports.discardAttributes = discardAttributes;
 exports.divAttributes = divAttributes;
 exports.dlAttributes = dlAttributes;
 exports.dtAttributes = dtAttributes;

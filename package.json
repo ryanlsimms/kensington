@@ -33,6 +33,9 @@
     "name": "Ryan Lee Simms",
     "url": "http://www.ryansimms.com"
   },
+  "scripts": {
+    "test": "node --test \"./test/*.js\""
+  },
   "dependencies": {
     "he": "^1.2.0"
   },

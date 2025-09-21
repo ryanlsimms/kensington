@@ -6,7 +6,6 @@ const contentTag = require('./tag-classes/content-tag.js');
 const htmlWithDoctypeTag = require('./tag-classes/html-with-doctype-tag.js');
 const literalTag = require('./tag-classes/literal-tag.js');
 const voidTag = require('./tag-classes/void-tag.js');
-const svgVoidTag = require('./tag-classes/svg-void-tag.js');
 const getPrototypeMethods = require('./lib/get-prototype-methods.js');
 const attributes = require('./attributes.js');
 const textUtils = require('./lib/text-utils.js');
@@ -47,19 +46,12 @@ class Kensington {
     return this.createTag(tagName, allowedAttributes, contentTag.default, { 
       includeGlobalAttributes: true,
       includeGlobalEvents: true,
-      literalContent: true,
+      contentIsLiteral: true,
     });
   }
 
   createSvgContentTag(tagName, allowedAttributes = {}) {
     return this.createTag(tagName, allowedAttributes, contentTag.default, { 
-      includeGlobalAttributes: false,
-      includeGlobalEvents: true,
-    });
-  }
-
-  createSvgVoidTag(tagName, allowedAttributes = {}) {
-    return this.createTag(tagName, allowedAttributes, svgVoidTag.default, { 
       includeGlobalAttributes: false,
       includeGlobalEvents: true,
     });
@@ -73,7 +65,7 @@ class Kensington {
   }
 
   createTag(tagName, allowedAttributes, Klass, options) {
-    const { includeGlobalAttributes, includeGlobalEvents, literalContent = false } = options;
+    const { includeGlobalAttributes, includeGlobalEvents, contentIsLiteral = false } = options;
     const invalidTypes = Object.values(allowedAttributes).filter(type => {
       return ![String, Number, Boolean, Function].includes(type) && !Array.isArray(type)
     });
@@ -107,7 +99,7 @@ class Kensington {
         attributes: attributes$1,
         content,
         namespaces: this.namespaces,
-        literalContent,
+        contentIsLiteral,
         tagName,
         validationLevel: this.validationLevel,
       });
@@ -135,9 +127,9 @@ class Kensington {
   a = this.createContentTag('a', attributes.aAttributes);
   abbr = this.createContentTag('abbr', attributes.abbrAttributes);
   address = this.createContentTag('address', attributes.addressAttributes);
-  animate = this.createSvgVoidTag('animate', attributes.animateAttributes);
-  animateMotion = this.createSvgVoidTag('animateMotion', attributes.animateMotionAttributes);
-  animateTransform = this.createSvgVoidTag('animateTransform', attributes.animateTransformAttributes);
+  animate = this.createSvgContentTag('animate', attributes.animateAttributes);
+  animateMotion = this.createSvgContentTag('animateMotion', attributes.animateMotionAttributes);
+  animateTransform = this.createSvgContentTag('animateTransform', attributes.animateTransformAttributes);
   area = this.createVoidTag('area', attributes.areaAttributes);
   article = this.createContentTag('article', attributes.articleAttributes);
   aside = this.createContentTag('aside', attributes.asideAttributes);
@@ -152,35 +144,34 @@ class Kensington {
   button = this.createContentTag('button', attributes.buttonAttributes);
   canvas = this.createContentTag('canvas', attributes.canvasAttributes);
   caption = this.createContentTag('caption', attributes.captionAttributes);
-  circle = this.createSvgVoidTag('circle', attributes.circleAttributes);
+  circle = this.createSvgContentTag('circle', attributes.circleAttributes);
   cite = this.createContentTag('cite', attributes.citeAttributes);
-  clipPath = this.createSvgVoidTag('clipPath', attributes.clipPathAttributes);
+  clipPath = this.createSvgContentTag('clipPath', attributes.clipPathAttributes);
   code = this.createContentTag('code', attributes.codeAttributes);
   col = this.createVoidTag('col', attributes.colAttributes);
   colgroup = this.createContentTag('colgroup', attributes.colgroupAttributes);
   data = this.createContentTag('data', attributes.dataAttributes);
   datalist = this.createContentTag('datalist', attributes.datalistAttributes);
   dd = this.createContentTag('dd', attributes.ddAttributes);
-  defs = this.createSvgVoidTag('defs', attributes.defsAttributes);
+  defs = this.createSvgContentTag('defs', attributes.defsAttributes);
   del = this.createContentTag('del', attributes.delAttributes);
-  desc = this.createSvgVoidTag('desc', attributes.descAttributes);
+  desc = this.createSvgContentTag('desc', attributes.descAttributes);
   details = this.createContentTag('details', attributes.detailsAttributes);
   dfn = this.createContentTag('dfn', attributes.dfnAttributes);
   dialog = this.createContentTag('dialog', attributes.dialogAttributes);
-  discard = this.createSvgVoidTag('discard', attributes.discardAttributes);
   div = this.createContentTag('div', attributes.divAttributes);
   dl = this.createContentTag('dl', attributes.dlAttributes);
   dt = this.createContentTag('dt', attributes.dtAttributes);
-  ellipse = this.createSvgVoidTag('ellipse', attributes.ellipseAttributes);
+  ellipse = this.createSvgContentTag('ellipse', attributes.ellipseAttributes);
   em = this.createContentTag('em', attributes.emAttributes);
   embed = this.createVoidTag('embed', attributes.embedAttributes);
   fieldset = this.createContentTag('fieldset', attributes.fieldsetAttributes);
   figcaption = this.createContentTag('figcaption', attributes.figcaptionAttributes);
   figure = this.createContentTag('figure', attributes.figureAttributes);
   footer = this.createContentTag('footer', attributes.footerAttributes);
-  foreignObject = this.createSvgVoidTag('foreignObject', attributes.foreignObjectAttributes);
+  foreignObject = this.createSvgContentTag('foreignObject', attributes.foreignObjectAttributes);
   form = this.createContentTag('form', attributes.formAttributes);
-  g = this.createSvgVoidTag('g', attributes.gAttributes);
+  g = this.createSvgContentTag('g', attributes.gAttributes);
   h1 = this.createContentTag('h1', attributes.h1Attributes);
   h2 = this.createContentTag('h2', attributes.h2Attributes);
   h3 = this.createContentTag('h3', attributes.h3Attributes);
@@ -194,7 +185,7 @@ class Kensington {
   html = this.createContentTag('html', attributes.htmlAttributes);
   i = this.createContentTag('i', attributes.iAttributes);
   iframe = this.createContentTag('iframe', attributes.iframeAttributes);
-  image = this.createSvgVoidTag('image', attributes.imageAttributes);
+  image = this.createSvgContentTag('image', attributes.imageAttributes);
   img = this.createVoidTag('img', attributes.imgAttributes);
   input = this.createVoidTag('input', attributes.inputAttributes);
   ins = this.createContentTag('ins', attributes.insAttributes);
@@ -202,19 +193,19 @@ class Kensington {
   label = this.createContentTag('label', attributes.labelAttributes);
   legend = this.createContentTag('legend', attributes.legendAttributes);
   li = this.createContentTag('li', attributes.liAttributes);
-  line = this.createSvgVoidTag('line', attributes.lineAttributes);
-  linearGradient = this.createSvgVoidTag('linearGradient', attributes.linearGradientAttributes);
+  line = this.createSvgContentTag('line', attributes.lineAttributes);
+  linearGradient = this.createSvgContentTag('linearGradient', attributes.linearGradientAttributes);
   link = this.createVoidTag('link', attributes.linkAttributes);
   main = this.createContentTag('main', attributes.mainAttributes);
   map = this.createContentTag('map', attributes.mapAttributes);
   mark = this.createContentTag('mark', attributes.markAttributes);
-  marker = this.createSvgVoidTag('marker', attributes.markerAttributes);
-  mask = this.createSvgVoidTag('mask', attributes.maskAttributes);
+  marker = this.createSvgContentTag('marker', attributes.markerAttributes);
+  mask = this.createSvgContentTag('mask', attributes.maskAttributes);
   menu = this.createContentTag('menu', attributes.menuAttributes);
   meta = this.createVoidTag('meta', attributes.metaAttributes);
-  metadata = this.createSvgVoidTag('metadata', attributes.metadataAttributes);
+  metadata = this.createSvgContentTag('metadata', attributes.metadataAttributes);
   meter = this.createContentTag('meter', attributes.meterAttributes);
-  mpath = this.createSvgVoidTag('mpath', attributes.mpathAttributes);
+  mpath = this.createSvgContentTag('mpath', attributes.mpathAttributes);
   nav = this.createContentTag('nav', attributes.navAttributes);
   noscript = this.createContentTag('noscript', attributes.noscriptAttributes);
   object = this.createContentTag('object', attributes.objectAttributes);
@@ -223,16 +214,16 @@ class Kensington {
   option = this.createContentTag('option', attributes.optionAttributes);
   output = this.createContentTag('output', attributes.outputAttributes);
   p = this.createContentTag('p', attributes.pAttributes);
-  path = this.createSvgVoidTag('path', attributes.pathAttributes);
-  pattern = this.createSvgVoidTag('pattern', attributes.patternAttributes);
+  path = this.createSvgContentTag('path', attributes.pathAttributes);
+  pattern = this.createSvgContentTag('pattern', attributes.patternAttributes);
   picture = this.createContentTag('picture', attributes.pictureAttributes);
-  polygon = this.createSvgVoidTag('polygon', attributes.polygonAttributes);
-  polyline = this.createSvgVoidTag('polyline', attributes.polylineAttributes);
+  polygon = this.createSvgContentTag('polygon', attributes.polygonAttributes);
+  polyline = this.createSvgContentTag('polyline', attributes.polylineAttributes);
   pre = this.createLiteralContentTag('pre', attributes.preAttributes);
   progress = this.createContentTag('progress', attributes.progressAttributes);
   q = this.createContentTag('q', attributes.qAttributes);
-  radialGradient = this.createSvgVoidTag('radialGradient', attributes.radialGradientAttributes);
-  rect = this.createSvgVoidTag('rect', attributes.rectAttributes);
+  radialGradient = this.createSvgContentTag('radialGradient', attributes.radialGradientAttributes);
+  rect = this.createSvgContentTag('rect', attributes.rectAttributes);
   rp = this.createContentTag('rp', attributes.rpAttributes);
   rt = this.createContentTag('rt', attributes.rtAttributes);
   ruby = this.createContentTag('ruby', attributes.rubyAttributes);
@@ -243,27 +234,27 @@ class Kensington {
   section = this.createContentTag('section', attributes.sectionAttributes);
   select = this.createContentTag('select', attributes.selectAttributes);
   selectedcontent = this.createVoidTag('selectedcontent', attributes.selectedcontentAttributes);
-  set = this.createSvgVoidTag('set', attributes.setAttributes);
+  set = this.createSvgContentTag('set', attributes.setAttributes);
   slot = this.createContentTag('slot', attributes.slotAttributes);
   small = this.createContentTag('small', attributes.smallAttributes);
   source = this.createVoidTag('source', attributes.sourceAttributes);
   span = this.createContentTag('span', attributes.spanAttributes);
-  stop = this.createSvgVoidTag('stop', attributes.stopAttributes);
+  stop = this.createSvgContentTag('stop', attributes.stopAttributes);
   strong = this.createContentTag('strong', attributes.strongAttributes);
   style = this.createContentTag('style', attributes.styleAttributes);
   sub = this.createContentTag('sub', attributes.subAttributes);
   summary = this.createContentTag('summary', attributes.summaryAttributes);
   sup = this.createContentTag('sup', attributes.supAttributes);
-  svg = this.createSvgVoidTag('svg', attributes.svgAttributes);
-  switch = this.createSvgVoidTag('switch', attributes.switchAttributes);
-  symbol = this.createSvgVoidTag('symbol', attributes.symbolAttributes);
+  svg = this.createSvgContentTag('svg', attributes.svgAttributes);
+  switch = this.createSvgContentTag('switch', attributes.switchAttributes);
+  symbol = this.createSvgContentTag('symbol', attributes.symbolAttributes);
   table = this.createContentTag('table', attributes.tableAttributes);
   tbody = this.createContentTag('tbody', attributes.tbodyAttributes);
   td = this.createContentTag('td', attributes.tdAttributes);
   template = this.createContentTag('template', attributes.templateAttributes);
-  text = this.createSvgVoidTag('text', attributes.textAttributes);
+  text = this.createSvgContentTag('text', attributes.textAttributes);
   textarea = this.createLiteralContentTag('textarea', attributes.textareaAttributes);
-  textPath = this.createSvgVoidTag('textPath', attributes.textPathAttributes);
+  textPath = this.createSvgContentTag('textPath', attributes.textPathAttributes);
   tfoot = this.createContentTag('tfoot', attributes.tfootAttributes);
   th = this.createContentTag('th', attributes.thAttributes);
   thead = this.createContentTag('thead', attributes.theadAttributes);
@@ -271,13 +262,13 @@ class Kensington {
   title = this.createContentTag('title', attributes.titleAttributes);
   tr = this.createContentTag('tr', attributes.trAttributes);
   track = this.createVoidTag('track', attributes.trackAttributes);
-  tspan = this.createSvgVoidTag('tspan', attributes.tspanAttributes);
+  tspan = this.createSvgContentTag('tspan', attributes.tspanAttributes);
   u = this.createContentTag('u', attributes.uAttributes);
   ul = this.createContentTag('ul', attributes.ulAttributes);
-  use = this.createSvgVoidTag('use', attributes.useAttributes);
+  use = this.createSvgContentTag('use', attributes.useAttributes);
   var = this.createContentTag('var', attributes.varAttributes);
   video = this.createContentTag('video', attributes.videoAttributes);
-  view = this.createSvgVoidTag('view', attributes.viewAttributes);
+  view = this.createSvgContentTag('view', attributes.viewAttributes);
   wbr = this.createVoidTag('wbr', attributes.wbrAttributes);
 }
 

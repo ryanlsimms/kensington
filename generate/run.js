@@ -43,8 +43,7 @@ htmlElements.forEach(el => {
 
 svgElements.forEach(svgEl => {
   if (!htmlElements.find(el => el.tag === svgEl.tag)) {
-    const tagType = svgEl.children.length ? 'SvgContent' : 'SvgVoid';
-    htmlElements.push({ ...svgEl, tagType });
+    htmlElements.push({ ...svgEl, tagType: 'SvgContent' });
     svgEl.attributes.forEach(svgAttr => {
       if (!attributes.find(attr => attr.attribute === svgAttr) && !globalEvents.includes(svgAttr)) {
         const found = svgAttributes.find(a => a.attribute === svgAttr);

@@ -9,7 +9,6 @@ export function buildMain({ elements }) {
 import HtmlWithDoctypeTag from './tag-classes/html-with-doctype-tag.js';
 import LiteralTag from './tag-classes/literal-tag.js';
 import VoidTag from './tag-classes/void-tag.js';
-import SvgVoidTag from './tag-classes/svg-void-tag.js';
 import getPrototypeMethods from './lib/get-prototype-methods.js';
 import * as allAttributes from './attributes.js';
 import { camelToKebab } from './lib/text-utils.js';
@@ -50,19 +49,12 @@ export default class Kensington {
     return this.createTag(tagName, allowedAttributes, ContentTag, { 
       includeGlobalAttributes: true,
       includeGlobalEvents: true,
-      literalContent: true,
+      contentIsLiteral: true,
     });
   }
 
   createSvgContentTag(tagName, allowedAttributes = {}) {
     return this.createTag(tagName, allowedAttributes, ContentTag, { 
-      includeGlobalAttributes: false,
-      includeGlobalEvents: true,
-    });
-  }
-
-  createSvgVoidTag(tagName, allowedAttributes = {}) {
-    return this.createTag(tagName, allowedAttributes, SvgVoidTag, { 
       includeGlobalAttributes: false,
       includeGlobalEvents: true,
     });
@@ -76,7 +68,7 @@ export default class Kensington {
   }
 
   createTag(tagName, allowedAttributes, Klass, options) {
-    const { includeGlobalAttributes, includeGlobalEvents, literalContent = false } = options;
+    const { includeGlobalAttributes, includeGlobalEvents, contentIsLiteral = false } = options;
     const invalidTypes = Object.values(allowedAttributes).filter(type => {
       return ![String, Number, Boolean, Function].includes(type) && !Array.isArray(type)
     });
@@ -110,7 +102,7 @@ export default class Kensington {
         attributes,
         content,
         namespaces: this.namespaces,
-        literalContent,
+        contentIsLiteral,
         tagName,
         validationLevel: this.validationLevel,
       });

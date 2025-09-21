@@ -20,7 +20,6 @@ export default function buildDeclarations({ elements, globalAttributes, globalEv
   return `import ContentTag from './esm/tag-classes/content-tag.js';
 import LiteralTag from './esm/tag-classes/literal-tag.js';
 import VoidTag from './esm/tag-classes/void-tag.js';
-import SvgVoidTag from './esm/tag-classes/svg-void-tag.js';
 
 export interface NameSpaceAttributes {
   [key: \`\${"data" | "aria"}\${string}\`]: string | object
@@ -40,7 +39,7 @@ export const globalAttributes: GlobalAttributes;
 export const globalEvents: GlobalEvents;
 ${elements.map(e => `export const ${e.attributesName}: ${e.attributesTypeName}`).join('\n')}
 
-type ContentType = ContentTag | VoidTag | SvgVoidTag | LiteralTag | string | number;
+type ContentType = ContentTag | VoidTag | LiteralTag | string | number;
 export type Content = ContentType | ContentType[];
 type UniversalAttributes = NameSpaceAttributes | GlobalAttributes | GlobalEvents;
 type CustomTagArguments<T = null> = [attributes?: T | UniversalAttributes, content?: Content] | [content: Content];

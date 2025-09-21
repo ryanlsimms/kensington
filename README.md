@@ -128,3 +128,6 @@ import { t } from 'kensington';
 * conditionally allow attributes based on other attributes (multiple allowed only on inputs of type="file")
 * build dist for browser
 * make line break -> <br> optional
+* pass logger to constructor instead of console.log
+* better format css
+* configurable indentation level

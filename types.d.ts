@@ -1,7 +1,6 @@
 import ContentTag from './esm/tag-classes/content-tag.js';
 import LiteralTag from './esm/tag-classes/literal-tag.js';
 import VoidTag from './esm/tag-classes/void-tag.js';
-import SvgVoidTag from './esm/tag-classes/svg-void-tag.js';
 
 export interface NameSpaceAttributes {
   [key: `${"data" | "aria"}${string}`]: string | object
@@ -771,21 +770,6 @@ type DfnAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type DialogAttributes = {
   'open'?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
-
-type DiscardAttributes = {
-  'autofocus'?: boolean;
-  'begin'?: string;
-  'class'?: string;
-  'href'?: string;
-  'id'?: string;
-  'lang'?: string;
-  'requiredExtensions'?: string;
-  'role'?: string;
-  'style'?: string;
-  'systemLanguage'?: string;
-  'tabindex'?: string;
-  'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type DivAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -1808,7 +1792,9 @@ type PatternAttributes = {
   'onchange'?: string;
   'onclick'?: string;
   'onclose'?: string;
+  'oncopy'?: string;
   'oncuechange'?: string;
+  'oncut'?: string;
   'ondblclick'?: string;
   'ondrag'?: string;
   'ondragend'?: string;
@@ -1839,6 +1825,7 @@ type PatternAttributes = {
   'onmouseout'?: string;
   'onmouseover'?: string;
   'onmouseup'?: string;
+  'onpaste'?: string;
   'onpause'?: string;
   'onplay'?: string;
   'onplaying'?: string;
@@ -3178,7 +3165,6 @@ export const descAttributes: DescAttributes
 export const detailsAttributes: DetailsAttributes
 export const dfnAttributes: DfnAttributes
 export const dialogAttributes: DialogAttributes
-export const discardAttributes: DiscardAttributes
 export const divAttributes: DivAttributes
 export const dlAttributes: DlAttributes
 export const dtAttributes: DtAttributes
@@ -3291,7 +3277,7 @@ export const videoAttributes: VideoAttributes
 export const viewAttributes: ViewAttributes
 export const wbrAttributes: WbrAttributes
 
-type ContentType = ContentTag | VoidTag | SvgVoidTag | LiteralTag | string | number;
+type ContentType = ContentTag | VoidTag | LiteralTag | string | number;
 export type Content = ContentType | ContentType[];
 type UniversalAttributes = NameSpaceAttributes | GlobalAttributes | GlobalEvents;
 type CustomTagArguments<T = null> = [attributes?: T | UniversalAttributes, content?: Content] | [content: Content];
@@ -3381,8 +3367,6 @@ export default class Kensington {
   dfn(content?: Content): ContentTag;
   dialog(attributes: DialogAttributes, content?: Content): ContentTag;
   dialog(content?: Content): ContentTag;
-  discard(attributes: DiscardAttributes, content?: Content): ContentTag;
-  discard(content?: Content): ContentTag;
   div(attributes: DivAttributes, content?: Content): ContentTag;
   div(content?: Content): ContentTag;
   dl(attributes: DlAttributes, content?: Content): ContentTag;
