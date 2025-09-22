@@ -400,7 +400,7 @@ export const animateTransformAttributes = {
   'systemLanguage': String,
   'tabindex': String,
   'to': String,
-  'type': String,
+  'type': ["translate","scale","rotate","skewX","skewY"],
   'values': String,
   'xml:space': ["default","preserve"]
 };
@@ -828,7 +828,7 @@ export const footerAttributes = {};
 export const foreignObjectAttributes = {
   'autofocus': Boolean,
   'class': String,
-  'height': String,
+  'height': [Number,String],
   'id': String,
   'lang': String,
   'oncancel': String,
@@ -896,7 +896,7 @@ export const foreignObjectAttributes = {
   'style': String,
   'systemLanguage': String,
   'tabindex': String,
-  'width': String,
+  'width': [Number,String],
   'x': [Number,String],
   'xml:space': ["default","preserve"],
   'y': [Number,String]
@@ -1012,7 +1012,7 @@ export const imageAttributes = {
   'autofocus': Boolean,
   'class': String,
   'crossorigin': String,
-  'height': String,
+  'height': [Number,String],
   'href': String,
   'id': String,
   'lang': String,
@@ -1082,7 +1082,7 @@ export const imageAttributes = {
   'style': String,
   'systemLanguage': String,
   'tabindex': String,
-  'width': String,
+  'width': [Number,String],
   'x': [Number,String],
   'xlink:href': String,
   'xlink:title': String,
@@ -2001,7 +2001,7 @@ export const radialGradientAttributes = {
 export const rectAttributes = {
   'autofocus': Boolean,
   'class': String,
-  'height': String,
+  'height': [Number,String],
   'id': String,
   'lang': String,
   'oncancel': String,
@@ -2072,7 +2072,7 @@ export const rectAttributes = {
   'style': String,
   'systemLanguage': String,
   'tabindex': String,
-  'width': String,
+  'width': [Number,String],
   'x': [Number,String],
   'xml:space': ["default","preserve"],
   'y': [Number,String]
@@ -2287,7 +2287,7 @@ export const supAttributes = {};
 export const svgAttributes = {
   'autofocus': Boolean,
   'class': String,
-  'height': String,
+  'height': [Number,String],
   'id': String,
   'lang': String,
   'onabort': String,
@@ -2360,7 +2360,7 @@ export const svgAttributes = {
   'tabindex': String,
   'transform': String,
   'viewBox': String,
-  'width': String,
+  'width': [Number,String],
   'x': String,
   'xml:space': ["default","preserve"],
   'y': String

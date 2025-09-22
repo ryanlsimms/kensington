@@ -412,7 +412,7 @@ type AnimateTransformAttributes = {
   'systemLanguage'?: string;
   'tabindex'?: string;
   'to'?: string;
-  'type'?: string;
+  'type'?: "translate" | "scale" | "rotate" | "skewX" | "skewY";
   'values'?: string;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -880,7 +880,7 @@ type FooterAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 type ForeignObjectAttributes = {
   'autofocus'?: boolean;
   'class'?: string;
-  'height'?: string;
+  'height'?: number | string;
   'id'?: string;
   'lang'?: string;
   'oncancel'?: string;
@@ -948,7 +948,7 @@ type ForeignObjectAttributes = {
   'style'?: string;
   'systemLanguage'?: string;
   'tabindex'?: string;
-  'width'?: string;
+  'width'?: number | string;
   'x'?: number | string;
   'xml:space'?: "default" | "preserve";
   'y'?: number | string;
@@ -1081,7 +1081,7 @@ type ImageAttributes = {
   'autofocus'?: boolean;
   'class'?: string;
   'crossorigin'?: string;
-  'height'?: string;
+  'height'?: number | string;
   'href'?: string;
   'id'?: string;
   'lang'?: string;
@@ -1151,7 +1151,7 @@ type ImageAttributes = {
   'style'?: string;
   'systemLanguage'?: string;
   'tabindex'?: string;
-  'width'?: string;
+  'width'?: number | string;
   'x'?: number | string;
   'xlink:href'?: string;
   'xlink:title'?: string;
@@ -2109,7 +2109,7 @@ type RadialGradientAttributes = {
 type RectAttributes = {
   'autofocus'?: boolean;
   'class'?: string;
-  'height'?: string;
+  'height'?: number | string;
   'id'?: string;
   'lang'?: string;
   'oncancel'?: string;
@@ -2180,7 +2180,7 @@ type RectAttributes = {
   'style'?: string;
   'systemLanguage'?: string;
   'tabindex'?: string;
-  'width'?: string;
+  'width'?: number | string;
   'x'?: number | string;
   'xml:space'?: "default" | "preserve";
   'y'?: number | string;
@@ -2417,7 +2417,7 @@ type SupAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 type SvgAttributes = {
   'autofocus'?: boolean;
   'class'?: string;
-  'height'?: string;
+  'height'?: number | string;
   'id'?: string;
   'lang'?: string;
   'onabort'?: string;
@@ -2490,7 +2490,7 @@ type SvgAttributes = {
   'tabindex'?: string;
   'transform'?: string;
   'viewBox'?: string;
-  'width'?: string;
+  'width'?: number | string;
   'x'?: string;
   'xml:space'?: "default" | "preserve";
   'y'?: string;

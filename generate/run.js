@@ -27,6 +27,8 @@ const headingElement = htmlElements.find(e => e.tag === 'h1, h2, h3, h4, h5, h6'
   tag,
 }));
 
+attributes.push(...svgAttributes);
+
 htmlElements.forEach(el => {
   el.tagType = el.children[0] === 'empty' ? 'Void' : 'Content';
   el.attributes.splice(el.attributes.indexOf('globals'), 1);
@@ -44,20 +46,6 @@ htmlElements.forEach(el => {
 svgElements.forEach(svgEl => {
   if (!htmlElements.find(el => el.tag === svgEl.tag)) {
     htmlElements.push({ ...svgEl, tagType: 'SvgContent' });
-    svgEl.attributes.forEach(svgAttr => {
-      if (!attributes.find(attr => attr.attribute === svgAttr) && !globalEvents.includes(svgAttr)) {
-        const found = svgAttributes.find(a => a.attribute === svgAttr);
-        if (found) {
-          attributes.push(found)
-        } else {
-          attributes.push({
-            attribute: svgAttr,
-            elements: [],
-            value: [],
-          })
-        }
-      }
-    })
   }
 });
 
@@ -98,7 +86,7 @@ function getAttributeType(attr) {
   if (values[0] === '<number>') {
     return ['Number', 'number']
   }
-  if (['<length>', '<coordinate>', '<integer>', '<long>'].includes(values[0])) {
+  if (['<length>', '<coordinate>', '<integer>', '<long>', '<length-percentage>'].includes(values[0])) {
     return ['[Number,String]', 'number | string']
   }
   if (values.length && values.every(value => /^".*"$/.test(value))) {

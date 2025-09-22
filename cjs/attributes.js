@@ -401,7 +401,7 @@ const animateTransformAttributes = {
   'systemLanguage': String,
   'tabindex': String,
   'to': String,
-  'type': String,
+  'type': ["translate","scale","rotate","skewX","skewY"],
   'values': String,
   'xml:space': ["default","preserve"]
 };
@@ -829,7 +829,7 @@ const footerAttributes = {};
 const foreignObjectAttributes = {
   'autofocus': Boolean,
   'class': String,
-  'height': String,
+  'height': [Number,String],
   'id': String,
   'lang': String,
   'oncancel': String,
@@ -897,7 +897,7 @@ const foreignObjectAttributes = {
   'style': String,
   'systemLanguage': String,
   'tabindex': String,
-  'width': String,
+  'width': [Number,String],
   'x': [Number,String],
   'xml:space': ["default","preserve"],
   'y': [Number,String]
@@ -1013,7 +1013,7 @@ const imageAttributes = {
   'autofocus': Boolean,
   'class': String,
   'crossorigin': String,
-  'height': String,
+  'height': [Number,String],
   'href': String,
   'id': String,
   'lang': String,
@@ -1083,7 +1083,7 @@ const imageAttributes = {
   'style': String,
   'systemLanguage': String,
   'tabindex': String,
-  'width': String,
+  'width': [Number,String],
   'x': [Number,String],
   'xlink:href': String,
   'xlink:title': String,
@@ -2002,7 +2002,7 @@ const radialGradientAttributes = {
 const rectAttributes = {
   'autofocus': Boolean,
   'class': String,
-  'height': String,
+  'height': [Number,String],
   'id': String,
   'lang': String,
   'oncancel': String,
@@ -2073,7 +2073,7 @@ const rectAttributes = {
   'style': String,
   'systemLanguage': String,
   'tabindex': String,
-  'width': String,
+  'width': [Number,String],
   'x': [Number,String],
   'xml:space': ["default","preserve"],
   'y': [Number,String]
@@ -2288,7 +2288,7 @@ const supAttributes = {};
 const svgAttributes = {
   'autofocus': Boolean,
   'class': String,
-  'height': String,
+  'height': [Number,String],
   'id': String,
   'lang': String,
   'onabort': String,
@@ -2361,7 +2361,7 @@ const svgAttributes = {
   'tabindex': String,
   'transform': String,
   'viewBox': String,
-  'width': String,
+  'width': [Number,String],
   'x': String,
   'xml:space': ["default","preserve"],
   'y': String
