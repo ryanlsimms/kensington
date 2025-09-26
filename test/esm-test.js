@@ -2,7 +2,6 @@ import Kensington, { t } from 'kensington';
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
 
-
 describe('other', () => {
   it.todo('destructure tags');
   it.todo('indentation level');
@@ -56,6 +55,17 @@ describe('attributes', () => {
     assert.throws(() => tt.div({ badAttribute: 'value' }));
   });
   it.todo('throws with invalid attribute value');
+
+  describe('validation', () => {
+    it('by function', () => {
+      class Custom extends Kensington {
+        customElement = this.createCustomTag('custom-element', { 'custom-attr': val => (val > 5) })
+      }
+      const tt = new Custom({ validationLevel: 'error' });
+      assert.throws(() => tt.customElement({ customAttr: 4 }));
+      assert.doesNotThrow(() => tt.customElement({ customAttr: 6 }))
+    });
+  })
 });
 
 describe('additional namespaces', () => {

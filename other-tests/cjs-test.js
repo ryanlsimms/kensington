@@ -5,4 +5,6 @@ const t = new Kensington({ validationLevel: 'off' });
 
 const html = t.a({ sd: 'something' });
 const html2 = t.div({ id: 'something' });
-console.log(html.toString());
+const textarea = t.div(t.div(t.textarea('here is a comment.\r\nhere is another')));
+console.log(textarea.toString());
+

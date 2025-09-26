@@ -22,7 +22,7 @@ export default class Kensington {
     this.namespaces = ['data', 'aria'].concat(additionalNamespaces);
     this.validationLevel = validationLevel;
   }
-  
+
   createCustomTag(tagName, allowedAttributes = {}) {
     const kebabAttributes = Object.fromEntries(Object.entries(allowedAttributes).map(([k,v]) => [camelToKebab(k), v]))
     return this.createTag(tagName, kebabAttributes, ContentTag, {
@@ -46,7 +46,7 @@ export default class Kensington {
   }
 
   createLiteralContentTag(tagName, allowedAttributes = {}) {
-    return this.createTag(tagName, allowedAttributes, ContentTag, { 
+    return this.createTag(tagName, allowedAttributes, ContentTag, {
       includeGlobalAttributes: true,
       includeGlobalEvents: true,
       contentIsLiteral: true,
@@ -54,14 +54,14 @@ export default class Kensington {
   }
 
   createSvgContentTag(tagName, allowedAttributes = {}) {
-    return this.createTag(tagName, allowedAttributes, ContentTag, { 
+    return this.createTag(tagName, allowedAttributes, ContentTag, {
       includeGlobalAttributes: false,
       includeGlobalEvents: true,
     });
   }
 
   createVoidTag(tagName, allowedAttributes = {}) {
-    return this.createTag(tagName, allowedAttributes, VoidTag, { 
+    return this.createTag(tagName, allowedAttributes, VoidTag, {
       includeGlobalAttributes: true,
       includeGlobalEvents: true,
     });

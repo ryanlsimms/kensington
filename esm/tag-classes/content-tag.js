@@ -3,13 +3,12 @@ import he from 'he';
 import attributesFromObject from '../lib/attributes-from-object.js';
 import indent from '../lib/indent.js';
 import showInvalid from '../lib/show-invalid.js';
-import { camelToKebab } from '../lib/text-utils.js';
+import { camelToKebab, LINE_BREAK_REGEX } from '../lib/text-utils.js';
 import LiteralTag from './literal-tag.js';
 
 // TODO validate via "import elements from 'html-validate/dist/es/html5.js'";
 
 const INDENTATION_LEVEL = 2;
-const LINE_BREAK_REGEX = /[\r\n]+/g;
 
 export default class ContentTag {
   constructor({ allowedAttributes = {}, attributes, content, contentIsLiteral, namespaces, tagName, validationLevel }) {

@@ -131,3 +131,4 @@ import { t } from 'kensington';
 * pass logger to constructor instead of console.log
 * better format css
 * configurable indentation level
+* use private class methods

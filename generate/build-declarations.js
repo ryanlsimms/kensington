@@ -45,7 +45,7 @@ type UniversalAttributes = NameSpaceAttributes | GlobalAttributes | GlobalEvents
 type CustomTagArguments<T = null> = [attributes?: T | UniversalAttributes, content?: Content] | [content: Content];
 export type ContentMethod<T = null> = (...args: CustomTagArguments<T>) => ContentTag;
 type PrimitiveConstructor = StringConstructor | NumberConstructor | BooleanConstructor;
-type Primitive = string | number | boolean;
+type Primitive = string | number | boolean | function;
 type AttributeValue = PrimitiveConstructor | Primitive | (PrimitiveConstructor | Primitive)[];
 
 export default class Kensington {
