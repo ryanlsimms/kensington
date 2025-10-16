@@ -3,43 +3,88 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert';
 
 describe('other', () => {
-  it.todo('destructure tags');
+  it('destructure tags', () => {
+    const { div } = t;
+    assert.strictEqual(div().toString(), '<div></div>');
+  });
   it.todo('indentation level');
 });
 
 describe('content tag', () => {
   it.todo('generates tag', () => {
-    console.log(t.svg(t.use({ href: '/images/calendar-icon.svg' })).toString())
     assert.strictEqual(t.div().toString(), '<div></div>');
   });
-  it.todo('ignores empty content');
-  it.todo('encodes content');
-  it.todo('short content');
-  it.todo('converts line breaks to br tags');
+  it('ignores empty content', () => {
+    assert.strictEqual(t.div('').toString(), '<div></div>');
+    assert.strictEqual(t.div(null).toString(), '<div></div>');
+    assert.strictEqual(t.div([]).toString(), '<div></div>');
+    assert.strictEqual(t.div('content\n\n').toString(), '<div>\n  content<br>\n</div>'); // todo remove empty last line
+  });
+  it('encodes content', () => {
+    assert.strictEqual(t.div('<div></div>').toString(), '<div>&#x3C;div&#x3E;&#x3C;/div&#x3E;</div>');
+  });
+  it('short content', () => {
+    assert.strictEqual(t.div('hi').toString(), '<div>hi</div>');
+  });
+  it('converts line breaks to br tags', () => {
+    assert.strictEqual(t.div('line1\nline2').toString(), '<div>\n  line1<br>\n  line2\n</div>');
+  });
+  it('literal content', () => {
+    assert.strictEqual(t.div(t.literal('<div></div>')).toString(), '<div>\n  <div></div>\n</div>');
+  });
+  it('literal script content', () => {
+    assert.throws(() => t.div(t.literal('<script></script>')).toString());
+    assert.strictEqual(t.div(t.unsafeLiteral('<script>console.log("hello");</script>')).toString(), '<div>\n  <script>console.log("hello");</script>\n</div>');
+  });
 });
 
 describe('literal tag', () => {
-  it.todo('does not encode script tag');
-  it.todo('encodes pre tag');
+  it('does not encode script tag', () => {
+    assert.strictEqual(
+      t.body(t.script(`const x = "<div></div>";\nconsole.log(x);`)).toString(),
+      `<body>\n  <script>const x = "<div></div>";\n  console.log(x);</script>\n</body>`
+    )
+  });
+  it('encodes pre tag', () => {
+    assert.strictEqual(
+      t.div(t.pre('<div></div')).toString(),
+      `<div>\n  <pre>&#x3C;div&#x3E;&#x3C;/div</pre>\n</div>`,
+    );
+  });
+  it('does not add whitespace', () => {
+    assert.strictEqual(
+      t.div(t.div(t.textarea('line1\r\nline2'))).toString(),
+      `<div>\n  <div>\n    <textarea>line1\nline2</textarea>\n  </div>\n</div>`,
+    );
+    assert.strictEqual(
+      t.div(t.div(t.pre('line1\r\nline2'))).toString(),
+      `<div>\n  <div>\n    <pre>line1\nline2</pre>\n  </div>\n</div>`,
+    );
+  });
 });
 
 
 describe('void tag', () => {
-
+  it('renders properly', () => {
+    assert.strictEqual(t.hr().toString(), '<hr>');
+  })
+  it('does not allow content', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => tt.hr({}, 'I am not allowed'));
+  })
 });
-
-describe('svg tag', () => {
-
-});
-
-describe('math tags', () => {
-
-})
 
 describe('validates arguments', () => {
-  it.todo('allows only content');
-  it.todo('allows only attributes');
-  it.todo('allows both attributes and content');
+  it('allows only content', () => {
+    assert.strictEqual(t.div('content').toString(), '<div>content</div>');
+    assert.strictEqual(t.div(['content']).toString(), '<div>content</div>');
+  });
+  it('allows only attributes', () => {
+    assert.strictEqual(t.div({ id: 'abc' }).toString(), '<div id="abc"></div>');
+  });
+  it('allows both attributes and content', () => {
+    assert.strictEqual(t.div({ id: 'abc' }, 'content').toString(), '<div id="abc">content</div>');
+  });
   it.todo('does not allow multiple attribute arguments');
   it.todo('does not allow multiple content arguments');
   it.todo('does not allow three arguments');
@@ -49,6 +94,7 @@ describe('validates arguments', () => {
 describe('attributes', () => {
   it.todo('converts camelCase');
   it.todo('converts nested');
+  it.todo('converts numbers');
   it.todo('data and aria');
   it('throws with invalid attributes', () => {
     const tt = new Kensington({ validationLevel: 'error' });
@@ -65,6 +111,8 @@ describe('attributes', () => {
       assert.throws(() => tt.customElement({ customAttr: 4 }));
       assert.doesNotThrow(() => tt.customElement({ customAttr: 6 }))
     });
+
+    it.todo('id starts with number')
   })
 });
 

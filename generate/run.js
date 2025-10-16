@@ -162,11 +162,11 @@ fs.writeFileSync(path.resolve(import.meta.dirname, '../esm/kensington.js'), kens
 fs.writeFileSync(path.resolve(import.meta.dirname, '../esm/attributes.js'), attributesContent, 'utf8');
 
 const result = await rollup({
-  input: ['./esm/kensington.js'],
+  input: ['../esm/kensington.js'],
   external: ['he'],
 });
 await result.write({
-  dir: './cjs',
+  dir: '../cjs',
   format: 'cjs',
   exports: 'named',
   preserveModules: true,

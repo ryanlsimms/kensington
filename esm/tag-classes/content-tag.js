@@ -141,7 +141,14 @@ export default class ContentTag {
 
     let content = this.content
       .flat(99)
-      .map(node => (typeof node === 'string' ? node.replace(LINE_BREAK_REGEX, '<br>\n') : node))
+      .map(node => {
+        if (typeof node !== 'string') {
+          return node
+        }
+        let str = node.replaceAll(LINE_BREAK_REGEX, '<br>\n');
+        str = str.replace(/\n$/, '');
+        return str;
+      })
       .join('\n');
 
     return [startTag, indent(content, INDENTATION_LEVEL), endTag].join('\n');

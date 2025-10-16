@@ -132,3 +132,4 @@ import { t } from 'kensington';
 * better format css
 * configurable indentation level
 * use private class methods
+* stress testing with large data sets

@@ -19,7 +19,7 @@ class Kensington {
     this.namespaces = ['data', 'aria'].concat(additionalNamespaces);
     this.validationLevel = validationLevel;
   }
-  
+
   createCustomTag(tagName, allowedAttributes = {}) {
     const kebabAttributes = Object.fromEntries(Object.entries(allowedAttributes).map(([k,v]) => [textUtils.camelToKebab(k), v]));
     return this.createTag(tagName, kebabAttributes, contentTag.default, {
@@ -43,7 +43,7 @@ class Kensington {
   }
 
   createLiteralContentTag(tagName, allowedAttributes = {}) {
-    return this.createTag(tagName, allowedAttributes, contentTag.default, { 
+    return this.createTag(tagName, allowedAttributes, contentTag.default, {
       includeGlobalAttributes: true,
       includeGlobalEvents: true,
       contentIsLiteral: true,
@@ -51,14 +51,14 @@ class Kensington {
   }
 
   createSvgContentTag(tagName, allowedAttributes = {}) {
-    return this.createTag(tagName, allowedAttributes, contentTag.default, { 
+    return this.createTag(tagName, allowedAttributes, contentTag.default, {
       includeGlobalAttributes: false,
       includeGlobalEvents: true,
     });
   }
 
   createVoidTag(tagName, allowedAttributes = {}) {
-    return this.createTag(tagName, allowedAttributes, voidTag.default, { 
+    return this.createTag(tagName, allowedAttributes, voidTag.default, {
       includeGlobalAttributes: true,
       includeGlobalEvents: true,
     });
@@ -67,7 +67,7 @@ class Kensington {
   createTag(tagName, allowedAttributes, Klass, options) {
     const { includeGlobalAttributes, includeGlobalEvents, contentIsLiteral = false } = options;
     const invalidTypes = Object.values(allowedAttributes).filter(type => {
-      return ![String, Number, Boolean, Function].includes(type) && !Array.isArray(type)
+      return ![String, Number, Boolean].includes(type) && !Array.isArray(type) && typeof type !== 'function';
     });
     if (invalidTypes.length) {
       showInvalid.default(`invalid types for attribute(s): ${invalidTypes.join(', ')} given for ${tagName}`, this.validationLevel);

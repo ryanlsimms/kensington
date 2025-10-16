@@ -70,7 +70,7 @@ export default class Kensington {
   createTag(tagName, allowedAttributes, Klass, options) {
     const { includeGlobalAttributes, includeGlobalEvents, contentIsLiteral = false } = options;
     const invalidTypes = Object.values(allowedAttributes).filter(type => {
-      return ![String, Number, Boolean, Function].includes(type) && !Array.isArray(type)
+      return ![String, Number, Boolean].includes(type) && !Array.isArray(type) && typeof type !== 'function';
     });
     if (invalidTypes.length) {
       showInvalid(\`invalid types for attribute(s): \${invalidTypes.join(', ')} given for \${tagName}\`, this.validationLevel);

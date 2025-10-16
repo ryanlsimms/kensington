@@ -12,7 +12,6 @@ const literalTag = require('./literal-tag.js');
 // TODO validate via "import elements from 'html-validate/dist/es/html5.js'";
 
 const INDENTATION_LEVEL = 2;
-const LINE_BREAK_REGEX = /[\r\n]+/g;
 
 class ContentTag {
   constructor({ allowedAttributes = {}, attributes, content, contentIsLiteral, namespaces, tagName, validationLevel }) {
@@ -122,7 +121,7 @@ class ContentTag {
       return false;
     }
 
-    return !LINE_BREAK_REGEX.test(content);
+    return !textUtils.LINE_BREAK_REGEX.test(content);
   }
 
   attributeString() {
@@ -145,7 +144,14 @@ class ContentTag {
 
     let content = this.content
       .flat(99)
-      .map(node => (typeof node === 'string' ? node.replace(LINE_BREAK_REGEX, '<br>\n') : node))
+      .map(node => {
+        if (typeof node !== 'string') {
+          return node
+        }
+        let str = node.replaceAll(textUtils.LINE_BREAK_REGEX, '<br>\n');
+        str = str.replace(/\n$/, '');
+        return str;
+      })
       .join('\n');
 
     return [startTag, indent.default(content, INDENTATION_LEVEL), endTag].join('\n');

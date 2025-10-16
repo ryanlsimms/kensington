@@ -3297,7 +3297,7 @@ export default class Kensington {
   literal(str: string): LiteralTag
 
   unsafeLiteral(str: string): LiteralTag
-
+  
   htmlWithDocType(attributes: HtmlAttributes, content?: Content): ContentTag;
   htmlWithDocType(content?: Content): ContentTag;
 
