@@ -7,11 +7,13 @@ describe('other', () => {
     const { div } = t;
     assert.strictEqual(div().toString(), '<div></div>');
   });
-  it.todo('indentation level');
+  it('indentation level', () => {
+    assert.strictEqual(t.div(t.div(t.div())).toString(), '<div>\n  <div>\n    <div></div>\n  </div>\n</div>');
+  });
 });
 
 describe('content tag', () => {
-  it.todo('generates tag', () => {
+  it('generates tag', () => {
     assert.strictEqual(t.div().toString(), '<div></div>');
   });
   it('ignores empty content', () => {
@@ -85,22 +87,41 @@ describe('validates arguments', () => {
   it('allows both attributes and content', () => {
     assert.strictEqual(t.div({ id: 'abc' }, 'content').toString(), '<div id="abc">content</div>');
   });
-  it.todo('does not allow multiple attribute arguments');
-  it.todo('does not allow multiple content arguments');
-  it.todo('does not allow three arguments');
-  it.todo('does not allow invalid content');
+  it('does not allow multiple attribute arguments', () => {
+    assert.throws(() => t.div({ class: 'something' }, { id: 'something' }).toString());
+  });
+  it('does not allow multiple content arguments', () => {
+    assert.throws(() => t.div('content', t.div('content')).toString());
+  });
+  it('does not allow three arguments', () => {
+    assert.throws(() => t.div({ id: 'something' }, t.div('content'), t.div('invalid argument')).toString());
+  });
+  it('does not allow invalid content', () => {
+    assert.throws(() => t.div(new Date()).toString());
+  });
 });
 
 describe('attributes', () => {
-  it.todo('converts camelCase');
-  it.todo('converts nested');
-  it.todo('converts numbers');
-  it.todo('data and aria');
+  it('converts camelCase', () => {
+    assert.strictEqual(t.div({ dataBsTarget: 'abc' }).toString(), '<div data-bs-target="abc"></div>');
+  });
+  it('converts nested', () => {
+    assert.strictEqual(t.div({ data: { bs: { target: 'abc' } } }).toString(), '<div data-bs-target="abc"></div>');
+  });
+  it('converts numbers', () => {
+    assert.strictEqual(t.td({ colspan: 3 }).toString(), '<td colspan="3"></td>');
+  });
+  it('aria', () => {
+    assert.strictEqual(t.div({ ariaLabel: 'abc' }).toString(), '<div aria-label="abc"></div>');
+  });
   it('throws with invalid attributes', () => {
     const tt = new Kensington({ validationLevel: 'error' });
     assert.throws(() => tt.div({ badAttribute: 'value' }));
   });
-  it.todo('throws with invalid attribute value');
+  it('throws with invalid attribute value', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => tt.form({ method: 'delete' }).toString());
+  });
 
   describe('validation', () => {
     it('by function', () => {
@@ -108,26 +129,71 @@ describe('attributes', () => {
         customElement = this.createCustomTag('custom-element', { 'custom-attr': val => (val > 5) })
       }
       const tt = new Custom({ validationLevel: 'error' });
-      assert.throws(() => tt.customElement({ customAttr: 4 }));
-      assert.doesNotThrow(() => tt.customElement({ customAttr: 6 }))
+      assert.throws(() => tt.customElement({ customAttr: 4 }).toString());
+      assert.doesNotThrow(() => tt.customElement({ customAttr: 6 }).toString())
     });
 
-    it.todo('id starts with number')
+    it('id starts with number', () => {
+      const tt = new Kensington({ validationLevel: 'error' });
+      assert.throws(() => tt.div({ id: '123-abc' }).toString());
+    });
   })
 });
 
 describe('additional namespaces', () => {
-  it.todo('allows extra namespaces')
+  it('allows extra namespaces', () => {
+    const tt = new Kensington({ validationLevel: 'error', additionalNamespaces: 'htmx' });
+    assert.strictEqual(tt.div({ htmxTitle: 'abc' }).toString(), '<div htmx-title="abc"></div>');
+  })
 });
 
 describe('custom instance', () => {
-  it.todo('validationLevel')
+  it('validationLevel', (test, done) => {
+    let callCount = 0;
+    const errorMessage = 'invalid attribute `id="123-abc"` given for element `div`';
+    console.error = function(message) {
+      if (++callCount === 2) {
+        assert.ok(message.startsWith(`Error: ${errorMessage}\n`));
+        done();
+      } else {
+        assert.strictEqual(message, errorMessage);
+      }
+    };
+    let tt = new Kensington({ validationLevel: 'warn' });
+    assert.doesNotThrow(() => tt.div({ id: '123-abc' }).toString());
+  })
 });
 
 describe('custom tag', () => {
-  it.todo('creates a custom tag');
-  it.todo('validates primitive attributes');
-  it.todo('validates array attributes');
+  it('creates a custom tag', () => {
+    class Custom extends Kensington {
+      customElement = this.createCustomTag('custom-element')
+    }
+    const tt = new Custom({ validationLevel: 'error' });
+    assert.strictEqual(tt.customElement().toString(), '<custom-element></custom-element>');
+  });
+  it('validates attribute type', () => {
+    class CustomBad extends Kensington {
+      customElement = this.createCustomTag('custom-element', { date: null })
+    }
+    class CustomGood extends Kensington {
+      customElement = this.createCustomTag('custom-element', { date: String })
+    }
+    assert.throws(() => { new CustomBad({ validationLevel: 'error' }); });
+    assert.doesNotThrow(() => {
+      const tt = new CustomGood({ validationLevel: 'error' });
+      tt.customElement({ date: 'some date' });
+    });
+  });
+  it('validates array attributes', () => {
+    class Custom extends Kensington {
+      customElement = this.createCustomTag('custom-element', { customAttr: [Number, 'a string'] })
+    }
+    const tt = new Custom({ validationLevel: 'error' });
+    assert.doesNotThrow(() => tt.customElement({ customAttr: 4 }).toString())
+    assert.doesNotThrow(() => tt.customElement({ customAttr: 'a string' }).toString())
+    assert.throws(() => tt.customElement({ customAttr: 'some other string' }).toString())
+  });
 });
 
 //

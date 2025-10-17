@@ -34,7 +34,7 @@
     "url": "http://www.ryansimms.com"
   },
   "scripts": {
-    "test": "node --test \"./test/*.js\""
+    "test": "node --test \"./test/esm-test.js\""
   },
   "dependencies": {
     "he": "^1.2.0"
