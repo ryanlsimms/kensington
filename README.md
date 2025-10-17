@@ -16,7 +16,7 @@ This template engine is a way to create html via nested method calls.  Each tag 
     * extend the `Kensington` class with your own
     * set a property equal to `this.createCustomTag()` with the following arguments
         * `tagName` - the name that is used in the `<some-custom-element></some-custom-element>`
-        * `allowedAttributes` - an optional array of allowed attributes.  Global and data/aria attributes are always allowed
+        * `allowedAttributes` - an optional object of allowed attribute names and types.  Global and data/aria attributes are always allowed
 
 ### Example
 ```typescript
@@ -111,15 +111,11 @@ import { t } from 'kensington';
 
 
 ### TODO
-* tests
-* better typing of attributes
-* function types
 * type declaration file for custom instance
 * validate/type data and aria attributes
 * skip validation per tag (maybe a bad idea)
 * readme demos express integration
 * mention use of html-validate
-* clean up error stack
 * what version of node/js is necessary?
 * comments
 * better namespace non-tag methods to avoid potential future collisions

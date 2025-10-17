@@ -1,6 +1,6 @@
 {
   "name": "kensington",
-  "version": "1.0.0",
+  "version": "0.9.0",
   "main": "./cjs/kensington.js",
   "module": "./esm/kensington.js",
   "types": "./types.d.ts",
