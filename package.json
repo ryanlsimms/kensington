@@ -31,8 +31,9 @@
   ],
   "author": {
     "name": "Ryan Lee Simms",
-    "url": "http://www.ryansimms.com"
+    "url": "https://www.ryansimms.com"
   },
+  "repository": "https://github.com/ryanlsimms/kensington",
   "scripts": {
     "test": "node --test \"./test/esm-test.js\""
   },
