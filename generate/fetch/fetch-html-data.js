@@ -12,9 +12,16 @@ export default async function fetchHtmlData() {
   const caseInsensitiveAttrElements = attributeSemanticsPage.querySelectorAll('ul.brief code');
   const caseInsensitiveAttrList = [...caseInsensitiveAttrElements].map(el => el.textContent).concat('formmethod');
 
+  const inputPage = await fetchAsDom('https://html.spec.whatwg.org/multipage/input.html');
+  const inputTypeKeywords = parseTable(inputPage.querySelector('#attr-input-type-keywords'), 'keyword', [])
+    .map(d => `"${d.keyword}"`);
+
   attributes.forEach(attr => {
     if (caseInsensitiveAttrList.includes(attr.attribute)) {
       attr.value = [...new Set(attr.value.flatMap(v => [v.toLowerCase(), v.toUpperCase()]))];
+    }
+    if (attr.attribute === 'type' && attr.elements.includes('input')) {
+      attr.value = inputTypeKeywords;
     }
   });
 

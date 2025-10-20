@@ -1207,7 +1207,7 @@ type InputAttributes = {
   'size'?: number;
   'src'?: string;
   'step'?: string;
-  'type'?: string;
+  'type'?: "hidden" | "text" | "search" | "tel" | "url" | "email" | "password" | "date" | "month" | "week" | "time" | "datetime-local" | "number" | "range" | "color" | "checkbox" | "radio" | "file" | "submit" | "image" | "reset" | "button";
   'value'?: number | string;
   'width'?: string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;

@@ -1136,7 +1136,7 @@ export const inputAttributes = {
   'size': Number,
   'src': String,
   'step': String,
-  'type': String,
+  'type': ["hidden","text","search","tel","url","email","password","date","month","week","time","datetime-local","number","range","color","checkbox","radio","file","submit","image","reset","button"],
   'value': [Number,String],
   'width': String
 };

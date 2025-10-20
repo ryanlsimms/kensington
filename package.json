@@ -1,6 +1,6 @@
 {
   "name": "kensington",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "main": "./cjs/kensington.js",
   "module": "./esm/kensington.js",
   "types": "./types.d.ts",
@@ -33,7 +33,10 @@
     "name": "Ryan Lee Simms",
     "url": "https://www.ryansimms.com"
   },
-  "repository": "https://github.com/ryanlsimms/kensington",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ryanlsimms/kensington.git"
+  },
   "scripts": {
     "test": "node --test \"./test/esm-test.js\""
   },
