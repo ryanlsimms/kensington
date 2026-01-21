@@ -12,11 +12,13 @@ type GlobalAttributes = {
   autocorrect?: "on" | "off";
   autofocus?: boolean;
   class?: string;
-  contenteditable?: "true" | "plaintext-only" | "false";
+  contenteditable?: "true" | "false" | "plaintext-only";
   dir?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   draggable?: "true" | "false";
   enterkeyhint?: "enter" | "done" | "go" | "next" | "previous" | "search" | "send";
-  hidden?: string;
+  headingoffset?: string;
+  headingreset?: boolean;
+  hidden?: "until-found" | "hidden";
   id?: string;
   inert?: boolean;
   inputmode?: "none" | "text" | "tel" | "email" | "url" | "numeric" | "decimal" | "search";
@@ -31,12 +33,12 @@ type GlobalAttributes = {
   popover?: "auto" | "manual" | "hint";
   role?: string;
   slot?: string;
-  spellcheck?: string;
+  spellcheck?: "true" | "false";
   style?: string;
   tabindex?: string;
   title?: string;
   translate?: "yes" | "no";
-  writingsuggestions?: string;
+  writingsuggestions?: "true" | "false";
 }
 
 type GlobalEvents = {
@@ -865,6 +867,216 @@ type EmbedAttributes = {
   'width'?: string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
+type FeBlendAttributes = {
+  'class'?: string;
+  'id'?: string;
+  'style'?: string;
+  'xml:base'?: string;
+  'xml:lang'?: string;
+  'xml:space'?: string;
+} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+
+type FeColorMatrixAttributes = {
+  'class'?: string;
+  'id'?: string;
+  'style'?: string;
+  'xml:base'?: string;
+  'xml:lang'?: string;
+  'xml:space'?: string;
+} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+
+type FeComponentTransferAttributes = {
+  'class'?: string;
+  'id'?: string;
+  'style'?: string;
+  'xml:base'?: string;
+  'xml:lang'?: string;
+  'xml:space'?: string;
+} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+
+type FeCompositeAttributes = {
+  'class'?: string;
+  'id'?: string;
+  'style'?: string;
+  'xml:base'?: string;
+  'xml:lang'?: string;
+  'xml:space'?: string;
+} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+
+type FeConvolveMatrixAttributes = {
+  'class'?: string;
+  'id'?: string;
+  'style'?: string;
+  'xml:base'?: string;
+  'xml:lang'?: string;
+  'xml:space'?: string;
+} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+
+type FeDiffuseLightingAttributes = {
+  'class'?: string;
+  'id'?: string;
+  'style'?: string;
+  'xml:base'?: string;
+  'xml:lang'?: string;
+  'xml:space'?: string;
+} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+
+type FeDisplacementMapAttributes = {
+  'class'?: string;
+  'id'?: string;
+  'style'?: string;
+  'xml:base'?: string;
+  'xml:lang'?: string;
+  'xml:space'?: string;
+} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+
+type FeDistantLightAttributes = {
+  'id'?: string;
+  'xml:base'?: string;
+  'xml:lang'?: string;
+  'xml:space'?: string;
+} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+
+type FeDropShadowAttributes = {
+  'class'?: string;
+  'id'?: string;
+  'style'?: string;
+  'xml:base'?: string;
+  'xml:lang'?: string;
+  'xml:space'?: string;
+} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+
+type FeFloodAttributes = {
+  'class'?: string;
+  'id'?: string;
+  'style'?: string;
+  'xml:base'?: string;
+  'xml:lang'?: string;
+  'xml:space'?: string;
+} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+
+type FeFuncAAttributes = {
+  'id'?: string;
+  'xml:base'?: string;
+  'xml:lang'?: string;
+  'xml:space'?: string;
+} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+
+type FeFuncBAttributes = {
+  'id'?: string;
+  'xml:base'?: string;
+  'xml:lang'?: string;
+  'xml:space'?: string;
+} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+
+type FeFuncGAttributes = {
+  'id'?: string;
+  'xml:base'?: string;
+  'xml:lang'?: string;
+  'xml:space'?: string;
+} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+
+type FeFuncRAttributes = {
+  'id'?: string;
+  'xml:base'?: string;
+  'xml:lang'?: string;
+  'xml:space'?: string;
+} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+
+type FeGaussianBlurAttributes = {
+  'class'?: string;
+  'id'?: string;
+  'style'?: string;
+  'xml:base'?: string;
+  'xml:lang'?: string;
+  'xml:space'?: string;
+} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+
+type FeImageAttributes = {
+  'class'?: string;
+  'externalResourcesRequired'?: string;
+  'id'?: string;
+  'style'?: string;
+  'xml:base'?: string;
+  'xml:lang'?: string;
+  'xml:space'?: string;
+} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+
+type FeMergeAttributes = {
+  'class'?: string;
+  'id'?: string;
+  'style'?: string;
+  'xml:base'?: string;
+  'xml:lang'?: string;
+  'xml:space'?: string;
+} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+
+type FeMergeNodeAttributes = {
+  'id'?: string;
+  'xml:base'?: string;
+  'xml:lang'?: string;
+  'xml:space'?: string;
+} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+
+type FeMorphologyAttributes = {
+  'class'?: string;
+  'id'?: string;
+  'style'?: string;
+  'xml:base'?: string;
+  'xml:lang'?: string;
+  'xml:space'?: string;
+} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+
+type FeOffsetAttributes = {
+  'class'?: string;
+  'id'?: string;
+  'style'?: string;
+  'xml:base'?: string;
+  'xml:lang'?: string;
+  'xml:space'?: string;
+} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+
+type FePointLightAttributes = {
+  'id'?: string;
+  'xml:base'?: string;
+  'xml:lang'?: string;
+  'xml:space'?: string;
+} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+
+type FeSpecularLightingAttributes = {
+  'class'?: string;
+  'id'?: string;
+  'style'?: string;
+  'xml:base'?: string;
+  'xml:lang'?: string;
+  'xml:space'?: string;
+} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+
+type FeSpotLightAttributes = {
+  'id'?: string;
+  'xml:base'?: string;
+  'xml:lang'?: string;
+  'xml:space'?: string;
+} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+
+type FeTileAttributes = {
+  'class'?: string;
+  'id'?: string;
+  'style'?: string;
+  'xml:base'?: string;
+  'xml:lang'?: string;
+  'xml:space'?: string;
+} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+
+type FeTurbulenceAttributes = {
+  'class'?: string;
+  'id'?: string;
+  'style'?: string;
+  'xml:base'?: string;
+  'xml:lang'?: string;
+  'xml:space'?: string;
+} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+
 type FieldsetAttributes = {
   'disabled'?: boolean;
   'form'?: string;
@@ -874,6 +1086,16 @@ type FieldsetAttributes = {
 type FigcaptionAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FigureAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+
+type FilterAttributes = {
+  'class'?: string;
+  'externalResourcesRequired'?: string;
+  'id'?: string;
+  'style'?: string;
+  'xml:base'?: string;
+  'xml:lang'?: string;
+  'xml:space'?: string;
+} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FooterAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
@@ -3171,9 +3393,35 @@ export const dtAttributes: DtAttributes
 export const ellipseAttributes: EllipseAttributes
 export const emAttributes: EmAttributes
 export const embedAttributes: EmbedAttributes
+export const feBlendAttributes: FeBlendAttributes
+export const feColorMatrixAttributes: FeColorMatrixAttributes
+export const feComponentTransferAttributes: FeComponentTransferAttributes
+export const feCompositeAttributes: FeCompositeAttributes
+export const feConvolveMatrixAttributes: FeConvolveMatrixAttributes
+export const feDiffuseLightingAttributes: FeDiffuseLightingAttributes
+export const feDisplacementMapAttributes: FeDisplacementMapAttributes
+export const feDistantLightAttributes: FeDistantLightAttributes
+export const feDropShadowAttributes: FeDropShadowAttributes
+export const feFloodAttributes: FeFloodAttributes
+export const feFuncAAttributes: FeFuncAAttributes
+export const feFuncBAttributes: FeFuncBAttributes
+export const feFuncGAttributes: FeFuncGAttributes
+export const feFuncRAttributes: FeFuncRAttributes
+export const feGaussianBlurAttributes: FeGaussianBlurAttributes
+export const feImageAttributes: FeImageAttributes
+export const feMergeAttributes: FeMergeAttributes
+export const feMergeNodeAttributes: FeMergeNodeAttributes
+export const feMorphologyAttributes: FeMorphologyAttributes
+export const feOffsetAttributes: FeOffsetAttributes
+export const fePointLightAttributes: FePointLightAttributes
+export const feSpecularLightingAttributes: FeSpecularLightingAttributes
+export const feSpotLightAttributes: FeSpotLightAttributes
+export const feTileAttributes: FeTileAttributes
+export const feTurbulenceAttributes: FeTurbulenceAttributes
 export const fieldsetAttributes: FieldsetAttributes
 export const figcaptionAttributes: FigcaptionAttributes
 export const figureAttributes: FigureAttributes
+export const filterAttributes: FilterAttributes
 export const footerAttributes: FooterAttributes
 export const foreignObjectAttributes: ForeignObjectAttributes
 export const formAttributes: FormAttributes
@@ -3378,12 +3626,64 @@ export default class Kensington {
   em(attributes: EmAttributes, content?: Content): ContentTag;
   em(content?: Content): ContentTag;
   embed(attributes?: EmbedAttributes): VoidTag;
+  feBlend(attributes: FeBlendAttributes, content?: Content): ContentTag;
+  feBlend(content?: Content): ContentTag;
+  feColorMatrix(attributes: FeColorMatrixAttributes, content?: Content): ContentTag;
+  feColorMatrix(content?: Content): ContentTag;
+  feComponentTransfer(attributes: FeComponentTransferAttributes, content?: Content): ContentTag;
+  feComponentTransfer(content?: Content): ContentTag;
+  feComposite(attributes: FeCompositeAttributes, content?: Content): ContentTag;
+  feComposite(content?: Content): ContentTag;
+  feConvolveMatrix(attributes: FeConvolveMatrixAttributes, content?: Content): ContentTag;
+  feConvolveMatrix(content?: Content): ContentTag;
+  feDiffuseLighting(attributes: FeDiffuseLightingAttributes, content?: Content): ContentTag;
+  feDiffuseLighting(content?: Content): ContentTag;
+  feDisplacementMap(attributes: FeDisplacementMapAttributes, content?: Content): ContentTag;
+  feDisplacementMap(content?: Content): ContentTag;
+  feDistantLight(attributes: FeDistantLightAttributes, content?: Content): ContentTag;
+  feDistantLight(content?: Content): ContentTag;
+  feDropShadow(attributes: FeDropShadowAttributes, content?: Content): ContentTag;
+  feDropShadow(content?: Content): ContentTag;
+  feFlood(attributes: FeFloodAttributes, content?: Content): ContentTag;
+  feFlood(content?: Content): ContentTag;
+  feFuncA(attributes: FeFuncAAttributes, content?: Content): ContentTag;
+  feFuncA(content?: Content): ContentTag;
+  feFuncB(attributes: FeFuncBAttributes, content?: Content): ContentTag;
+  feFuncB(content?: Content): ContentTag;
+  feFuncG(attributes: FeFuncGAttributes, content?: Content): ContentTag;
+  feFuncG(content?: Content): ContentTag;
+  feFuncR(attributes: FeFuncRAttributes, content?: Content): ContentTag;
+  feFuncR(content?: Content): ContentTag;
+  feGaussianBlur(attributes: FeGaussianBlurAttributes, content?: Content): ContentTag;
+  feGaussianBlur(content?: Content): ContentTag;
+  feImage(attributes: FeImageAttributes, content?: Content): ContentTag;
+  feImage(content?: Content): ContentTag;
+  feMerge(attributes: FeMergeAttributes, content?: Content): ContentTag;
+  feMerge(content?: Content): ContentTag;
+  feMergeNode(attributes: FeMergeNodeAttributes, content?: Content): ContentTag;
+  feMergeNode(content?: Content): ContentTag;
+  feMorphology(attributes: FeMorphologyAttributes, content?: Content): ContentTag;
+  feMorphology(content?: Content): ContentTag;
+  feOffset(attributes: FeOffsetAttributes, content?: Content): ContentTag;
+  feOffset(content?: Content): ContentTag;
+  fePointLight(attributes: FePointLightAttributes, content?: Content): ContentTag;
+  fePointLight(content?: Content): ContentTag;
+  feSpecularLighting(attributes: FeSpecularLightingAttributes, content?: Content): ContentTag;
+  feSpecularLighting(content?: Content): ContentTag;
+  feSpotLight(attributes: FeSpotLightAttributes, content?: Content): ContentTag;
+  feSpotLight(content?: Content): ContentTag;
+  feTile(attributes: FeTileAttributes, content?: Content): ContentTag;
+  feTile(content?: Content): ContentTag;
+  feTurbulence(attributes: FeTurbulenceAttributes, content?: Content): ContentTag;
+  feTurbulence(content?: Content): ContentTag;
   fieldset(attributes: FieldsetAttributes, content?: Content): ContentTag;
   fieldset(content?: Content): ContentTag;
   figcaption(attributes: FigcaptionAttributes, content?: Content): ContentTag;
   figcaption(content?: Content): ContentTag;
   figure(attributes: FigureAttributes, content?: Content): ContentTag;
   figure(content?: Content): ContentTag;
+  filter(attributes: FilterAttributes, content?: Content): ContentTag;
+  filter(content?: Content): ContentTag;
   footer(attributes: FooterAttributes, content?: Content): ContentTag;
   footer(content?: Content): ContentTag;
   foreignObject(attributes: ForeignObjectAttributes, content?: Content): ContentTag;

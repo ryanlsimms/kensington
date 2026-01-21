@@ -67,7 +67,7 @@ mathElements.forEach(mathEl => {
 const elements = htmlElements.filter(e => !tagsToSkip.includes(e.tag)).sort((a, b) => a.tag.localeCompare(b.tag));
 
 function getAttributeType(attr) {
-  const values = attr.value ?? [];
+  const values = (attr.value ?? []).filter(value => value !== 'the empty string');
   if (attr.attribute === 'value') {
     return ['[Number,String]', 'number | string']
   }

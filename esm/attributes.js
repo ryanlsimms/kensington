@@ -5,11 +5,13 @@ export const globalAttributes = {
   'autocorrect': ["on","off"],
   'autofocus': Boolean,
   'class': String,
-  'contenteditable': ["true","plaintext-only","false"],
+  'contenteditable': ["true","false","plaintext-only"],
   'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
   'draggable': ["true","false"],
   'enterkeyhint': ["enter","done","go","next","previous","search","send"],
-  'hidden': String,
+  'headingoffset': String,
+  'headingreset': Boolean,
+  'hidden': ["until-found","hidden"],
   'id': String,
   'inert': Boolean,
   'inputmode': ["none","text","tel","email","url","numeric","decimal","search"],
@@ -24,12 +26,12 @@ export const globalAttributes = {
   'popover': ["auto","manual","hint"],
   'role': String,
   'slot': String,
-  'spellcheck': String,
+  'spellcheck': ["true","false"],
   'style': String,
   'tabindex': String,
   'title': String,
   'translate': ["yes","no"],
-  'writingsuggestions': String,
+  'writingsuggestions': ["true","false"],
 };
   
 export const globalEvents = {
@@ -817,6 +819,191 @@ export const embedAttributes = {
   'type': String,
   'width': String
 };
+export const feBlendAttributes = {
+  'class': String,
+  'id': String,
+  'style': String,
+  'xml:base': String,
+  'xml:lang': String,
+  'xml:space': String
+};
+export const feColorMatrixAttributes = {
+  'class': String,
+  'id': String,
+  'style': String,
+  'xml:base': String,
+  'xml:lang': String,
+  'xml:space': String
+};
+export const feComponentTransferAttributes = {
+  'class': String,
+  'id': String,
+  'style': String,
+  'xml:base': String,
+  'xml:lang': String,
+  'xml:space': String
+};
+export const feCompositeAttributes = {
+  'class': String,
+  'id': String,
+  'style': String,
+  'xml:base': String,
+  'xml:lang': String,
+  'xml:space': String
+};
+export const feConvolveMatrixAttributes = {
+  'class': String,
+  'id': String,
+  'style': String,
+  'xml:base': String,
+  'xml:lang': String,
+  'xml:space': String
+};
+export const feDiffuseLightingAttributes = {
+  'class': String,
+  'id': String,
+  'style': String,
+  'xml:base': String,
+  'xml:lang': String,
+  'xml:space': String
+};
+export const feDisplacementMapAttributes = {
+  'class': String,
+  'id': String,
+  'style': String,
+  'xml:base': String,
+  'xml:lang': String,
+  'xml:space': String
+};
+export const feDistantLightAttributes = {
+  'id': String,
+  'xml:base': String,
+  'xml:lang': String,
+  'xml:space': String
+};
+export const feDropShadowAttributes = {
+  'class': String,
+  'id': String,
+  'style': String,
+  'xml:base': String,
+  'xml:lang': String,
+  'xml:space': String
+};
+export const feFloodAttributes = {
+  'class': String,
+  'id': String,
+  'style': String,
+  'xml:base': String,
+  'xml:lang': String,
+  'xml:space': String
+};
+export const feFuncAAttributes = {
+  'id': String,
+  'xml:base': String,
+  'xml:lang': String,
+  'xml:space': String
+};
+export const feFuncBAttributes = {
+  'id': String,
+  'xml:base': String,
+  'xml:lang': String,
+  'xml:space': String
+};
+export const feFuncGAttributes = {
+  'id': String,
+  'xml:base': String,
+  'xml:lang': String,
+  'xml:space': String
+};
+export const feFuncRAttributes = {
+  'id': String,
+  'xml:base': String,
+  'xml:lang': String,
+  'xml:space': String
+};
+export const feGaussianBlurAttributes = {
+  'class': String,
+  'id': String,
+  'style': String,
+  'xml:base': String,
+  'xml:lang': String,
+  'xml:space': String
+};
+export const feImageAttributes = {
+  'class': String,
+  'externalResourcesRequired': String,
+  'id': String,
+  'style': String,
+  'xml:base': String,
+  'xml:lang': String,
+  'xml:space': String
+};
+export const feMergeAttributes = {
+  'class': String,
+  'id': String,
+  'style': String,
+  'xml:base': String,
+  'xml:lang': String,
+  'xml:space': String
+};
+export const feMergeNodeAttributes = {
+  'id': String,
+  'xml:base': String,
+  'xml:lang': String,
+  'xml:space': String
+};
+export const feMorphologyAttributes = {
+  'class': String,
+  'id': String,
+  'style': String,
+  'xml:base': String,
+  'xml:lang': String,
+  'xml:space': String
+};
+export const feOffsetAttributes = {
+  'class': String,
+  'id': String,
+  'style': String,
+  'xml:base': String,
+  'xml:lang': String,
+  'xml:space': String
+};
+export const fePointLightAttributes = {
+  'id': String,
+  'xml:base': String,
+  'xml:lang': String,
+  'xml:space': String
+};
+export const feSpecularLightingAttributes = {
+  'class': String,
+  'id': String,
+  'style': String,
+  'xml:base': String,
+  'xml:lang': String,
+  'xml:space': String
+};
+export const feSpotLightAttributes = {
+  'id': String,
+  'xml:base': String,
+  'xml:lang': String,
+  'xml:space': String
+};
+export const feTileAttributes = {
+  'class': String,
+  'id': String,
+  'style': String,
+  'xml:base': String,
+  'xml:lang': String,
+  'xml:space': String
+};
+export const feTurbulenceAttributes = {
+  'class': String,
+  'id': String,
+  'style': String,
+  'xml:base': String,
+  'xml:lang': String,
+  'xml:space': String
+};
 export const fieldsetAttributes = {
   'disabled': Boolean,
   'form': String,
@@ -824,6 +1011,15 @@ export const fieldsetAttributes = {
 };
 export const figcaptionAttributes = {};
 export const figureAttributes = {};
+export const filterAttributes = {
+  'class': String,
+  'externalResourcesRequired': String,
+  'id': String,
+  'style': String,
+  'xml:base': String,
+  'xml:lang': String,
+  'xml:space': String
+};
 export const footerAttributes = {};
 export const foreignObjectAttributes = {
   'autofocus': Boolean,

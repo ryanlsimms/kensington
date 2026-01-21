@@ -129,3 +129,4 @@ import { t } from 'kensington';
 * configurable indentation level
 * use private class methods
 * stress testing with large data sets
+* methods for entities (&nbsp;)

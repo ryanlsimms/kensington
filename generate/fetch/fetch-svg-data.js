@@ -56,7 +56,7 @@ async function getAttributes(url) {
 export default async function fetchSvgData() {
   const [
     animationElements,
-    cssMasingElements,
+    cssMaskingElements,
     embededElements,
     filterElements,
     interactElements,
@@ -71,9 +71,9 @@ export default async function fetchSvgData() {
     svgAttributes,
   ] = await Promise.all([
     getElements('https://svgwg.org/specs/animations'),
-    getDraftElements('https://drafts.fxtf.org/css-masking-1'),
+    getDraftElements('https://drafts.csswg.org/css-masking-1/'),
     getElements('https://svgwg.org/svg2-draft/embedded.html'),
-    getDraftElements('https://drafts.fxtf.org/filter-effects/'),
+    getDraftElements('https://drafts.csswg.org/filter-effects/'),
     getElements('https://svgwg.org/svg2-draft/interact.html'),
     getElements('https://svgwg.org/svg2-draft/linking.html'),
     getElements('https://svgwg.org/svg2-draft/pservers.html'),
@@ -89,7 +89,7 @@ export default async function fetchSvgData() {
   return {
     svgElements: [
       ...animationElements,
-      ...cssMasingElements,
+      ...cssMaskingElements,
       ...embededElements,
       ...filterElements,
       ...interactElements,
