@@ -108,6 +108,10 @@ describe('attributes', () => {
   it('converts nested', () => {
     assert.strictEqual(t.div({ data: { bs: { target: 'abc' } } }).toString(), '<div data-bs-target="abc"></div>');
   });
+  it('allows-hyphenated', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.strictEqual(tt.div({ 'data-bs-target': 'abc' }).toString(), '<div data-bs-target="abc"></div>');
+  });
   it('converts numbers', () => {
     assert.strictEqual(t.td({ colspan: 3 }).toString(), '<td colspan="3"></td>');
   });
@@ -185,6 +189,15 @@ describe('custom tag', () => {
       tt.customElement({ date: 'some date' });
     });
   });
+  it ('validates attributes', () => {
+    class Custom extends Kensington {
+      customElement = this.createCustomTag('custom-element', { hyphenatedAttribute: String })
+    }
+    const tt = new Custom({ validationLevel: 'error' });
+    const expected = '<custom-element hyphenated-attribute="something"></custom-element>';
+    assert.strictEqual(tt.customElement({ hyphenatedAttribute: 'something' }).toString(), expected);
+    assert.strictEqual(tt.customElement({ 'hyphenated-attribute': 'something' }).toString(), expected);
+  })
   it('validates array attributes', () => {
     class Custom extends Kensington {
       customElement = this.createCustomTag('custom-element', { customAttr: [Number, 'a string'] })

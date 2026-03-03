@@ -42,7 +42,7 @@ export default class ContentTag {
   }
 
   isValidNamespaceAttribute(attr) {
-    return this.namespaces.includes(attr.match(/[^A-Z]+/u)[0]); // characters before first uppercase
+    return this.namespaces.includes(attr.match(/[^A-Z|-]+/u)[0]); // characters before first uppercase or hyphen
   }
 
   attributeIsValid(attr) {
