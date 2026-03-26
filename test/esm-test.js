@@ -88,7 +88,8 @@ describe('validates arguments', () => {
     assert.strictEqual(t.div({ id: 'abc' }, 'content').toString(), '<div id="abc">content</div>');
   });
   it('does not allow multiple attribute arguments', () => {
-    assert.throws(() => t.div({ class: 'something' }, { id: 'something' }).toString());
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => tt.div({ class: 'something' }, { id: 'something' }).toString());
   });
   it('does not allow multiple content arguments', () => {
     assert.throws(() => t.div('content', t.div('content')).toString());
@@ -97,7 +98,8 @@ describe('validates arguments', () => {
     assert.throws(() => t.div({ id: 'something' }, t.div('content'), t.div('invalid argument')).toString());
   });
   it('does not allow invalid content', () => {
-    assert.throws(() => t.div(new Date()).toString());
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => tt.div(new Date()).toString());
   });
 });
 
@@ -206,5 +208,22 @@ describe('custom tag', () => {
     assert.doesNotThrow(() => tt.customElement({ customAttr: 4 }).toString())
     assert.doesNotThrow(() => tt.customElement({ customAttr: 'a string' }).toString())
     assert.throws(() => tt.customElement({ customAttr: 'some other string' }).toString())
+  });
+  it('handles large renderings well', async () => {
+    let start = performance.now();
+    const tt = new Kensington({ indentationLevel: 0, validationLevel: 'off' });
+
+    const html = tt.div(Array.from({ length: 100_000 }, (el, i) => {
+      return t.div({ class: 'somehting', dataSrc: 'http' }, [
+        t.span(i),
+        t.div({ class: 'asdf' }, Array.from({ length: 4 }, (_, ii) => t.div({ class: 'lkjh' }, ii))),
+      ])
+    }));
+    console.log('BUILD:', Number((performance.now() - start).toFixed(2)));
+    const nextStart = performance.now();
+    const str = html.toString();
+    console.log('RENDER:', Number((performance.now() - nextStart).toFixed(2)));
+    console.log('TOTAL:', Number((performance.now() - start).toFixed(2)));
+    console.log(str.length.toLocaleString());
   });
 });

@@ -11,21 +11,33 @@ const literalTag = require('./literal-tag.js');
 
 // TODO validate via "import elements from 'html-validate/dist/es/html5.js'";
 
-const INDENTATION_LEVEL = 2;
-
 class ContentTag {
-  constructor({ allowedAttributes = {}, attributes, content, contentIsLiteral, namespaces, tagName, validationLevel }) {
-    this.tagName = tagName;
-    this.attributes = attributes;
-    this.allowedAttributes = allowedAttributes;
-    this.contentIsLiteral = contentIsLiteral;
-    this.namespaces = namespaces;
-    this.validationLevel = validationLevel;
-    this.content = [].concat(content)
-      .flat()
-      .filter(c => ![undefined, null, ''].includes(c))
-      .map(c => (typeof c === 'string' && this.tagName !== 'script' ? he.encode(c) : c));
+  constructor(options) {
+    this.tagName = options.tagName;
+    this.attributes = options.attributes;
+    this.allowedAttributes = options.allowedAttributes ?? {};
+    this.contentIsLiteral = options.contentIsLiteral;
+    this.indentationLevel = options.indentationLevel ?? 2;
+    this.namespaces = options.namespaces;
+    this.validationLevel = options.validationLevel;
+    this.content = [];
 
+    const handleItem = (c) =>  {
+      if ([undefined, null, ''].includes(c)) {
+        return;
+      }
+      if (Array.isArray(c)) {
+        c.forEach(handleItem);
+        return;
+      }
+      if (typeof c === 'string' && this.tagName !== 'script') {
+        this.content.push(he.encode(c));
+        return;
+      }
+      this.content.push(c);
+    };
+
+    [].concat(options.content).forEach(handleItem);
   }
 
   validate() {
@@ -45,7 +57,7 @@ class ContentTag {
   }
 
   isValidNamespaceAttribute(attr) {
-    return this.namespaces.includes(attr.match(/[^A-Z]+/u)[0]); // characters before first uppercase
+    return this.namespaces.includes(attr.match(/[^A-Z|-]+/u)[0]); // characters before first uppercase or hyphen
   }
 
   attributeIsValid(attr) {
@@ -133,7 +145,9 @@ class ContentTag {
     const startTag = `<${this.tagName}${this.attributeString()}>`;
     const endTag = `</${this.tagName}>`;
 
-    this.validateContent();
+    if (this.validationLevel !== 'off') {
+      this.validateContent();
+    }
     if (this.contentIsLiteral) {
       return [startTag, this.content, endTag].join('');
     }
@@ -154,7 +168,10 @@ class ContentTag {
       })
       .join('\n');
 
-    return [startTag, indent.default(content, INDENTATION_LEVEL), endTag].join('\n');
+    if (this.indentationLevel) {
+      content = indent.default(content, this.indentationLevel);
+    }
+    return [startTag, content, endTag].join('\n');
   }
 }
 

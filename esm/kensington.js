@@ -8,10 +8,11 @@ import { camelToKebab } from './lib/text-utils.js';
 import showInvalid from './lib/show-invalid.js';
 
 export default class Kensington {
-  constructor({ additionalNamespaces = [], validationLevel = 'off' } = {}) {
+  constructor({ additionalNamespaces = [], validationLevel = 'off', indentationLevel = 2 } = {}) {
     getPrototypeMethods(this).forEach(key => {
       this[key] = this[key].bind(this);
     });
+    this.indentationLevel = indentationLevel;
     this.namespaces = ['data', 'aria'].concat(additionalNamespaces);
     this.validationLevel = validationLevel;
   }
@@ -86,14 +87,19 @@ export default class Kensington {
       if (typeof content === 'undefined') {
         content = '';
       }
+      if (this.validationLevel !== 'off') {
+        if (includeGlobalAttributes) {
+          Object.assign(allowedAttributes, allAttributes.globalAttributes);
+        }
+        if (includeGlobalEvents) {
+          Object.assign(allowedAttributes, allAttributes.globalEvents)
+        }
+      }
       const instance = new Klass({
-        allowedAttributes: {
-          ...(includeGlobalAttributes && { ...allAttributes.globalAttributes }),
-          ...(includeGlobalEvents && { ...allAttributes.globalEvents }),
-          ...allowedAttributes,
-        },
+        allowedAttributes,
         attributes,
         content,
+        indentationLevel: this.indentationLevel,
         namespaces: this.namespaces,
         contentIsLiteral,
         tagName,

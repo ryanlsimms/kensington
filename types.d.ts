@@ -439,6 +439,7 @@ type AudioAttributes = {
   'autoplay'?: boolean;
   'controls'?: boolean;
   'crossorigin'?: "anonymous" | "use-credentials";
+  'loading'?: "lazy" | "eager";
   'loop'?: boolean;
   'muted'?: boolean;
   'preload'?: "none" | "metadata" | "auto";
@@ -3266,6 +3267,7 @@ type VideoAttributes = {
   'controls'?: boolean;
   'crossorigin'?: "anonymous" | "use-credentials";
   'height'?: string;
+  'loading'?: "lazy" | "eager";
   'loop'?: boolean;
   'muted'?: boolean;
   'playsinline'?: boolean;
@@ -3535,7 +3537,7 @@ type Primitive = string | number | boolean | function;
 type AttributeValue = PrimitiveConstructor | Primitive | (PrimitiveConstructor | Primitive)[];
 
 export default class Kensington {
-  constructor(options?: { additionalNamespaces?: string | string[], validationLevel?: 'off' | 'warn' | 'error' });
+  constructor(options?: { additionalNamespaces?: string | string[], indentationLevel?: number, validationLevel?: 'off' | 'warn' | 'error' });
 
   createCustomTag(
     tagName: string,

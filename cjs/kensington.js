@@ -12,10 +12,11 @@ const textUtils = require('./lib/text-utils.js');
 const showInvalid = require('./lib/show-invalid.js');
 
 class Kensington {
-  constructor({ additionalNamespaces = [], validationLevel = 'off' } = {}) {
+  constructor({ additionalNamespaces = [], validationLevel = 'off', indentationLevel = 2 } = {}) {
     getPrototypeMethods.default(this).forEach(key => {
       this[key] = this[key].bind(this);
     });
+    this.indentationLevel = indentationLevel;
     this.namespaces = ['data', 'aria'].concat(additionalNamespaces);
     this.validationLevel = validationLevel;
   }
@@ -90,14 +91,19 @@ class Kensington {
       if (typeof content === 'undefined') {
         content = '';
       }
+      if (this.validationLevel !== 'off') {
+        if (includeGlobalAttributes) {
+          Object.assign(allowedAttributes, attributes.globalAttributes);
+        }
+        if (includeGlobalEvents) {
+          Object.assign(allowedAttributes, attributes.globalEvents);
+        }
+      }
       const instance = new Klass({
-        allowedAttributes: {
-          ...(includeGlobalAttributes && { ...attributes.globalAttributes }),
-          ...(includeGlobalEvents && { ...attributes.globalEvents }),
-          ...allowedAttributes,
-        },
+        allowedAttributes,
         attributes: attributes$1,
         content,
+        indentationLevel: this.indentationLevel,
         namespaces: this.namespaces,
         contentIsLiteral,
         tagName,
