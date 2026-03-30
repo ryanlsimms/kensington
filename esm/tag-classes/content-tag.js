@@ -140,26 +140,37 @@ export default class ContentTag {
   }
 
   toString() {
-    const startTag = `<${this.tagName}${this.attributeString()}>`;
-    const endTag = `</${this.tagName}>`;
-
     if (this.validationLevel !== 'off') {
       this.validateContent();
     }
 
+    let str = '<';
+    str += this.tagName;
+    str += this.attributeString();
+    str += '>';
+
+
     if (this.contentIsLiteral) {
-      return [startTag, this.content, endTag].join('');
+      str += this.content;
+    } else if (this.contentIsShort()) {
+      for (const c of this.content) {
+        str += c;
+      }
+    } else {
+      let content = stringifyContentArray(this.content);
+
+      if (this.indentationLevel) {
+        content = indent(content, this.indentationLevel);
+      }
+      str += '\n';
+      str += content;
+      str += '\n';
     }
 
-    if (this.contentIsShort()) {
-      return [startTag, ...this.content, endTag].join('');
-    }
+    str += '</';
+    str += this.tagName;
+    str += '>';
 
-    let content = stringifyContentArray(this.content);
-
-    if (this.indentationLevel) {
-      content = indent(content, this.indentationLevel);
-    }
-    return [startTag, content, endTag].join('\n');
+    return str;
   }
 }
