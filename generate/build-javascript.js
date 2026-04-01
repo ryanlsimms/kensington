@@ -75,7 +75,7 @@ export default class Kensington {
       includeGlobalAttributes,
       includeGlobalEvents,
       namespace,
-      contentIsLiteral = false
+      contentIsLiteral = false,
     } = options;
     const invalidTypes = Object.values(allowedAttributes).filter(type => {
       return ![String, Number, Boolean].includes(type) && !Array.isArray(type) && typeof type !== 'function';

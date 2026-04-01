@@ -3,12 +3,13 @@
 Object.defineProperty(exports, '__esModule', { value: true });
 
 const he = require('he');
-const attributesFromObject = require('../lib/attributes-from-object.js');
+const attributesStringFromObject = require('../lib/attributes-string-from-object.js');
 const indent = require('../lib/indent.js');
 const showInvalid = require('../lib/show-invalid.js');
 const textUtils = require('../lib/text-utils.js');
 const literalTag = require('./literal-tag.js');
 const stringifyContentArray = require('../lib/stringify-content-array.js');
+const attributesArrayFromObject = require('../lib/attributes-array-from-object.js');
 
 // TODO validate via "import elements from 'html-validate/dist/es/html5.js'";
 
@@ -22,6 +23,7 @@ class ContentTag {
     this.namespaces = options.namespaces;
     this.validationLevel = options.validationLevel;
     this.content = [];
+    this.namespace = options.namespace;
 
     const handleItem = (c) =>  {
       if ([undefined, null, ''].includes(c)) {
@@ -138,8 +140,12 @@ class ContentTag {
   }
 
   attributeString() {
-    let attrString = attributesFromObject.default(this.attributes, Object.keys(this.allowedAttributes));
+    let attrString = attributesStringFromObject.default(this.attributes, Object.keys(this.allowedAttributes));
     return attrString ? ` ${attrString}` : '';
+  }
+
+  attributeArray() {
+    return attributesArrayFromObject.default(this.attributes, Object.keys(this.allowedAttributes));
   }
 
   toString() {
@@ -175,6 +181,33 @@ class ContentTag {
     str += '>';
 
     return str;
+  }
+
+  toElement() {
+    if (!document) {
+      throw new Error('toElement only supported in browser');
+    }
+    let element;
+    if (this.namespace) {
+      element = document.createElementNS(this.namespace, this.tagName);
+    } else {
+      element = document.createElement(this.tagName);
+    }
+
+
+    for (const [attrName, attrValue] of this.attributeArray()) {
+      element.setAttribute(attrName, attrValue);
+    }
+
+    this.content.forEach(node => {
+      if (node instanceof ContentTag || node instanceof literalTag.default) {
+        element.append(node.toElement());
+      } else {
+        element.append(document.createTextNode(node));
+      }
+    });
+
+    return element;
   }
 }
 

@@ -5,8 +5,8 @@ Object.defineProperty(exports, '__esModule', { value: true });
 const he = require('he');
 const textUtils = require('./text-utils.js');
 
-function attributesFromObject(obj, attributesList = []) {
-  let finalStr = '';
+function attributesArrayFromObject(obj, attributesList = []) {
+  let finalArr = [];
 
   for (const attr in obj) {
     const val = obj[attr];
@@ -19,8 +19,7 @@ function attributesFromObject(obj, attributesList = []) {
     }
 
     if (val === true) {
-      if (finalStr) { finalStr+= ' '; }
-      finalStr += attrName;
+      finalArr.push([attrName, '']);
       continue;
     }
     if (val?.constructor === Object) {
@@ -29,26 +28,17 @@ function attributesFromObject(obj, attributesList = []) {
           return [[attrName, k].join('-'), v]
         })
       );
-      if (finalStr) { finalStr+= ' '; }
-      finalStr += attributesFromObject(kebabKeys);
+      finalArr.push(...attributesArrayFromObject(kebabKeys));
       continue;
     }
     if (attr === 'class' && Array.isArray(val)) {
-      if (finalStr) { finalStr+= ' '; }
-      finalStr+= attrName;
-      finalStr+= '="';
-      finalStr+= val.join(' ');
-      finalStr+= '"';
+      finalArr.push([attrName, val.join(' ')]);
       continue;
     }
 
-    if (finalStr) { finalStr+= ' '; }
-    finalStr += attrName;
-    finalStr += '="';
-    finalStr += he.encode(val.toString());
-    finalStr += '"';
+    finalArr.push([attrName, he.encode(val.toString())]);
   }
-  return finalStr;
+  return finalArr;
 }
 
-exports.default = attributesFromObject;
+exports.default = attributesArrayFromObject;
