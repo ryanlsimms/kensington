@@ -406,6 +406,36 @@ export const animateTransformAttributes = {
   'values': String,
   'xml:space': ["default","preserve"]
 };
+export const annotationAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+export const annotationXmlAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
 export const areaAttributes = {
   'alt': String,
   'coords': String,
@@ -1616,7 +1646,55 @@ export const maskAttributes = {
   'xml:lang': String,
   'xml:space': String
 };
+export const mathAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'display': String,
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String,
+  'xmlns': String
+};
+export const mencloseAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'notation': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
 export const menuAttributes = {};
+export const merrorAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
 export const metaAttributes = {
   'charset': ["utf-8","UTF-8"],
   'content': String,
@@ -1701,6 +1779,128 @@ export const meterAttributes = {
   'optimum': String,
   'value': [Number,String]
 };
+export const mfracAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'linethickness': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+export const miAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+export const mmultiscriptsAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+export const mnAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+export const moAttributes = {
+  'accent': String,
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'fence': String,
+  'href': String,
+  'id': String,
+  'lspace': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'maxsize': String,
+  'minsize': String,
+  'movablelimits': String,
+  'nonce': String,
+  'rspace': String,
+  'scriptlevel': String,
+  'separator': String,
+  'stretchy': String,
+  'style': String,
+  'symmetric': String,
+  'tabindex': String
+};
+export const moverAttributes = {
+  'accent': String,
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+export const mpaddedAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'depth': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'height': String,
+  'href': String,
+  'id': String,
+  'lspace': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String,
+  'voffset': String,
+  'width': String
+};
 export const mpathAttributes = {
   'autofocus': Boolean,
   'class': String,
@@ -1770,6 +1970,282 @@ export const mpathAttributes = {
   'style': String,
   'tabindex': String,
   'xml:space': ["default","preserve"]
+};
+export const mphantomAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+export const mprescriptsAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+export const mrootAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+export const mrowAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+export const msAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+export const mspaceAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'height': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String,
+  'width': String
+};
+export const msqrtAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+export const mstyleAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+export const msubAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+export const msubsupAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+export const msupAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+export const mtableAttributes = {
+  'align': String,
+  'autofocus': Boolean,
+  'class': String,
+  'columnalign': String,
+  'columnlines': String,
+  'columnspacing': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'frame': String,
+  'framespacing': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'rowalign': String,
+  'rowlines': String,
+  'rowspacing': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String,
+  'width': String
+};
+export const mtdAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'columnalign': String,
+  'columnspan': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'rowalign': String,
+  'rowspan': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+export const mtextAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+export const mtrAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'columnalign': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'rowalign': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+export const munderAttributes = {
+  'accentunder': String,
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+export const munderoverAttributes = {
+  'accent': String,
+  'accentunder': String,
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
 };
 export const navAttributes = {};
 export const noscriptAttributes = {};
@@ -2303,6 +2779,21 @@ export const selectAttributes = {
   'size': Number
 };
 export const selectedcontentAttributes = {};
+export const semanticsAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
 export const setAttributes = {
   'attributeName': String,
   'autofocus': Boolean,

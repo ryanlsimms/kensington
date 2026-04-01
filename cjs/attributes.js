@@ -407,6 +407,36 @@ const animateTransformAttributes = {
   'values': String,
   'xml:space': ["default","preserve"]
 };
+const annotationAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+const annotationXmlAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
 const areaAttributes = {
   'alt': String,
   'coords': String,
@@ -1617,7 +1647,55 @@ const maskAttributes = {
   'xml:lang': String,
   'xml:space': String
 };
+const mathAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'display': String,
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String,
+  'xmlns': String
+};
+const mencloseAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'notation': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
 const menuAttributes = {};
+const merrorAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
 const metaAttributes = {
   'charset': ["utf-8","UTF-8"],
   'content': String,
@@ -1702,6 +1780,128 @@ const meterAttributes = {
   'optimum': String,
   'value': [Number,String]
 };
+const mfracAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'linethickness': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+const miAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+const mmultiscriptsAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+const mnAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+const moAttributes = {
+  'accent': String,
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'fence': String,
+  'href': String,
+  'id': String,
+  'lspace': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'maxsize': String,
+  'minsize': String,
+  'movablelimits': String,
+  'nonce': String,
+  'rspace': String,
+  'scriptlevel': String,
+  'separator': String,
+  'stretchy': String,
+  'style': String,
+  'symmetric': String,
+  'tabindex': String
+};
+const moverAttributes = {
+  'accent': String,
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+const mpaddedAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'depth': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'height': String,
+  'href': String,
+  'id': String,
+  'lspace': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String,
+  'voffset': String,
+  'width': String
+};
 const mpathAttributes = {
   'autofocus': Boolean,
   'class': String,
@@ -1771,6 +1971,282 @@ const mpathAttributes = {
   'style': String,
   'tabindex': String,
   'xml:space': ["default","preserve"]
+};
+const mphantomAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+const mprescriptsAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+const mrootAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+const mrowAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+const msAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+const mspaceAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'height': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String,
+  'width': String
+};
+const msqrtAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+const mstyleAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+const msubAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+const msubsupAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+const msupAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+const mtableAttributes = {
+  'align': String,
+  'autofocus': Boolean,
+  'class': String,
+  'columnalign': String,
+  'columnlines': String,
+  'columnspacing': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'frame': String,
+  'framespacing': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'rowalign': String,
+  'rowlines': String,
+  'rowspacing': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String,
+  'width': String
+};
+const mtdAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'columnalign': String,
+  'columnspan': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'rowalign': String,
+  'rowspan': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+const mtextAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+const mtrAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'columnalign': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'rowalign': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+const munderAttributes = {
+  'accentunder': String,
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
+const munderoverAttributes = {
+  'accent': String,
+  'accentunder': String,
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
 };
 const navAttributes = {};
 const noscriptAttributes = {};
@@ -2304,6 +2780,21 @@ const selectAttributes = {
   'size': Number
 };
 const selectedcontentAttributes = {};
+const semanticsAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ["ltr","LTR","rtl","RTL","auto","AUTO"],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'style': String,
+  'tabindex': String
+};
 const setAttributes = {
   'attributeName': String,
   'autofocus': Boolean,
@@ -3179,6 +3670,8 @@ exports.addressAttributes = addressAttributes;
 exports.animateAttributes = animateAttributes;
 exports.animateMotionAttributes = animateMotionAttributes;
 exports.animateTransformAttributes = animateTransformAttributes;
+exports.annotationAttributes = annotationAttributes;
+exports.annotationXmlAttributes = annotationXmlAttributes;
 exports.areaAttributes = areaAttributes;
 exports.articleAttributes = articleAttributes;
 exports.asideAttributes = asideAttributes;
@@ -3278,11 +3771,38 @@ exports.mapAttributes = mapAttributes;
 exports.markAttributes = markAttributes;
 exports.markerAttributes = markerAttributes;
 exports.maskAttributes = maskAttributes;
+exports.mathAttributes = mathAttributes;
+exports.mencloseAttributes = mencloseAttributes;
 exports.menuAttributes = menuAttributes;
+exports.merrorAttributes = merrorAttributes;
 exports.metaAttributes = metaAttributes;
 exports.metadataAttributes = metadataAttributes;
 exports.meterAttributes = meterAttributes;
+exports.mfracAttributes = mfracAttributes;
+exports.miAttributes = miAttributes;
+exports.mmultiscriptsAttributes = mmultiscriptsAttributes;
+exports.mnAttributes = mnAttributes;
+exports.moAttributes = moAttributes;
+exports.moverAttributes = moverAttributes;
+exports.mpaddedAttributes = mpaddedAttributes;
 exports.mpathAttributes = mpathAttributes;
+exports.mphantomAttributes = mphantomAttributes;
+exports.mprescriptsAttributes = mprescriptsAttributes;
+exports.mrootAttributes = mrootAttributes;
+exports.mrowAttributes = mrowAttributes;
+exports.msAttributes = msAttributes;
+exports.mspaceAttributes = mspaceAttributes;
+exports.msqrtAttributes = msqrtAttributes;
+exports.mstyleAttributes = mstyleAttributes;
+exports.msubAttributes = msubAttributes;
+exports.msubsupAttributes = msubsupAttributes;
+exports.msupAttributes = msupAttributes;
+exports.mtableAttributes = mtableAttributes;
+exports.mtdAttributes = mtdAttributes;
+exports.mtextAttributes = mtextAttributes;
+exports.mtrAttributes = mtrAttributes;
+exports.munderAttributes = munderAttributes;
+exports.munderoverAttributes = munderoverAttributes;
 exports.navAttributes = navAttributes;
 exports.noscriptAttributes = noscriptAttributes;
 exports.objectAttributes = objectAttributes;
@@ -3311,6 +3831,7 @@ exports.searchAttributes = searchAttributes;
 exports.sectionAttributes = sectionAttributes;
 exports.selectAttributes = selectAttributes;
 exports.selectedcontentAttributes = selectedcontentAttributes;
+exports.semanticsAttributes = semanticsAttributes;
 exports.setAttributes = setAttributes;
 exports.slotAttributes = slotAttributes;
 exports.smallAttributes = smallAttributes;

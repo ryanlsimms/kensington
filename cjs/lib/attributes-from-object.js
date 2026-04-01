@@ -31,7 +31,7 @@ function attributesFromObject(obj, attributesList = []) {
       );
       if (finalStr) { finalStr+= ' '; }
       finalStr += attributesFromObject(kebabKeys);
-      continue
+      continue;
     }
     if (attr === 'class' && Array.isArray(val)) {
       if (finalStr) { finalStr+= ' '; }
@@ -39,11 +39,14 @@ function attributesFromObject(obj, attributesList = []) {
       finalStr+= '="';
       finalStr+= val.join(' ');
       finalStr+= '"';
-      continue
+      continue;
     }
 
     if (finalStr) { finalStr+= ' '; }
-    finalStr += `${attrName}="${he.encode(val.toString())}"`;
+    finalStr += attrName;
+    finalStr += '="';
+    finalStr += he.encode(val.toString());
+    finalStr += '"';
   }
   return finalStr;
 }

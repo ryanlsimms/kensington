@@ -419,6 +419,38 @@ type AnimateTransformAttributes = {
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
+type AnnotationAttributes = {
+  'autofocus'?: boolean;
+  'class'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'href'?: string;
+  'id'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'scriptlevel'?: string;
+  'style'?: string;
+  'tabindex'?: string;
+} & NameSpaceAttributes & GlobalEvents;
+
+type AnnotationXmlAttributes = {
+  'autofocus'?: boolean;
+  'class'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'href'?: string;
+  'id'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'scriptlevel'?: string;
+  'style'?: string;
+  'tabindex'?: string;
+} & NameSpaceAttributes & GlobalEvents;
+
 type AreaAttributes = {
   'alt'?: string;
   'coords'?: string;
@@ -1727,7 +1759,58 @@ type MaskAttributes = {
   'xml:space'?: string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
+type MathAttributes = {
+  'autofocus'?: boolean;
+  'class'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'display'?: string;
+  'displaystyle'?: string;
+  'href'?: string;
+  'id'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'scriptlevel'?: string;
+  'style'?: string;
+  'tabindex'?: string;
+  'xmlns'?: string;
+} & NameSpaceAttributes & GlobalEvents;
+
+type MencloseAttributes = {
+  'autofocus'?: boolean;
+  'class'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'href'?: string;
+  'id'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'notation'?: string;
+  'scriptlevel'?: string;
+  'style'?: string;
+  'tabindex'?: string;
+} & NameSpaceAttributes & GlobalEvents;
+
 type MenuAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+
+type MerrorAttributes = {
+  'autofocus'?: boolean;
+  'class'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'href'?: string;
+  'id'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'scriptlevel'?: string;
+  'style'?: string;
+  'tabindex'?: string;
+} & NameSpaceAttributes & GlobalEvents;
 
 type MetaAttributes = {
   'charset'?: "utf-8" | "UTF-8";
@@ -1817,6 +1900,135 @@ type MeterAttributes = {
   'value'?: number | string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
+type MfracAttributes = {
+  'autofocus'?: boolean;
+  'class'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'href'?: string;
+  'id'?: string;
+  'linethickness'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'scriptlevel'?: string;
+  'style'?: string;
+  'tabindex'?: string;
+} & NameSpaceAttributes & GlobalEvents;
+
+type MiAttributes = {
+  'autofocus'?: boolean;
+  'class'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'href'?: string;
+  'id'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'scriptlevel'?: string;
+  'style'?: string;
+  'tabindex'?: string;
+} & NameSpaceAttributes & GlobalEvents;
+
+type MmultiscriptsAttributes = {
+  'autofocus'?: boolean;
+  'class'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'href'?: string;
+  'id'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'scriptlevel'?: string;
+  'style'?: string;
+  'tabindex'?: string;
+} & NameSpaceAttributes & GlobalEvents;
+
+type MnAttributes = {
+  'autofocus'?: boolean;
+  'class'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'href'?: string;
+  'id'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'scriptlevel'?: string;
+  'style'?: string;
+  'tabindex'?: string;
+} & NameSpaceAttributes & GlobalEvents;
+
+type MoAttributes = {
+  'accent'?: string;
+  'autofocus'?: boolean;
+  'class'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'fence'?: string;
+  'href'?: string;
+  'id'?: string;
+  'lspace'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'maxsize'?: string;
+  'minsize'?: string;
+  'movablelimits'?: string;
+  'nonce'?: string;
+  'rspace'?: string;
+  'scriptlevel'?: string;
+  'separator'?: string;
+  'stretchy'?: string;
+  'style'?: string;
+  'symmetric'?: string;
+  'tabindex'?: string;
+} & NameSpaceAttributes & GlobalEvents;
+
+type MoverAttributes = {
+  'accent'?: string;
+  'autofocus'?: boolean;
+  'class'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'href'?: string;
+  'id'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'scriptlevel'?: string;
+  'style'?: string;
+  'tabindex'?: string;
+} & NameSpaceAttributes & GlobalEvents;
+
+type MpaddedAttributes = {
+  'autofocus'?: boolean;
+  'class'?: string;
+  'depth'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'height'?: string;
+  'href'?: string;
+  'id'?: string;
+  'lspace'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'scriptlevel'?: string;
+  'style'?: string;
+  'tabindex'?: string;
+  'voffset'?: string;
+  'width'?: string;
+} & NameSpaceAttributes & GlobalEvents;
+
 type MpathAttributes = {
   'autofocus'?: boolean;
   'class'?: string;
@@ -1887,6 +2099,299 @@ type MpathAttributes = {
   'tabindex'?: string;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+
+type MphantomAttributes = {
+  'autofocus'?: boolean;
+  'class'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'href'?: string;
+  'id'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'scriptlevel'?: string;
+  'style'?: string;
+  'tabindex'?: string;
+} & NameSpaceAttributes & GlobalEvents;
+
+type MprescriptsAttributes = {
+  'autofocus'?: boolean;
+  'class'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'href'?: string;
+  'id'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'scriptlevel'?: string;
+  'style'?: string;
+  'tabindex'?: string;
+} & NameSpaceAttributes & GlobalEvents;
+
+type MrootAttributes = {
+  'autofocus'?: boolean;
+  'class'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'href'?: string;
+  'id'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'scriptlevel'?: string;
+  'style'?: string;
+  'tabindex'?: string;
+} & NameSpaceAttributes & GlobalEvents;
+
+type MrowAttributes = {
+  'autofocus'?: boolean;
+  'class'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'href'?: string;
+  'id'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'scriptlevel'?: string;
+  'style'?: string;
+  'tabindex'?: string;
+} & NameSpaceAttributes & GlobalEvents;
+
+type MsAttributes = {
+  'autofocus'?: boolean;
+  'class'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'href'?: string;
+  'id'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'scriptlevel'?: string;
+  'style'?: string;
+  'tabindex'?: string;
+} & NameSpaceAttributes & GlobalEvents;
+
+type MspaceAttributes = {
+  'autofocus'?: boolean;
+  'class'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'height'?: string;
+  'href'?: string;
+  'id'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'scriptlevel'?: string;
+  'style'?: string;
+  'tabindex'?: string;
+  'width'?: string;
+} & NameSpaceAttributes & GlobalEvents;
+
+type MsqrtAttributes = {
+  'autofocus'?: boolean;
+  'class'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'href'?: string;
+  'id'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'scriptlevel'?: string;
+  'style'?: string;
+  'tabindex'?: string;
+} & NameSpaceAttributes & GlobalEvents;
+
+type MstyleAttributes = {
+  'autofocus'?: boolean;
+  'class'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'href'?: string;
+  'id'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'scriptlevel'?: string;
+  'style'?: string;
+  'tabindex'?: string;
+} & NameSpaceAttributes & GlobalEvents;
+
+type MsubAttributes = {
+  'autofocus'?: boolean;
+  'class'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'href'?: string;
+  'id'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'scriptlevel'?: string;
+  'style'?: string;
+  'tabindex'?: string;
+} & NameSpaceAttributes & GlobalEvents;
+
+type MsubsupAttributes = {
+  'autofocus'?: boolean;
+  'class'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'href'?: string;
+  'id'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'scriptlevel'?: string;
+  'style'?: string;
+  'tabindex'?: string;
+} & NameSpaceAttributes & GlobalEvents;
+
+type MsupAttributes = {
+  'autofocus'?: boolean;
+  'class'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'href'?: string;
+  'id'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'scriptlevel'?: string;
+  'style'?: string;
+  'tabindex'?: string;
+} & NameSpaceAttributes & GlobalEvents;
+
+type MtableAttributes = {
+  'align'?: string;
+  'autofocus'?: boolean;
+  'class'?: string;
+  'columnalign'?: string;
+  'columnlines'?: string;
+  'columnspacing'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'frame'?: string;
+  'framespacing'?: string;
+  'href'?: string;
+  'id'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'rowalign'?: string;
+  'rowlines'?: string;
+  'rowspacing'?: string;
+  'scriptlevel'?: string;
+  'style'?: string;
+  'tabindex'?: string;
+  'width'?: string;
+} & NameSpaceAttributes & GlobalEvents;
+
+type MtdAttributes = {
+  'autofocus'?: boolean;
+  'class'?: string;
+  'columnalign'?: string;
+  'columnspan'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'href'?: string;
+  'id'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'rowalign'?: string;
+  'rowspan'?: string;
+  'scriptlevel'?: string;
+  'style'?: string;
+  'tabindex'?: string;
+} & NameSpaceAttributes & GlobalEvents;
+
+type MtextAttributes = {
+  'autofocus'?: boolean;
+  'class'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'href'?: string;
+  'id'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'scriptlevel'?: string;
+  'style'?: string;
+  'tabindex'?: string;
+} & NameSpaceAttributes & GlobalEvents;
+
+type MtrAttributes = {
+  'autofocus'?: boolean;
+  'class'?: string;
+  'columnalign'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'href'?: string;
+  'id'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'rowalign'?: string;
+  'scriptlevel'?: string;
+  'style'?: string;
+  'tabindex'?: string;
+} & NameSpaceAttributes & GlobalEvents;
+
+type MunderAttributes = {
+  'accentunder'?: string;
+  'autofocus'?: boolean;
+  'class'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'href'?: string;
+  'id'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'scriptlevel'?: string;
+  'style'?: string;
+  'tabindex'?: string;
+} & NameSpaceAttributes & GlobalEvents;
+
+type MunderoverAttributes = {
+  'accent'?: string;
+  'accentunder'?: string;
+  'autofocus'?: boolean;
+  'class'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'href'?: string;
+  'id'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'scriptlevel'?: string;
+  'style'?: string;
+  'tabindex'?: string;
+} & NameSpaceAttributes & GlobalEvents;
 
 type NavAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
@@ -2447,6 +2952,22 @@ type SelectAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type SelectedcontentAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+
+type SemanticsAttributes = {
+  'autofocus'?: boolean;
+  'class'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'href'?: string;
+  'id'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'scriptlevel'?: string;
+  'style'?: string;
+  'tabindex'?: string;
+} & NameSpaceAttributes & GlobalEvents;
 
 type SetAttributes = {
   'attributeName'?: string;
@@ -3360,6 +3881,8 @@ export const addressAttributes: AddressAttributes
 export const animateAttributes: AnimateAttributes
 export const animateMotionAttributes: AnimateMotionAttributes
 export const animateTransformAttributes: AnimateTransformAttributes
+export const annotationAttributes: AnnotationAttributes
+export const annotationXmlAttributes: AnnotationXmlAttributes
 export const areaAttributes: AreaAttributes
 export const articleAttributes: ArticleAttributes
 export const asideAttributes: AsideAttributes
@@ -3457,11 +3980,38 @@ export const mapAttributes: MapAttributes
 export const markAttributes: MarkAttributes
 export const markerAttributes: MarkerAttributes
 export const maskAttributes: MaskAttributes
+export const mathAttributes: MathAttributes
+export const mencloseAttributes: MencloseAttributes
 export const menuAttributes: MenuAttributes
+export const merrorAttributes: MerrorAttributes
 export const metaAttributes: MetaAttributes
 export const metadataAttributes: MetadataAttributes
 export const meterAttributes: MeterAttributes
+export const mfracAttributes: MfracAttributes
+export const miAttributes: MiAttributes
+export const mmultiscriptsAttributes: MmultiscriptsAttributes
+export const mnAttributes: MnAttributes
+export const moAttributes: MoAttributes
+export const moverAttributes: MoverAttributes
+export const mpaddedAttributes: MpaddedAttributes
 export const mpathAttributes: MpathAttributes
+export const mphantomAttributes: MphantomAttributes
+export const mprescriptsAttributes: MprescriptsAttributes
+export const mrootAttributes: MrootAttributes
+export const mrowAttributes: MrowAttributes
+export const msAttributes: MsAttributes
+export const mspaceAttributes: MspaceAttributes
+export const msqrtAttributes: MsqrtAttributes
+export const mstyleAttributes: MstyleAttributes
+export const msubAttributes: MsubAttributes
+export const msubsupAttributes: MsubsupAttributes
+export const msupAttributes: MsupAttributes
+export const mtableAttributes: MtableAttributes
+export const mtdAttributes: MtdAttributes
+export const mtextAttributes: MtextAttributes
+export const mtrAttributes: MtrAttributes
+export const munderAttributes: MunderAttributes
+export const munderoverAttributes: MunderoverAttributes
 export const navAttributes: NavAttributes
 export const noscriptAttributes: NoscriptAttributes
 export const objectAttributes: ObjectAttributes
@@ -3490,6 +4040,7 @@ export const searchAttributes: SearchAttributes
 export const sectionAttributes: SectionAttributes
 export const selectAttributes: SelectAttributes
 export const selectedcontentAttributes: SelectedcontentAttributes
+export const semanticsAttributes: SemanticsAttributes
 export const setAttributes: SetAttributes
 export const slotAttributes: SlotAttributes
 export const smallAttributes: SmallAttributes
@@ -3563,6 +4114,10 @@ export default class Kensington {
   animateMotion(content?: Content): ContentTag;
   animateTransform(attributes: AnimateTransformAttributes, content?: Content): ContentTag;
   animateTransform(content?: Content): ContentTag;
+  annotation(attributes: AnnotationAttributes, content?: Content): ContentTag;
+  annotation(content?: Content): ContentTag;
+  annotationXml(attributes: AnnotationXmlAttributes, content?: Content): ContentTag;
+  annotationXml(content?: Content): ContentTag;
   area(attributes?: AreaAttributes): VoidTag;
   article(attributes: ArticleAttributes, content?: Content): ContentTag;
   article(content?: Content): ContentTag;
@@ -3748,15 +4303,69 @@ export default class Kensington {
   marker(content?: Content): ContentTag;
   mask(attributes: MaskAttributes, content?: Content): ContentTag;
   mask(content?: Content): ContentTag;
+  math(attributes: MathAttributes, content?: Content): ContentTag;
+  math(content?: Content): ContentTag;
+  menclose(attributes: MencloseAttributes, content?: Content): ContentTag;
+  menclose(content?: Content): ContentTag;
   menu(attributes: MenuAttributes, content?: Content): ContentTag;
   menu(content?: Content): ContentTag;
+  merror(attributes: MerrorAttributes, content?: Content): ContentTag;
+  merror(content?: Content): ContentTag;
   meta(attributes?: MetaAttributes): VoidTag;
   metadata(attributes: MetadataAttributes, content?: Content): ContentTag;
   metadata(content?: Content): ContentTag;
   meter(attributes: MeterAttributes, content?: Content): ContentTag;
   meter(content?: Content): ContentTag;
+  mfrac(attributes: MfracAttributes, content?: Content): ContentTag;
+  mfrac(content?: Content): ContentTag;
+  mi(attributes: MiAttributes, content?: Content): ContentTag;
+  mi(content?: Content): ContentTag;
+  mmultiscripts(attributes: MmultiscriptsAttributes, content?: Content): ContentTag;
+  mmultiscripts(content?: Content): ContentTag;
+  mn(attributes: MnAttributes, content?: Content): ContentTag;
+  mn(content?: Content): ContentTag;
+  mo(attributes: MoAttributes, content?: Content): ContentTag;
+  mo(content?: Content): ContentTag;
+  mover(attributes: MoverAttributes, content?: Content): ContentTag;
+  mover(content?: Content): ContentTag;
+  mpadded(attributes: MpaddedAttributes, content?: Content): ContentTag;
+  mpadded(content?: Content): ContentTag;
   mpath(attributes: MpathAttributes, content?: Content): ContentTag;
   mpath(content?: Content): ContentTag;
+  mphantom(attributes: MphantomAttributes, content?: Content): ContentTag;
+  mphantom(content?: Content): ContentTag;
+  mprescripts(attributes: MprescriptsAttributes, content?: Content): ContentTag;
+  mprescripts(content?: Content): ContentTag;
+  mroot(attributes: MrootAttributes, content?: Content): ContentTag;
+  mroot(content?: Content): ContentTag;
+  mrow(attributes: MrowAttributes, content?: Content): ContentTag;
+  mrow(content?: Content): ContentTag;
+  ms(attributes: MsAttributes, content?: Content): ContentTag;
+  ms(content?: Content): ContentTag;
+  mspace(attributes: MspaceAttributes, content?: Content): ContentTag;
+  mspace(content?: Content): ContentTag;
+  msqrt(attributes: MsqrtAttributes, content?: Content): ContentTag;
+  msqrt(content?: Content): ContentTag;
+  mstyle(attributes: MstyleAttributes, content?: Content): ContentTag;
+  mstyle(content?: Content): ContentTag;
+  msub(attributes: MsubAttributes, content?: Content): ContentTag;
+  msub(content?: Content): ContentTag;
+  msubsup(attributes: MsubsupAttributes, content?: Content): ContentTag;
+  msubsup(content?: Content): ContentTag;
+  msup(attributes: MsupAttributes, content?: Content): ContentTag;
+  msup(content?: Content): ContentTag;
+  mtable(attributes: MtableAttributes, content?: Content): ContentTag;
+  mtable(content?: Content): ContentTag;
+  mtd(attributes: MtdAttributes, content?: Content): ContentTag;
+  mtd(content?: Content): ContentTag;
+  mtext(attributes: MtextAttributes, content?: Content): ContentTag;
+  mtext(content?: Content): ContentTag;
+  mtr(attributes: MtrAttributes, content?: Content): ContentTag;
+  mtr(content?: Content): ContentTag;
+  munder(attributes: MunderAttributes, content?: Content): ContentTag;
+  munder(content?: Content): ContentTag;
+  munderover(attributes: MunderoverAttributes, content?: Content): ContentTag;
+  munderover(content?: Content): ContentTag;
   nav(attributes: NavAttributes, content?: Content): ContentTag;
   nav(content?: Content): ContentTag;
   noscript(attributes: NoscriptAttributes, content?: Content): ContentTag;
@@ -3812,6 +4421,8 @@ export default class Kensington {
   select(attributes: SelectAttributes, content?: Content): ContentTag;
   select(content?: Content): ContentTag;
   selectedcontent(attributes?: SelectedcontentAttributes): VoidTag;
+  semantics(attributes: SemanticsAttributes, content?: Content): ContentTag;
+  semantics(content?: Content): ContentTag;
   set(attributes: SetAttributes, content?: Content): ContentTag;
   set(content?: Content): ContentTag;
   slot(attributes: SlotAttributes, content?: Content): ContentTag;

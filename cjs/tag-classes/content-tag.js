@@ -8,6 +8,7 @@ const indent = require('../lib/indent.js');
 const showInvalid = require('../lib/show-invalid.js');
 const textUtils = require('../lib/text-utils.js');
 const literalTag = require('./literal-tag.js');
+const stringifyContentArray = require('../lib/stringify-content-array.js');
 
 // TODO validate via "import elements from 'html-validate/dist/es/html5.js'";
 
@@ -32,9 +33,9 @@ class ContentTag {
       }
       if (typeof c === 'string' && this.tagName !== 'script') {
         this.content.push(he.encode(c));
-        return;
+      } else {
+        this.content.push(c);
       }
-      this.content.push(c);
     };
 
     [].concat(options.content).forEach(handleItem);
@@ -142,36 +143,38 @@ class ContentTag {
   }
 
   toString() {
-    const startTag = `<${this.tagName}${this.attributeString()}>`;
-    const endTag = `</${this.tagName}>`;
-
     if (this.validationLevel !== 'off') {
       this.validateContent();
     }
+
+    let str = '<';
+    str += this.tagName;
+    str += this.attributeString();
+    str += '>';
+
+
     if (this.contentIsLiteral) {
-      return [startTag, this.content, endTag].join('');
+      str += this.content;
+    } else if (this.contentIsShort()) {
+      for (const c of this.content) {
+        str += c;
+      }
+    } else {
+      let content = stringifyContentArray.default(this.content);
+
+      if (this.indentationLevel) {
+        content = indent.default(content, this.indentationLevel);
+      }
+      str += '\n';
+      str += content;
+      str += '\n';
     }
 
-    if (this.contentIsShort()) {
-      return [startTag, ...this.content, endTag].join('');
-    }
+    str += '</';
+    str += this.tagName;
+    str += '>';
 
-    let content = this.content
-      .flat(99)
-      .map(node => {
-        if (typeof node !== 'string') {
-          return node
-        }
-        let str = node.replaceAll(textUtils.LINE_BREAK_REGEX, '<br>\n');
-        str = str.replace(/\n$/, '');
-        return str;
-      })
-      .join('\n');
-
-    if (this.indentationLevel) {
-      content = indent.default(content, this.indentationLevel);
-    }
-    return [startTag, content, endTag].join('\n');
+    return str;
   }
 }
 

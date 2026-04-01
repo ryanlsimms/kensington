@@ -1,8 +1,8 @@
 import fetchAsDom from '../utils/fetch-as-dom.js';
 
 export default async function fetchMathMlData() {
-  const tagDom = await fetchAsDom('https://developer.mozilla.org/en-US/docs/Web/MathML/Element');
-  const tagContainers = tagDom.querySelectorAll('article li:not(:has(.icon-deprecated))');
+  const tagDom = await fetchAsDom('https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element');
+  const tagContainers = tagDom.querySelectorAll('#content li:not(:has(.icon-deprecated))');
   const tags = [...new Set([...tagContainers].map(el => el.querySelector('code')?.textContent?.replaceAll(/[<>]/g, '')).filter(Boolean).sort())];
   const elementObj = Object.fromEntries(tags.map(tag => [tag, []]));
 
@@ -10,8 +10,8 @@ export default async function fetchMathMlData() {
   const globalContainers = globalDom.querySelectorAll('dt > a > code');
   const globalAttributes = [...globalContainers].map(el => el.textContent).filter(tag => !tag.startsWith('data-'));
 
-  const attrDom = await fetchAsDom('https://developer.mozilla.org/en-US/docs/Web/MathML/Attribute');
-  const rows = attrDom.querySelectorAll('article tbody tr:not(:has(.icon-deprecated))');
+  const attrDom = await fetchAsDom('https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Attribute');
+  const rows = attrDom.querySelectorAll('#content tbody tr:not(:has(.icon-deprecated))');
 
   const attributes = [...rows].map(row => {
     const attribute = row.querySelector('td:nth-child(1) code').textContent;
