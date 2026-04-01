@@ -4,14 +4,15 @@ This template engine is a way to create html via nested method calls.  Each tag 
 * nested attributes are converted to kebab-case `{ data: { bs: { toggle: 'collapse' } } }` becomes `data-bs-toggle="collapse"`
 * camelCase attibute become kebabcase `{ dataBsToggle: 'collapse' }` becomes `data-bs-toggle="collapse"`
 * attributes are validated against those found [here](https://html.spec.whatwg.org/multipage/indices.html#elements-3)
-* attributes with a boolean value will either be included or not: `t.input({ type: 'checkbox', checked: true })` becomes `<input type="checkbox" checked>` or `<input type="checkbox" />` if `checked` is false
+* attributes with a boolean value will either be included or not: `t.input({ type: 'checkbox', checked: true })` becomes `<input type="checkbox" checked>` or `<input type="checkbox">` if `checked` is false
 * [Global attributes](https://html.spec.whatwg.org/multipage/dom.html#global-attributes) are always allowed, along with `aria-*` and `data-*` attributes.
-* Additional namespaces (like `hx` when using [htmx](https://htmx.org)) can be added by passing the `additionalNamespaces` property to the constructor
+* Additional attribute namespaces (like `hx` when using [htmx](https://htmx.org)) can be added by passing the `additionalNamespaces` property to the constructor
 * `validationLevel` can be set to `off`, `warn`, or `error`.
 * the `.literal` method allows you to pass in html as a string.
 * `.htmlWithDocType` is the same as `.html`, but adds the `<!DOCTYPE html>` tag to the beginning of the string.
 * call `.toString()` on the outermost method to expicitly convert to string.  This can often be omitted if the output is sent as a string.
 * string interpolation automatically converts the tag to string ``` `${t.html(t.body('hello'))}` ```
+* In the browser, call `.toElement()` to create a dom element instead of a string
 * you can add your own custom elements:
     * extend the `Kensington` class with your own
     * set a property equal to `this.createCustomTag()` with the following arguments
@@ -43,7 +44,11 @@ class MyTemplateEngine extends Kensington {
 }
 ```
 ```javascript
-const t = new MyTemplateEngine({ validationLevel: 'warn', additionalNamespaces: ['hx'] });
+const t = new MyTemplateEngine({ 
+  validationLevel: 'warn', 
+  additionalNamespaces: ['hx'], 
+  indentationLevel: 2,
+});
 
 const html = t.htmlWithDoctype({ lang: 'en' }, [
   t.head(t.title('My Page Title')),
@@ -108,25 +113,3 @@ const html = t.htmlWithDoctype({ lang: 'en' }, [
 // import instance directly if you don't need customization
 import { t } from 'kensington';
 ```
-
-
-### TODO
-* type declaration file for custom instance
-* validate/type data and aria attributes
-* skip validation per tag (maybe a bad idea)
-* readme demos express integration
-* mention use of html-validate
-* what version of node/js is necessary?
-* comments
-* better namespace non-tag methods to avoid potential future collisions
-* better monkey patching
-* html to kensington transpiler?
-* conditionally allow attributes based on other attributes (multiple allowed only on inputs of type="file")
-* build dist for browser
-* make line break -> <br> optional
-* pass logger to constructor instead of console.log
-* better format css
-* configurable indentation level
-* use private class methods
-* stress testing with large data sets
-* methods for entities (&nbsp;)

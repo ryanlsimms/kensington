@@ -1,4 +1,5 @@
-import Kensington, { t } from 'kensington';
+import Kensington, { t } from 'kensington'; // https://dev.to/one-beyond/different-approaches-to-testing-your-own-packages-locally-npm-link-4hoj
+import attributesArrayFromObject from '../../esm/lib/attributes-array-from-object.js';
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
 
@@ -128,6 +129,17 @@ describe('attributes', () => {
     const tt = new Kensington({ validationLevel: 'error' });
     assert.throws(() => tt.form({ method: 'delete' }).toString());
   });
+
+  it('creates array', () => {
+    const result = attributesArrayFromObject({
+      id: 'a',
+      dataName: 'b',
+      data: { nestedAttr: 'c', nested: 'd', 'camel-case': 'e', deeply: { nested: { attr: 'f' } } },
+      required: false,
+      checked: true,
+    });
+    assert.strictEqual(JSON.stringify(result), '[["id","a"],["data-name","b"],["data-nested-attr","c"],["data-nested","d"],["data-camel-case","e"],["data-deeply-nested-attr","f"],["checked",""]]');
+  })
 
   describe('validation', () => {
     it('by function', () => {

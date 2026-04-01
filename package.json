@@ -2,6 +2,7 @@
   "name": "kensington",
   "version": "0.10.1",
   "main": "./cjs/kensington.js",
+  "type": "module",
   "module": "./esm/kensington.js",
   "types": "./types.d.ts",
   "license": "ISC",
@@ -38,7 +39,9 @@
     "url": "git+https://github.com/ryanlsimms/kensington.git"
   },
   "scripts": {
-    "test": "node --test \"./test/esm-test.js\""
+    "test": "node --test \"./tests/esm/esm-test.js\"",
+    "test-dom": "npx playwright test --config ./tests/browser/playwright.config.js",
+    "dom-server": "node --watch-path=./tests/browser/server/browser-test.html --watch-path=./esm ./tests/browser/server/html-server.js"
   },
   "dependencies": {
     "he": "^1.2.0"
@@ -47,6 +50,10 @@
     "node": "23.9.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@rollup/plugin-commonjs": "^29.0.2",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "@types/node": "^25.5.0",
     "html-validate": "^9.4.1",
     "jsdom": "^26.0.0",
     "rollup": "^4.35.0"

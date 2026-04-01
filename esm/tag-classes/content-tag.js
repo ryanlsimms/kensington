@@ -1,11 +1,12 @@
 import he from 'he';
 
-import attributesFromObject from '../lib/attributes-from-object.js';
+import attributesStringFromObject from '../lib/attributes-string-from-object.js';
 import indent from '../lib/indent.js';
 import showInvalid from '../lib/show-invalid.js';
 import { camelToKebab, LINE_BREAK_REGEX } from '../lib/text-utils.js';
 import LiteralTag from './literal-tag.js';
 import stringifyContentArray from '../lib/stringify-content-array.js';
+import attributesArrayFromObject from '../lib/attributes-array-from-object.js';
 
 // TODO validate via "import elements from 'html-validate/dist/es/html5.js'";
 
@@ -19,6 +20,7 @@ export default class ContentTag {
     this.namespaces = options.namespaces;
     this.validationLevel = options.validationLevel;
     this.content = [];
+    this.namespace = options.namespace;
 
     const handleItem = (c) =>  {
       if ([undefined, null, ''].includes(c)) {
@@ -135,8 +137,12 @@ export default class ContentTag {
   }
 
   attributeString() {
-    let attrString = attributesFromObject(this.attributes, Object.keys(this.allowedAttributes));
+    let attrString = attributesStringFromObject(this.attributes, Object.keys(this.allowedAttributes));
     return attrString ? ` ${attrString}` : '';
+  }
+
+  attributeArray() {
+    return attributesArrayFromObject(this.attributes, Object.keys(this.allowedAttributes));
   }
 
   toString() {
@@ -172,5 +178,32 @@ export default class ContentTag {
     str += '>';
 
     return str;
+  }
+
+  toElement() {
+    if (!document) {
+      throw new Error('toElement only supported in browser');
+    }
+    let element;
+    if (this.namespace) {
+      element = document.createElementNS(this.namespace, this.tagName);
+    } else {
+      element = document.createElement(this.tagName);
+    }
+
+
+    for (const [attrName, attrValue] of this.attributeArray()) {
+      element.setAttribute(attrName, attrValue);
+    }
+
+    this.content.forEach(node => {
+      if (node instanceof ContentTag || node instanceof LiteralTag) {
+        element.append(node.toElement());
+      } else {
+        element.append(document.createTextNode(node))
+      }
+    });
+
+    return element;
   }
 }

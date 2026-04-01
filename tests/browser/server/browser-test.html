@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Kensington Test</title>
+  <script type="module">
+    import { t } from '/kensington.js';
+    const element = t.div({
+      id: 'a',
+      dataName: 'b',
+      data: { nestedAttr: 'c', nested: 'd', 'camel-case': 'e', deeply: { nested: { attr: 'f' } } },
+    }, [
+      'some text',
+      67,
+      t.div({ class: 'no-content' }),
+      t.div({ class: 'muted' }, t.div(t.span(['hello from kensington']))),
+      t.literal('<div>literal content</div>'),
+      t.div('content only'),
+      t.pre('pre\ntext'),
+      t.svg({ id: 'svg', height: 10, width: 10, xmlns: 'http://www.w3.org/2000/svg'}, [
+        t.circle({ r: 5, cx: 5, cy: 5, fill: 'green' })
+      ]),
+      t.input({ required: false, checked: true, type: 'checkbox' }),
+      t.math({ xmlns: 'https://www.w3.org/1998/Math/MathML/' }, t.mfrac([t.mn(1), t.mn(2)])),
+    ]).toElement();
+    document.body.append(element);
+  </script>
+</head>
+<body>
+</body>
+</html>
+

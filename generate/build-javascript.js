@@ -43,6 +43,7 @@ export default class Kensington {
     return this.createTag(tagName, allowedAttributes, ContentTag, {
       includeGlobalAttributes: false,
       includeGlobalEvents: true,
+      namespace: 'http://www.w3.org/1998/Math/MathML',
     });
   }
 
@@ -58,6 +59,7 @@ export default class Kensington {
     return this.createTag(tagName, allowedAttributes, ContentTag, {
       includeGlobalAttributes: false,
       includeGlobalEvents: true,
+      namespace: 'http://www.w3.org/2000/svg',
     });
   }
 
@@ -69,7 +71,12 @@ export default class Kensington {
   }
 
   createTag(tagName, allowedAttributes, Klass, options) {
-    const { includeGlobalAttributes, includeGlobalEvents, contentIsLiteral = false } = options;
+    const {
+      includeGlobalAttributes,
+      includeGlobalEvents,
+      namespace,
+      contentIsLiteral = false
+    } = options;
     const invalidTypes = Object.values(allowedAttributes).filter(type => {
       return ![String, Number, Boolean].includes(type) && !Array.isArray(type) && typeof type !== 'function';
     });
@@ -107,6 +114,7 @@ export default class Kensington {
         attributes,
         content,
         indentationLevel: this.indentationLevel,
+        namespace,
         namespaces: this.namespaces,
         contentIsLiteral,
         tagName,
