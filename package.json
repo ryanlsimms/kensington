@@ -41,7 +41,7 @@
   "scripts": {
     "test": "node --test \"./tests/esm/esm-test.js\"",
     "test-dom": "npx playwright test --config ./tests/browser/playwright.config.js",
-    "dom-server": "node --watch-path=./tests/browser/server/browser-test.html --watch-path=./esm ./tests/browser/server/html-server.js"
+    "dom-server": "node --watch-path=./tests/browser/pages --watch-path=./esm ./tests/browser/server/html-server.js"
   },
   "dependencies": {
     "he": "^1.2.0"
