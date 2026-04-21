@@ -2,10 +2,10 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-const he = require('he');
+require('he');
 const textUtils = require('./text-utils.js');
 
-function attributesArrayFromObject(obj, attributesList = []) {
+function attributesArrayFromObject(obj, attributesList = [], encode) {
   let finalArr = [];
 
   for (const attr in obj) {
@@ -28,7 +28,7 @@ function attributesArrayFromObject(obj, attributesList = []) {
           return [[attrName, k].join('-'), v]
         })
       );
-      finalArr.push(...attributesArrayFromObject(kebabKeys));
+      finalArr.push(...attributesArrayFromObject(kebabKeys, attributesList));
       continue;
     }
     if (attr === 'class' && Array.isArray(val)) {
@@ -36,7 +36,10 @@ function attributesArrayFromObject(obj, attributesList = []) {
       continue;
     }
 
-    finalArr.push([attrName, he.encode(val.toString())]);
+    {
+      finalArr.push([attrName, val.toString()]);
+    }
+
   }
   return finalArr;
 }

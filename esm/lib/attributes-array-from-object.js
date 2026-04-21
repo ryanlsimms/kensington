@@ -1,3 +1,4 @@
+import he from './he.js';
 import { camelToKebab } from './text-utils.js';
 
 export default function attributesArrayFromObject(obj, attributesList = [], encode) {

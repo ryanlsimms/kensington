@@ -5,7 +5,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
 const he = require('he');
 const textUtils = require('./text-utils.js');
 
-function attributesStringFromObject(obj, attributesList = []) {
+function attributesStringFromObject(obj, attributesList = [], encode) {
   let finalStr = '';
 
   for (const attr in obj) {
@@ -30,7 +30,7 @@ function attributesStringFromObject(obj, attributesList = []) {
         })
       );
       if (finalStr) { finalStr+= ' '; }
-      finalStr += attributesStringFromObject(kebabKeys);
+      finalStr += attributesStringFromObject(kebabKeys, attributesList);
       continue;
     }
     if (attr === 'class' && Array.isArray(val)) {
@@ -45,7 +45,9 @@ function attributesStringFromObject(obj, attributesList = []) {
     if (finalStr) { finalStr+= ' '; }
     finalStr += attrName;
     finalStr += '="';
-    finalStr += he.encode(val.toString());
+    {
+      finalStr += he.encode(val.toString());
+    }
     finalStr += '"';
   }
   return finalStr;

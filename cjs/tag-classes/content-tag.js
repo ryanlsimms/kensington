@@ -2,9 +2,9 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-const he = require('he');
 const attributesStringFromObject = require('../lib/attributes-string-from-object.js');
 const indent = require('../lib/indent.js');
+const he = require('he');
 const showInvalid = require('../lib/show-invalid.js');
 const textUtils = require('../lib/text-utils.js');
 const literalTag = require('./literal-tag.js');
@@ -33,11 +33,7 @@ class ContentTag {
         c.forEach(handleItem);
         return;
       }
-      if (typeof c === 'string' && this.tagName !== 'script') {
-        this.content.push(he.encode(c));
-      } else {
-        this.content.push(c);
-      }
+      this.content.push(c);
     };
 
     [].concat(options.content).forEach(handleItem);
@@ -160,10 +156,19 @@ class ContentTag {
 
 
     if (this.contentIsLiteral) {
-      str += this.content;
+      str += this.content.map(c => {
+        if (typeof c === 'string' && this.tagName !== 'script') {
+          return he.encode(c)
+        }
+        return c
+      });
     } else if (this.contentIsShort()) {
       for (const c of this.content) {
-        str += c;
+        if (typeof c === 'string' && this.tagName !== 'script') {
+          str += he.encode(c);
+        } else {
+          str += c;
+        }
       }
     } else {
       let content = stringifyContentArray.default(this.content);
