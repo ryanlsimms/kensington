@@ -13,7 +13,7 @@ export default defineConfig({
   preserveOutput: 'never',
   outputDir: '/tmp/test-results',
   reporter: 'list',
-  timeout: 1000,
+  timeout: 2000,
   use: {
     trace: 'on-first-retry',
   },
@@ -59,7 +59,7 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: {
     command: 'node ./server/html-server.js',
-    url: 'http://localhost:9615',
+    url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
   },
 });

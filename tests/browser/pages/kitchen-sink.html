@@ -4,7 +4,11 @@
   <meta charset="UTF-8">
   <title>Kensington Test</title>
   <script type="module">
-    import { t } from '/kensington.js';
+    import { t } from './esm/kensington.js';
+    const div = t.div(
+      { dataFilter: JSON.stringify({ search: 'abc', id: 3 })},
+      JSON.stringify({ search: 'def', id: 4 }),
+    ).toElement();
     const element = t.div({
       id: 'a',
       dataName: 'b',
@@ -13,6 +17,10 @@
       'some text',
       67,
       t.div({ class: 'no-content' }),
+      t.div(
+        { dataFilter: JSON.stringify({ search: 'abc', id: 3 })},
+        JSON.stringify({ search: 'def', id: 4 }),
+      ),
       t.div({ class: 'muted' }, t.div(t.span(['hello from kensington']))),
       t.literal('<div>literal content</div>'),
       t.div('content only'),

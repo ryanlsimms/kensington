@@ -1,7 +1,7 @@
-import he from 'he';
+import he from './he.js';
 import { camelToKebab } from './text-utils.js';
 
-export default function attributesStringFromObject(obj, attributesList = []) {
+export default function attributesStringFromObject(obj, attributesList = [], encode) {
   let finalStr = '';
 
   for (const attr in obj) {
@@ -26,7 +26,7 @@ export default function attributesStringFromObject(obj, attributesList = []) {
         })
       )
       if (finalStr) { finalStr+= ' '; }
-      finalStr += attributesStringFromObject(kebabKeys);
+      finalStr += attributesStringFromObject(kebabKeys, attributesList, encode);
       continue;
     }
     if (attr === 'class' && Array.isArray(val)) {
@@ -41,7 +41,11 @@ export default function attributesStringFromObject(obj, attributesList = []) {
     if (finalStr) { finalStr+= ' '; }
     finalStr += attrName;
     finalStr += '="';
-    finalStr += he.encode(val.toString());
+    if (encode) {
+      finalStr += he.encode(val.toString());
+    } else {
+      finalStr += val.toString();
+    }
     finalStr += '"';
   }
   return finalStr;

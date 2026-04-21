@@ -1,4 +1,5 @@
 import { LINE_BREAK_REGEX } from './text-utils.js';
+import he from './he.js'
 
 
 export default function stringifyContentArray(arr) {
@@ -16,7 +17,7 @@ export default function stringifyContentArray(arr) {
       content += node;
       return;
     }
-    let str = node.replaceAll(LINE_BREAK_REGEX, '<br>\n');
+    let str = he.encode(node).replaceAll(LINE_BREAK_REGEX, '<br>\n');
     content += str.replace(/\n$/, '');
   }
 

@@ -1,7 +1,6 @@
-import he from 'he';
-
 import attributesStringFromObject from '../lib/attributes-string-from-object.js';
 import indent from '../lib/indent.js';
+import he from '../lib/he.js';
 import showInvalid from '../lib/show-invalid.js';
 import { camelToKebab, LINE_BREAK_REGEX } from '../lib/text-utils.js';
 import LiteralTag from './literal-tag.js';
@@ -30,11 +29,7 @@ export default class ContentTag {
         c.forEach(handleItem);
         return;
       }
-      if (typeof c === 'string' && this.tagName !== 'script') {
-        this.content.push(he.encode(c));
-      } else {
-        this.content.push(c);
-      }
+      this.content.push(c);
     }
 
     [].concat(options.content).forEach(handleItem);
@@ -137,12 +132,12 @@ export default class ContentTag {
   }
 
   attributeString() {
-    let attrString = attributesStringFromObject(this.attributes, Object.keys(this.allowedAttributes));
+    let attrString = attributesStringFromObject(this.attributes, Object.keys(this.allowedAttributes), true);
     return attrString ? ` ${attrString}` : '';
   }
 
   attributeArray() {
-    return attributesArrayFromObject(this.attributes, Object.keys(this.allowedAttributes));
+    return attributesArrayFromObject(this.attributes, Object.keys(this.allowedAttributes), false);
   }
 
   toString() {
@@ -157,10 +152,19 @@ export default class ContentTag {
 
 
     if (this.contentIsLiteral) {
-      str += this.content;
+      str += this.content.map(c => {
+        if (typeof c === 'string' && this.tagName !== 'script') {
+          return he.encode(c)
+        }
+        return c
+      });
     } else if (this.contentIsShort()) {
       for (const c of this.content) {
-        str += c;
+        if (typeof c === 'string' && this.tagName !== 'script') {
+          str += he.encode(c);
+        } else {
+          str += c;
+        }
       }
     } else {
       let content = stringifyContentArray(this.content);
