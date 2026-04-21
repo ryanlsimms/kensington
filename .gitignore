@@ -1,3 +1,4 @@
 /.idea/
 /node_modules/
 /tests/esm/node_modules/
+/tests/other/node_modules/
