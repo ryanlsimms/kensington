@@ -49,6 +49,7 @@ class Kensington {
       includeGlobalAttributes: true,
       includeGlobalEvents: true,
       contentIsLiteral: true,
+      encodeContent: !['script', 'style'].includes(tagName),
     });
   }
 
@@ -73,6 +74,7 @@ class Kensington {
       includeGlobalEvents,
       namespace,
       contentIsLiteral = false,
+      encodeContent = true,
     } = options;
     const invalidTypes = Object.values(allowedAttributes).filter(type => {
       return ![String, Number, Boolean].includes(type) && !Array.isArray(type) && typeof type !== 'function';
@@ -110,6 +112,7 @@ class Kensington {
         allowedAttributes,
         attributes: attributes$1,
         content,
+        encodeContent,
         indentationLevel: this.indentationLevel,
         namespace,
         namespaces: this.namespaces,
@@ -311,7 +314,7 @@ class Kensington {
   span = this.createContentTag('span', attributes.spanAttributes);
   stop = this.createSvgContentTag('stop', attributes.stopAttributes);
   strong = this.createContentTag('strong', attributes.strongAttributes);
-  style = this.createContentTag('style', attributes.styleAttributes);
+  style = this.createLiteralContentTag('style', attributes.styleAttributes);
   sub = this.createContentTag('sub', attributes.subAttributes);
   summary = this.createContentTag('summary', attributes.summaryAttributes);
   sup = this.createContentTag('sup', attributes.supAttributes);

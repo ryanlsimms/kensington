@@ -52,6 +52,7 @@ export default class Kensington {
       includeGlobalAttributes: true,
       includeGlobalEvents: true,
       contentIsLiteral: true,
+      encodeContent: !['script', 'style'].includes(tagName),
     });
   }
 
@@ -76,6 +77,7 @@ export default class Kensington {
       includeGlobalEvents,
       namespace,
       contentIsLiteral = false,
+      encodeContent = true,
     } = options;
     const invalidTypes = Object.values(allowedAttributes).filter(type => {
       return ![String, Number, Boolean].includes(type) && !Array.isArray(type) && typeof type !== 'function';
@@ -113,6 +115,7 @@ export default class Kensington {
         allowedAttributes,
         attributes,
         content,
+        encodeContent,
         indentationLevel: this.indentationLevel,
         namespace,
         namespaces: this.namespaces,

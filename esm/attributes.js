@@ -1318,6 +1318,7 @@ export const imageAttributes = {
 };
 export const imgAttributes = {
   'alt': String,
+  'controls': String,
   'crossorigin': ["anonymous","use-credentials"],
   'decoding': ["sync","async","auto"],
   'fetchpriority': ["auto","high","low"],
@@ -3215,7 +3216,8 @@ export const templateAttributes = {
   'shadowrootcustomelementregistry': Boolean,
   'shadowrootdelegatesfocus': Boolean,
   'shadowrootmode': ["open","closed"],
-  'shadowrootserializable': Boolean
+  'shadowrootserializable': Boolean,
+  'shadowrootslotassignment': ["named","manual"]
 };
 export const textAttributes = {
   'autofocus': Boolean,
@@ -3577,7 +3579,7 @@ export const useAttributes = {
 export const varAttributes = {};
 export const videoAttributes = {
   'autoplay': Boolean,
-  'controls': Boolean,
+  'controls': String,
   'crossorigin': ["anonymous","use-credentials"],
   'height': String,
   'loading': ["lazy","eager"],

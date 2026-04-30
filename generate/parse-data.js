@@ -25,10 +25,7 @@ export default function parseData(htmlData, svgData, mathElements) {
     if (['template', 'iframe'].includes(el.tag)) {
       el.tagType = 'Content';
     }
-    if (el.tag === 'script') {
-      el.tagType = 'LiteralContent';
-    }
-    if (['textarea', 'pre'].includes(el.tag)) {
+    if (['script', 'style', 'textarea', 'pre'].includes(el.tag)) {
       el.tagType = 'LiteralContent';
     }
   });

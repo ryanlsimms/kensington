@@ -64,6 +64,12 @@ describe('literal tag', () => {
       `<div>\n  <div>\n    <pre>line1\nline2</pre>\n  </div>\n</div>`,
     );
   });
+  it('does not escape style tags', () => {
+    assert.strictEqual(
+      t.style('td:nth-of-type(1):before { content: "Date"; }').toString(),
+      '<style>td:nth-of-type(1):before { content: "Date"; }</style>'
+    )
+  })
 });
 
 

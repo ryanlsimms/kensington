@@ -1416,6 +1416,7 @@ type ImageAttributes = {
 
 type ImgAttributes = {
   'alt'?: string;
+  'controls'?: string;
   'crossorigin'?: "anonymous" | "use-credentials";
   'decoding'?: "sync" | "async" | "auto";
   'fetchpriority'?: "auto" | "high" | "low";
@@ -3408,6 +3409,7 @@ type TemplateAttributes = {
   'shadowrootdelegatesfocus'?: boolean;
   'shadowrootmode'?: "open" | "closed";
   'shadowrootserializable'?: boolean;
+  'shadowrootslotassignment'?: "named" | "manual";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type TextAttributes = {
@@ -3785,7 +3787,7 @@ type VarAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type VideoAttributes = {
   'autoplay'?: boolean;
-  'controls'?: boolean;
+  'controls'?: string;
   'crossorigin'?: "anonymous" | "use-credentials";
   'height'?: string;
   'loading'?: "lazy" | "eager";

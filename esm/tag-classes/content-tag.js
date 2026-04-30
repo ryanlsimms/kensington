@@ -20,6 +20,7 @@ export default class ContentTag {
     this.validationLevel = options.validationLevel;
     this.content = [];
     this.namespace = options.namespace;
+    this.encodeContent = options.encodeContent;
 
     const handleItem = (c) =>  {
       if ([undefined, null, ''].includes(c)) {
@@ -153,14 +154,14 @@ export default class ContentTag {
 
     if (this.contentIsLiteral) {
       str += this.content.map(c => {
-        if (typeof c === 'string' && this.tagName !== 'script') {
+        if (typeof c === 'string' && this.encodeContent) {
           return he.encode(c)
         }
         return c
       });
     } else if (this.contentIsShort()) {
       for (const c of this.content) {
-        if (typeof c === 'string' && this.tagName !== 'script') {
+        if (typeof c === 'string' && this.encodeContent) {
           str += he.encode(c);
         } else {
           str += c;
