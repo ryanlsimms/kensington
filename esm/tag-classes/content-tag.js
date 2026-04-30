@@ -198,7 +198,12 @@ export default class ContentTag {
 
 
     for (const [attrName, attrValue] of this.attributeArray()) {
-      element.setAttribute(attrName, attrValue);
+      if (attrName.startsWith('on') && typeof attrValue === 'function') {
+        const eventName = attrName.replace(/^on/, '');
+        element.addEventListener(eventName, attrValue);
+      } else {
+        element.setAttribute(attrName, attrValue);
+      }
     }
 
     this.content.forEach(node => {

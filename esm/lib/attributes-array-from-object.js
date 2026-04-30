@@ -34,6 +34,8 @@ export default function attributesArrayFromObject(obj, attributesList = [], enco
 
     if (encode) {
       finalArr.push([attrName, he.encode(val.toString())]);
+    } else if (typeof val === 'function') {
+      finalArr.push([attrName, val]);
     } else {
       finalArr.push([attrName, val.toString()]);
     }

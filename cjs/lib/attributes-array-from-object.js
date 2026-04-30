@@ -36,7 +36,9 @@ function attributesArrayFromObject(obj, attributesList = [], encode) {
       continue;
     }
 
-    {
+    if (typeof val === 'function') {
+      finalArr.push([attrName, val]);
+    } else {
       finalArr.push([attrName, val.toString()]);
     }
 

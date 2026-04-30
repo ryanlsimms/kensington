@@ -10,3 +10,16 @@ test('renders kitchen sink element', async ({ page }) => {
   await expect(page).toHaveScreenshot();
   return expect(innerHTML.trim()).toEqual(expected);
 });
+
+test('event listeners', async ({ page }) => {
+  await page.goto('http://localhost:3000/event-listeners.html');
+
+  const button = page.locator('button');
+  await button.click();
+
+  const innerHTML = await  page.locator('body').innerHTML();
+  const expected = '<button type="button">Click Me</button>The button has been clicked'
+
+  await expect(page).toHaveScreenshot();
+  return expect(innerHTML.trim()).toEqual(expected);
+});
