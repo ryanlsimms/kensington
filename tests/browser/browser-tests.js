@@ -157,6 +157,24 @@ export function registerTests(bundle) {
     await expect(page.locator('[data-testid="my-div"]')).toBeAttached();
   });
 
+  // ─── encoding ──────────────────────────────────────────────────────────────
+
+  test('special chars in text content are not double-encoded', async ({ page }) => {
+    await page.evaluate(async src => {
+      const { t } = await import(src);
+      document.body.append(t.p({ id: 'enc-content' }, 'a & b < c > d "e"').toElement());
+    }, bundle);
+    await expect(page.locator('#enc-content')).toHaveText('a & b < c > d "e"');
+  });
+
+  test('special chars in attribute values are not double-encoded', async ({ page }) => {
+    await page.evaluate(async src => {
+      const { t } = await import(src);
+      document.body.append(t.div({ id: 'enc-attr', title: 'a & b < c > d "e"' }).toElement());
+    }, bundle);
+    await expect(page.locator('#enc-attr')).toHaveAttribute('title', 'a & b < c > d "e"');
+  });
+
   // ─── namespaces ────────────────────────────────────────────────────────────
 
   test('creates SVG elements in the SVG namespace', async ({ page }) => {

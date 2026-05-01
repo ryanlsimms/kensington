@@ -18,6 +18,15 @@ describe('content tag', () => {
   it('encodes content', () => {
     assert.strictEqual(t.div('<div></div>').toString(), '<div>&#x3C;div&#x3E;&#x3C;/div&#x3E;</div>');
   });
+  it('encodes ampersand in content', () => {
+    assert.strictEqual(t.div('a & b').toString(), '<div>a &#x26; b</div>');
+  });
+  it('encodes double quotes in content', () => {
+    assert.strictEqual(t.div('say "hello"').toString(), '<div>say &#x22;hello&#x22;</div>');
+  });
+  it('encodes all special chars in content without double-encoding', () => {
+    assert.strictEqual(t.div('<a href="x&y">').toString(), '<div>&#x3C;a href=&#x22;x&#x26;y&#x22;&#x3E;</div>');
+  });
   it('converts line breaks to br tags', () => {
     assert.strictEqual(t.div('line1\nline2').toString(), '<div>\n  line1<br>\n  line2\n</div>');
   });
@@ -115,6 +124,12 @@ describe('attributes', () => {
   });
   it('encodes attribute values', () => {
     assert.strictEqual(t.a({ href: 'http://x.com?a=1&b=2' }).toString(), '<a href="http://x.com?a=1&#x26;b=2"></a>');
+  });
+  it('encodes double quotes in attribute values', () => {
+    assert.strictEqual(t.div({ title: 'say "hello"' }).toString(), '<div title="say &#x22;hello&#x22;"></div>');
+  });
+  it('encodes angle brackets in attribute values', () => {
+    assert.strictEqual(t.div({ title: '<test>' }).toString(), '<div title="&#x3C;test&#x3E;"></div>');
   });
   it('boolean true includes attribute', () => {
     assert.strictEqual(t.input({ type: 'checkbox', checked: true }).toString(), '<input type="checkbox" checked>');

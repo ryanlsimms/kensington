@@ -16,6 +16,8 @@
     "./package.json": "./package.json",
     "./dist": "./dist/kensington.js",
     "./dist/min": "./dist/kensington.min.js",
+    "./dist/slim": "./dist/kensington.slim.js",
+    "./dist/slim/min": "./dist/kensington.slim.min.js",
     "./attributes": {
       "import": "./esm/attributes.js",
       "require": "./cjs/attributes.js"
@@ -58,9 +60,6 @@
     "test-cjs": "node --test \"./tests/cjs/cjs-test.js\"",
     "test-ts": "tsc --noEmit -p tests/typescript/tsconfig.json && echo 'TypeScript types OK'",
     "dom-server": "node --watch-path=./tests/browser/pages --watch-path=./esm ./tests/browser/server/html-server.js"
-  },
-  "dependencies": {
-    "he": "^1.2.0"
   },
   "engines": {
     "node": ">=18"

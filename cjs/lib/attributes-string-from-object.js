@@ -2,7 +2,7 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-const he = require('he');
+const he = require('./he.js');
 const textUtils = require('./text-utils.js');
 
 function attributesStringFromObject(obj, attributesList = [], encode) {
@@ -46,7 +46,7 @@ function attributesStringFromObject(obj, attributesList = [], encode) {
     finalStr += attrName;
     finalStr += '="';
     {
-      finalStr += he.encode(val.toString());
+      finalStr += he.default.encode(val.toString());
     }
     finalStr += '"';
   }

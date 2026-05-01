@@ -3,7 +3,7 @@
 Object.defineProperty(exports, '__esModule', { value: true });
 
 const textUtils = require('./text-utils.js');
-const he = require('he');
+const he = require('./he.js');
 
 function stringifyContentArray(arr) {
   let content = '';
@@ -20,7 +20,7 @@ function stringifyContentArray(arr) {
       content += node;
       return;
     }
-    let str = he.encode(node).replaceAll(textUtils.LINE_BREAK_REGEX, '<br>\n');
+    let str = he.default.encode(node).replaceAll(textUtils.LINE_BREAK_REGEX, '<br>\n');
     content += str.replace(/\n$/, '');
   }
 

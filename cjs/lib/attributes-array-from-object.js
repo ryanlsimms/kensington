@@ -2,7 +2,6 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-require('he');
 const textUtils = require('./text-utils.js');
 
 function attributesArrayFromObject(obj, attributesList = [], encode) {

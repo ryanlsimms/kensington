@@ -4,7 +4,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
 
 const attributesStringFromObject = require('../lib/attributes-string-from-object.js');
 const indent = require('../lib/indent.js');
-const he = require('he');
+const he = require('../lib/he.js');
 const showInvalid = require('../lib/show-invalid.js');
 const textUtils = require('../lib/text-utils.js');
 const literalTag = require('./literal-tag.js');
@@ -160,14 +160,14 @@ class ContentTag {
     if (this.contentIsLiteral) {
       str += this.content.map(c => {
         if (typeof c === 'string' && this.encodeContent) {
-          return he.encode(c)
+          return he.default.encode(c)
         }
         return c
       }).join('\n');
     } else if (this.contentIsShort()) {
       for (const c of this.content) {
         if (typeof c === 'string' && this.encodeContent) {
-          str += he.encode(c);
+          str += he.default.encode(c);
         } else {
           str += c;
         }

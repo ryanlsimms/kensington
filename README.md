@@ -35,6 +35,14 @@ Or in a browser without a build step, via CDN:
 </script>
 ```
 
+**Slim build** — if you don't use `validationLevel: 'error'` or `'warn'`, use the slim variant (~77% smaller) which omits all attribute validation data:
+
+```html
+<script type="module">
+  import Kensington from 'https://cdn.jsdelivr.net/npm/kensington/dist/kensington.slim.min.js';
+</script>
+```
+
 ### Example
 ```typescript
 // TypeScript

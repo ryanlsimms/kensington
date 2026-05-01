@@ -102,7 +102,7 @@ class Kensington {
     });
   }
 
-  createTag(tagName, allowedAttributes, Klass, options) {
+  createTag(tagName, allowedAttributes = {}, Klass, options) {
     const {
       includeGlobalAttributes,
       includeGlobalEvents,

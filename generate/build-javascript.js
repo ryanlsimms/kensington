@@ -39,6 +39,9 @@ export default class Kensington {
     indentationLevel = 2, 
     logger = console.log,
   } = {}) {
+    if (allAttributes.__slim__ && validationLevel !== 'off') {
+      throw new Error("The slim build does not include attribute data. Set validationLevel: 'off' or use the full build.");
+    }
     getPrototypeMethods(this).forEach(key => {
       this[key] = this[key].bind(this);
     });
@@ -105,7 +108,7 @@ export default class Kensington {
     });
   }
 
-  createTag(tagName, allowedAttributes, Klass, options) {
+  createTag(tagName, allowedAttributes = {}, Klass, options) {
     const {
       includeGlobalAttributes,
       includeGlobalEvents,
