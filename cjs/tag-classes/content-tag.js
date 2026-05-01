@@ -133,7 +133,7 @@ class ContentTag {
       return false;
     }
 
-    return !textUtils.LINE_BREAK_REGEX.test(content);
+    return !textUtils.LINE_BREAK_TEST_REGEX.test(content);
   }
 
   attributeString() {
@@ -162,7 +162,7 @@ class ContentTag {
           return he.encode(c)
         }
         return c
-      });
+      }).join('\n');
     } else if (this.contentIsShort()) {
       for (const c of this.content) {
         if (typeof c === 'string' && this.encodeContent) {

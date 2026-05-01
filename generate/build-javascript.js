@@ -14,7 +14,24 @@ import * as allAttributes from './attributes.js';
 import { camelToKebab } from './lib/text-utils.js';
 import showInvalid from './lib/show-invalid.js';
 
+/**
+ * HTML/SVG/MathML template engine. Every tag is a method that accepts optional attributes
+ * and/or content, returning a tag object with \`.toString()\` (HTML string) and \`.toElement()\` (DOM node).
+ *
+ * Attribute rules: camelCase keys convert to kebab-case, nested objects flatten,
+ * boolean attributes are included/omitted, class accepts a string or string array.
+ *
+ * @example
+ * import { t } from 'kensington';
+ * const html = t.div({ class: 'container' }, t.p('hello')).toString();
+ */
 export default class Kensington {
+  /**
+   * @param {object} [options]
+   * @param {string | string[]} [options.additionalNamespaces] - Extra attribute namespaces, e.g. \`'hx'\` for htmx.
+   * @param {'off' | 'warn' | 'error'} [options.validationLevel] - Attribute validation behaviour.
+   * @param {number} [options.indentationLevel] - Spaces per indent level. Default: 2.
+   */
   constructor({ additionalNamespaces = [], validationLevel = 'off', indentationLevel = 2 } = {}) {
     getPrototypeMethods(this).forEach(key => {
       this[key] = this[key].bind(this);
@@ -24,6 +41,16 @@ export default class Kensington {
     this.validationLevel = validationLevel;
   }
 
+  /**
+   * Creates a method for a custom HTML element. Assign to a class property for typed autocompletion.
+   * @param {string} tagName - The HTML tag name, e.g. \`'my-card'\`.
+   * @param {Record<string, *>} [allowedAttributes] - Map of attribute names to allowed value types/literals.
+   * @returns {function(...*): ContentTag}
+   * @example
+   * class MyEngine extends Kensington {
+   *   myCard = this.createCustomTag('my-card', { 'card-type': ['primary', 'secondary'] });
+   * }
+   */
   createCustomTag(tagName, allowedAttributes = {}) {
     const kebabAttributes = Object.fromEntries(Object.entries(allowedAttributes).map(([k,v]) => [camelToKebab(k), v]))
     return this.createTag(tagName, kebabAttributes, ContentTag, {
@@ -131,6 +158,13 @@ export default class Kensington {
     }
   }
 
+  /**
+   * Embeds a raw HTML string verbatim in the output. Throws if the string contains a script tag.
+   * @param {string} str
+   * @returns {LiteralTag}
+   * @example
+   * t.ul([t.li('typed'), t.literal('<li>raw html</li>')]);
+   */
   literal(str) {
     if (str.includes('<script')) {
       throw new Error('<script> tags are not allowed to be passed in literal html.  Use the .unsafeLiteral if you can vouch for the string')
@@ -138,15 +172,22 @@ export default class Kensington {
     return new LiteralTag(str);
   }
 
+  /**
+   * Like \`.literal()\` but skips the script-tag check. Use only for trusted HTML.
+   * @param {string} str
+   * @returns {LiteralTag}
+   */
   unsafeLiteral(str) {
     return new LiteralTag(str);
   }
 
+  /** @returns {ContentTag} */
   htmlWithDocType = this.createTag('html', allAttributes.htmlAttributes, HtmlWithDoctypeTag, { includeGlobalAttributes: true, includeGlobalEvents: true });
 
-  ${elements.map(el => 
-    `${el.methodName} = this.create${el.tagType}Tag('${el.tag}', allAttributes.${el.attributesName});`
-  ).join('\n  ')}
+  ${elements.map(el => {
+    const returnType = el.returnTagType === 'Void' ? 'VoidTag' : 'ContentTag';
+    return `/** @returns {${returnType}} */\n  ${el.methodName} = this.create${el.tagType}Tag('${el.tag}', allAttributes.${el.attributesName});`;
+  }).join('\n  ')}
 }
 
 export const t = new Kensington();

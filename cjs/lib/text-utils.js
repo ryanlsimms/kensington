@@ -5,6 +5,8 @@ function camelToKebab(str) {
 }
 
 const LINE_BREAK_REGEX = /[\r\n]+/g;
+const LINE_BREAK_TEST_REGEX = /[\r\n]/;
 
 exports.LINE_BREAK_REGEX = LINE_BREAK_REGEX;
+exports.LINE_BREAK_TEST_REGEX = LINE_BREAK_TEST_REGEX;
 exports.camelToKebab = camelToKebab;

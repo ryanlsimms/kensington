@@ -39,8 +39,11 @@
     "url": "git+https://github.com/ryanlsimms/kensington.git"
   },
   "scripts": {
-    "test": "node --test \"./tests/esm/esm-test.js\"",
-    "test-dom": "npx playwright test --config ./tests/browser/playwright.config.js",
+    "test": "npm run test-esm && npm run test-cjs && npm run test-ts && npm run test-browser && echo 'All tests passed'",
+    "test-browser": "npx playwright test --config ./tests/browser/playwright.config.js",
+    "test-esm": "node --test \"./tests/esm/esm-test.js\"",
+    "test-cjs": "node --test \"./tests/cjs/cjs-test.js\"",
+    "test-ts": "tsc --noEmit -p tests/typescript/tsconfig.json && echo 'TypeScript types OK'",
     "dom-server": "node --watch-path=./tests/browser/pages --watch-path=./esm ./tests/browser/server/html-server.js"
   },
   "dependencies": {
@@ -56,6 +59,7 @@
     "@types/node": "^25.5.0",
     "html-validate": "^9.4.1",
     "jsdom": "^26.0.0",
-    "rollup": "^4.35.0"
+    "rollup": "^4.35.0",
+    "typescript": "^6.0.3"
   }
 }

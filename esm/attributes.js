@@ -28,7 +28,7 @@ export const globalAttributes = {
   'slot': String,
   'spellcheck': ["true","false"],
   'style': String,
-  'tabindex': String,
+  'tabindex': Number,
   'title': String,
   'translate': ["yes","no"],
   'writingsuggestions': ["true","false"],
@@ -209,7 +209,7 @@ export const animateAttributes = {
   'restart': ["always","never","whenNotActive"],
   'style': String,
   'systemLanguage': String,
-  'tabindex': String,
+  'tabindex': Number,
   'to': String,
   'values': String,
   'xml:space': ["default","preserve"]
@@ -306,7 +306,7 @@ export const animateMotionAttributes = {
   'rotate': String,
   'style': String,
   'systemLanguage': String,
-  'tabindex': String,
+  'tabindex': Number,
   'to': String,
   'values': String,
   'xml:space': ["default","preserve"]
@@ -400,7 +400,7 @@ export const animateTransformAttributes = {
   'restart': ["always","never","whenNotActive"],
   'style': String,
   'systemLanguage': String,
-  'tabindex': String,
+  'tabindex': Number,
   'to': String,
   'type': ["translate","scale","rotate","skewX","skewY"],
   'values': String,
@@ -419,7 +419,7 @@ export const annotationAttributes = {
   'nonce': String,
   'scriptlevel': String,
   'style': String,
-  'tabindex': String
+  'tabindex': Number
 };
 export const annotationXmlAttributes = {
   'autofocus': Boolean,
@@ -434,7 +434,7 @@ export const annotationXmlAttributes = {
   'nonce': String,
   'scriptlevel': String,
   'style': String,
-  'tabindex': String
+  'tabindex': Number
 };
 export const areaAttributes = {
   'alt': String,
@@ -507,8 +507,8 @@ export const buttonAttributes = {
   'value': [Number,String]
 };
 export const canvasAttributes = {
-  'height': String,
-  'width': String
+  'height': Number,
+  'width': Number
 };
 export const captionAttributes = {};
 export const circleAttributes = {
@@ -584,7 +584,7 @@ export const circleAttributes = {
   'role': String,
   'style': String,
   'systemLanguage': String,
-  'tabindex': String,
+  'tabindex': Number,
   'xml:space': ["default","preserve"]
 };
 export const citeAttributes = {};
@@ -679,7 +679,7 @@ export const defsAttributes = {
   'onwaiting': String,
   'onwheel': String,
   'style': String,
-  'tabindex': String,
+  'tabindex': Number,
   'xml:space': ["default","preserve"]
 };
 export const delAttributes = {
@@ -752,7 +752,7 @@ export const descAttributes = {
   'onwaiting': String,
   'onwheel': String,
   'style': String,
-  'tabindex': String,
+  'tabindex': Number,
   'xml:space': ["default","preserve"]
 };
 export const detailsAttributes = {
@@ -840,15 +840,15 @@ export const ellipseAttributes = {
   'ry': [Number,String],
   'style': String,
   'systemLanguage': String,
-  'tabindex': String,
+  'tabindex': Number,
   'xml:space': ["default","preserve"]
 };
 export const emAttributes = {};
 export const embedAttributes = {
-  'height': String,
+  'height': Number,
   'src': String,
   'type': String,
-  'width': String
+  'width': Number
 };
 export const feBlendAttributes = {
   'class': String,
@@ -1122,7 +1122,7 @@ export const foreignObjectAttributes = {
   'role': String,
   'style': String,
   'systemLanguage': String,
-  'tabindex': String,
+  'tabindex': Number,
   'width': [Number,String],
   'x': [Number,String],
   'xml:space': ["default","preserve"],
@@ -1208,7 +1208,7 @@ export const gAttributes = {
   'role': String,
   'style': String,
   'systemLanguage': String,
-  'tabindex': String,
+  'tabindex': Number,
   'xml:space': ["default","preserve"]
 };
 export const h1Attributes = {};
@@ -1226,14 +1226,14 @@ export const iAttributes = {};
 export const iframeAttributes = {
   'allow': String,
   'allowfullscreen': Boolean,
-  'height': String,
+  'height': Number,
   'loading': ["lazy","eager"],
   'name': String,
   'referrerpolicy': String,
   'sandbox': String,
   'src': String,
   'srcdoc': String,
-  'width': String
+  'width': Number
 };
 export const imageAttributes = {
   'autofocus': Boolean,
@@ -1308,7 +1308,7 @@ export const imageAttributes = {
   'role': String,
   'style': String,
   'systemLanguage': String,
-  'tabindex': String,
+  'tabindex': Number,
   'width': [Number,String],
   'x': [Number,String],
   'xlink:href': String,
@@ -1318,11 +1318,11 @@ export const imageAttributes = {
 };
 export const imgAttributes = {
   'alt': String,
-  'controls': String,
+  'controls': Boolean,
   'crossorigin': ["anonymous","use-credentials"],
   'decoding': ["sync","async","auto"],
   'fetchpriority': ["auto","high","low"],
-  'height': String,
+  'height': Number,
   'ismap': Boolean,
   'loading': ["lazy","eager"],
   'referrerpolicy': String,
@@ -1330,7 +1330,7 @@ export const imgAttributes = {
   'src': String,
   'srcset': String,
   'usemap': String,
-  'width': String
+  'width': Number
 };
 export const inputAttributes = {
   'accept': String,
@@ -1347,12 +1347,12 @@ export const inputAttributes = {
   'formmethod': ["get","GET","post","POST","dialog","DIALOG"],
   'formnovalidate': Boolean,
   'formtarget': String,
-  'height': String,
+  'height': Number,
   'list': String,
   'max': String,
-  'maxlength': String,
+  'maxlength': Number,
   'min': String,
-  'minlength': String,
+  'minlength': Number,
   'multiple': Boolean,
   'name': String,
   'pattern': String,
@@ -1366,7 +1366,7 @@ export const inputAttributes = {
   'step': String,
   'type': ["hidden","text","search","tel","url","email","password","date","month","week","time","datetime-local","number","range","color","checkbox","radio","file","submit","image","reset","button"],
   'value': [Number,String],
-  'width': String
+  'width': Number
 };
 export const insAttributes = {
   'cite': String,
@@ -1378,7 +1378,7 @@ export const labelAttributes = {
 };
 export const legendAttributes = {};
 export const liAttributes = {
-  'value*': String
+  'value': [Number,String]
 };
 export const lineAttributes = {
   'autofocus': Boolean,
@@ -1450,7 +1450,7 @@ export const lineAttributes = {
   'role': String,
   'style': String,
   'systemLanguage': String,
-  'tabindex': String,
+  'tabindex': Number,
   'x1': [Number,String],
   'x2': [Number,String],
   'xml:space': ["default","preserve"],
@@ -1527,7 +1527,7 @@ export const linearGradientAttributes = {
   'onwheel': String,
   'spreadMethod': String,
   'style': String,
-  'tabindex': String,
+  'tabindex': Number,
   'x1': [Number,String],
   'x2': [Number,String],
   'xlink:href': String,
@@ -1632,7 +1632,7 @@ export const markerAttributes = {
   'refX': String,
   'refY': String,
   'style': String,
-  'tabindex': String,
+  'tabindex': Number,
   'viewBox': String,
   'xml:space': String
 };
@@ -1661,7 +1661,7 @@ export const mathAttributes = {
   'nonce': String,
   'scriptlevel': String,
   'style': String,
-  'tabindex': String,
+  'tabindex': Number,
   'xmlns': String
 };
 export const mencloseAttributes = {
@@ -1678,7 +1678,7 @@ export const mencloseAttributes = {
   'notation': String,
   'scriptlevel': String,
   'style': String,
-  'tabindex': String
+  'tabindex': Number
 };
 export const menuAttributes = {};
 export const merrorAttributes = {
@@ -1694,7 +1694,7 @@ export const merrorAttributes = {
   'nonce': String,
   'scriptlevel': String,
   'style': String,
-  'tabindex': String
+  'tabindex': Number
 };
 export const metaAttributes = {
   'charset': ["utf-8","UTF-8"],
@@ -1769,7 +1769,7 @@ export const metadataAttributes = {
   'onwaiting': String,
   'onwheel': String,
   'style': String,
-  'tabindex': String,
+  'tabindex': Number,
   'xml:space': ["default","preserve"]
 };
 export const meterAttributes = {
@@ -1794,7 +1794,7 @@ export const mfracAttributes = {
   'nonce': String,
   'scriptlevel': String,
   'style': String,
-  'tabindex': String
+  'tabindex': Number
 };
 export const miAttributes = {
   'autofocus': Boolean,
@@ -1809,7 +1809,7 @@ export const miAttributes = {
   'nonce': String,
   'scriptlevel': String,
   'style': String,
-  'tabindex': String
+  'tabindex': Number
 };
 export const mmultiscriptsAttributes = {
   'autofocus': Boolean,
@@ -1824,7 +1824,7 @@ export const mmultiscriptsAttributes = {
   'nonce': String,
   'scriptlevel': String,
   'style': String,
-  'tabindex': String
+  'tabindex': Number
 };
 export const mnAttributes = {
   'autofocus': Boolean,
@@ -1839,7 +1839,7 @@ export const mnAttributes = {
   'nonce': String,
   'scriptlevel': String,
   'style': String,
-  'tabindex': String
+  'tabindex': Number
 };
 export const moAttributes = {
   'accent': String,
@@ -1864,7 +1864,7 @@ export const moAttributes = {
   'stretchy': String,
   'style': String,
   'symmetric': String,
-  'tabindex': String
+  'tabindex': Number
 };
 export const moverAttributes = {
   'accent': String,
@@ -1880,7 +1880,7 @@ export const moverAttributes = {
   'nonce': String,
   'scriptlevel': String,
   'style': String,
-  'tabindex': String
+  'tabindex': Number
 };
 export const mpaddedAttributes = {
   'autofocus': Boolean,
@@ -1898,7 +1898,7 @@ export const mpaddedAttributes = {
   'nonce': String,
   'scriptlevel': String,
   'style': String,
-  'tabindex': String,
+  'tabindex': Number,
   'voffset': String,
   'width': String
 };
@@ -1969,7 +1969,7 @@ export const mpathAttributes = {
   'onwaiting': String,
   'onwheel': String,
   'style': String,
-  'tabindex': String,
+  'tabindex': Number,
   'xml:space': ["default","preserve"]
 };
 export const mphantomAttributes = {
@@ -1985,7 +1985,7 @@ export const mphantomAttributes = {
   'nonce': String,
   'scriptlevel': String,
   'style': String,
-  'tabindex': String
+  'tabindex': Number
 };
 export const mprescriptsAttributes = {
   'autofocus': Boolean,
@@ -2000,7 +2000,7 @@ export const mprescriptsAttributes = {
   'nonce': String,
   'scriptlevel': String,
   'style': String,
-  'tabindex': String
+  'tabindex': Number
 };
 export const mrootAttributes = {
   'autofocus': Boolean,
@@ -2015,7 +2015,7 @@ export const mrootAttributes = {
   'nonce': String,
   'scriptlevel': String,
   'style': String,
-  'tabindex': String
+  'tabindex': Number
 };
 export const mrowAttributes = {
   'autofocus': Boolean,
@@ -2030,7 +2030,7 @@ export const mrowAttributes = {
   'nonce': String,
   'scriptlevel': String,
   'style': String,
-  'tabindex': String
+  'tabindex': Number
 };
 export const msAttributes = {
   'autofocus': Boolean,
@@ -2045,7 +2045,7 @@ export const msAttributes = {
   'nonce': String,
   'scriptlevel': String,
   'style': String,
-  'tabindex': String
+  'tabindex': Number
 };
 export const mspaceAttributes = {
   'autofocus': Boolean,
@@ -2061,7 +2061,7 @@ export const mspaceAttributes = {
   'nonce': String,
   'scriptlevel': String,
   'style': String,
-  'tabindex': String,
+  'tabindex': Number,
   'width': String
 };
 export const msqrtAttributes = {
@@ -2077,7 +2077,7 @@ export const msqrtAttributes = {
   'nonce': String,
   'scriptlevel': String,
   'style': String,
-  'tabindex': String
+  'tabindex': Number
 };
 export const mstyleAttributes = {
   'autofocus': Boolean,
@@ -2092,7 +2092,7 @@ export const mstyleAttributes = {
   'nonce': String,
   'scriptlevel': String,
   'style': String,
-  'tabindex': String
+  'tabindex': Number
 };
 export const msubAttributes = {
   'autofocus': Boolean,
@@ -2107,7 +2107,7 @@ export const msubAttributes = {
   'nonce': String,
   'scriptlevel': String,
   'style': String,
-  'tabindex': String
+  'tabindex': Number
 };
 export const msubsupAttributes = {
   'autofocus': Boolean,
@@ -2122,7 +2122,7 @@ export const msubsupAttributes = {
   'nonce': String,
   'scriptlevel': String,
   'style': String,
-  'tabindex': String
+  'tabindex': Number
 };
 export const msupAttributes = {
   'autofocus': Boolean,
@@ -2137,7 +2137,7 @@ export const msupAttributes = {
   'nonce': String,
   'scriptlevel': String,
   'style': String,
-  'tabindex': String
+  'tabindex': Number
 };
 export const mtableAttributes = {
   'align': String,
@@ -2161,7 +2161,7 @@ export const mtableAttributes = {
   'rowspacing': String,
   'scriptlevel': String,
   'style': String,
-  'tabindex': String,
+  'tabindex': Number,
   'width': String
 };
 export const mtdAttributes = {
@@ -2181,7 +2181,7 @@ export const mtdAttributes = {
   'rowspan': String,
   'scriptlevel': String,
   'style': String,
-  'tabindex': String
+  'tabindex': Number
 };
 export const mtextAttributes = {
   'autofocus': Boolean,
@@ -2196,7 +2196,7 @@ export const mtextAttributes = {
   'nonce': String,
   'scriptlevel': String,
   'style': String,
-  'tabindex': String
+  'tabindex': Number
 };
 export const mtrAttributes = {
   'autofocus': Boolean,
@@ -2213,7 +2213,7 @@ export const mtrAttributes = {
   'rowalign': String,
   'scriptlevel': String,
   'style': String,
-  'tabindex': String
+  'tabindex': Number
 };
 export const munderAttributes = {
   'accentunder': String,
@@ -2229,7 +2229,7 @@ export const munderAttributes = {
   'nonce': String,
   'scriptlevel': String,
   'style': String,
-  'tabindex': String
+  'tabindex': Number
 };
 export const munderoverAttributes = {
   'accent': String,
@@ -2246,21 +2246,21 @@ export const munderoverAttributes = {
   'nonce': String,
   'scriptlevel': String,
   'style': String,
-  'tabindex': String
+  'tabindex': Number
 };
 export const navAttributes = {};
 export const noscriptAttributes = {};
 export const objectAttributes = {
   'data': String,
   'form': String,
-  'height': String,
+  'height': Number,
   'name': String,
   'type': String,
-  'width': String
+  'width': Number
 };
 export const olAttributes = {
   'reversed': Boolean,
-  'start': String,
+  'start': Number,
   'type': ["1","a","A","i","I"]
 };
 export const optgroupAttributes = {
@@ -2350,7 +2350,7 @@ export const pathAttributes = {
   'role': String,
   'style': String,
   'systemLanguage': String,
-  'tabindex': String,
+  'tabindex': Number,
   'xml:space': ["default","preserve"]
 };
 export const patternAttributes = {
@@ -2425,7 +2425,7 @@ export const patternAttributes = {
   'patternUnits': String,
   'preserveAspectRatio': String,
   'style': String,
-  'tabindex': String,
+  'tabindex': Number,
   'viewBox': String,
   'width': String,
   'x': String,
@@ -2506,7 +2506,7 @@ export const polygonAttributes = {
   'role': String,
   'style': String,
   'systemLanguage': String,
-  'tabindex': String,
+  'tabindex': Number,
   'xml:space': ["default","preserve"]
 };
 export const polylineAttributes = {
@@ -2580,7 +2580,7 @@ export const polylineAttributes = {
   'role': String,
   'style': String,
   'systemLanguage': String,
-  'tabindex': String,
+  'tabindex': Number,
   'xml:space': ["default","preserve"]
 };
 export const preAttributes = {};
@@ -2667,7 +2667,7 @@ export const radialGradientAttributes = {
   'r': [Number,String],
   'spreadMethod': String,
   'style': String,
-  'tabindex': String,
+  'tabindex': Number,
   'xlink:href': String,
   'xlink:title': String,
   'xml:space': ["default","preserve"]
@@ -2745,7 +2745,7 @@ export const rectAttributes = {
   'ry': [Number,String],
   'style': String,
   'systemLanguage': String,
-  'tabindex': String,
+  'tabindex': Number,
   'width': [Number,String],
   'x': [Number,String],
   'xml:space': ["default","preserve"],
@@ -2793,7 +2793,7 @@ export const semanticsAttributes = {
   'nonce': String,
   'scriptlevel': String,
   'style': String,
-  'tabindex': String
+  'tabindex': Number
 };
 export const setAttributes = {
   'attributeName': String,
@@ -2877,7 +2877,7 @@ export const setAttributes = {
   'restart': ["always","never","whenNotActive"],
   'style': String,
   'systemLanguage': String,
-  'tabindex': String,
+  'tabindex': Number,
   'to': String,
   'xml:space': ["default","preserve"]
 };
@@ -2886,13 +2886,13 @@ export const slotAttributes = {
 };
 export const smallAttributes = {};
 export const sourceAttributes = {
-  'height': String,
+  'height': Number,
   'media': String,
   'sizes': String,
   'src': String,
   'srcset': String,
   'type': String,
-  'width': String
+  'width': Number
 };
 export const spanAttributes = {};
 export const stopAttributes = {
@@ -2962,7 +2962,7 @@ export const stopAttributes = {
   'onwaiting': String,
   'onwheel': String,
   'style': String,
-  'tabindex': String,
+  'tabindex': Number,
   'xml:space': ["default","preserve"]
 };
 export const strongAttributes = {};
@@ -3046,7 +3046,7 @@ export const svgAttributes = {
   'role': String,
   'style': String,
   'systemLanguage': String,
-  'tabindex': String,
+  'tabindex': Number,
   'transform': String,
   'viewBox': String,
   'width': [Number,String],
@@ -3123,7 +3123,7 @@ export const switchAttributes = {
   'role': String,
   'style': String,
   'systemLanguage': String,
-  'tabindex': String,
+  'tabindex': Number,
   'xml:space': ["default","preserve"]
 };
 export const symbolAttributes = {
@@ -3197,7 +3197,7 @@ export const symbolAttributes = {
   'refY': String,
   'role': String,
   'style': String,
-  'tabindex': String,
+  'tabindex': Number,
   'viewBox': String,
   'width': String,
   'x': String,
@@ -3209,7 +3209,7 @@ export const tbodyAttributes = {};
 export const tdAttributes = {
   'colspan': Number,
   'headers': String,
-  'rowspan': String
+  'rowspan': Number
 };
 export const templateAttributes = {
   'shadowrootclonable': Boolean,
@@ -3292,7 +3292,7 @@ export const textAttributes = {
   'rotate': String,
   'style': String,
   'systemLanguage': String,
-  'tabindex': String,
+  'tabindex': Number,
   'textLength': String,
   'x': String,
   'xml:space': ["default","preserve"],
@@ -3304,8 +3304,8 @@ export const textareaAttributes = {
   'dirname': String,
   'disabled': Boolean,
   'form': String,
-  'maxlength': String,
-  'minlength': String,
+  'maxlength': Number,
+  'minlength': Number,
   'name': String,
   'placeholder': String,
   'readonly': Boolean,
@@ -3389,7 +3389,7 @@ export const textPathAttributes = {
   'startOffset': String,
   'style': String,
   'systemLanguage': String,
-  'tabindex': String,
+  'tabindex': Number,
   'textLength': String,
   'xlink:href': String,
   'xlink:title': String,
@@ -3400,7 +3400,7 @@ export const thAttributes = {
   'abbr': String,
   'colspan': Number,
   'headers': String,
-  'rowspan': String,
+  'rowspan': Number,
   'scope': ["row","ROW","col","COL","rowgroup","ROWGROUP","colgroup","COLGROUP"]
 };
 export const theadAttributes = {};
@@ -3489,7 +3489,7 @@ export const tspanAttributes = {
   'rotate': String,
   'style': String,
   'systemLanguage': String,
-  'tabindex': String,
+  'tabindex': Number,
   'textLength': String,
   'x': String,
   'xml:space': ["default","preserve"],
@@ -3568,7 +3568,7 @@ export const useAttributes = {
   'role': String,
   'style': String,
   'systemLanguage': String,
-  'tabindex': String,
+  'tabindex': Number,
   'width': String,
   'x': [Number,String],
   'xlink:href': String,
@@ -3579,9 +3579,9 @@ export const useAttributes = {
 export const varAttributes = {};
 export const videoAttributes = {
   'autoplay': Boolean,
-  'controls': String,
+  'controls': Boolean,
   'crossorigin': ["anonymous","use-credentials"],
-  'height': String,
+  'height': Number,
   'loading': ["lazy","eager"],
   'loop': Boolean,
   'muted': Boolean,
@@ -3589,7 +3589,7 @@ export const videoAttributes = {
   'poster': String,
   'preload': ["none","metadata","auto"],
   'src': String,
-  'width': String
+  'width': Number
 };
 export const viewAttributes = {
   'autofocus': Boolean,
@@ -3659,7 +3659,7 @@ export const viewAttributes = {
   'preserveAspectRatio': String,
   'role': String,
   'style': String,
-  'tabindex': String,
+  'tabindex': Number,
   'viewBox': String,
   'xml:space': String
 };

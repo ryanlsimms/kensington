@@ -5,10 +5,6 @@
   <title>Kensington Test</title>
   <script type="module">
     import { t } from './esm/kensington.js';
-    const div = t.div(
-      { dataFilter: JSON.stringify({ search: 'abc', id: 3 })},
-      JSON.stringify({ search: 'def', id: 4 }),
-    ).toElement();
     const element = t.div({
       id: 'a',
       dataName: 'b',

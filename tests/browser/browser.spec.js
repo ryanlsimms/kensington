@@ -1,25 +1,179 @@
 import { test, expect } from '@playwright/test';
 
-test('renders kitchen sink element', async ({ page }) => {
-  await page.goto('http://localhost:3000/kitchen-sink.html');
-
-  const element = page.locator('body');
-  const innerHTML = await element.innerHTML();
-  const expected = '<div id="a" data-name="b" data-nested-attr="c" data-nested="d" data-camel-case="e" data-deeply-nested-attr="f">some text67<div class="no-content"></div><div data-filter="{&quot;search&quot;:&quot;abc&quot;,&quot;id&quot;:3}">{"search":"def","id":4}</div><div class="muted"><div><span>hello from kensington</span></div></div><div>literal content</div><div>content only</div><pre>pre\ntext</pre><svg id="svg" height="10" width="10" xmlns="http://www.w3.org/2000/svg"><circle r="5" cx="5" cy="5" fill="green"></circle></svg><input checked="" type="checkbox"><math xmlns="https://www.w3.org/1998/Math/MathML/"><mfrac><mn>1</mn><mn>2</mn></mfrac></math></div>'
-
-  await expect(page).toHaveScreenshot();
-  return expect(innerHTML.trim()).toEqual(expected);
+test.beforeEach(async ({ page }) => {
+  await page.goto('http://localhost:3000/');
 });
 
-test('event listeners', async ({ page }) => {
-  await page.goto('http://localhost:3000/event-listeners.html');
+// ─── element creation ──────────────────────────────────────────────────────
 
-  const button = page.locator('button');
-  await button.click();
+test('creates element with correct tag name', async ({ page }) => {
+  await page.evaluate(async () => {
+    const { t } = await import('/esm/kensington.js');
+    document.body.append(t.section().toElement());
+  });
+  await expect(page.locator('section')).toBeAttached();
+});
 
-  const innerHTML = await  page.locator('body').innerHTML();
-  const expected = '<button type="button">Click Me</button>The button has been clicked'
+test('creates void element', async ({ page }) => {
+  await page.evaluate(async () => {
+    const { t } = await import('/esm/kensington.js');
+    document.body.append(t.input({ type: 'text' }).toElement());
+  });
+  await expect(page.locator('input')).toHaveAttribute('type', 'text');
+});
 
-  await expect(page).toHaveScreenshot();
-  return expect(innerHTML.trim()).toEqual(expected);
+// ─── attributes ────────────────────────────────────────────────────────────
+
+test('sets string attributes', async ({ page }) => {
+  await page.evaluate(async () => {
+    const { t } = await import('/esm/kensington.js');
+    document.body.append(t.div({ id: 'a', class: 'foo' }).toElement());
+  });
+  await expect(page.locator('#a')).toHaveClass('foo');
+});
+
+test('sets number attributes as strings', async ({ page }) => {
+  await page.evaluate(async () => {
+    const { t } = await import('/esm/kensington.js');
+    document.body.append(t.input({ type: 'text', maxlength: 10 }).toElement());
+  });
+  await expect(page.locator('input')).toHaveAttribute('maxlength', '10');
+});
+
+test('converts camelCase to kebab-case attributes', async ({ page }) => {
+  await page.evaluate(async () => {
+    const { t } = await import('/esm/kensington.js');
+    document.body.append(t.div({ dataBsToggle: 'collapse' }).toElement());
+  });
+  await expect(page.locator('div')).toHaveAttribute('data-bs-toggle', 'collapse');
+});
+
+test('converts nested object to data attributes', async ({ page }) => {
+  await page.evaluate(async () => {
+    const { t } = await import('/esm/kensington.js');
+    document.body.append(t.div({ data: { bs: { toggle: 'collapse', target: '#x' } } }).toElement());
+  });
+  await expect(page.locator('div')).toHaveAttribute('data-bs-toggle', 'collapse');
+  await expect(page.locator('div')).toHaveAttribute('data-bs-target', '#x');
+});
+
+test('boolean true sets attribute, boolean false omits it', async ({ page }) => {
+  await page.evaluate(async () => {
+    const { t } = await import('/esm/kensington.js');
+    document.body.append(t.input({ type: 'checkbox', checked: true, required: false }).toElement());
+  });
+  await expect(page.locator('input')).toBeChecked();
+  await expect(page.locator('input')).not.toHaveAttribute('required');
+});
+
+test('class as array joins values with a space', async ({ page }) => {
+  await page.evaluate(async () => {
+    const { t } = await import('/esm/kensington.js');
+    document.body.append(t.div({ class: ['foo', 'bar'] }).toElement());
+  });
+  await expect(page.locator('div')).toHaveClass('foo bar');
+});
+
+// ─── content ───────────────────────────────────────────────────────────────
+
+test('sets text content as a text node', async ({ page }) => {
+  await page.evaluate(async () => {
+    const { t } = await import('/esm/kensington.js');
+    document.body.append(t.p('hello world').toElement());
+  });
+  await expect(page.locator('p')).toHaveText('hello world');
+});
+
+test('sets number content as a text node', async ({ page }) => {
+  await page.evaluate(async () => {
+    const { t } = await import('/esm/kensington.js');
+    document.body.append(t.span(42).toElement());
+  });
+  await expect(page.locator('span')).toHaveText('42');
+});
+
+test('creates nested elements', async ({ page }) => {
+  await page.evaluate(async () => {
+    const { t } = await import('/esm/kensington.js');
+    document.body.append(t.ul([t.li('one'), t.li('two')]).toElement());
+  });
+  await expect(page.locator('ul li')).toHaveCount(2);
+  await expect(page.locator('ul li').nth(0)).toHaveText('one');
+  await expect(page.locator('ul li').nth(1)).toHaveText('two');
+});
+
+test('literal creates element from raw HTML string', async ({ page }) => {
+  await page.evaluate(async () => {
+    const { t } = await import('/esm/kensington.js');
+    document.body.append(t.literal('<p id="from-literal">hello</p>').toElement());
+  });
+  await expect(page.locator('#from-literal')).toHaveText('hello');
+});
+
+// ─── event listeners ───────────────────────────────────────────────────────
+
+test('attaches event listener via function attribute', async ({ page }) => {
+  await page.evaluate(async () => {
+    const { t } = await import('/esm/kensington.js');
+    document.body.append(
+      t.button({
+        type: 'button',
+        onclick: () => { document.body.dataset.clicked = 'yes'; }
+      }, 'Click Me').toElement()
+    );
+  });
+  await page.locator('button').click();
+  await expect(page.locator('body')).toHaveAttribute('data-clicked', 'yes');
+});
+
+test('attaches non-click event listener via function attribute', async ({ page }) => {
+  await page.evaluate(async () => {
+    const { t } = await import('/esm/kensington.js');
+    document.body.append(
+      t.input({
+        type: 'text',
+        oninput: () => { document.body.dataset.typed = 'yes'; }
+      }).toElement()
+    );
+  });
+  await page.locator('input').fill('hi');
+  await expect(page.locator('body')).toHaveAttribute('data-typed', 'yes');
+});
+
+test('sets aria attributes on element', async ({ page }) => {
+  await page.evaluate(async () => {
+    const { t } = await import('/esm/kensington.js');
+    document.body.append(t.button({ type: 'button', 'aria-label': 'close' }, 'x').toElement());
+  });
+  await expect(page.locator('button')).toHaveAttribute('aria-label', 'close');
+});
+
+test('sets data attributes on element', async ({ page }) => {
+  await page.evaluate(async () => {
+    const { t } = await import('/esm/kensington.js');
+    document.body.append(t.div({ 'data-testid': 'my-div' }).toElement());
+  });
+  await expect(page.locator('[data-testid="my-div"]')).toBeAttached();
+});
+
+// ─── namespaces ────────────────────────────────────────────────────────────
+
+test('creates SVG elements in the SVG namespace', async ({ page }) => {
+  const ns = await page.evaluate(async () => {
+    const { t } = await import('/esm/kensington.js');
+    const circle = t.circle({ r: 5, cx: 5, cy: 5 }).toElement();
+    document.body.append(circle);
+    return circle.namespaceURI;
+  });
+  expect(ns).toBe('http://www.w3.org/2000/svg');
+});
+
+test('creates MathML elements in the MathML namespace', async ({ page }) => {
+  const ns = await page.evaluate(async () => {
+    const { t } = await import('/esm/kensington.js');
+    const mn = t.mn(1).toElement();
+    document.body.append(mn);
+    return mn.namespaceURI;
+  });
+  expect(ns).toBe('http://www.w3.org/1998/Math/MathML');
 });

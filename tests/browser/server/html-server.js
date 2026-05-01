@@ -11,7 +11,8 @@ http.createServer(async (req, res) =>  {
   res.status = 200
   try {
     if (req.url === '/') {
-      return res.end('');
+      res.setHeader('Content-Type', 'text/html');
+      return res.end('<!DOCTYPE html><html><head></head><body></body></html>');
     } else if (req.url.endsWith('.html')) {
       const html = fs.readFileSync(path.join(dirname, '..', 'pages', req.url));
       res.setHeader('Content-Type', 'text/html');

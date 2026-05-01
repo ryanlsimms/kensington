@@ -61,7 +61,11 @@ export default function parseData(htmlData, svgData, mathElements) {
     if (values[0]?.toLowerCase?.() === 'boolean attribute') {
       return ['Boolean', 'boolean'];
     }
-    if (values[0] === 'Valid non-negative integer greater than zero') {
+    if ([
+      'Valid non-negative integer greater than zero',
+      'Valid non-negative integer',
+      'Valid integer',
+    ].includes(values[0])) {
       return ['Number', 'number']
     }
     if (values[0] === '<boolean>') {
@@ -114,9 +118,12 @@ export default function parseData(htmlData, svgData, mathElements) {
   elements.forEach(el => {
     el.attributes = el.attributes
       .filter(a => !['any*'].includes(a))
+      .map(attr => attr.replace(/\*/g, ''))
       .sort()
       .map(attr => {
-        const match = attributes.find(a => a.attribute === attr &&  a.elements.includes(el.tag));
+        const match = attributes.find(a => {
+          return a.attribute === attr && a.elements.some(e => e.trim().split(/\s+/).includes(el.tag))
+        });
         const found = match ?? attributes.find(a => a.attribute === attr && a.elements.includes('HTML elements'));
         return found ? mapAttr(found) : { name: attr, type: 'string', value: 'String' };
       });

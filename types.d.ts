@@ -1,7 +1,41 @@
-import ContentTag from './esm/tag-classes/content-tag.js';
-import LiteralTag from './esm/tag-classes/literal-tag.js';
-import VoidTag from './esm/tag-classes/void-tag.js';
+/**
+ * Returned by content element methods (div, p, span, …).
+ * Call `.toString()` to get the HTML string, or `.toElement()` to create a live DOM node.
+ */
+export class ContentTag {
+  toString(): string;
+  toElement(): Element;
+}
 
+/**
+ * Returned by void element methods (br, hr, input, img, …).
+ * Void elements have no closing tag and accept no content argument.
+ */
+export class VoidTag extends ContentTag {
+  toString(): string;
+}
+
+/**
+ * Returned by `.literal()` and `.unsafeLiteral()`.
+ * Embeds a raw HTML string into the output without further processing.
+ */
+export class LiteralTag {
+  toString(): string;
+  toElement(): ChildNode | null;
+}
+
+/**
+ * Extend this interface via module augmentation to allow additional attribute namespaces.
+ * `data-*` and `aria-*` are always allowed without augmentation.
+ *
+ * @example
+ * declare module 'kensington' {
+ *   interface NameSpaceAttributes {
+ *     [key: `hx${string}`]: string | object; // allow htmx hx-* attributes
+ *   }
+ * }
+ * // t.div({ hxBoost: 'true' }) is now valid
+ */
 export interface NameSpaceAttributes {
   [key: `${"data" | "aria"}${string}`]: string | object
 }
@@ -11,7 +45,7 @@ type GlobalAttributes = {
   autocapitalize?: "on" | "off" | "none" | "sentences" | "words" | "characters";
   autocorrect?: "on" | "off";
   autofocus?: boolean;
-  class?: string;
+  class?: string | string[];
   contenteditable?: "true" | "false" | "plaintext-only";
   dir?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   draggable?: "true" | "false";
@@ -35,84 +69,84 @@ type GlobalAttributes = {
   slot?: string;
   spellcheck?: "true" | "false";
   style?: string;
-  tabindex?: string;
+  tabindex?: number;
   title?: string;
   translate?: "yes" | "no";
   writingsuggestions?: "true" | "false";
 }
 
 type GlobalEvents = {
-  onauxclick?: string;
-  onbeforeinput?: string;
-  onbeforematch?: string;
-  onbeforetoggle?: string;
-  onblur?: string;
-  oncancel?: string;
-  oncanplay?: string;
-  oncanplaythrough?: string;
-  onchange?: string;
-  onclick?: string;
-  onclose?: string;
-  oncommand?: string;
-  oncontextlost?: string;
-  oncontextmenu?: string;
-  oncontextrestored?: string;
-  oncopy?: string;
-  oncuechange?: string;
-  oncut?: string;
-  ondblclick?: string;
-  ondrag?: string;
-  ondragend?: string;
-  ondragenter?: string;
-  ondragleave?: string;
-  ondragover?: string;
-  ondragstart?: string;
-  ondrop?: string;
-  ondurationchange?: string;
-  onemptied?: string;
-  onended?: string;
-  onerror?: string;
-  onfocus?: string;
-  onformdata?: string;
-  oninput?: string;
-  oninvalid?: string;
-  onkeydown?: string;
-  onkeypress?: string;
-  onkeyup?: string;
-  onload?: string;
-  onloadeddata?: string;
-  onloadedmetadata?: string;
-  onloadstart?: string;
-  onmousedown?: string;
-  onmouseenter?: string;
-  onmouseleave?: string;
-  onmousemove?: string;
-  onmouseout?: string;
-  onmouseover?: string;
-  onmouseup?: string;
-  onpaste?: string;
-  onpause?: string;
-  onplay?: string;
-  onplaying?: string;
-  onprogress?: string;
-  onratechange?: string;
-  onreset?: string;
-  onresize?: string;
-  onscroll?: string;
-  onscrollend?: string;
-  onsecuritypolicyviolation?: string;
-  onseeked?: string;
-  onseeking?: string;
-  onselect?: string;
-  onslotchange?: string;
-  onstalled?: string;
-  onsubmit?: string;
-  onsuspend?: string;
-  ontimeupdate?: string;
-  ontoggle?: string;
-  onvolumechange?: string;
-  onwaiting?: string;
-  onwheel?: string;
+  onauxclick?: string | ((event: Event) => void);
+  onbeforeinput?: string | ((event: Event) => void);
+  onbeforematch?: string | ((event: Event) => void);
+  onbeforetoggle?: string | ((event: Event) => void);
+  onblur?: string | ((event: Event) => void);
+  oncancel?: string | ((event: Event) => void);
+  oncanplay?: string | ((event: Event) => void);
+  oncanplaythrough?: string | ((event: Event) => void);
+  onchange?: string | ((event: Event) => void);
+  onclick?: string | ((event: Event) => void);
+  onclose?: string | ((event: Event) => void);
+  oncommand?: string | ((event: Event) => void);
+  oncontextlost?: string | ((event: Event) => void);
+  oncontextmenu?: string | ((event: Event) => void);
+  oncontextrestored?: string | ((event: Event) => void);
+  oncopy?: string | ((event: Event) => void);
+  oncuechange?: string | ((event: Event) => void);
+  oncut?: string | ((event: Event) => void);
+  ondblclick?: string | ((event: Event) => void);
+  ondrag?: string | ((event: Event) => void);
+  ondragend?: string | ((event: Event) => void);
+  ondragenter?: string | ((event: Event) => void);
+  ondragleave?: string | ((event: Event) => void);
+  ondragover?: string | ((event: Event) => void);
+  ondragstart?: string | ((event: Event) => void);
+  ondrop?: string | ((event: Event) => void);
+  ondurationchange?: string | ((event: Event) => void);
+  onemptied?: string | ((event: Event) => void);
+  onended?: string | ((event: Event) => void);
+  onerror?: string | ((event: Event) => void);
+  onfocus?: string | ((event: Event) => void);
+  onformdata?: string | ((event: Event) => void);
+  oninput?: string | ((event: Event) => void);
+  oninvalid?: string | ((event: Event) => void);
+  onkeydown?: string | ((event: Event) => void);
+  onkeypress?: string | ((event: Event) => void);
+  onkeyup?: string | ((event: Event) => void);
+  onload?: string | ((event: Event) => void);
+  onloadeddata?: string | ((event: Event) => void);
+  onloadedmetadata?: string | ((event: Event) => void);
+  onloadstart?: string | ((event: Event) => void);
+  onmousedown?: string | ((event: Event) => void);
+  onmouseenter?: string | ((event: Event) => void);
+  onmouseleave?: string | ((event: Event) => void);
+  onmousemove?: string | ((event: Event) => void);
+  onmouseout?: string | ((event: Event) => void);
+  onmouseover?: string | ((event: Event) => void);
+  onmouseup?: string | ((event: Event) => void);
+  onpaste?: string | ((event: Event) => void);
+  onpause?: string | ((event: Event) => void);
+  onplay?: string | ((event: Event) => void);
+  onplaying?: string | ((event: Event) => void);
+  onprogress?: string | ((event: Event) => void);
+  onratechange?: string | ((event: Event) => void);
+  onreset?: string | ((event: Event) => void);
+  onresize?: string | ((event: Event) => void);
+  onscroll?: string | ((event: Event) => void);
+  onscrollend?: string | ((event: Event) => void);
+  onsecuritypolicyviolation?: string | ((event: Event) => void);
+  onseeked?: string | ((event: Event) => void);
+  onseeking?: string | ((event: Event) => void);
+  onselect?: string | ((event: Event) => void);
+  onslotchange?: string | ((event: Event) => void);
+  onstalled?: string | ((event: Event) => void);
+  onsubmit?: string | ((event: Event) => void);
+  onsuspend?: string | ((event: Event) => void);
+  ontimeupdate?: string | ((event: Event) => void);
+  ontoggle?: string | ((event: Event) => void);
+  onvolumechange?: string | ((event: Event) => void);
+  onwaiting?: string | ((event: Event) => void);
+  onwheel?: string | ((event: Event) => void);
 }
 
 type AAttributes = {
@@ -138,7 +172,7 @@ type AnimateAttributes = {
   'begin'?: string;
   'by'?: string;
   'calcMode'?: "discrete" | "linear" | "paced" | "spline";
-  'class'?: string;
+  'class'?: string | string[];
   'dur'?: string;
   'end'?: string;
   'fill'?: "remove" | "freeze";
@@ -219,7 +253,7 @@ type AnimateAttributes = {
   'restart'?: "always" | "never" | "whenNotActive";
   'style'?: string;
   'systemLanguage'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'to'?: string;
   'values'?: string;
   'xml:space'?: "default" | "preserve";
@@ -232,7 +266,7 @@ type AnimateMotionAttributes = {
   'begin'?: string;
   'by'?: string;
   'calcMode'?: "discrete" | "linear" | "paced" | "spline";
-  'class'?: string;
+  'class'?: string | string[];
   'dur'?: string;
   'end'?: string;
   'fill'?: "remove" | "freeze";
@@ -317,7 +351,7 @@ type AnimateMotionAttributes = {
   'rotate'?: string;
   'style'?: string;
   'systemLanguage'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'to'?: string;
   'values'?: string;
   'xml:space'?: "default" | "preserve";
@@ -331,7 +365,7 @@ type AnimateTransformAttributes = {
   'begin'?: string;
   'by'?: string;
   'calcMode'?: "discrete" | "linear" | "paced" | "spline";
-  'class'?: string;
+  'class'?: string | string[];
   'dur'?: string;
   'end'?: string;
   'fill'?: "remove" | "freeze";
@@ -412,7 +446,7 @@ type AnimateTransformAttributes = {
   'restart'?: "always" | "never" | "whenNotActive";
   'style'?: string;
   'systemLanguage'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'to'?: string;
   'type'?: "translate" | "scale" | "rotate" | "skewX" | "skewY";
   'values'?: string;
@@ -421,7 +455,7 @@ type AnimateTransformAttributes = {
 
 type AnnotationAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   'displaystyle'?: string;
   'href'?: string;
@@ -432,12 +466,12 @@ type AnnotationAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
 type AnnotationXmlAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   'displaystyle'?: string;
   'href'?: string;
@@ -448,7 +482,7 @@ type AnnotationXmlAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
 type AreaAttributes = {
@@ -534,15 +568,15 @@ type ButtonAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type CanvasAttributes = {
-  'height'?: string;
-  'width'?: string;
+  'height'?: number;
+  'width'?: number;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type CaptionAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type CircleAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'cx'?: number | string;
   'cy'?: number | string;
   'id'?: string;
@@ -613,14 +647,14 @@ type CircleAttributes = {
   'role'?: string;
   'style'?: string;
   'systemLanguage'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type CiteAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ClipPathAttributes = {
-  'class'?: string;
+  'class'?: string | string[];
   'externalResourcesRequired'?: string;
   'id'?: string;
   'requiredExtensions'?: string;
@@ -653,7 +687,7 @@ type DdAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type DefsAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'id'?: string;
   'lang'?: string;
   'oncancel'?: string;
@@ -717,7 +751,7 @@ type DefsAttributes = {
   'onwaiting'?: string;
   'onwheel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
@@ -728,7 +762,7 @@ type DelAttributes = {
 
 type DescAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'id'?: string;
   'lang'?: string;
   'oncancel'?: string;
@@ -792,7 +826,7 @@ type DescAttributes = {
   'onwaiting'?: string;
   'onwheel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
@@ -815,7 +849,7 @@ type DtAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type EllipseAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'cx'?: number | string;
   'cy'?: number | string;
   'id'?: string;
@@ -887,21 +921,21 @@ type EllipseAttributes = {
   'ry'?: number | string;
   'style'?: string;
   'systemLanguage'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type EmAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type EmbedAttributes = {
-  'height'?: string;
+  'height'?: number;
   'src'?: string;
   'type'?: string;
-  'width'?: string;
+  'width'?: number;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeBlendAttributes = {
-  'class'?: string;
+  'class'?: string | string[];
   'id'?: string;
   'style'?: string;
   'xml:base'?: string;
@@ -910,7 +944,7 @@ type FeBlendAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeColorMatrixAttributes = {
-  'class'?: string;
+  'class'?: string | string[];
   'id'?: string;
   'style'?: string;
   'xml:base'?: string;
@@ -919,7 +953,7 @@ type FeColorMatrixAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeComponentTransferAttributes = {
-  'class'?: string;
+  'class'?: string | string[];
   'id'?: string;
   'style'?: string;
   'xml:base'?: string;
@@ -928,7 +962,7 @@ type FeComponentTransferAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeCompositeAttributes = {
-  'class'?: string;
+  'class'?: string | string[];
   'id'?: string;
   'style'?: string;
   'xml:base'?: string;
@@ -937,7 +971,7 @@ type FeCompositeAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeConvolveMatrixAttributes = {
-  'class'?: string;
+  'class'?: string | string[];
   'id'?: string;
   'style'?: string;
   'xml:base'?: string;
@@ -946,7 +980,7 @@ type FeConvolveMatrixAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeDiffuseLightingAttributes = {
-  'class'?: string;
+  'class'?: string | string[];
   'id'?: string;
   'style'?: string;
   'xml:base'?: string;
@@ -955,7 +989,7 @@ type FeDiffuseLightingAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeDisplacementMapAttributes = {
-  'class'?: string;
+  'class'?: string | string[];
   'id'?: string;
   'style'?: string;
   'xml:base'?: string;
@@ -971,7 +1005,7 @@ type FeDistantLightAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeDropShadowAttributes = {
-  'class'?: string;
+  'class'?: string | string[];
   'id'?: string;
   'style'?: string;
   'xml:base'?: string;
@@ -980,7 +1014,7 @@ type FeDropShadowAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeFloodAttributes = {
-  'class'?: string;
+  'class'?: string | string[];
   'id'?: string;
   'style'?: string;
   'xml:base'?: string;
@@ -1017,7 +1051,7 @@ type FeFuncRAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeGaussianBlurAttributes = {
-  'class'?: string;
+  'class'?: string | string[];
   'id'?: string;
   'style'?: string;
   'xml:base'?: string;
@@ -1026,7 +1060,7 @@ type FeGaussianBlurAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeImageAttributes = {
-  'class'?: string;
+  'class'?: string | string[];
   'externalResourcesRequired'?: string;
   'id'?: string;
   'style'?: string;
@@ -1036,7 +1070,7 @@ type FeImageAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeMergeAttributes = {
-  'class'?: string;
+  'class'?: string | string[];
   'id'?: string;
   'style'?: string;
   'xml:base'?: string;
@@ -1052,7 +1086,7 @@ type FeMergeNodeAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeMorphologyAttributes = {
-  'class'?: string;
+  'class'?: string | string[];
   'id'?: string;
   'style'?: string;
   'xml:base'?: string;
@@ -1061,7 +1095,7 @@ type FeMorphologyAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeOffsetAttributes = {
-  'class'?: string;
+  'class'?: string | string[];
   'id'?: string;
   'style'?: string;
   'xml:base'?: string;
@@ -1077,7 +1111,7 @@ type FePointLightAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeSpecularLightingAttributes = {
-  'class'?: string;
+  'class'?: string | string[];
   'id'?: string;
   'style'?: string;
   'xml:base'?: string;
@@ -1093,7 +1127,7 @@ type FeSpotLightAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeTileAttributes = {
-  'class'?: string;
+  'class'?: string | string[];
   'id'?: string;
   'style'?: string;
   'xml:base'?: string;
@@ -1102,7 +1136,7 @@ type FeTileAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeTurbulenceAttributes = {
-  'class'?: string;
+  'class'?: string | string[];
   'id'?: string;
   'style'?: string;
   'xml:base'?: string;
@@ -1121,7 +1155,7 @@ type FigcaptionAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvent
 type FigureAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FilterAttributes = {
-  'class'?: string;
+  'class'?: string | string[];
   'externalResourcesRequired'?: string;
   'id'?: string;
   'style'?: string;
@@ -1134,7 +1168,7 @@ type FooterAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ForeignObjectAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'height'?: number | string;
   'id'?: string;
   'lang'?: string;
@@ -1202,7 +1236,7 @@ type ForeignObjectAttributes = {
   'role'?: string;
   'style'?: string;
   'systemLanguage'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'width'?: number | string;
   'x'?: number | string;
   'xml:space'?: "default" | "preserve";
@@ -1224,7 +1258,7 @@ type FormAttributes = {
 
 type GAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'id'?: string;
   'lang'?: string;
   'oncancel'?: string;
@@ -1291,7 +1325,7 @@ type GAttributes = {
   'role'?: string;
   'style'?: string;
   'systemLanguage'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
@@ -1322,19 +1356,19 @@ type IAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 type IframeAttributes = {
   'allow'?: string;
   'allowfullscreen'?: boolean;
-  'height'?: string;
+  'height'?: number;
   'loading'?: "lazy" | "eager";
   'name'?: string;
   'referrerpolicy'?: string;
   'sandbox'?: string;
   'src'?: string;
   'srcdoc'?: string;
-  'width'?: string;
+  'width'?: number;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ImageAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'crossorigin'?: string;
   'height'?: number | string;
   'href'?: string;
@@ -1405,7 +1439,7 @@ type ImageAttributes = {
   'role'?: string;
   'style'?: string;
   'systemLanguage'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'width'?: number | string;
   'x'?: number | string;
   'xlink:href'?: string;
@@ -1416,11 +1450,11 @@ type ImageAttributes = {
 
 type ImgAttributes = {
   'alt'?: string;
-  'controls'?: string;
+  'controls'?: boolean;
   'crossorigin'?: "anonymous" | "use-credentials";
   'decoding'?: "sync" | "async" | "auto";
   'fetchpriority'?: "auto" | "high" | "low";
-  'height'?: string;
+  'height'?: number;
   'ismap'?: boolean;
   'loading'?: "lazy" | "eager";
   'referrerpolicy'?: string;
@@ -1428,7 +1462,7 @@ type ImgAttributes = {
   'src'?: string;
   'srcset'?: string;
   'usemap'?: string;
-  'width'?: string;
+  'width'?: number;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type InputAttributes = {
@@ -1446,12 +1480,12 @@ type InputAttributes = {
   'formmethod'?: "get" | "GET" | "post" | "POST" | "dialog" | "DIALOG";
   'formnovalidate'?: boolean;
   'formtarget'?: string;
-  'height'?: string;
+  'height'?: number;
   'list'?: string;
   'max'?: string;
-  'maxlength'?: string;
+  'maxlength'?: number;
   'min'?: string;
-  'minlength'?: string;
+  'minlength'?: number;
   'multiple'?: boolean;
   'name'?: string;
   'pattern'?: string;
@@ -1465,7 +1499,7 @@ type InputAttributes = {
   'step'?: string;
   'type'?: "hidden" | "text" | "search" | "tel" | "url" | "email" | "password" | "date" | "month" | "week" | "time" | "datetime-local" | "number" | "range" | "color" | "checkbox" | "radio" | "file" | "submit" | "image" | "reset" | "button";
   'value'?: number | string;
-  'width'?: string;
+  'width'?: number;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type InsAttributes = {
@@ -1482,12 +1516,12 @@ type LabelAttributes = {
 type LegendAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type LiAttributes = {
-  'value*'?: string;
+  'value'?: number | string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type LineAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'id'?: string;
   'lang'?: string;
   'oncancel'?: string;
@@ -1555,7 +1589,7 @@ type LineAttributes = {
   'role'?: string;
   'style'?: string;
   'systemLanguage'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'x1'?: number | string;
   'x2'?: number | string;
   'xml:space'?: "default" | "preserve";
@@ -1565,7 +1599,7 @@ type LineAttributes = {
 
 type LinearGradientAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'gradientTransform'?: string;
   'gradientUnits'?: "userSpaceOnUse" | "objectBoundingBox";
   'href'?: string;
@@ -1633,7 +1667,7 @@ type LinearGradientAttributes = {
   'onwheel'?: string;
   'spreadMethod'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'x1'?: number | string;
   'x2'?: number | string;
   'xlink:href'?: string;
@@ -1672,7 +1706,7 @@ type MarkAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type MarkerAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'id'?: string;
   'lang'?: string;
   'markerHeight'?: string;
@@ -1743,13 +1777,13 @@ type MarkerAttributes = {
   'refX'?: string;
   'refY'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'viewBox'?: string;
   'xml:space'?: string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type MaskAttributes = {
-  'class'?: string;
+  'class'?: string | string[];
   'id'?: string;
   'requiredExtensions'?: string;
   'requiredFeatures'?: string;
@@ -1762,7 +1796,7 @@ type MaskAttributes = {
 
 type MathAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   'display'?: string;
   'displaystyle'?: string;
@@ -1774,13 +1808,13 @@ type MathAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'xmlns'?: string;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MencloseAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   'displaystyle'?: string;
   'href'?: string;
@@ -1792,14 +1826,14 @@ type MencloseAttributes = {
   'notation'?: string;
   'scriptlevel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MenuAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type MerrorAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   'displaystyle'?: string;
   'href'?: string;
@@ -1810,7 +1844,7 @@ type MerrorAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MetaAttributes = {
@@ -1824,7 +1858,7 @@ type MetaAttributes = {
 
 type MetadataAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'id'?: string;
   'lang'?: string;
   'oncancel'?: string;
@@ -1888,7 +1922,7 @@ type MetadataAttributes = {
   'onwaiting'?: string;
   'onwheel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
@@ -1903,7 +1937,7 @@ type MeterAttributes = {
 
 type MfracAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   'displaystyle'?: string;
   'href'?: string;
@@ -1915,12 +1949,12 @@ type MfracAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MiAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   'displaystyle'?: string;
   'href'?: string;
@@ -1931,12 +1965,12 @@ type MiAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MmultiscriptsAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   'displaystyle'?: string;
   'href'?: string;
@@ -1947,12 +1981,12 @@ type MmultiscriptsAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MnAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   'displaystyle'?: string;
   'href'?: string;
@@ -1963,13 +1997,13 @@ type MnAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MoAttributes = {
   'accent'?: string;
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   'displaystyle'?: string;
   'fence'?: string;
@@ -1989,13 +2023,13 @@ type MoAttributes = {
   'stretchy'?: string;
   'style'?: string;
   'symmetric'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MoverAttributes = {
   'accent'?: string;
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   'displaystyle'?: string;
   'href'?: string;
@@ -2006,12 +2040,12 @@ type MoverAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MpaddedAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'depth'?: string;
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   'displaystyle'?: string;
@@ -2025,14 +2059,14 @@ type MpaddedAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'voffset'?: string;
   'width'?: string;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MpathAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'href'?: string;
   'id'?: string;
   'lang'?: string;
@@ -2097,13 +2131,13 @@ type MpathAttributes = {
   'onwaiting'?: string;
   'onwheel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type MphantomAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   'displaystyle'?: string;
   'href'?: string;
@@ -2114,12 +2148,12 @@ type MphantomAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MprescriptsAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   'displaystyle'?: string;
   'href'?: string;
@@ -2130,12 +2164,12 @@ type MprescriptsAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MrootAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   'displaystyle'?: string;
   'href'?: string;
@@ -2146,12 +2180,12 @@ type MrootAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MrowAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   'displaystyle'?: string;
   'href'?: string;
@@ -2162,12 +2196,12 @@ type MrowAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MsAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   'displaystyle'?: string;
   'href'?: string;
@@ -2178,12 +2212,12 @@ type MsAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MspaceAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   'displaystyle'?: string;
   'height'?: string;
@@ -2195,13 +2229,13 @@ type MspaceAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'width'?: string;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MsqrtAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   'displaystyle'?: string;
   'href'?: string;
@@ -2212,12 +2246,12 @@ type MsqrtAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MstyleAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   'displaystyle'?: string;
   'href'?: string;
@@ -2228,12 +2262,12 @@ type MstyleAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MsubAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   'displaystyle'?: string;
   'href'?: string;
@@ -2244,12 +2278,12 @@ type MsubAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MsubsupAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   'displaystyle'?: string;
   'href'?: string;
@@ -2260,12 +2294,12 @@ type MsubsupAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MsupAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   'displaystyle'?: string;
   'href'?: string;
@@ -2276,13 +2310,13 @@ type MsupAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MtableAttributes = {
   'align'?: string;
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'columnalign'?: string;
   'columnlines'?: string;
   'columnspacing'?: string;
@@ -2301,13 +2335,13 @@ type MtableAttributes = {
   'rowspacing'?: string;
   'scriptlevel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'width'?: string;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MtdAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'columnalign'?: string;
   'columnspan'?: string;
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
@@ -2322,12 +2356,12 @@ type MtdAttributes = {
   'rowspan'?: string;
   'scriptlevel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MtextAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   'displaystyle'?: string;
   'href'?: string;
@@ -2338,12 +2372,12 @@ type MtextAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MtrAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'columnalign'?: string;
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   'displaystyle'?: string;
@@ -2356,13 +2390,13 @@ type MtrAttributes = {
   'rowalign'?: string;
   'scriptlevel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MunderAttributes = {
   'accentunder'?: string;
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   'displaystyle'?: string;
   'href'?: string;
@@ -2373,14 +2407,14 @@ type MunderAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MunderoverAttributes = {
   'accent'?: string;
   'accentunder'?: string;
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   'displaystyle'?: string;
   'href'?: string;
@@ -2391,7 +2425,7 @@ type MunderoverAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
 type NavAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -2401,15 +2435,15 @@ type NoscriptAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 type ObjectAttributes = {
   'data'?: string;
   'form'?: string;
-  'height'?: string;
+  'height'?: number;
   'name'?: string;
   'type'?: string;
-  'width'?: string;
+  'width'?: number;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type OlAttributes = {
   'reversed'?: boolean;
-  'start'?: string;
+  'start'?: number;
   'type'?: "1" | "a" | "A" | "i" | "I";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
@@ -2435,7 +2469,7 @@ type PAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type PathAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'd'?: string;
   'id'?: string;
   'lang'?: string;
@@ -2504,13 +2538,13 @@ type PathAttributes = {
   'role'?: string;
   'style'?: string;
   'systemLanguage'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type PatternAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'height'?: string;
   'href'?: string;
   'id'?: string;
@@ -2580,7 +2614,7 @@ type PatternAttributes = {
   'patternUnits'?: string;
   'preserveAspectRatio'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'viewBox'?: string;
   'width'?: string;
   'x'?: string;
@@ -2594,7 +2628,7 @@ type PictureAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type PolygonAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'id'?: string;
   'lang'?: string;
   'oncancel'?: string;
@@ -2663,13 +2697,13 @@ type PolygonAttributes = {
   'role'?: string;
   'style'?: string;
   'systemLanguage'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type PolylineAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'id'?: string;
   'lang'?: string;
   'oncancel'?: string;
@@ -2738,7 +2772,7 @@ type PolylineAttributes = {
   'role'?: string;
   'style'?: string;
   'systemLanguage'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
@@ -2755,7 +2789,7 @@ type QAttributes = {
 
 type RadialGradientAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'cx'?: number | string;
   'cy'?: number | string;
   'fr'?: string;
@@ -2829,7 +2863,7 @@ type RadialGradientAttributes = {
   'r'?: number | string;
   'spreadMethod'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'xlink:href'?: string;
   'xlink:title'?: string;
   'xml:space'?: "default" | "preserve";
@@ -2837,7 +2871,7 @@ type RadialGradientAttributes = {
 
 type RectAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'height'?: number | string;
   'id'?: string;
   'lang'?: string;
@@ -2908,7 +2942,7 @@ type RectAttributes = {
   'ry'?: number | string;
   'style'?: string;
   'systemLanguage'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'width'?: number | string;
   'x'?: number | string;
   'xml:space'?: "default" | "preserve";
@@ -2956,7 +2990,7 @@ type SelectedcontentAttributes = NameSpaceAttributes & GlobalAttributes & Global
 
 type SemanticsAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   'displaystyle'?: string;
   'href'?: string;
@@ -2967,14 +3001,14 @@ type SemanticsAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
 type SetAttributes = {
   'attributeName'?: string;
   'autofocus'?: boolean;
   'begin'?: string;
-  'class'?: string;
+  'class'?: string | string[];
   'dur'?: string;
   'end'?: string;
   'fill'?: "remove" | "freeze";
@@ -3052,7 +3086,7 @@ type SetAttributes = {
   'restart'?: "always" | "never" | "whenNotActive";
   'style'?: string;
   'systemLanguage'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'to'?: string;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -3064,20 +3098,20 @@ type SlotAttributes = {
 type SmallAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type SourceAttributes = {
-  'height'?: string;
+  'height'?: number;
   'media'?: string;
   'sizes'?: string;
   'src'?: string;
   'srcset'?: string;
   'type'?: string;
-  'width'?: string;
+  'width'?: number;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type SpanAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type StopAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'id'?: string;
   'lang'?: string;
   'offset'?: number;
@@ -3142,7 +3176,7 @@ type StopAttributes = {
   'onwaiting'?: string;
   'onwheel'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
@@ -3161,7 +3195,7 @@ type SupAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type SvgAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'height'?: number | string;
   'id'?: string;
   'lang'?: string;
@@ -3232,7 +3266,7 @@ type SvgAttributes = {
   'role'?: string;
   'style'?: string;
   'systemLanguage'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'transform'?: string;
   'viewBox'?: string;
   'width'?: number | string;
@@ -3243,7 +3277,7 @@ type SvgAttributes = {
 
 type SwitchAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'id'?: string;
   'lang'?: string;
   'oncancel'?: string;
@@ -3310,13 +3344,13 @@ type SwitchAttributes = {
   'role'?: string;
   'style'?: string;
   'systemLanguage'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type SymbolAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'height'?: string;
   'id'?: string;
   'lang'?: string;
@@ -3385,7 +3419,7 @@ type SymbolAttributes = {
   'refY'?: string;
   'role'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'viewBox'?: string;
   'width'?: string;
   'x'?: string;
@@ -3400,7 +3434,7 @@ type TbodyAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 type TdAttributes = {
   'colspan'?: number;
   'headers'?: string;
-  'rowspan'?: string;
+  'rowspan'?: number;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type TemplateAttributes = {
@@ -3414,7 +3448,7 @@ type TemplateAttributes = {
 
 type TextAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'dx'?: string;
   'dy'?: string;
   'id'?: string;
@@ -3485,7 +3519,7 @@ type TextAttributes = {
   'rotate'?: string;
   'style'?: string;
   'systemLanguage'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'textLength'?: string;
   'x'?: string;
   'xml:space'?: "default" | "preserve";
@@ -3498,8 +3532,8 @@ type TextareaAttributes = {
   'dirname'?: string;
   'disabled'?: boolean;
   'form'?: string;
-  'maxlength'?: string;
-  'minlength'?: string;
+  'maxlength'?: number;
+  'minlength'?: number;
   'name'?: string;
   'placeholder'?: string;
   'readonly'?: boolean;
@@ -3510,7 +3544,7 @@ type TextareaAttributes = {
 
 type TextPathAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'href'?: string;
   'id'?: string;
   'lang'?: string;
@@ -3584,7 +3618,7 @@ type TextPathAttributes = {
   'startOffset'?: string;
   'style'?: string;
   'systemLanguage'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'textLength'?: string;
   'xlink:href'?: string;
   'xlink:title'?: string;
@@ -3597,7 +3631,7 @@ type ThAttributes = {
   'abbr'?: string;
   'colspan'?: number;
   'headers'?: string;
-  'rowspan'?: string;
+  'rowspan'?: number;
   'scope'?: "row" | "ROW" | "col" | "COL" | "rowgroup" | "ROWGROUP" | "colgroup" | "COLGROUP";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
@@ -3621,7 +3655,7 @@ type TrackAttributes = {
 
 type TspanAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'dx'?: string;
   'dy'?: string;
   'id'?: string;
@@ -3692,7 +3726,7 @@ type TspanAttributes = {
   'rotate'?: string;
   'style'?: string;
   'systemLanguage'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'textLength'?: string;
   'x'?: string;
   'xml:space'?: "default" | "preserve";
@@ -3705,7 +3739,7 @@ type UlAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type UseAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'height'?: string;
   'href'?: string;
   'id'?: string;
@@ -3774,7 +3808,7 @@ type UseAttributes = {
   'role'?: string;
   'style'?: string;
   'systemLanguage'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'width'?: string;
   'x'?: number | string;
   'xlink:href'?: string;
@@ -3787,9 +3821,9 @@ type VarAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type VideoAttributes = {
   'autoplay'?: boolean;
-  'controls'?: string;
+  'controls'?: boolean;
   'crossorigin'?: "anonymous" | "use-credentials";
-  'height'?: string;
+  'height'?: number;
   'loading'?: "lazy" | "eager";
   'loop'?: boolean;
   'muted'?: boolean;
@@ -3797,12 +3831,12 @@ type VideoAttributes = {
   'poster'?: string;
   'preload'?: "none" | "metadata" | "auto";
   'src'?: string;
-  'width'?: string;
+  'width'?: number;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ViewAttributes = {
   'autofocus'?: boolean;
-  'class'?: string;
+  'class'?: string | string[];
   'id'?: string;
   'lang'?: string;
   'oncancel'?: string;
@@ -3868,7 +3902,7 @@ type ViewAttributes = {
   'preserveAspectRatio'?: string;
   'role'?: string;
   'style'?: string;
-  'tabindex'?: string;
+  'tabindex'?: number;
   'viewBox'?: string;
   'xml:space'?: string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -4080,27 +4114,111 @@ export const videoAttributes: VideoAttributes
 export const viewAttributes: ViewAttributes
 export const wbrAttributes: WbrAttributes
 
-type ContentType = ContentTag | VoidTag | LiteralTag | string | number;
-export type Content = ContentType | ContentType[];
+/**
+ * Valid content for any tag method: a string, number, tag instance, or an array of those.
+ * Falsy values (`null`, `undefined`, `''`) are silently ignored.
+ *
+ * @example
+ * t.ul([t.li('one'), t.li(2), t.li(t.span('three'))]);
+ */
+export type Content = ContentTag | VoidTag | LiteralTag | string | number | (ContentTag | VoidTag | LiteralTag | string | number)[];
+
 type UniversalAttributes = NameSpaceAttributes | GlobalAttributes | GlobalEvents;
 type CustomTagArguments<T = null> = [attributes?: T | UniversalAttributes, content?: Content] | [content: Content];
+
+/**
+ * The type of a custom element method created with `createCustomTag`.
+ * `T` is the element's specific attribute object type; global and namespace attributes
+ * are always accepted in addition to `T`.
+ *
+ * @example
+ * class MyEngine extends Kensington {
+ *   myCard: ContentMethod<{ 'card-type'?: 'primary' | 'secondary' }> =
+ *     this.createCustomTag('my-card', { 'card-type': ['primary', 'secondary'] });
+ * }
+ */
 export type ContentMethod<T = null> = (...args: CustomTagArguments<T>) => ContentTag;
+
 type PrimitiveConstructor = StringConstructor | NumberConstructor | BooleanConstructor;
-type Primitive = string | number | boolean | function;
+type Primitive = string | number | boolean | Function;
 type AttributeValue = PrimitiveConstructor | Primitive | (PrimitiveConstructor | Primitive)[];
 
+/**
+ * HTML/SVG/MathML template engine. Every tag is a method that accepts optional attributes
+ * and/or content, returning a tag object that serialises to formatted HTML via `.toString()`
+ * or to a live DOM node via `.toElement()`.
+ *
+ * Attribute rules:
+ * - camelCase keys convert to kebab-case: `{ dataBsToggle: 'x' }` → `data-bs-toggle="x"`
+ * - nested objects flatten to kebab-case: `{ data: { id: '1' } }` → `data-id="1"`
+ * - boolean attributes: `{ checked: true }` → `checked`; `{ checked: false }` → omitted
+ * - `class` accepts a string or string array: `{ class: ['a', 'b'] }` → `class="a b"`
+ *
+ * @example
+ * import { t } from 'kensington';
+ *
+ * const html = t.htmlWithDocType({ lang: 'en' }, [
+ *   t.head(t.title('My Page')),
+ *   t.body(
+ *     t.main({ class: 'container' }, [
+ *       t.h1('Hello'),
+ *       t.input({ type: 'checkbox', checked: true }),
+ *       t.literal('<p>raw html</p>'),
+ *     ])
+ *   ),
+ * ]).toString();
+ */
 export default class Kensington {
-  constructor(options?: { additionalNamespaces?: string | string[], indentationLevel?: number, validationLevel?: 'off' | 'warn' | 'error' });
+  constructor(options?: {
+    /** Allow additional attribute namespaces, e.g. `'hx'` for htmx `hx-*` attributes. */
+    additionalNamespaces?: string | string[];
+    /** Spaces per indentation level. Default: 2. Set to 0 to disable indentation. */
+    indentationLevel?: number;
+    /** Attribute validation behaviour. Default: `'warn'`. */
+    validationLevel?: 'off' | 'warn' | 'error';
+  });
 
+  /**
+   * Creates a method for a custom HTML element. Assign to a class property and annotate
+   * with `ContentMethod<T>` for typed attribute checking.
+   *
+   * @param tagName - The HTML tag name, e.g. `'my-card'`
+   * @param allowedAttributes - Map of attribute names to allowed value types/literals
+   *
+   * @example
+   * class MyEngine extends Kensington {
+   *   myCard: ContentMethod<{ 'card-type'?: 'primary' | 'secondary' }> =
+   *     this.createCustomTag('my-card', { 'card-type': ['primary', 'secondary'] });
+   * }
+   * const t = new MyEngine();
+   * t.myCard({ 'card-type': 'primary' }, 'Content here').toString();
+   */
   createCustomTag(
     tagName: string,
-    allowedAttributes?: Record<string,  AttributeValue>
+    allowedAttributes?: Record<string, AttributeValue>
   ): (...args: CustomTagArguments) => ContentTag
 
+  /**
+   * Embeds a raw HTML string verbatim into the output (HTML-encoded when used as text content).
+   * Use inside any tag's content array to mix typed and raw HTML.
+   *
+   * @example
+   * t.ul([t.li('typed'), t.literal('<li>raw html</li>')]).toString();
+   */
   literal(str: string): LiteralTag
 
+  /**
+   * Like `.literal()` but skips HTML encoding — use only for trusted HTML.
+   */
   unsafeLiteral(str: string): LiteralTag
-  
+
+  /**
+   * Renders a full HTML document. Identical to `.html()` but prepends `<!DOCTYPE html>`.
+   * Call `.toString()` on the result.
+   *
+   * @example
+   * t.htmlWithDocType({ lang: 'en' }, t.body('hello')).toString();
+   */
   htmlWithDocType(attributes: HtmlAttributes, content?: Content): ContentTag;
   htmlWithDocType(content?: Content): ContentTag;
 
@@ -4496,4 +4614,11 @@ export default class Kensington {
   wbr(attributes?: WbrAttributes): VoidTag;
 }
 
+/**
+ * Shared `Kensington` instance for use when no subclassing or custom configuration is needed.
+ *
+ * @example
+ * import { t } from 'kensington';
+ * const html = t.p({ class: 'intro' }, 'Hello world').toString();
+ */
 export const t: InstanceType<typeof Kensington>;

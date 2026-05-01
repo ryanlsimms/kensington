@@ -1,21 +1,31 @@
-import Kensington, { t } from 'kensington'; // https://dev.to/one-beyond/different-approaches-to-testing-your-own-packages-locally-npm-link-4hoj
+import Kensington, { t } from 'kensington';
 import attributesArrayFromObject from '../../esm/lib/attributes-array-from-object.js';
 import { describe, it } from 'node:test';
-import assert from 'node:assert';
+import assert from 'node:assert/strict';
 
-describe('other', () => {
-  it('destructure tags', () => {
-    const { div } = t;
-    assert.strictEqual(div().toString(), '<div></div>');
-  });
-  it('indentation level', () => {
-    assert.strictEqual(t.div(t.div(t.div())).toString(), '<div>\n  <div>\n    <div></div>\n  </div>\n</div>');
-  });
-});
+// ─── content tag ───────────────────────────────────────────────────────────
 
 describe('content tag', () => {
   it('generates tag', () => {
     assert.strictEqual(t.div().toString(), '<div></div>');
+  });
+  it('number content', () => {
+    assert.strictEqual(t.div(42).toString(), '<div>42</div>');
+  });
+  it('short content', () => {
+    assert.strictEqual(t.div('hi').toString(), '<div>hi</div>');
+  });
+  it('encodes content', () => {
+    assert.strictEqual(t.div('<div></div>').toString(), '<div>&#x3C;div&#x3E;&#x3C;/div&#x3E;</div>');
+  });
+  it('converts line breaks to br tags', () => {
+    assert.strictEqual(t.div('line1\nline2').toString(), '<div>\n  line1<br>\n  line2\n</div>');
+  });
+  it('converts \\r-only line breaks to br tags', () => {
+    assert.strictEqual(t.div('line1\rline2').toString(), '<div>\n  line1<br>\n  line2\n</div>');
+  });
+  it('mixed content array of strings and tags', () => {
+    assert.strictEqual(t.div(['some text', t.span('hi')]).toString(), '<div>\n  some text\n  <span>hi</span>\n</div>');
   });
   it('ignores empty content', () => {
     assert.strictEqual(t.div('').toString(), '<div></div>');
@@ -23,120 +33,111 @@ describe('content tag', () => {
     assert.strictEqual(t.div([]).toString(), '<div></div>');
     assert.strictEqual(t.div('content\n\n').toString(), '<div>\n  content<br>\n</div>');
   });
-  it('encodes content', () => {
-    assert.strictEqual(t.div('<div></div>').toString(), '<div>&#x3C;div&#x3E;&#x3C;/div&#x3E;</div>');
-  });
-  it('short content', () => {
-    assert.strictEqual(t.div('hi').toString(), '<div>hi</div>');
-  });
-  it('converts line breaks to br tags', () => {
-    assert.strictEqual(t.div('line1\nline2').toString(), '<div>\n  line1<br>\n  line2\n</div>');
+  it('ignores null, undefined, and empty string in content array', () => {
+    assert.strictEqual(t.div([null, undefined, '', 'real']).toString(), '<div>real</div>');
   });
   it('literal content', () => {
     assert.strictEqual(t.div(t.literal('<div></div>')).toString(), '<div>\n  <div></div>\n</div>');
   });
-  it('literal script content', () => {
+  it('literal script content throws', () => {
     assert.throws(() => t.div(t.literal('<script></script>')).toString());
     assert.strictEqual(t.div(t.unsafeLiteral('<script>console.log("hello");</script>')).toString(), '<div>\n  <script>console.log("hello");</script>\n</div>');
   });
 });
 
-describe('literal tag', () => {
-  it('does not encode script tag', () => {
+// ─── literal content ───────────────────────────────────────────────────────
+
+describe('literal content', () => {
+  it('does not encode script tags', () => {
     assert.strictEqual(
       t.body(t.script(`const x = "<div></div>";\nconsole.log(x);`)).toString(),
       `<body>\n  <script>const x = "<div></div>";\n  console.log(x);</script>\n</body>`
-    )
-  });
-  it('encodes pre tag', () => {
-    assert.strictEqual(
-      t.div(t.pre('<div></div')).toString(),
-      `<div>\n  <pre>&#x3C;div&#x3E;&#x3C;/div</pre>\n</div>`,
     );
   });
-  it('does not add whitespace', () => {
+  it('encodes pre tag content', () => {
+    assert.strictEqual(
+      t.div(t.pre('<div></div')).toString(),
+      `<div>\n  <pre>&#x3C;div&#x3E;&#x3C;/div</pre>\n</div>`
+    );
+  });
+  it('does not add whitespace inside textarea and pre', () => {
     assert.strictEqual(
       t.div(t.div(t.textarea('line1\r\nline2'))).toString(),
-      `<div>\n  <div>\n    <textarea>line1\nline2</textarea>\n  </div>\n</div>`,
+      `<div>\n  <div>\n    <textarea>line1\nline2</textarea>\n  </div>\n</div>`
     );
     assert.strictEqual(
       t.div(t.div(t.pre('line1\r\nline2'))).toString(),
-      `<div>\n  <div>\n    <pre>line1\nline2</pre>\n  </div>\n</div>`,
+      `<div>\n  <div>\n    <pre>line1\nline2</pre>\n  </div>\n</div>`
     );
   });
-  it('does not escape style tags', () => {
+  it('does not escape style tag content', () => {
     assert.strictEqual(
       t.style('td:nth-of-type(1):before { content: "Date"; }').toString(),
       '<style>td:nth-of-type(1):before { content: "Date"; }</style>'
-    )
-  })
+    );
+  });
+  it('joins multiple content items with newline', () => {
+    assert.strictEqual(t.pre(['line1', 'line2']).toString(), '<pre>line1\nline2</pre>');
+    assert.strictEqual(t.script(['var a = 1;', 'var b = 2;']).toString(), '<script>var a = 1;\nvar b = 2;</script>');
+  });
 });
 
+// ─── void tag ──────────────────────────────────────────────────────────────
 
 describe('void tag', () => {
-  it('renders properly', () => {
+  it('renders without closing tag', () => {
     assert.strictEqual(t.hr().toString(), '<hr>');
-  })
+  });
   it('does not allow content', () => {
     const tt = new Kensington({ validationLevel: 'error' });
     assert.throws(() => tt.hr({}, 'I am not allowed'));
-  })
+  });
 });
 
-describe('validates arguments', () => {
-  it('allows only content', () => {
-    assert.strictEqual(t.div('content').toString(), '<div>content</div>');
-    assert.strictEqual(t.div(['content']).toString(), '<div>content</div>');
-  });
-  it('allows only attributes', () => {
-    assert.strictEqual(t.div({ id: 'abc' }).toString(), '<div id="abc"></div>');
-  });
-  it('allows both attributes and content', () => {
-    assert.strictEqual(t.div({ id: 'abc' }, 'content').toString(), '<div id="abc">content</div>');
-  });
-  it('does not allow multiple attribute arguments', () => {
-    const tt = new Kensington({ validationLevel: 'error' });
-    assert.throws(() => tt.div({ class: 'something' }, { id: 'something' }).toString());
-  });
-  it('does not allow multiple content arguments', () => {
-    assert.throws(() => t.div('content', t.div('content')).toString());
-  });
-  it('does not allow three arguments', () => {
-    assert.throws(() => t.div({ id: 'something' }, t.div('content'), t.div('invalid argument')).toString());
-  });
-  it('does not allow invalid content', () => {
-    const tt = new Kensington({ validationLevel: 'error' });
-    assert.throws(() => tt.div(new Date()).toString());
-  });
-});
+// ─── attributes ────────────────────────────────────────────────────────────
 
 describe('attributes', () => {
-  it('converts camelCase', () => {
+  it('converts camelCase to kebab-case', () => {
     assert.strictEqual(t.div({ dataBsTarget: 'abc' }).toString(), '<div data-bs-target="abc"></div>');
   });
-  it('converts nested', () => {
+  it('converts nested object to kebab-case', () => {
     assert.strictEqual(t.div({ data: { bs: { target: 'abc' } } }).toString(), '<div data-bs-target="abc"></div>');
   });
-  it('allows-hyphenated', () => {
+  it('allows pre-hyphenated attribute names', () => {
     const tt = new Kensington({ validationLevel: 'error' });
     assert.strictEqual(tt.div({ 'data-bs-target': 'abc' }).toString(), '<div data-bs-target="abc"></div>');
   });
-  it('converts numbers', () => {
+  it('converts numbers to strings', () => {
     assert.strictEqual(t.td({ colspan: 3 }).toString(), '<td colspan="3"></td>');
   });
-  it('aria', () => {
+  it('aria attributes', () => {
     assert.strictEqual(t.div({ ariaLabel: 'abc' }).toString(), '<div aria-label="abc"></div>');
   });
-  it('throws with invalid attributes', () => {
+  it('encodes attribute values', () => {
+    assert.strictEqual(t.a({ href: 'http://x.com?a=1&b=2' }).toString(), '<a href="http://x.com?a=1&#x26;b=2"></a>');
+  });
+  it('boolean true includes attribute', () => {
+    assert.strictEqual(t.input({ type: 'checkbox', checked: true }).toString(), '<input type="checkbox" checked>');
+  });
+  it('boolean false omits attribute', () => {
+    assert.strictEqual(t.input({ type: 'checkbox', checked: false }).toString(), '<input type="checkbox">');
+  });
+  it('class as array joins with space', () => {
+    assert.strictEqual(t.div({ class: ['foo', 'bar'] }).toString(), '<div class="foo bar"></div>');
+  });
+  it('throws on invalid attribute name', () => {
     const tt = new Kensington({ validationLevel: 'error' });
     assert.throws(() => tt.div({ badAttribute: 'value' }));
   });
-  it('throws with invalid attribute value', () => {
+  it('throws on invalid attribute value', () => {
     const tt = new Kensington({ validationLevel: 'error' });
     assert.throws(() => tt.form({ method: 'delete' }).toString());
   });
-
-  it('creates array', () => {
+  it('throws when id starts with a number', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => tt.div({ id: '123-abc' }).toString());
+  });
+  it('builds attribute array from object', () => {
     const result = attributesArrayFromObject({
       id: 'a',
       dataName: 'b',
@@ -144,35 +145,137 @@ describe('attributes', () => {
       required: false,
       checked: true,
     });
-    assert.strictEqual(JSON.stringify(result), '[["id","a"],["data-name","b"],["data-nested-attr","c"],["data-nested","d"],["data-camel-case","e"],["data-deeply-nested-attr","f"],["checked",""]]');
-  })
+    assert.strictEqual(
+      JSON.stringify(result),
+      '[["id","a"],["data-name","b"],["data-nested-attr","c"],["data-nested","d"],["data-camel-case","e"],["data-deeply-nested-attr","f"],["checked",""]]'
+    );
+  });
 
-  describe('validation', () => {
-    it('by function', () => {
+  describe('validation by type', () => {
+    it('validates by function', () => {
       class Custom extends Kensington {
-        customElement = this.createCustomTag('custom-element', { 'custom-attr': val => (val > 5) })
+        customElement = this.createCustomTag('custom-element', { 'custom-attr': val => (val > 5) });
       }
       const tt = new Custom({ validationLevel: 'error' });
       assert.throws(() => tt.customElement({ customAttr: 4 }).toString());
-      assert.doesNotThrow(() => tt.customElement({ customAttr: 6 }).toString())
+      assert.doesNotThrow(() => tt.customElement({ customAttr: 6 }).toString());
     });
-
-    it('id starts with number', () => {
-      const tt = new Kensington({ validationLevel: 'error' });
-      assert.throws(() => tt.div({ id: '123-abc' }).toString());
-    });
-  })
+  });
 });
 
-describe('additional namespaces', () => {
-  it('allows extra namespaces', () => {
+// ─── argument validation ───────────────────────────────────────────────────
+
+describe('argument validation', () => {
+  it('allows content only', () => {
+    assert.strictEqual(t.div('content').toString(), '<div>content</div>');
+    assert.strictEqual(t.div(['content']).toString(), '<div>content</div>');
+  });
+  it('allows attributes only', () => {
+    assert.strictEqual(t.div({ id: 'abc' }).toString(), '<div id="abc"></div>');
+  });
+  it('allows attributes and content', () => {
+    assert.strictEqual(t.div({ id: 'abc' }, 'content').toString(), '<div id="abc">content</div>');
+  });
+  it('throws on two attribute objects', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => tt.div({ class: 'something' }, { id: 'something' }).toString());
+  });
+  it('throws on two content arguments', () => {
+    assert.throws(() => t.div('content', t.div('content')).toString());
+  });
+  it('throws on three arguments', () => {
+    assert.throws(() => t.div({ id: 'something' }, t.div('content'), t.div('invalid argument')).toString());
+  });
+  it('throws on invalid content type', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => tt.div(new Date()).toString());
+  });
+});
+
+// ─── namespaces ────────────────────────────────────────────────────────────
+
+describe('namespaces', () => {
+  it('allows extra attribute namespaces', () => {
     const tt = new Kensington({ validationLevel: 'error', additionalNamespaces: 'htmx' });
     assert.strictEqual(tt.div({ htmxTitle: 'abc' }).toString(), '<div htmx-title="abc"></div>');
-  })
+  });
 });
 
-describe('custom instance', () => {
-  it('validationLevel', (test, done) => {
+// ─── custom tags ───────────────────────────────────────────────────────────
+
+describe('custom tags', () => {
+  it('creates a custom tag', () => {
+    class Custom extends Kensington {
+      customElement = this.createCustomTag('custom-element');
+    }
+    const tt = new Custom({ validationLevel: 'error' });
+    assert.strictEqual(tt.customElement().toString(), '<custom-element></custom-element>');
+  });
+  it('validates attribute type', () => {
+    class CustomBad extends Kensington {
+      customElement = this.createCustomTag('custom-element', { date: null });
+    }
+    class CustomGood extends Kensington {
+      customElement = this.createCustomTag('custom-element', { date: String });
+    }
+    assert.throws(() => { new CustomBad({ validationLevel: 'error' }); });
+    assert.doesNotThrow(() => {
+      const tt = new CustomGood({ validationLevel: 'error' });
+      tt.customElement({ date: 'some date' });
+    });
+  });
+  it('validates hyphenated attribute names', () => {
+    class Custom extends Kensington {
+      customElement = this.createCustomTag('custom-element', { hyphenatedAttribute: String });
+    }
+    const tt = new Custom({ validationLevel: 'error' });
+    const expected = '<custom-element hyphenated-attribute="something"></custom-element>';
+    assert.strictEqual(tt.customElement({ hyphenatedAttribute: 'something' }).toString(), expected);
+    assert.strictEqual(tt.customElement({ 'hyphenated-attribute': 'something' }).toString(), expected);
+  });
+  it('validates array of allowed values', () => {
+    class Custom extends Kensington {
+      customElement = this.createCustomTag('custom-element', { customAttr: [Number, 'a string'] });
+    }
+    const tt = new Custom({ validationLevel: 'error' });
+    assert.doesNotThrow(() => tt.customElement({ customAttr: 4 }).toString());
+    assert.doesNotThrow(() => tt.customElement({ customAttr: 'a string' }).toString());
+    assert.throws(() => tt.customElement({ customAttr: 'some other string' }).toString());
+  });
+  it('handles large renderings', async () => {
+    const tt = new Kensington({ indentationLevel: 0, validationLevel: 'off' });
+    const html = tt.div(Array.from({ length: 100_000 }, (el, i) => {
+      return t.div({ class: 'somehting', dataSrc: 'http' }, [
+        t.span(i),
+        t.div({ class: 'asdf' }, Array.from({ length: 4 }, (_, ii) => t.div({ class: 'lkjh' }, ii))),
+      ]);
+    }));
+    assert.ok(html.toString().length > 0);
+  });
+});
+
+// ─── other ─────────────────────────────────────────────────────────────────
+
+describe('other', () => {
+  it('destructure tags from instance', () => {
+    const { div } = t;
+    assert.strictEqual(div().toString(), '<div></div>');
+  });
+  it('default indentation level', () => {
+    assert.strictEqual(t.div(t.div(t.div())).toString(), '<div>\n  <div>\n    <div></div>\n  </div>\n</div>');
+  });
+  it('custom indentation level', () => {
+    const tt = new Kensington({ indentationLevel: 4 });
+    assert.strictEqual(tt.div(tt.span('hi')).toString(), '<div>\n    <span>hi</span>\n</div>');
+  });
+  it('indentation level 0 disables indentation', () => {
+    const tt = new Kensington({ indentationLevel: 0 });
+    assert.strictEqual(tt.div(tt.span('hi')).toString(), '<div>\n<span>hi</span>\n</div>');
+  });
+  it('string interpolation calls toString implicitly', () => {
+    assert.strictEqual(`${t.div('hi')}`, '<div>hi</div>');
+  });
+  it('warn validation level logs to console', (test, done) => {
     let callCount = 0;
     const errorMessage = 'invalid attribute `id="123-abc"` given for element `div`';
     console.error = function(message) {
@@ -183,65 +286,46 @@ describe('custom instance', () => {
         assert.strictEqual(message, errorMessage);
       }
     };
-    let tt = new Kensington({ validationLevel: 'warn' });
+    const tt = new Kensington({ validationLevel: 'warn' });
     assert.doesNotThrow(() => tt.div({ id: '123-abc' }).toString());
-  })
+  });
 });
 
-describe('custom tag', () => {
-  it('creates a custom tag', () => {
-    class Custom extends Kensington {
-      customElement = this.createCustomTag('custom-element')
-    }
-    const tt = new Custom({ validationLevel: 'error' });
-    assert.strictEqual(tt.customElement().toString(), '<custom-element></custom-element>');
-  });
-  it('validates attribute type', () => {
-    class CustomBad extends Kensington {
-      customElement = this.createCustomTag('custom-element', { date: null })
-    }
-    class CustomGood extends Kensington {
-      customElement = this.createCustomTag('custom-element', { date: String })
-    }
-    assert.throws(() => { new CustomBad({ validationLevel: 'error' }); });
-    assert.doesNotThrow(() => {
-      const tt = new CustomGood({ validationLevel: 'error' });
-      tt.customElement({ date: 'some date' });
-    });
-  });
-  it ('validates attributes', () => {
-    class Custom extends Kensington {
-      customElement = this.createCustomTag('custom-element', { hyphenatedAttribute: String })
-    }
-    const tt = new Custom({ validationLevel: 'error' });
-    const expected = '<custom-element hyphenated-attribute="something"></custom-element>';
-    assert.strictEqual(tt.customElement({ hyphenatedAttribute: 'something' }).toString(), expected);
-    assert.strictEqual(tt.customElement({ 'hyphenated-attribute': 'something' }).toString(), expected);
-  })
-  it('validates array attributes', () => {
-    class Custom extends Kensington {
-      customElement = this.createCustomTag('custom-element', { customAttr: [Number, 'a string'] })
-    }
-    const tt = new Custom({ validationLevel: 'error' });
-    assert.doesNotThrow(() => tt.customElement({ customAttr: 4 }).toString())
-    assert.doesNotThrow(() => tt.customElement({ customAttr: 'a string' }).toString())
-    assert.throws(() => tt.customElement({ customAttr: 'some other string' }).toString())
-  });
-  it('handles large renderings well', async () => {
-    let start = performance.now();
-    const tt = new Kensington({ indentationLevel: 0, validationLevel: 'off' });
+// ─── htmlWithDocType ───────────────────────────────────────────────────────
 
-    const html = tt.div(Array.from({ length: 100_000 }, (el, i) => {
-      return t.div({ class: 'somehting', dataSrc: 'http' }, [
-        t.span(i),
-        t.div({ class: 'asdf' }, Array.from({ length: 4 }, (_, ii) => t.div({ class: 'lkjh' }, ii))),
-      ])
-    }));
-    console.log('BUILD:', Number((performance.now() - start).toFixed(2)));
-    const nextStart = performance.now();
-    const str = html.toString();
-    console.log('RENDER:', Number((performance.now() - nextStart).toFixed(2)));
-    console.log('TOTAL:', Number((performance.now() - start).toFixed(2)));
-    console.log(str.length.toLocaleString());
+describe('htmlWithDocType', () => {
+  it('prepends doctype declaration', () => {
+    assert.strictEqual(
+      t.htmlWithDocType(t.body('hello')).toString(),
+      '<!DOCTYPE html>\n<html>\n  <body>hello</body>\n</html>'
+    );
+  });
+  it('accepts attributes', () => {
+    assert.strictEqual(
+      t.htmlWithDocType({ lang: 'en' }, t.body('hello')).toString(),
+      '<!DOCTYPE html>\n<html lang="en">\n  <body>hello</body>\n</html>'
+    );
+  });
+});
+
+// ─── svg tag ───────────────────────────────────────────────────────────────
+
+describe('svg tag', () => {
+  it('renders svg element to string', () => {
+    assert.strictEqual(
+      t.svg(t.circle({ r: 5, cx: 5, cy: 5 })).toString(),
+      '<svg>\n  <circle r="5" cx="5" cy="5"></circle>\n</svg>'
+    );
+  });
+});
+
+// ─── math tag ──────────────────────────────────────────────────────────────
+
+describe('math tag', () => {
+  it('renders math element to string', () => {
+    assert.strictEqual(
+      t.math(t.mfrac([t.mn(1), t.mn(2)])).toString(),
+      '<math>\n  <mfrac>\n    <mn>1</mn>\n    <mn>2</mn>\n  </mfrac>\n</math>'
+    );
   });
 });

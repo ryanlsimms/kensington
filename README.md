@@ -5,6 +5,7 @@ This template engine is a way to create html via nested method calls.  Each tag 
 * camelCase attibute become kebabcase `{ dataBsToggle: 'collapse' }` becomes `data-bs-toggle="collapse"`
 * attributes are validated against those found [here](https://html.spec.whatwg.org/multipage/indices.html#elements-3)
 * attributes with a boolean value will either be included or not: `t.input({ type: 'checkbox', checked: true })` becomes `<input type="checkbox" checked>` or `<input type="checkbox">` if `checked` is false
+* `class` can be passed as an array: `{ class: ['foo', 'bar'] }` becomes `class="foo bar"`
 * [Global attributes](https://html.spec.whatwg.org/multipage/dom.html#global-attributes) are always allowed, along with `aria-*` and `data-*` attributes.
 * Additional attribute namespaces (like `hx` when using [htmx](https://htmx.org)) can be added by passing the `additionalNamespaces` property to the constructor
 * `validationLevel` can be set to `off`, `warn`, or `error`.
@@ -12,7 +13,7 @@ This template engine is a way to create html via nested method calls.  Each tag 
 * `.htmlWithDocType` is the same as `.html`, but adds the `<!DOCTYPE html>` tag to the beginning of the string.
 * call `.toString()` on the outermost method to expicitly convert to string.  This can often be omitted if the output is sent as a string.
 * string interpolation automatically converts the tag to string ``` `${t.html(t.body('hello'))}` ```
-* In the browser, call `.toElement()` to create a dom element instead of a string
+* In the browser, call `.toElement()` to create a DOM element instead of a string; function values on event attributes (e.g. `onclick`) are wired up via `addEventListener` rather than set as attribute strings; SVG and MathML elements are created with the correct namespace via `createElementNS`
 * you can add your own custom elements:
     * extend the `Kensington` class with your own
     * set a property equal to `this.createCustomTag()` with the following arguments
@@ -37,7 +38,7 @@ class MyTemplateEngine extends Kensington {
 ```
 ```javascript
 // JavaScript
-import Kensington from 'kensington.js';
+import Kensington from 'kensington';
 
 class MyTemplateEngine extends Kensington {
   someCustomElement = this.createCustomTag('some-custom-element', { 'some-custom-attribute': [Boolean, 42] });
@@ -50,7 +51,7 @@ const t = new MyTemplateEngine({
   indentationLevel: 2,
 });
 
-const html = t.htmlWithDoctype({ lang: 'en' }, [
+const html = t.htmlWithDocType({ lang: 'en' }, [
   t.head(t.title('My Page Title')),
   t.body(
     t.main({ class: 'container' }, [
@@ -112,4 +113,17 @@ const html = t.htmlWithDoctype({ lang: 'en' }, [
 ```javascript
 // import instance directly if you don't need customization
 import { t } from 'kensington';
+```
+
+### Browser usage with `.toElement()`
+```javascript
+import { t } from 'kensington';
+
+// function attributes become event listeners, not attribute strings
+const button = t.button({
+  type: 'button',
+  onclick: () => alert('clicked'),
+}, 'Click Me').toElement();
+
+document.body.append(button);
 ```

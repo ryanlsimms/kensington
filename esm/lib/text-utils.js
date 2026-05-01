@@ -3,3 +3,4 @@ export function camelToKebab(str) {
 }
 
 export const LINE_BREAK_REGEX = /[\r\n]+/g;
+export const LINE_BREAK_TEST_REGEX = /[\r\n]/;

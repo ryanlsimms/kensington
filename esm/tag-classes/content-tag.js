@@ -2,7 +2,7 @@ import attributesStringFromObject from '../lib/attributes-string-from-object.js'
 import indent from '../lib/indent.js';
 import he from '../lib/he.js';
 import showInvalid from '../lib/show-invalid.js';
-import { camelToKebab, LINE_BREAK_REGEX } from '../lib/text-utils.js';
+import { camelToKebab, LINE_BREAK_TEST_REGEX } from '../lib/text-utils.js';
 import LiteralTag from './literal-tag.js';
 import stringifyContentArray from '../lib/stringify-content-array.js';
 import attributesArrayFromObject from '../lib/attributes-array-from-object.js';
@@ -129,7 +129,7 @@ export default class ContentTag {
       return false;
     }
 
-    return !LINE_BREAK_REGEX.test(content);
+    return !LINE_BREAK_TEST_REGEX.test(content);
   }
 
   attributeString() {
@@ -158,7 +158,7 @@ export default class ContentTag {
           return he.encode(c)
         }
         return c
-      });
+      }).join('\n');
     } else if (this.contentIsShort()) {
       for (const c of this.content) {
         if (typeof c === 'string' && this.encodeContent) {

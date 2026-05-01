@@ -2,3 +2,5 @@
 /node_modules/
 /tests/esm/node_modules/
 /tests/other/node_modules/
+/tests/typescript/node_modules/
+/tests/cjs/node_modules/
