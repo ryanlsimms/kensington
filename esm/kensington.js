@@ -22,16 +22,23 @@ export default class Kensington {
   /**
    * @param {object} [options]
    * @param {string | string[]} [options.additionalNamespaces] - Extra attribute namespaces, e.g. `'hx'` for htmx.
-   * @param {'off' | 'warn' | 'error'} [options.validationLevel] - Attribute validation behaviour.
+   * @param {'off' | 'warn' | 'error'} [options.validationLevel] - Attribute validation behavior.
    * @param {number} [options.indentationLevel] - Spaces per indent level. Default: 2.
+   * @param {function} [options.logger] - Function called with warning messages when `validationLevel` is `'warn'`. Default: `console.log`.
    */
-  constructor({ additionalNamespaces = [], validationLevel = 'off', indentationLevel = 2 } = {}) {
+  constructor({ 
+    additionalNamespaces = [], 
+    validationLevel = 'off', 
+    indentationLevel = 2, 
+    logger = console.log,
+  } = {}) {
     getPrototypeMethods(this).forEach(key => {
       this[key] = this[key].bind(this);
     });
     this.indentationLevel = indentationLevel;
     this.namespaces = ['data', 'aria'].concat(additionalNamespaces);
     this.validationLevel = validationLevel;
+    this.logger = logger;
   }
 
   /**
@@ -103,7 +110,7 @@ export default class Kensington {
       return ![String, Number, Boolean].includes(type) && !Array.isArray(type) && typeof type !== 'function';
     });
     if (invalidTypes.length) {
-      showInvalid(`invalid types for attribute(s): ${invalidTypes.join(', ')} given for ${tagName}`, this.validationLevel);
+      showInvalid(`invalid types for attribute(s): ${invalidTypes.join(', ')} given for ${tagName}`, this.validationLevel, this.logger);
     }
 
     return (attributesOrContent = null, content, thirdArg) => {
@@ -137,6 +144,7 @@ export default class Kensington {
         content,
         encodeContent,
         indentationLevel: this.indentationLevel,
+        logger: this.logger,
         namespace,
         namespaces: this.namespaces,
         contentIsLiteral,

@@ -275,10 +275,10 @@ describe('other', () => {
   it('string interpolation calls toString implicitly', () => {
     assert.strictEqual(`${t.div('hi')}`, '<div>hi</div>');
   });
-  it('warn validation level logs to console', (test, done) => {
+  it('warn validation level calls logger with message and stack', (test, done) => {
     let callCount = 0;
     const errorMessage = 'invalid attribute `id="123-abc"` given for element `div`';
-    console.error = function(message) {
+    const logger = (message) => {
       if (++callCount === 2) {
         assert.ok(message.startsWith(`Error: ${errorMessage}\n`));
         done();
@@ -286,7 +286,7 @@ describe('other', () => {
         assert.strictEqual(message, errorMessage);
       }
     };
-    const tt = new Kensington({ validationLevel: 'warn' });
+    const tt = new Kensington({ validationLevel: 'warn', logger });
     assert.doesNotThrow(() => tt.div({ id: '123-abc' }).toString());
   });
 });

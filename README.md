@@ -8,7 +8,8 @@ This template engine is a way to create html via nested method calls.  Each tag 
 * `class` can be passed as an array: `{ class: ['foo', 'bar'] }` becomes `class="foo bar"`
 * [Global attributes](https://html.spec.whatwg.org/multipage/dom.html#global-attributes) are always allowed, along with `aria-*` and `data-*` attributes.
 * Additional attribute namespaces (like `hx` when using [htmx](https://htmx.org)) can be added by passing the `additionalNamespaces` property to the constructor
-* `validationLevel` can be set to `off`, `warn`, or `error`.
+* `validationLevel` can be set to `off`, `warn`, or `error`. When set to `warn`, validation messages are passed to `logger`.
+* `logger` is a function that receives warning messages when `validationLevel` is `'warn'`. Defaults to `console.log`. 
 * the `.literal` method allows you to pass in html as a string.
 * `.htmlWithDocType` is the same as `.html`, but adds the `<!DOCTYPE html>` tag to the beginning of the string.
 * call `.toString()` on the outermost method to expicitly convert to string.  This can often be omitted if the output is sent as a string.
@@ -49,6 +50,7 @@ const t = new MyTemplateEngine({
   validationLevel: 'warn', 
   additionalNamespaces: ['hx'], 
   indentationLevel: 2,
+  logger(message) { myLoggingLibrary.warn(message); },
 });
 
 const html = t.htmlWithDocType({ lang: 'en' }, [

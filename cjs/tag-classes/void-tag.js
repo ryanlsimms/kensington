@@ -9,7 +9,7 @@ class VoidTag extends contentTag.default {
   validate() {
     super.validate();
     if (this.content.length) {
-      showInvalid.default('self closing tags cannot have content', this.validationLevel);
+      showInvalid.default('self closing tags cannot have content', this.validationLevel, this.logger);
     }
   }
 

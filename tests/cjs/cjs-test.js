@@ -144,6 +144,13 @@ describe('subclassing', () => {
     const engine = new Kensington({ additionalNamespaces: ['hx'], validationLevel: 'error' });
     assert.doesNotThrow(() => engine.div({ hxBoost: 'true' }).toString());
   });
+  it('logger option receives warning messages', () => {
+    const messages = [];
+    const engine = new Kensington({ validationLevel: 'warn', logger: (m) => messages.push(m) });
+    engine.div({ id: '123-abc' }).toString();
+    assert.ok(messages.length >= 1);
+    assert.ok(messages[0].includes('123-abc'));
+  });
   it('throws on invalid attribute value at error level', () => {
     const engine = new Kensington({ validationLevel: 'error' });
     assert.throws(() => engine.form({ method: 'delete' }).toString());

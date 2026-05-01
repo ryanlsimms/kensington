@@ -18,6 +18,7 @@ export default class ContentTag {
     this.indentationLevel = options.indentationLevel ?? 2
     this.namespaces = options.namespaces;
     this.validationLevel = options.validationLevel;
+    this.logger = options.logger;
     this.content = [];
     this.namespace = options.namespace;
     this.encodeContent = options.encodeContent;
@@ -39,7 +40,7 @@ export default class ContentTag {
   validate() {
     const unallowedAttributes = Object.keys(this.attributes).filter(attr => !this.attributeIsValid(attr));
     if (unallowedAttributes.length) {
-      showInvalid(`attribute(s): ${unallowedAttributes.join(', ')} not allowed for ${this.tagName}`, this.validationLevel);
+      showInvalid(`attribute(s): ${unallowedAttributes.join(', ')} not allowed for ${this.tagName}`, this.validationLevel, this.logger);
     }
 
     const invalidAttributeValues = Object.entries(this.attributes).filter(([attr, value]) => {
@@ -48,7 +49,7 @@ export default class ContentTag {
     if (invalidAttributeValues.length) {
       const attrString = invalidAttributeValues.map(([attr, value]) => `${attr}="${value}"`).join(', ');
       const message = `invalid attribute \`${attrString}\` given for element \`${this.tagName}\``;
-      showInvalid(message, this.validationLevel)
+      showInvalid(message, this.validationLevel, this.logger)
     }
   }
 

@@ -4174,8 +4174,10 @@ export default class Kensington {
     additionalNamespaces?: string | string[];
     /** Spaces per indentation level. Default: 2. Set to 0 to disable indentation. */
     indentationLevel?: number;
-    /** Attribute validation behaviour. Default: `'warn'`. */
+    /** Attribute validation behavior. Default: `'warn'`. */
     validationLevel?: 'off' | 'warn' | 'error';
+    /** Called with warning messages when `validationLevel` is `'warn'`. Default: `console.log`. */
+    logger?: (message: string) => void;
   });
 
   /**

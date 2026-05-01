@@ -34,6 +34,8 @@ new Kensington({ validationLevel: 'error' });
 new Kensington({ additionalNamespaces: 'hx' });
 new Kensington({ additionalNamespaces: ['hx', 'foo'] });
 new Kensington({ indentationLevel: 4 });
+new Kensington({ logger: (msg) => console.log(msg) });
+new Kensington({ logger: console.log });
 
 // @ts-expect-error - 'invalid' is not a valid validationLevel
 new Kensington({ validationLevel: 'invalid' });
