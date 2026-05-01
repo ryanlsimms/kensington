@@ -1,6 +1,6 @@
 {
   "name": "kensington",
-  "version": "0.11.5",
+  "version": "0.12.0",
   "main": "./cjs/kensington.js",
   "type": "module",
   "module": "./esm/kensington.js",
