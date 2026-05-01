@@ -21,6 +21,20 @@ This template engine is a way to create html via nested method calls.  Each tag 
         * `tagName` - the name that is used in the `<some-custom-element></some-custom-element>`
         * `allowedAttributes` - an optional object of allowed attribute names and types.  Global and data/aria attributes are always allowed
 
+### Installation
+
+```bash
+npm install kensington
+```
+
+Or in a browser without a build step, via CDN:
+
+```html
+<script type="module">
+  import Kensington from 'https://cdn.jsdelivr.net/npm/kensington/dist/kensington.min.js';
+</script>
+```
+
 ### Example
 ```typescript
 // TypeScript

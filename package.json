@@ -6,8 +6,16 @@
   "module": "./esm/kensington.js",
   "types": "./types.d.ts",
   "license": "ISC",
+  "files": [
+    "esm",
+    "cjs",
+    "dist",
+    "types.d.ts"
+  ],
   "exports": {
     "./package.json": "./package.json",
+    "./dist": "./dist/kensington.js",
+    "./dist/min": "./dist/kensington.min.js",
     "./attributes": {
       "import": "./esm/attributes.js",
       "require": "./cjs/attributes.js"
@@ -39,6 +47,11 @@
     "url": "git+https://github.com/ryanlsimms/kensington.git"
   },
   "scripts": {
+    "prepublishOnly": "node generate/bin/build-browser.js",
+    "build": "cd generate/bin && node write-code-files.js",
+    "build-browser": "node generate/bin/build-browser.js",
+    "fetch": "node generate/bin/fetch-all.js",
+    "fetch-and-build": "node generate/bin/fetch-and-build.js",
     "test": "npm run test-esm && npm run test-cjs && npm run test-ts && npm run test-browser && echo 'All tests passed'",
     "test-browser": "npx playwright test --config ./tests/browser/playwright.config.js",
     "test-esm": "node --test \"./tests/esm/esm-test.js\"",
@@ -59,6 +72,7 @@
     "@playwright/test": "^1.58.2",
     "@rollup/plugin-commonjs": "^29.0.2",
     "@rollup/plugin-node-resolve": "^16.0.3",
+    "@rollup/plugin-terser": "^1.0.0",
     "@types/node": "^25.5.0",
     "html-validate": "^9.4.1",
     "jsdom": "^26.0.0",

@@ -51,4 +51,6 @@ await result.write({
 
 fs.writeFileSync(path.resolve(import.meta.dirname, '../../cjs/package.json'), '{\n  "type": "commonjs"\n}\n', 'utf8');
 
+await import('./build-browser.js');
+
 console.log('\n~~~~~ write finished ~~~~~\n');
