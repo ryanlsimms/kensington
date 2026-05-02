@@ -30,7 +30,7 @@ jobs:
           ln -s "$(pwd)" tests/typescript/node_modules/kensington
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run:  npx playwright install --with-deps
 
       - name: Build CJS and browser bundles
         run: npm run build-cjs && npm run build-browser
