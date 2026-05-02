@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import buildDeclarations from '../build-declarations.js';
+import buildAttributesDeclarations from '../build-attributes-declarations.js';
 import { buildAttributes, buildMain } from '../build-javascript.js';
 import parseData from '../parse-data.js';
 
@@ -22,6 +23,8 @@ const declarationsContent = buildDeclarations({
   globalEvents,
 });
 
+const attributesDeclarationsContent = buildAttributesDeclarations({ elements });
+
 const kensingtonClassContent = buildMain({ elements });
 
 const attributesContent = buildAttributes({
@@ -31,6 +34,7 @@ const attributesContent = buildAttributes({
 });
 
 fs.writeFileSync(path.resolve(import.meta.dirname, '../../types.d.ts'), declarationsContent, 'utf8');
+fs.writeFileSync(path.resolve(import.meta.dirname, '../../attributes.d.ts'), attributesDeclarationsContent, 'utf8');
 fs.writeFileSync(path.resolve(import.meta.dirname, '../../esm/kensington.js'), kensingtonClassContent, 'utf8');
 fs.writeFileSync(path.resolve(import.meta.dirname, '../../esm/attributes.js'), attributesContent, 'utf8');
 

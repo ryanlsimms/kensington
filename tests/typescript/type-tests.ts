@@ -5,6 +5,7 @@ import Kensington, {
   type VoidTag,
   type LiteralTag,
 } from 'kensington';
+import type { globalAttributes, formAttributes } from 'kensington/attributes';
 
 // ─── module augmentation ────────────────────────────────────────────────────
 

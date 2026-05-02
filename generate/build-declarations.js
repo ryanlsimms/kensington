@@ -69,10 +69,6 @@ type GlobalEvents = {
 
 ${elements.map(e => `type ${e.attributesTypeName} = ${attributesType(e)};`).join('\n\n')}
 
-export const globalAttributes: GlobalAttributes;
-export const globalEvents: GlobalEvents;
-${elements.map(e => `export const ${e.attributesName}: ${e.attributesTypeName}`).join('\n')}
-
 /**
  * Valid content for any tag method: a string, number, tag instance, or an array of those.
  * Falsy values (\`null\`, \`undefined\`, \`''\`) are silently ignored.
@@ -202,5 +198,6 @@ export default class Kensington {
  * const html = t.p({ class: 'intro' }, 'Hello world').toString();
  */
 export const t: InstanceType<typeof Kensington>;
+
 `;
 }

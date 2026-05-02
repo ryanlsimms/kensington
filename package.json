@@ -1,17 +1,21 @@
 {
   "name": "kensington",
   "version": "0.12.0",
-  "main": "./cjs/kensington.js",
+  "description": "HTML/SVG/MathML template engine for Node.js and the browser",
   "type": "module",
-  "module": "./esm/kensington.js",
   "types": "./types.d.ts",
+  "sideEffects": false,
   "license": "ISC",
   "files": [
     "esm",
     "cjs",
     "dist",
-    "types.d.ts"
+    "types.d.ts",
+    "attributes.d.ts"
   ],
+  "typesVersions": {
+    "*": { "attributes": ["./attributes.d.ts"] }
+  },
   "exports": {
     "./package.json": "./package.json",
     "./dist": "./dist/kensington.js",
@@ -19,17 +23,18 @@
     "./dist/slim": "./dist/kensington.slim.js",
     "./dist/slim/min": "./dist/kensington.slim.min.js",
     "./attributes": {
+      "types": "./attributes.d.ts",
       "import": "./esm/attributes.js",
       "require": "./cjs/attributes.js"
     },
     ".": {
       "import": {
-        "default": "./esm/kensington.js",
-        "types": "./types.d.ts"
+        "types": "./types.d.ts",
+        "default": "./esm/kensington.js"
       },
       "require": {
-        "default": "./cjs/kensington.js",
-        "types": "./types.d.ts"
+        "types": "./types.d.ts",
+        "default": "./cjs/kensington.js"
       }
     }
   },
