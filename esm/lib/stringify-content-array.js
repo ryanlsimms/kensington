@@ -17,8 +17,8 @@ export default function stringifyContentArray(arr) {
       content += node;
       return;
     }
-    let str = he.encode(node).replaceAll(LINE_BREAK_REGEX, '<br>\n');
-    content += str.replace(/\n$/, '');
+    const str = he.encode(node).replaceAll(LINE_BREAK_REGEX, '<br>\n');
+    content += str.endsWith('\n') ? str.slice(0, -1) : str;
   }
 
   arr.forEach(handleItem);

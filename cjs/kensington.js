@@ -110,15 +110,29 @@ class Kensington {
       contentIsLiteral = false,
       encodeContent = true,
     } = options;
-    const invalidTypes = Object.values(allowedAttributes).filter(type => {
+    const allowedAttributeMap = new Map(Object.entries(allowedAttributes));
+    const invalidTypes = [...allowedAttributeMap.values()].filter(type => {
       return ![String, Number, Boolean].includes(type) && !Array.isArray(type) && typeof type !== 'function';
     });
     if (invalidTypes.length) {
       showInvalid.default(`invalid types for attribute(s): ${invalidTypes.join(', ')} given for ${tagName}`, this.validationLevel, this.logger);
     }
 
+    if (this.validationLevel !== 'off') {
+      if (includeGlobalAttributes) {
+        for (const [k, v] of Object.entries(attributes.globalAttributes ?? {})) {
+          allowedAttributeMap.set(k, v);
+        }
+      }
+      if (includeGlobalEvents) {
+        for (const [k, v] of Object.entries(attributes.globalEvents ?? {})) {
+          allowedAttributeMap.set(k, v);
+        }
+      }
+    }
+
     return (attributesOrContent = null, content, thirdArg) => {
-      let attributes$1 = attributesOrContent;
+      let attributes = attributesOrContent;
 
       if (thirdArg) {
         throw new Error(`Too many arguments given for ${tagName}`);
@@ -128,23 +142,15 @@ class Kensington {
         if (content) {
           throw new Error(`Invalid arguments given for ${tagName}`);
         }
-        attributes$1 = {};
+        attributes = {};
         content = attributesOrContent;
       }
       if (typeof content === 'undefined') {
         content = '';
       }
-      if (this.validationLevel !== 'off') {
-        if (includeGlobalAttributes) {
-          Object.assign(allowedAttributes, attributes.globalAttributes);
-        }
-        if (includeGlobalEvents) {
-          Object.assign(allowedAttributes, attributes.globalEvents);
-        }
-      }
       const instance = new Klass({
-        allowedAttributes,
-        attributes: attributes$1,
+        allowedAttributeMap,
+        attributes,
         content,
         encodeContent,
         indentationLevel: this.indentationLevel,

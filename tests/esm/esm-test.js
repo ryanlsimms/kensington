@@ -36,6 +36,16 @@ describe('content tag', () => {
   it('mixed content array of strings and tags', () => {
     assert.strictEqual(t.div(['some text', t.span('hi')]).toString(), '<div>\n  some text\n  <span>hi</span>\n</div>');
   });
+  it('flattens nested arrays in content', () => {
+    assert.strictEqual(
+      t.div([['a', 'b'], 'c']).toString(),
+      t.div(['a', 'b', 'c']).toString()
+    );
+    assert.strictEqual(
+      t.div([t.span('x'), [t.span('y'), t.span('z')]]).toString(),
+      t.div([t.span('x'), t.span('y'), t.span('z')]).toString()
+    );
+  });
   it('ignores empty content', () => {
     assert.strictEqual(t.div('').toString(), '<div></div>');
     assert.strictEqual(t.div(null).toString(), '<div></div>');
@@ -256,16 +266,6 @@ describe('custom tags', () => {
     assert.doesNotThrow(() => tt.customElement({ customAttr: 4 }).toString());
     assert.doesNotThrow(() => tt.customElement({ customAttr: 'a string' }).toString());
     assert.throws(() => tt.customElement({ customAttr: 'some other string' }).toString());
-  });
-  it('handles large renderings', async () => {
-    const tt = new Kensington({ indentationLevel: 0, validationLevel: 'off' });
-    const html = tt.div(Array.from({ length: 100_000 }, (el, i) => {
-      return t.div({ class: 'somehting', dataSrc: 'http' }, [
-        t.span(i),
-        t.div({ class: 'asdf' }, Array.from({ length: 4 }, (_, ii) => t.div({ class: 'lkjh' }, ii))),
-      ]);
-    }));
-    assert.ok(html.toString().length > 0);
   });
 });
 

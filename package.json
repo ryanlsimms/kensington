@@ -59,7 +59,8 @@
     "test-esm": "node --test \"./tests/esm/esm-test.js\"",
     "test-cjs": "node --test \"./tests/cjs/cjs-test.js\"",
     "test-ts": "tsc --noEmit -p tests/typescript/tsconfig.json && echo 'TypeScript types OK'",
-    "dom-server": "node --watch-path=./tests/browser/pages --watch-path=./esm ./tests/browser/server/html-server.js"
+    "dom-server": "node --watch-path=./tests/browser/pages --watch-path=./esm ./tests/browser/server/html-server.js",
+    "benchmark": "node tests/benchmark.js"
   },
   "engines": {
     "node": ">=18"

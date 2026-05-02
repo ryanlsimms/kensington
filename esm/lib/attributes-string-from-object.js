@@ -1,7 +1,7 @@
 import he from './he.js';
-import { camelToKebab } from './text-utils.js';
+import { getAttrName } from './text-utils.js';
 
-export default function attributesStringFromObject(obj, attributesList = [], encode) {
+export default function attributesStringFromObject(obj, { encode, attrsSet = new Map(), prefix = '' } = {}) {
   let finalStr = '';
 
   for (const attr in obj) {
@@ -9,36 +9,28 @@ export default function attributesStringFromObject(obj, attributesList = [], enc
     if ([false, null, undefined].includes(val)) {
       continue;
     }
-    let attrName = attr;
-    if (!attributesList.includes(attr)) {
-      attrName = camelToKebab(attr)
-    }
+    const attrName = getAttrName(attr, prefix, attrsSet);
 
     if (val === true) {
-      if (finalStr) { finalStr+= ' '; }
-      finalStr += attrName
+      if (finalStr) { finalStr += ' '; }
+      finalStr += attrName;
       continue;
     }
     if (val?.constructor === Object) {
-      const kebabKeys = Object.fromEntries(
-        Object.entries(val).map(([k, v]) => {
-          return [[attrName, k].join('-'), v]
-        })
-      )
-      if (finalStr) { finalStr+= ' '; }
-      finalStr += attributesStringFromObject(kebabKeys, attributesList, encode);
+      if (finalStr) { finalStr += ' '; }
+      finalStr += attributesStringFromObject(val, { encode, attrsSet, prefix: attrName });
       continue;
     }
     if (attr === 'class' && Array.isArray(val)) {
-      if (finalStr) { finalStr+= ' '; }
-      finalStr+= attrName;
-      finalStr+= '="';
-      finalStr+= val.join(' ');
-      finalStr+= '"';
+      if (finalStr) { finalStr += ' '; }
+      finalStr += attrName;
+      finalStr += '="';
+      finalStr += val.join(' ');
+      finalStr += '"';
       continue;
     }
 
-    if (finalStr) { finalStr+= ' '; }
+    if (finalStr) { finalStr += ' '; }
     finalStr += attrName;
     finalStr += '="';
     if (encode) {

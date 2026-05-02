@@ -116,11 +116,25 @@ export default class Kensington {
       contentIsLiteral = false,
       encodeContent = true,
     } = options;
-    const invalidTypes = Object.values(allowedAttributes).filter(type => {
+    const allowedAttributeMap = new Map(Object.entries(allowedAttributes));
+    const invalidTypes = [...allowedAttributeMap.values()].filter(type => {
       return ![String, Number, Boolean].includes(type) && !Array.isArray(type) && typeof type !== 'function';
     });
     if (invalidTypes.length) {
       showInvalid(\`invalid types for attribute(s): \${invalidTypes.join(', ')} given for \${tagName}\`, this.validationLevel, this.logger);
+    }
+
+    if (this.validationLevel !== 'off') {
+      if (includeGlobalAttributes) {
+        for (const [k, v] of Object.entries(allAttributes.globalAttributes ?? {})) {
+          allowedAttributeMap.set(k, v);
+        }
+      }
+      if (includeGlobalEvents) {
+        for (const [k, v] of Object.entries(allAttributes.globalEvents ?? {})) {
+          allowedAttributeMap.set(k, v);
+        }
+      }
     }
 
     return (attributesOrContent = null, content, thirdArg) => {
@@ -140,16 +154,8 @@ export default class Kensington {
       if (typeof content === 'undefined') {
         content = '';
       }
-      if (this.validationLevel !== 'off') {
-        if (includeGlobalAttributes) {
-          Object.assign(allowedAttributes, allAttributes.globalAttributes);
-        }
-        if (includeGlobalEvents) {
-          Object.assign(allowedAttributes, allAttributes.globalEvents)
-        }
-      }
       const instance = new Klass({
-        allowedAttributes,
+        allowedAttributeMap,
         attributes,
         content,
         encodeContent,

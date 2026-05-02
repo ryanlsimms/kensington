@@ -2,9 +2,10 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
+const he = require('./he.js');
 const textUtils = require('./text-utils.js');
 
-function attributesArrayFromObject(obj, attributesList = [], encode) {
+function attributesArrayFromObject(obj, { encode, attrsSet = new Map(), prefix = '' } = {}) {
   let finalArr = [];
 
   for (const attr in obj) {
@@ -12,22 +13,14 @@ function attributesArrayFromObject(obj, attributesList = [], encode) {
     if ([false, null, undefined].includes(val)) {
       continue;
     }
-    let attrName = attr;
-    if (!attributesList.includes(attr)) {
-      attrName = textUtils.camelToKebab(attr);
-    }
+    const attrName = textUtils.getAttrName(attr, prefix, attrsSet);
 
     if (val === true) {
       finalArr.push([attrName, '']);
       continue;
     }
     if (val?.constructor === Object) {
-      const kebabKeys = Object.fromEntries(
-        Object.entries(val).map(([k, v]) => {
-          return [[attrName, k].join('-'), v]
-        })
-      );
-      finalArr.push(...attributesArrayFromObject(kebabKeys, attributesList));
+      finalArr.push(...attributesArrayFromObject(val, { encode, attrsSet, prefix: attrName }));
       continue;
     }
     if (attr === 'class' && Array.isArray(val)) {
@@ -35,12 +28,13 @@ function attributesArrayFromObject(obj, attributesList = [], encode) {
       continue;
     }
 
-    if (typeof val === 'function') {
+    if (encode) {
+      finalArr.push([attrName, he.default.encode(val.toString())]);
+    } else if (typeof val === 'function') {
       finalArr.push([attrName, val]);
     } else {
       finalArr.push([attrName, val.toString()]);
     }
-
   }
   return finalArr;
 }

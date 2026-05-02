@@ -13,7 +13,7 @@ export default class ContentTag {
   constructor(options) {
     this.tagName = options.tagName;
     this.attributes = options.attributes;
-    this.allowedAttributes = options.allowedAttributes ?? {};
+    this.allowedAttributeMap = options.allowedAttributeMap ?? new Map();
     this.contentIsLiteral = options.contentIsLiteral;
     this.indentationLevel = options.indentationLevel ?? 2
     this.namespaces = options.namespaces;
@@ -58,8 +58,8 @@ export default class ContentTag {
   }
 
   attributeIsValid(attr) {
-    return this.allowedAttributes.hasOwnProperty(attr) ||
-      this.allowedAttributes.hasOwnProperty(camelToKebab(attr)) ||
+    return this.allowedAttributeMap.has(attr) ||
+      this.allowedAttributeMap.has(camelToKebab(attr)) ||
       this.isValidNamespaceAttribute(attr);
   }
 
@@ -73,7 +73,7 @@ export default class ContentTag {
     if (attr === 'id' && /^\d/.test(value)) {
       return false
     }
-    const type = this.allowedAttributes[attr] ?? this.allowedAttributes[camelToKebab(attr)];
+    const type = this.allowedAttributeMap.get(attr) ?? this.allowedAttributeMap.get(camelToKebab(attr));
     return this.validateAttributeByType(type, value);
   }
 
@@ -101,7 +101,7 @@ export default class ContentTag {
 
   validateContent() {
     if (
-      this.content.flat(99).some(c => !['string', 'number'].includes(typeof c) &&
+      this.content.some(c => !['string', 'number'].includes(typeof c) &&
         (this.contentIsLiteral ||
         (!(c instanceof ContentTag) &&
         !(c instanceof LiteralTag)))
@@ -134,12 +134,12 @@ export default class ContentTag {
   }
 
   attributeString() {
-    let attrString = attributesStringFromObject(this.attributes, Object.keys(this.allowedAttributes), true);
+    let attrString = attributesStringFromObject(this.attributes, { encode: true, attrsSet: this.allowedAttributeMap });
     return attrString ? ` ${attrString}` : '';
   }
 
   attributeArray() {
-    return attributesArrayFromObject(this.attributes, Object.keys(this.allowedAttributes), false);
+    return attributesArrayFromObject(this.attributes, { encode: false, attrsSet: this.allowedAttributeMap });
   }
 
   toString() {

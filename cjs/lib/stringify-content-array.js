@@ -20,8 +20,8 @@ function stringifyContentArray(arr) {
       content += node;
       return;
     }
-    let str = he.default.encode(node).replaceAll(textUtils.LINE_BREAK_REGEX, '<br>\n');
-    content += str.replace(/\n$/, '');
+    const str = he.default.encode(node).replaceAll(textUtils.LINE_BREAK_REGEX, '<br>\n');
+    content += str.endsWith('\n') ? str.slice(0, -1) : str;
   }
 
   arr.forEach(handleItem);

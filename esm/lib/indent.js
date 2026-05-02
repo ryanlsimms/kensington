@@ -1,10 +1,7 @@
 import { LINE_BREAK_REGEX } from './text-utils.js';
 
-function spaces(level) {
-  return Array(level).fill(' ').join('');
-}
-
 export default function indent(str, level = 2) {
+  const pad = ' '.repeat(level);
   let inPre = false;
   let inTextarea = false;
   return str.split(LINE_BREAK_REGEX).map(line => {
@@ -12,7 +9,7 @@ export default function indent(str, level = 2) {
     if (inPre || inTextarea) {
       lineStr = line;
     } else {
-      lineStr = `${spaces(level)}${line}`;
+      lineStr = pad + line;
     }
     if (line.trim().startsWith('<pre')) {
       inPre = true;
