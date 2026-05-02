@@ -49,18 +49,19 @@
     "url": "git+https://github.com/ryanlsimms/kensington.git"
   },
   "scripts": {
-    "prepublishOnly": "node generate/bin/build-browser.js",
+    "prepack": "node generate/bin/build-cjs.js && node generate/bin/build-browser.js",
     "build": "cd generate/bin && node write-code-files.js",
+    "build-cjs": "node generate/bin/build-cjs.js",
     "build-browser": "node generate/bin/build-browser.js",
     "fetch": "node generate/bin/fetch-all.js",
-    "fetch-and-build": "node generate/bin/fetch-and-build.js",
+    "fetch-and-build": "npm run fetch && npm run build",
     "test": "npm run test-esm && npm run test-cjs && npm run test-ts && npm run test-browser && echo 'All tests passed'",
     "test-browser": "npx playwright test --config ./tests/browser/playwright.config.js",
     "test-esm": "node --test \"./tests/esm/esm-test.js\"",
     "test-cjs": "node --test \"./tests/cjs/cjs-test.js\"",
     "test-ts": "tsc --noEmit -p tests/typescript/tsconfig.json && echo 'TypeScript types OK'",
-    "dom-server": "node --watch-path=./tests/browser/pages --watch-path=./esm ./tests/browser/server/html-server.js",
-    "benchmark": "node tests/benchmark.js"
+    "benchmark": "node tests/benchmark.js",
+    "dom-server": "node --watch-path=./tests/browser/pages --watch-path=./esm ./tests/browser/server/html-server.js"
   },
   "engines": {
     "node": ">=18"

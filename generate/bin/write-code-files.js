@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { rollup } from 'rollup';
 import buildDeclarations from '../build-declarations.js';
 import { buildAttributes, buildMain } from '../build-javascript.js';
 import parseData from '../parse-data.js';
@@ -35,22 +34,7 @@ fs.writeFileSync(path.resolve(import.meta.dirname, '../../types.d.ts'), declarat
 fs.writeFileSync(path.resolve(import.meta.dirname, '../../esm/kensington.js'), kensingtonClassContent, 'utf8');
 fs.writeFileSync(path.resolve(import.meta.dirname, '../../esm/attributes.js'), attributesContent, 'utf8');
 
-const result = await rollup({
-  input: ['../../esm/kensington.js'],
-  external: ['he'],
-});
-await result.write({
-  dir: '../../cjs',
-  format: 'cjs',
-  exports: 'named',
-  preserveModules: true,
-  generatedCode: {
-    constBindings: true,
-  },
-});
-
-fs.writeFileSync(path.resolve(import.meta.dirname, '../../cjs/package.json'), '{\n  "type": "commonjs"\n}\n', 'utf8');
-
+await import('./build-cjs.js');
 await import('./build-browser.js');
 
 console.log('\n~~~~~ write finished ~~~~~\n');

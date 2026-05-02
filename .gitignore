@@ -1,5 +1,6 @@
 /.idea/
 /node_modules/
+/cjs/
 /dist/
 /tests/esm/node_modules/
 /tests/other/node_modules/
