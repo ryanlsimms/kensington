@@ -6,6 +6,16 @@ if [[ "${1:-}" != "major" && "${1:-}" != "minor" && "${1:-}" != "patch" ]]; then
   exit 1
 fi
 
+if ! command -v gh &>/dev/null; then
+  echo "Error: gh (GitHub CLI) is not installed — run: brew install gh"
+  exit 1
+fi
+
+if ! gh auth status &>/dev/null; then
+  echo "Error: gh is not authenticated — run: gh auth login"
+  exit 1
+fi
+
 if [[ -n "$(git status --porcelain)" ]]; then
   echo "Error: uncommitted changes present — commit or stash them before releasing"
   git status --short
