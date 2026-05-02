@@ -1,6 +1,6 @@
 {
   "name": "kensington",
-  "version": "0.13.1",
+  "version": "0.12.1",
   "description": "HTML/SVG/MathML template engine for Node.js and the browser",
   "type": "module",
   "types": "./types.d.ts",
