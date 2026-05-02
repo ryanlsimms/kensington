@@ -43,6 +43,12 @@ Or in a browser without a build step, via CDN:
 </script>
 ```
 
+**Attribute data** — the validation data for each element is also exported for direct use:
+
+```javascript
+import { globalAttributes, formAttributes, inputAttributes } from 'kensington/attributes';
+```
+
 ### Example
 ```typescript
 // TypeScript

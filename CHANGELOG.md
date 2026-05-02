@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.13.0] - 2026-05-02
+
+### Added
+- Separate type declarations for the `kensington/attributes` subpath export;
+- `typesVersions` field in `package.json` for TypeScript < 4.7 compatibility with subpath exports
+- Source maps for all four dist bundles (`dist/*.map`)
+- Publishes to npm with provenance attestation
+- Documentation for AI Agents
+
+### Changed
+- External dependency for `he` removed.
+
 ## [0.12.0]
 
 ### Added
