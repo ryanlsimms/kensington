@@ -1,21 +1,67 @@
-## (unreleased)
+# Changelog
 
-Features:
+All notable changes to this project will be documented in this file.
 
-- type declaration file for custom instance
-- validate/type data and aria attributes
-- skip validation per tag (maybe a bad idea)
-- demo express integration
-- mention use of html-validate
-- what version of node/js is necessary?
-- comments
-- better namespace non-tag methods to avoid potential future collisions
-- better monkey patching
-- html to kensington transpiler?
-- conditionally allow attributes based on other attributes (multiple allowed only on inputs of type="file")
-- build dist for browser
-- make line break \<br> optional
-- pass logger to constructor instead of console.log
-- better format css
-- use private class methods
-- methods for entities (\&nbsp;)
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+## [0.12.0]
+
+### Added
+- Browser distribution bundles: `dist/kensington.js` / `dist/kensington.min.js` (full, with attribute validation data)
+- Slim browser bundle: `dist/kensington.slim.js` / `dist/kensington.slim.min.js` — omits validation data (~77% smaller minified); requires `validationLevel: 'off'`
+- `logger` constructor option — receives validation warning messages; defaults to `console.log`
+
+## [0.11.5]
+
+### Added
+- Event listener support: function-valued attributes in `toElement()` are wired via `addEventListener` rather than set as attribute strings
+
+## [0.11.4]
+
+### Fixed
+- `style` tag content is no longer HTML-encoded
+
+## [0.11.3]
+
+### Fixed
+- `he` package import resolved correctly in CJS build
+
+## [0.11.2]
+
+### Changed
+- HTML encoding now occurs only during string serialization (`toString()`), not at construction time
+
+## [0.11.1]
+
+### Added
+- `toElement()` available in CJS build
+
+## [0.11.0]
+
+### Added
+- `toElement()` — renders a tag tree to a live DOM node via `document.createElement` / `createElementNS`
+
+## [0.10.1]
+
+### Fixed
+- MathML elements re-included (had been accidentally removed)
+
+### Changed
+- Internal string building uses concatenation instead of template literals
+
+## [0.10.0]
+
+### Changed
+- Performance improvements
+
+## [0.9.3]
+
+### Added
+- Hyphenated `data-*` attributes (e.g. `data-bs-toggle`)
+- Function attribute type for custom validation
+
+### Fixed
+- SVG filter effect and CSS masking spec fetch URLs updated
+- Input `type` attribute validation improved
+- `textarea` indentation
+- Literal content handling
