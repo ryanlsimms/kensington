@@ -6,6 +6,12 @@ if [[ "${1:-}" != "major" && "${1:-}" != "minor" && "${1:-}" != "patch" ]]; then
   exit 1
 fi
 
+if [[ -n "$(git status --porcelain)" ]]; then
+  echo "Error: uncommitted changes present — commit or stash them before releasing"
+  git status --short
+  exit 1
+fi
+
 if ! grep -q "^## \[Unreleased\]" CHANGELOG.md; then
   echo "Error: no [Unreleased] section found in CHANGELOG.md — add one before releasing"
   exit 1
