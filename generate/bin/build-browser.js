@@ -20,12 +20,14 @@ const bundle = await rollup({
 await bundle.write({
   file: new URL('../../dist/kensington.js', import.meta.url).pathname,
   format: 'esm',
+  sourcemap: true,
   generatedCode: { constBindings: true },
 });
 
 await bundle.write({
   file: new URL('../../dist/kensington.min.js', import.meta.url).pathname,
   format: 'esm',
+  sourcemap: true,
   plugins: [terser()],
 });
 
@@ -37,12 +39,14 @@ const slimBundle = await rollup({
 await slimBundle.write({
   file: new URL('../../dist/kensington.slim.js', import.meta.url).pathname,
   format: 'esm',
+  sourcemap: true,
   generatedCode: { constBindings: true },
 });
 
 await slimBundle.write({
   file: new URL('../../dist/kensington.slim.min.js', import.meta.url).pathname,
   format: 'esm',
+  sourcemap: true,
   plugins: [terser()],
 });
 
