@@ -15,6 +15,10 @@ const slimPlugin = {
 const bundle = await rollup({
   input: entry,
   plugins: [nodeResolve(), commonjs()],
+  onwarn(warning, warn) {
+    if (warning.code === 'MISSING_EXPORT') return;
+    warn(warning);
+  },
 });
 
 await bundle.write({
@@ -34,6 +38,10 @@ await bundle.write({
 const slimBundle = await rollup({
   input: entry,
   plugins: [nodeResolve(), commonjs(), slimPlugin],
+  onwarn(warning, warn) {
+    if (warning.code === 'MISSING_EXPORT') return;
+    warn(warning);
+  },
 });
 
 await slimBundle.write({

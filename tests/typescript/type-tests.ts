@@ -52,6 +52,9 @@ const _lit: LiteralTag = t.literal('<p>raw</p>');
 t.br();
 t.br({ class: 'foo' });
 t.br({ id: 'x', style: 'display:none' });
+t.div({ style: { backgroundColor: 'red', zIndex: 2, display: false, color: null } });
+// @ts-expect-error - true is not a valid style value
+t.div({ style: { color: true } });
 
 // @ts-expect-error - br takes no content argument
 t.br({ class: 'foo' }, 'some content');

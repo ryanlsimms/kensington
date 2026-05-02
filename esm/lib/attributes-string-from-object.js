@@ -1,5 +1,6 @@
 import he from './he.js';
 import { getAttrName } from './text-utils.js';
+import { styleObjectToCss } from './style-utils.js';
 
 export default function attributesStringFromObject(obj, { encode, attrsSet = new Map(), prefix = '' } = {}) {
   let finalStr = '';
@@ -14,6 +15,13 @@ export default function attributesStringFromObject(obj, { encode, attrsSet = new
     if (val === true) {
       if (finalStr) { finalStr += ' '; }
       finalStr += attrName;
+      continue;
+    }
+    if (attr === 'style' && val?.constructor === Object) {
+      const css = styleObjectToCss(val);
+      if (!css) { continue; }
+      if (finalStr) { finalStr += ' '; }
+      finalStr += `${attrName}="${css}"`;
       continue;
     }
     if (val?.constructor === Object) {

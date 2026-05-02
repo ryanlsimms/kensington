@@ -6,6 +6,7 @@ This template engine is a way to create html via nested method calls.  Each tag 
 * attributes are validated against those found [here](https://html.spec.whatwg.org/multipage/indices.html#elements-3)
 * attributes with a boolean value will either be included or not: `t.input({ type: 'checkbox', checked: true })` becomes `<input type="checkbox" checked>` or `<input type="checkbox">` if `checked` is false
 * `class` can be passed as an array: `{ class: ['foo', 'bar'] }` becomes `class="foo bar"`
+* `style` can be passed as a JS object: `{ style: { backgroundColor: 'red', zIndex: 2 } }` becomes `style="background-color: red; z-index: 2"`. camelCase keys are converted to kebab-case. Values of `null`, `undefined`, `false`, or empty string are silently omitted.
 * [Global attributes](https://html.spec.whatwg.org/multipage/dom.html#global-attributes) are always allowed, along with `aria-*` and `data-*` attributes.
 * Additional attribute namespaces (like `hx` when using [htmx](https://htmx.org)) can be added by passing the `additionalNamespaces` property to the constructor
 * `validationLevel` can be set to `off`, `warn`, or `error`. When set to `warn`, validation messages are passed to `logger`.
@@ -86,7 +87,7 @@ const html = t.htmlWithDocType({ lang: 'en' }, [
   t.body(
     t.main({ class: 'container' }, [
       t.h1('My Great Project'),
-      t.h3({ class: 'small' }, 'a new way'),
+      t.h3({ class: 'small', style: { color: 'gray', marginTop: '0' } }, 'a new way'),
       t.hr({ class: 'fancy-line' }),
       t.section([
         'To Do List',
@@ -121,7 +122,7 @@ const html = t.htmlWithDocType({ lang: 'en' }, [
   <body>
     <main class="container">
       <h1>My Great Project</h1>
-      <h3 class="small">a new way</h3>
+      <h3 class="small" style="color: gray; margin-top: 0">a new way</h3>
       <hr class="fancy-line">
       <section>
         To Do List

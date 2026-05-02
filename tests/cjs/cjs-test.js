@@ -98,6 +98,22 @@ describe('attributes', () => {
   it('class as array joins with space', () => {
     assert.strictEqual(t.div({ class: ['a', 'b', 'c'] }).toString(), '<div class="a b c"></div>');
   });
+
+  it('style as object converts camelCase keys to css properties', () => {
+    assert.strictEqual(
+      t.div({ style: { backgroundColor: 'red', fontSize: '14px' } }).toString(),
+      '<div style="background-color: red; font-size: 14px"></div>'
+    );
+  });
+  it('style as object drops null, undefined, false values', () => {
+    assert.strictEqual(
+      t.div({ style: { color: null, fontWeight: 'bold' } }).toString(),
+      '<div style="font-weight: bold"></div>'
+    );
+  });
+  it('style as object still accepts a plain string', () => {
+    assert.strictEqual(t.div({ style: 'color: red' }).toString(), '<div style="color: red"></div>');
+  });
 });
 
 // ─── method binding ────────────────────────────────────────────────────────

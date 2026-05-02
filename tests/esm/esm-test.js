@@ -150,6 +150,111 @@ describe('attributes', () => {
   it('class as array joins with space', () => {
     assert.strictEqual(t.div({ class: ['foo', 'bar'] }).toString(), '<div class="foo bar"></div>');
   });
+
+  describe('style as object', () => {
+    it('converts camelCase keys to css properties', () => {
+      assert.strictEqual(
+        t.div({ style: { backgroundColor: 'red', fontSize: '14px' } }).toString(),
+        '<div style="background-color: red; font-size: 14px"></div>'
+      );
+    });
+    it('passes kebab-case keys through unchanged', () => {
+      assert.strictEqual(
+        t.div({ style: { 'background-color': 'red', 'font-size': '14px' } }).toString(),
+        '<div style="background-color: red; font-size: 14px"></div>'
+      );
+    });
+    it('handles mixed camelCase and kebab-case keys', () => {
+      assert.strictEqual(
+        t.div({ style: { backgroundColor: 'red', 'font-size': '14px' } }).toString(),
+        '<div style="background-color: red; font-size: 14px"></div>'
+      );
+    });
+    it('accepts number values', () => {
+      assert.strictEqual(
+        t.div({ style: { zIndex: 2, opacity: 0.5 } }).toString(),
+        '<div style="z-index: 2; opacity: 0.5"></div>'
+      );
+    });
+    it('keeps 0 as a valid value', () => {
+      assert.strictEqual(
+        t.div({ style: { opacity: 0 } }).toString(),
+        '<div style="opacity: 0"></div>'
+      );
+    });
+    it('drops null values', () => {
+      assert.strictEqual(
+        t.div({ style: { color: null, fontWeight: 'bold' } }).toString(),
+        '<div style="font-weight: bold"></div>'
+      );
+    });
+    it('drops undefined values', () => {
+      assert.strictEqual(
+        t.div({ style: { color: undefined, fontWeight: 'bold' } }).toString(),
+        '<div style="font-weight: bold"></div>'
+      );
+    });
+    it('drops false values', () => {
+      assert.strictEqual(
+        t.div({ style: { color: false, fontWeight: 'bold' } }).toString(),
+        '<div style="font-weight: bold"></div>'
+      );
+    });
+    it('drops true values', () => {
+      assert.strictEqual(
+        t.div({ style: { color: true, fontWeight: 'bold' } }).toString(),
+        '<div style="font-weight: bold"></div>'
+      );
+    });
+    it('throws on true value when validationLevel is error', () => {
+      const tt = new Kensington({ validationLevel: 'error' });
+      assert.throws(() => tt.div({ style: { color: true, fontWeight: 'bold' } }).toString());
+    });
+    it('warns on true value when validationLevel is warn', (test, done) => {
+      const expectedMessage = 'invalid attribute `style="color: true"` given for element `div`';
+      let callCount = 0;
+      const logger = (message) => {
+        if (++callCount === 2) {
+          assert.ok(message.startsWith(`Error: ${expectedMessage}\n`));
+          done();
+        } else {
+          assert.strictEqual(message, expectedMessage);
+        }
+      };
+      const tt = new Kensington({ validationLevel: 'warn', logger });
+      assert.doesNotThrow(() => tt.div({ style: { color: true, fontWeight: 'bold' } }).toString());
+    });
+    it('does not throw on valid style object when validationLevel is error', () => {
+      const tt = new Kensington({ validationLevel: 'error' });
+      assert.doesNotThrow(() => tt.div({ style: { color: 'red', zIndex: 2 } }).toString());
+    });
+    it('drops empty string values', () => {
+      assert.strictEqual(
+        t.div({ style: { color: '', fontWeight: 'bold' } }).toString(),
+        '<div style="font-weight: bold"></div>'
+      );
+    });
+    it('omits style attribute when all values are invalid', () => {
+      assert.strictEqual(
+        t.div({ style: { color: null, opacity: undefined } }).toString(),
+        '<div></div>'
+      );
+    });
+    it('omits style attribute for empty object', () => {
+      assert.strictEqual(t.div({ style: {} }).toString(), '<div></div>');
+    });
+    it('still accepts a plain string', () => {
+      assert.strictEqual(
+        t.div({ style: 'color: red' }).toString(),
+        '<div style="color: red"></div>'
+      );
+    });
+    it('builds style in attribute array', () => {
+      const result = attributesArrayFromObject({ style: { backgroundColor: 'red', zIndex: 2 } });
+      assert.deepStrictEqual(result, [['style', 'background-color: red; z-index: 2']]);
+    });
+  });
+
   it('throws on invalid attribute name', () => {
     const tt = new Kensington({ validationLevel: 'error' });
     assert.throws(() => tt.div({ badAttribute: 'value' }));

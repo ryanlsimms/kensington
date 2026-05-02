@@ -1,5 +1,6 @@
 import he from './he.js';
 import { getAttrName } from './text-utils.js';
+import { styleObjectToCss } from './style-utils.js';
 
 export default function attributesArrayFromObject(obj, { encode, attrsSet = new Map(), prefix = '' } = {}) {
   let finalArr = [];
@@ -13,6 +14,13 @@ export default function attributesArrayFromObject(obj, { encode, attrsSet = new 
 
     if (val === true) {
       finalArr.push([attrName, '']);
+      continue;
+    }
+    if (attr === 'style' && val?.constructor === Object) {
+      const css = styleObjectToCss(val);
+      if (css) {
+        finalArr.push([attrName, css]);
+      }
       continue;
     }
     if (val?.constructor === Object) {

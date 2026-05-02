@@ -75,6 +75,15 @@ export function registerTests(bundle) {
     await expect(page.locator('div')).toHaveClass('foo bar');
   });
 
+  test('style as object sets inline styles via setAttribute', async ({ page }) => {
+    await page.evaluate(async src => {
+      const { t } = await import(src);
+      document.body.append(t.div({ id: 'styled', style: { backgroundColor: 'red', zIndex: 2 } }).toElement());
+    }, bundle);
+    await expect(page.locator('#styled')).toHaveCSS('background-color', 'rgb(255, 0, 0)');
+    await expect(page.locator('#styled')).toHaveCSS('z-index', '2');
+  });
+
   // ─── content ───────────────────────────────────────────────────────────────
 
   test('sets text content as a text node', async ({ page }) => {

@@ -50,6 +50,7 @@ t.meta({ charset: 'utf-8' });
 - **Nested objects flatten**: `{ data: { bs: { toggle: 'collapse' } } }` → `data-bs-toggle="collapse"`
 - **Boolean attributes**: `{ checked: true }` → `checked`; `{ checked: false }` → attribute omitted entirely
 - **class as array**: `{ class: ['foo', 'bar'] }` → `class="foo bar"`
+- **style as object**: `{ style: { backgroundColor: 'red', zIndex: 2 } }` → `style="background-color: red; z-index: 2"`. camelCase keys are converted to kebab-case. Values of `null`, `undefined`, `false`, or empty string are silently omitted. Other non-string/number values are flagged when validation is enabled.
 - **Always allowed**: `data-*`, `aria-*`, and all [global HTML attributes](https://html.spec.whatwg.org/multipage/dom.html#global-attributes)
 - **Attribute validation** is checked against the HTML/SVG/MathML spec at `'warn'` or `'error'` level
 

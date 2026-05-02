@@ -68,7 +68,7 @@ type GlobalAttributes = {
   role?: string;
   slot?: string;
   spellcheck?: "true" | "false";
-  style?: string;
+  style?: string | Record<string, string | number | false | null>;
   tabindex?: number;
   title?: string;
   translate?: "yes" | "no";
@@ -251,7 +251,7 @@ type AnimateAttributes = {
   'repeatDur'?: string;
   'requiredExtensions'?: string;
   'restart'?: "always" | "never" | "whenNotActive";
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'to'?: string;
@@ -349,7 +349,7 @@ type AnimateMotionAttributes = {
   'requiredExtensions'?: string;
   'restart'?: "always" | "never" | "whenNotActive";
   'rotate'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'to'?: string;
@@ -444,7 +444,7 @@ type AnimateTransformAttributes = {
   'repeatDur'?: string;
   'requiredExtensions'?: string;
   'restart'?: "always" | "never" | "whenNotActive";
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'to'?: string;
@@ -465,7 +465,7 @@ type AnnotationAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -481,7 +481,7 @@ type AnnotationXmlAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -645,7 +645,7 @@ type CircleAttributes = {
   'r'?: number | string;
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
@@ -659,7 +659,7 @@ type ClipPathAttributes = {
   'id'?: string;
   'requiredExtensions'?: string;
   'requiredFeatures'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'systemLanguage'?: string;
   'transform'?: string;
   'xml:base'?: string;
@@ -750,7 +750,7 @@ type DefsAttributes = {
   'onvolumechange'?: string;
   'onwaiting'?: string;
   'onwheel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -825,7 +825,7 @@ type DescAttributes = {
   'onvolumechange'?: string;
   'onwaiting'?: string;
   'onwheel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -919,7 +919,7 @@ type EllipseAttributes = {
   'role'?: string;
   'rx'?: number | string;
   'ry'?: number | string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
@@ -937,7 +937,7 @@ type EmbedAttributes = {
 type FeBlendAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -946,7 +946,7 @@ type FeBlendAttributes = {
 type FeColorMatrixAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -955,7 +955,7 @@ type FeColorMatrixAttributes = {
 type FeComponentTransferAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -964,7 +964,7 @@ type FeComponentTransferAttributes = {
 type FeCompositeAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -973,7 +973,7 @@ type FeCompositeAttributes = {
 type FeConvolveMatrixAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -982,7 +982,7 @@ type FeConvolveMatrixAttributes = {
 type FeDiffuseLightingAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -991,7 +991,7 @@ type FeDiffuseLightingAttributes = {
 type FeDisplacementMapAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -1007,7 +1007,7 @@ type FeDistantLightAttributes = {
 type FeDropShadowAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -1016,7 +1016,7 @@ type FeDropShadowAttributes = {
 type FeFloodAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -1053,7 +1053,7 @@ type FeFuncRAttributes = {
 type FeGaussianBlurAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -1063,7 +1063,7 @@ type FeImageAttributes = {
   'class'?: string | string[];
   'externalResourcesRequired'?: string;
   'id'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -1072,7 +1072,7 @@ type FeImageAttributes = {
 type FeMergeAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -1088,7 +1088,7 @@ type FeMergeNodeAttributes = {
 type FeMorphologyAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -1097,7 +1097,7 @@ type FeMorphologyAttributes = {
 type FeOffsetAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -1113,7 +1113,7 @@ type FePointLightAttributes = {
 type FeSpecularLightingAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -1129,7 +1129,7 @@ type FeSpotLightAttributes = {
 type FeTileAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -1138,7 +1138,7 @@ type FeTileAttributes = {
 type FeTurbulenceAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -1158,7 +1158,7 @@ type FilterAttributes = {
   'class'?: string | string[];
   'externalResourcesRequired'?: string;
   'id'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -1234,7 +1234,7 @@ type ForeignObjectAttributes = {
   'onwheel'?: string;
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'width'?: number | string;
@@ -1323,7 +1323,7 @@ type GAttributes = {
   'onwheel'?: string;
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
@@ -1437,7 +1437,7 @@ type ImageAttributes = {
   'preserveAspectRatio'?: string;
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'width'?: number | string;
@@ -1587,7 +1587,7 @@ type LineAttributes = {
   'pathLength'?: string;
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'x1'?: number | string;
@@ -1666,7 +1666,7 @@ type LinearGradientAttributes = {
   'onwaiting'?: string;
   'onwheel'?: string;
   'spreadMethod'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
   'x1'?: number | string;
   'x2'?: number | string;
@@ -1776,7 +1776,7 @@ type MarkerAttributes = {
   'preserveAspectRatio'?: string;
   'refX'?: string;
   'refY'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
   'viewBox'?: string;
   'xml:space'?: string;
@@ -1787,7 +1787,7 @@ type MaskAttributes = {
   'id'?: string;
   'requiredExtensions'?: string;
   'requiredFeatures'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'systemLanguage'?: string;
   'xml:base'?: string;
   'xml:lang'?: string;
@@ -1807,7 +1807,7 @@ type MathAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
   'xmlns'?: string;
 } & NameSpaceAttributes & GlobalEvents;
@@ -1825,7 +1825,7 @@ type MencloseAttributes = {
   'nonce'?: string;
   'notation'?: string;
   'scriptlevel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -1843,7 +1843,7 @@ type MerrorAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -1921,7 +1921,7 @@ type MetadataAttributes = {
   'onvolumechange'?: string;
   'onwaiting'?: string;
   'onwheel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -1948,7 +1948,7 @@ type MfracAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -1964,7 +1964,7 @@ type MiAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -1980,7 +1980,7 @@ type MmultiscriptsAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -1996,7 +1996,7 @@ type MnAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2021,7 +2021,7 @@ type MoAttributes = {
   'scriptlevel'?: string;
   'separator'?: string;
   'stretchy'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'symmetric'?: string;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2039,7 +2039,7 @@ type MoverAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2058,7 +2058,7 @@ type MpaddedAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
   'voffset'?: string;
   'width'?: string;
@@ -2130,7 +2130,7 @@ type MpathAttributes = {
   'onvolumechange'?: string;
   'onwaiting'?: string;
   'onwheel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -2147,7 +2147,7 @@ type MphantomAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2163,7 +2163,7 @@ type MprescriptsAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2179,7 +2179,7 @@ type MrootAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2195,7 +2195,7 @@ type MrowAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2211,7 +2211,7 @@ type MsAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2228,7 +2228,7 @@ type MspaceAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
   'width'?: string;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2245,7 +2245,7 @@ type MsqrtAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2261,7 +2261,7 @@ type MstyleAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2277,7 +2277,7 @@ type MsubAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2293,7 +2293,7 @@ type MsubsupAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2309,7 +2309,7 @@ type MsupAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2334,7 +2334,7 @@ type MtableAttributes = {
   'rowlines'?: string;
   'rowspacing'?: string;
   'scriptlevel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
   'width'?: string;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2355,7 +2355,7 @@ type MtdAttributes = {
   'rowalign'?: string;
   'rowspan'?: string;
   'scriptlevel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2371,7 +2371,7 @@ type MtextAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2389,7 +2389,7 @@ type MtrAttributes = {
   'nonce'?: string;
   'rowalign'?: string;
   'scriptlevel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2406,7 +2406,7 @@ type MunderAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2424,7 +2424,7 @@ type MunderoverAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2536,7 +2536,7 @@ type PathAttributes = {
   'pathLength'?: number;
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
@@ -2613,7 +2613,7 @@ type PatternAttributes = {
   'patternTransform'?: string;
   'patternUnits'?: string;
   'preserveAspectRatio'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
   'viewBox'?: string;
   'width'?: string;
@@ -2695,7 +2695,7 @@ type PolygonAttributes = {
   'points'?: string;
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
@@ -2770,7 +2770,7 @@ type PolylineAttributes = {
   'points'?: string;
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
@@ -2862,7 +2862,7 @@ type RadialGradientAttributes = {
   'onwheel'?: string;
   'r'?: number | string;
   'spreadMethod'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
   'xlink:href'?: string;
   'xlink:title'?: string;
@@ -2940,7 +2940,7 @@ type RectAttributes = {
   'role'?: string;
   'rx'?: number | string;
   'ry'?: number | string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'width'?: number | string;
@@ -3000,7 +3000,7 @@ type SemanticsAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3084,7 +3084,7 @@ type SetAttributes = {
   'repeatDur'?: string;
   'requiredExtensions'?: string;
   'restart'?: "always" | "never" | "whenNotActive";
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'to'?: string;
@@ -3175,7 +3175,7 @@ type StopAttributes = {
   'onvolumechange'?: string;
   'onwaiting'?: string;
   'onwheel'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -3264,7 +3264,7 @@ type SvgAttributes = {
   'preserveAspectRatio'?: string;
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'transform'?: string;
@@ -3342,7 +3342,7 @@ type SwitchAttributes = {
   'onwheel'?: string;
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
@@ -3418,7 +3418,7 @@ type SymbolAttributes = {
   'refX'?: string;
   'refY'?: string;
   'role'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
   'viewBox'?: string;
   'width'?: string;
@@ -3517,7 +3517,7 @@ type TextAttributes = {
   'requiredExtensions'?: string;
   'role'?: string;
   'rotate'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'textLength'?: string;
@@ -3616,7 +3616,7 @@ type TextPathAttributes = {
   'side'?: string;
   'spacing'?: string;
   'startOffset'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'textLength'?: string;
@@ -3724,7 +3724,7 @@ type TspanAttributes = {
   'requiredExtensions'?: string;
   'role'?: string;
   'rotate'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'textLength'?: string;
@@ -3806,7 +3806,7 @@ type UseAttributes = {
   'onwheel'?: string;
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'width'?: string;
@@ -3901,7 +3901,7 @@ type ViewAttributes = {
   'onwheel'?: string;
   'preserveAspectRatio'?: string;
   'role'?: string;
-  'style'?: string;
+  'style'?: string | Record<string, string | number | false | null>;
   'tabindex'?: number;
   'viewBox'?: string;
   'xml:space'?: string;

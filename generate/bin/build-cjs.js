@@ -6,6 +6,10 @@ const root = path.resolve(import.meta.dirname, '../..');
 
 const result = await rollup({
   input: [path.resolve(root, 'esm/kensington.js')],
+  onwarn(warning, warn) {
+    if (warning.code === 'MISSING_EXPORT') return;
+    warn(warning);
+  },
 });
 await result.write({
   dir: path.resolve(root, 'cjs'),
@@ -18,3 +22,5 @@ await result.write({
 });
 
 fs.writeFileSync(path.resolve(root, 'cjs/package.json'), '{\n  "type": "commonjs"\n}\n', 'utf8');
+
+console.log('cjs module written');

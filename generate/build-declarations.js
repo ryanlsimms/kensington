@@ -4,12 +4,16 @@ function attributesType({ attributes = [], globalTypes }) {
   if (!attributes.length) {
     return globalTypes.join(' & ')
   }
+  const styleType = 'string | Record<string, string | number | false | null>';
+  const classType = 'string | string[]';
+
   return [`{
   ${attributes.flatMap(a => {
-    const lines = [`'${a.name}'?: ${a.name === 'class' ? 'string | string[]' : a.type};`];
+    const attrType = a.name === 'style' ? styleType : a.name === 'class' ? classType : a.type;
+    const lines = [`'${a.name}'?: ${attrType};`];
     const camelName = kebabToCamel(a.name);
     if (a.name !== camelName) {
-      lines.push(`'${camelName}'?: ${a.type};`);
+      lines.push(`'${camelName}'?: ${a.name === 'style' ? styleType : a.type};`);
     }
     return lines;
   }).join('\n  ')}
@@ -60,7 +64,7 @@ export interface NameSpaceAttributes {
 }
 
 type GlobalAttributes = {
-  ${globalAttributes.map(a => `${a.name}?: ${a.name === 'class' ? 'string | string[]' : a.type};`).join('\n  ')}
+  ${globalAttributes.map(a => `${a.name}?: ${a.name === 'style' ? 'string | Record<string, string | number | false | null>' : a.name === 'class' ? 'string | string[]' : a.type};`).join('\n  ')}
 }
 
 type GlobalEvents = {

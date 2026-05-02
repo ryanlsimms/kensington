@@ -3,11 +3,16 @@ import indent from '../lib/indent.js';
 import he from '../lib/he.js';
 import showInvalid from '../lib/show-invalid.js';
 import { camelToKebab, LINE_BREAK_TEST_REGEX } from '../lib/text-utils.js';
+import { styleObjectToCss } from '../lib/style-utils.js';
 import LiteralTag from './literal-tag.js';
 import stringifyContentArray from '../lib/stringify-content-array.js';
 import attributesArrayFromObject from '../lib/attributes-array-from-object.js';
 
 // TODO validate via "import elements from 'html-validate/dist/es/html5.js'";
+
+function isValidStyleValue(v) {
+  return [null, undefined, false].includes(v) || ['string', 'number'].includes(typeof v);
+}
 
 export default class ContentTag {
   constructor(options) {
@@ -47,7 +52,12 @@ export default class ContentTag {
       return !unallowedAttributes.includes(attr) && !this.attributeValueIsValid(attr, value)
     });
     if (invalidAttributeValues.length) {
-      const attrString = invalidAttributeValues.map(([attr, value]) => `${attr}="${value}"`).join(', ');
+      const attrString = invalidAttributeValues.map(([attr, value]) => {
+        if (attr === 'style' && value?.constructor === Object) {
+          return `style="${styleObjectToCss(value, ([, v]) => !isValidStyleValue(v))}"`;
+        }
+        return `${attr}="${value}"`;
+      }).join(', ');
       const message = `invalid attribute \`${attrString}\` given for element \`${this.tagName}\``;
       showInvalid(message, this.validationLevel, this.logger)
     }
@@ -72,6 +82,9 @@ export default class ContentTag {
     }
     if (attr === 'id' && /^\d/.test(value)) {
       return false
+    }
+    if (attr === 'style' && value?.constructor === Object) {
+      return Object.values(value).every(isValidStyleValue);
     }
     const type = this.allowedAttributeMap.get(attr) ?? this.allowedAttributeMap.get(camelToKebab(attr));
     return this.validateAttributeByType(type, value);

@@ -15,5 +15,6 @@ export function getAttrName(attr, prefix, attrsSet) {
   return attrsSet.has(attr) ? attr : camelToKebab(attr);
 }
 
+
 export const LINE_BREAK_REGEX = /[\r\n]+/g;
 export const LINE_BREAK_TEST_REGEX = /[\r\n]/;
