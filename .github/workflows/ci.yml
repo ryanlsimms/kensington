@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '23'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Set up test symlinks
+        run: |
+          mkdir -p tests/esm/node_modules tests/cjs/node_modules tests/typescript/node_modules
+          ln -s "$(pwd)" tests/esm/node_modules/kensington
+          ln -s "$(pwd)" tests/cjs/node_modules/kensington
+          ln -s "$(pwd)" tests/typescript/node_modules/kensington
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Build CJS and browser bundles
+        run: npm run build-cjs && npm run build-browser
+
+      - name: Test
+        run: npm test
