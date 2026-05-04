@@ -54,4 +54,5 @@ git tag "v$VERSION"
 
 git push origin --follow-tags
 
-gh release create "v$VERSION" --title "$VERSION" --notes "See CHANGELOG.md"
+NOTES=$(awk "/^## \[$VERSION\]/{found=1; next} found && /^## \[/{exit} found{print}" CHANGELOG.md)
+gh release create "v$VERSION" --title "v$VERSION" --notes "$NOTES"
