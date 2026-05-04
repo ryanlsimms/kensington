@@ -94,6 +94,15 @@ export function registerTests(bundle) {
     await expect(page.locator('p')).toHaveText('hello world');
   });
 
+  test('preserves multiple spaces as non-breaking spaces', async ({ page }) => {
+    await page.evaluate(async src => {
+      const { t } = await import(src);
+      document.body.append(t.p('a  b').toElement());
+    }, bundle);
+    const textContent = await page.locator('p').evaluate(el => el.textContent);
+    expect(textContent).toBe('a  b');
+  });
+
   test('sets number content as a text node', async ({ page }) => {
     await page.evaluate(async src => {
       const { t } = await import(src);

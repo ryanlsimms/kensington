@@ -18,3 +18,7 @@ export function getAttrName(attr, prefix, attrsSet) {
 
 export const LINE_BREAK_REGEX = /[\r\n]+/g;
 export const LINE_BREAK_TEST_REGEX = /[\r\n]/;
+
+export function preserveSpaces(str) {
+  return str.replace(/ {2,}/g, match => ' '.repeat(match.length));
+}

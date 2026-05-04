@@ -27,6 +27,15 @@ describe('content tag', () => {
   it('encodes all special chars in content without double-encoding', () => {
     assert.strictEqual(t.div('<a href="x&y">').toString(), '<div>&#x3C;a href=&#x22;x&#x26;y&#x22;&#x3E;</div>');
   });
+  it('replaces multiple spaces with non-breaking spaces', () => {
+    assert.strictEqual(t.div('a  b').toString(), '<div>a  b</div>');
+    assert.strictEqual(t.div('a   b').toString(), '<div>a   b</div>');
+    assert.strictEqual(t.div('a b').toString(), '<div>a b</div>');
+  });
+  it('does not replace spaces in preformatted content', () => {
+    assert.strictEqual(t.pre('a  b').toString(), '<pre>a  b</pre>');
+    assert.strictEqual(t.script('const x  = 1;').toString(), '<script>const x  = 1;</script>');
+  });
   it('converts line breaks to br tags', () => {
     assert.strictEqual(t.div('line1\nline2').toString(), '<div>\n  line1<br>\n  line2\n</div>');
   });

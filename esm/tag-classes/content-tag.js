@@ -2,7 +2,7 @@ import attributesStringFromObject from '../lib/attributes-string-from-object.js'
 import indent from '../lib/indent.js';
 import he from '../lib/he.js';
 import showInvalid from '../lib/show-invalid.js';
-import { camelToKebab, LINE_BREAK_TEST_REGEX } from '../lib/text-utils.js';
+import { camelToKebab, LINE_BREAK_TEST_REGEX, preserveSpaces } from '../lib/text-utils.js';
 import { styleObjectToCss } from '../lib/style-utils.js';
 import LiteralTag from './literal-tag.js';
 import stringifyContentArray from '../lib/stringify-content-array.js';
@@ -176,7 +176,7 @@ export default class ContentTag {
     } else if (this.contentIsShort()) {
       for (const c of this.content) {
         if (typeof c === 'string' && this.encodeContent) {
-          str += he.encode(c);
+          str += he.encode(preserveSpaces(c));
         } else {
           str += c;
         }
@@ -224,7 +224,10 @@ export default class ContentTag {
       if (node instanceof ContentTag || node instanceof LiteralTag) {
         element.append(node.toElement());
       } else {
-        element.append(document.createTextNode(node))
+        if (!this.contentIsLiteral && typeof node === 'string') {
+          node = preserveSpaces(node);
+        }
+        element.append(document.createTextNode(node));
       }
     });
 
