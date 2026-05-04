@@ -1,6 +1,7 @@
 # Kensington
 
 [![npm](https://img.shields.io/npm/v/kensington)](https://www.npmjs.com/package/kensington)
+[![CI](https://github.com/ryanlsimms/kensington/actions/workflows/ci.yml/badge.svg)](https://github.com/ryanlsimms/kensington/actions/workflows/ci.yml)
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
 
 HTML/SVG/MathML template engine for JavaScript and TypeScript. Every tag is a method on a `Kensington` instance that returns a tag object serialisable to a formatted HTML string via `.toString()` or a live DOM node via `.toElement()`.
@@ -129,7 +130,7 @@ t.meta({ charset: 'utf-8' });
 
 ## Content rules
 
-Valid content: strings, numbers, tag objects, or arrays of those. Falsy values (`null`, `undefined`, `false`, `''`) are silently ignored, making conditionals clean:
+Valid content: strings, numbers, tag objects, or arrays of those. Falsy values (`null`, `undefined`, `false`, `''`) are silently ignored, making conditionals clean. Multiple consecutive spaces are replaced with non-breaking spaces so spacing is preserved in the browser — single spaces and preformatted elements (`pre`, `script`, `style`, `textarea`) are unaffected.
 
 ```javascript
 t.ul([

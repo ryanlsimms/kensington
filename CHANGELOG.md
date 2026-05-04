@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Multiple consecutive spaces in text content are replaced with non-breaking spaces (` `) so spacing is preserved when rendered in a browser. Single spaces are unaffected. Preformatted elements (`pre`, `script`, `style`, `textarea`) are exempt.
 - `style` attribute accepts a JS object: `{ style: { backgroundColor: 'red', zIndex: 2 } }` → `style="background-color: red; z-index: 2"`. camelCase keys are converted to kebab-case. Values of `null`, `undefined`, `false`, or empty string are silently omitted. When `validationLevel` is `'warn'` or `'error'`, object values that are not a string, number, `false`, `null`, or `undefined` are flagged as invalid.
 
 ## [0.12.1] - 2026-05-02

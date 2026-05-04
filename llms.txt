@@ -56,7 +56,7 @@ t.meta({ charset: 'utf-8' });
 
 ## Content rules
 
-Valid content: strings, numbers, tag instances (`ContentTag`, `VoidTag`, `LiteralTag`), or arrays of those. Falsy values (`null`, `undefined`, `''`) are silently ignored.
+Valid content: strings, numbers, tag instances (`ContentTag`, `VoidTag`, `LiteralTag`), or arrays of those. Falsy values (`null`, `undefined`, `''`) are silently ignored. Multiple consecutive spaces are replaced with non-breaking spaces (` `) so spacing is preserved in the browser — single spaces and preformatted elements (`pre`, `script`, `style`, `textarea`) are unaffected.
 
 ```javascript
 t.ul([
