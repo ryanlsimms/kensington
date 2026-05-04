@@ -1,7 +1,3066 @@
 {
+  "svgAttributes": [
+    {
+      "attribute": "about",
+      "elements": [
+        "a",
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "circle",
+        "defs",
+        "desc",
+        "discard",
+        "ellipse",
+        "font",
+        "font-face",
+        "font-face-src",
+        "font-face-uri",
+        "foreignObject",
+        "g",
+        "glyph",
+        "handler",
+        "hkern",
+        "image",
+        "line",
+        "linearGradient",
+        "listener",
+        "metadata",
+        "missing-glyph",
+        "mpath",
+        "path",
+        "polygon",
+        "polyline",
+        "prefetch",
+        "radialGradient",
+        "rect",
+        "script",
+        "set",
+        "solidColor",
+        "stop",
+        "svg",
+        "switch",
+        "tbreak",
+        "text",
+        "textArea",
+        "title",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<list-of-strings>"
+      ]
+    },
+    {
+      "attribute": "accent-height",
+      "elements": [
+        "font-face"
+      ],
+      "type": "svg",
+      "value": [
+        "<number>"
+      ]
+    },
+    {
+      "attribute": "accumulate",
+      "elements": [
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform"
+      ],
+      "type": "svg",
+      "value": [
+        "\"none\"",
+        "\"sum\""
+      ]
+    },
+    {
+      "attribute": "additive",
+      "elements": [
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform"
+      ],
+      "type": "svg",
+      "value": [
+        "\"replace\"",
+        "\"sum\""
+      ]
+    },
+    {
+      "attribute": "alphabetic",
+      "elements": [
+        "font-face"
+      ],
+      "type": "svg",
+      "value": [
+        "<number>"
+      ]
+    },
+    {
+      "attribute": "arabic-form",
+      "elements": [
+        "glyph"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "ascent",
+      "elements": [
+        "font-face"
+      ],
+      "type": "svg",
+      "value": [
+        "<number>"
+      ]
+    },
+    {
+      "attribute": "attributeName",
+      "elements": [
+        "animate",
+        "animateColor",
+        "animateTransform",
+        "set"
+      ],
+      "type": "svg",
+      "value": [
+        "<QName>"
+      ]
+    },
+    {
+      "attribute": "attributeType",
+      "elements": [
+        "animate",
+        "animateColor",
+        "animateTransform",
+        "set"
+      ],
+      "type": "svg",
+      "value": [
+        "\"XML\"",
+        "\"CSS\"",
+        "\"auto\""
+      ]
+    },
+    {
+      "attribute": "bandwidth",
+      "elements": [
+        "prefetch"
+      ],
+      "type": "svg",
+      "value": [
+        "<number>",
+        "\"auto\""
+      ]
+    },
+    {
+      "attribute": "baseProfile",
+      "elements": [
+        "svg"
+      ],
+      "type": "svg",
+      "value": [
+        "\"none\"",
+        "\"tiny\"",
+        "\"basic\"",
+        "\"full\""
+      ]
+    },
+    {
+      "attribute": "bbox",
+      "elements": [
+        "font-face"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "begin",
+      "elements": [
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "discard",
+        "set",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "by",
+      "elements": [
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "calcMode",
+      "elements": [
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform"
+      ],
+      "type": "svg",
+      "value": [
+        "\"discrete\"",
+        "\"linear\"",
+        "\"paced\"",
+        "\"spline\""
+      ]
+    },
+    {
+      "attribute": "cap-height",
+      "elements": [
+        "font-face"
+      ],
+      "type": "svg",
+      "value": [
+        "<number>"
+      ]
+    },
+    {
+      "attribute": "class",
+      "elements": [
+        "a",
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "circle",
+        "defs",
+        "desc",
+        "discard",
+        "ellipse",
+        "font",
+        "font-face",
+        "font-face-src",
+        "font-face-uri",
+        "foreignObject",
+        "g",
+        "glyph",
+        "handler",
+        "hkern",
+        "image",
+        "line",
+        "linearGradient",
+        "listener",
+        "metadata",
+        "missing-glyph",
+        "mpath",
+        "path",
+        "polygon",
+        "polyline",
+        "prefetch",
+        "radialGradient",
+        "rect",
+        "script",
+        "set",
+        "solidColor",
+        "stop",
+        "svg",
+        "switch",
+        "tbreak",
+        "text",
+        "textArea",
+        "title",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<XML-NMTOKENS>"
+      ]
+    },
+    {
+      "attribute": "content",
+      "elements": [
+        "a",
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "circle",
+        "defs",
+        "desc",
+        "discard",
+        "ellipse",
+        "font",
+        "font-face",
+        "font-face-src",
+        "font-face-uri",
+        "foreignObject",
+        "g",
+        "glyph",
+        "handler",
+        "hkern",
+        "image",
+        "line",
+        "linearGradient",
+        "listener",
+        "metadata",
+        "missing-glyph",
+        "mpath",
+        "path",
+        "polygon",
+        "polyline",
+        "prefetch",
+        "radialGradient",
+        "rect",
+        "script",
+        "set",
+        "solidColor",
+        "stop",
+        "svg",
+        "switch",
+        "tbreak",
+        "text",
+        "textArea",
+        "title",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<string>"
+      ]
+    },
+    {
+      "attribute": "contentScriptType",
+      "elements": [
+        "svg"
+      ],
+      "type": "svg",
+      "value": [
+        "<content-type>"
+      ]
+    },
+    {
+      "attribute": "cx",
+      "elements": [
+        "circle",
+        "ellipse",
+        "radialGradient"
+      ],
+      "type": "svg",
+      "value": [
+        "<coordinate>"
+      ]
+    },
+    {
+      "attribute": "cy",
+      "elements": [
+        "circle",
+        "ellipse",
+        "radialGradient"
+      ],
+      "type": "svg",
+      "value": [
+        "<coordinate>"
+      ]
+    },
+    {
+      "attribute": "d",
+      "elements": [
+        "glyph",
+        "missing-glyph",
+        "path"
+      ],
+      "type": "svg",
+      "value": [
+        "<path-data>"
+      ]
+    },
+    {
+      "attribute": "datatype",
+      "elements": [
+        "a",
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "circle",
+        "defs",
+        "desc",
+        "discard",
+        "ellipse",
+        "font",
+        "font-face",
+        "font-face-src",
+        "font-face-uri",
+        "foreignObject",
+        "g",
+        "glyph",
+        "handler",
+        "hkern",
+        "image",
+        "line",
+        "linearGradient",
+        "listener",
+        "metadata",
+        "missing-glyph",
+        "mpath",
+        "path",
+        "polygon",
+        "polyline",
+        "prefetch",
+        "radialGradient",
+        "rect",
+        "script",
+        "set",
+        "solidColor",
+        "stop",
+        "svg",
+        "switch",
+        "tbreak",
+        "text",
+        "textArea",
+        "title",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<string>"
+      ]
+    },
+    {
+      "attribute": "defaultAction",
+      "elements": [
+        "listener"
+      ],
+      "type": "svg",
+      "value": [
+        "\"perform\"",
+        "\"cancel\""
+      ]
+    },
+    {
+      "attribute": "descent",
+      "elements": [
+        "font-face"
+      ],
+      "type": "svg",
+      "value": [
+        "<number>"
+      ]
+    },
+    {
+      "attribute": "dur",
+      "elements": [
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "set",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "editable",
+      "elements": [
+        "text",
+        "textArea"
+      ],
+      "type": "svg",
+      "value": [
+        "\"none\"",
+        "\"simple\""
+      ]
+    },
+    {
+      "attribute": "end",
+      "elements": [
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "set",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "ev:event",
+      "elements": [
+        "handler"
+      ],
+      "type": "svg",
+      "value": [
+        "<XML-NMTOKEN>"
+      ]
+    },
+    {
+      "attribute": "event",
+      "elements": [
+        "listener"
+      ],
+      "type": "svg",
+      "value": [
+        "<XML-NMTOKEN>"
+      ]
+    },
+    {
+      "attribute": "externalResourcesRequired",
+      "elements": [
+        "a",
+        "animation",
+        "audio",
+        "font",
+        "font-face",
+        "font-face-uri",
+        "foreignObject",
+        "g",
+        "handler",
+        "image",
+        "script",
+        "svg",
+        "switch",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<boolean>"
+      ]
+    },
+    {
+      "attribute": "fill",
+      "elements": [
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "set",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "\"remove\"",
+        "\"freeze\""
+      ]
+    },
+    {
+      "attribute": "focusHighlight",
+      "elements": [
+        "a",
+        "animation",
+        "circle",
+        "ellipse",
+        "foreignObject",
+        "g",
+        "image",
+        "line",
+        "path",
+        "polygon",
+        "polyline",
+        "rect",
+        "svg",
+        "switch",
+        "text",
+        "textArea",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "\"auto\"",
+        "\"none\""
+      ]
+    },
+    {
+      "attribute": "focusable",
+      "elements": [
+        "a",
+        "animation",
+        "circle",
+        "ellipse",
+        "foreignObject",
+        "g",
+        "image",
+        "line",
+        "path",
+        "polygon",
+        "polyline",
+        "rect",
+        "svg",
+        "switch",
+        "text",
+        "textArea",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "\"auto\"",
+        "<boolean>"
+      ]
+    },
+    {
+      "attribute": "font-family",
+      "elements": [
+        "font-face"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "font-stretch",
+      "elements": [
+        "font-face"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "font-style",
+      "elements": [
+        "font-face"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "font-variant",
+      "elements": [
+        "font-face"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "font-weight",
+      "elements": [
+        "font-face"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "from",
+      "elements": [
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "g1",
+      "elements": [
+        "hkern"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "g2",
+      "elements": [
+        "hkern"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "glyph-name",
+      "elements": [
+        "glyph"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "gradientUnits",
+      "elements": [
+        "linearGradient",
+        "radialGradient"
+      ],
+      "type": "svg",
+      "value": [
+        "\"userSpaceOnUse\"",
+        "\"objectBoundingBox\""
+      ]
+    },
+    {
+      "attribute": "handler",
+      "elements": [
+        "listener"
+      ],
+      "type": "svg",
+      "value": [
+        "<IRI>"
+      ]
+    },
+    {
+      "attribute": "hanging",
+      "elements": [
+        "font-face"
+      ],
+      "type": "svg",
+      "value": [
+        "<number>"
+      ]
+    },
+    {
+      "attribute": "height",
+      "elements": [
+        "animation",
+        "foreignObject",
+        "image",
+        "rect",
+        "svg",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<length>"
+      ]
+    },
+    {
+      "attribute": "height",
+      "elements": [
+        "textArea"
+      ],
+      "type": "svg",
+      "value": [
+        "<length>",
+        "\"auto\""
+      ]
+    },
+    {
+      "attribute": "horiz-adv-x",
+      "elements": [
+        "font",
+        "glyph",
+        "missing-glyph"
+      ],
+      "type": "svg",
+      "value": [
+        "<number>"
+      ]
+    },
+    {
+      "attribute": "horiz-origin-x",
+      "elements": [
+        "font"
+      ],
+      "type": "svg",
+      "value": [
+        "<number>"
+      ]
+    },
+    {
+      "attribute": "id",
+      "elements": [
+        "a",
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "circle",
+        "defs",
+        "desc",
+        "discard",
+        "ellipse",
+        "font",
+        "font-face",
+        "font-face-src",
+        "font-face-uri",
+        "foreignObject",
+        "g",
+        "glyph",
+        "handler",
+        "hkern",
+        "image",
+        "line",
+        "linearGradient",
+        "listener",
+        "metadata",
+        "missing-glyph",
+        "mpath",
+        "path",
+        "polygon",
+        "polyline",
+        "prefetch",
+        "radialGradient",
+        "rect",
+        "script",
+        "set",
+        "solidColor",
+        "stop",
+        "svg",
+        "switch",
+        "tbreak",
+        "text",
+        "textArea",
+        "title",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<ID>",
+        "<NCName>"
+      ]
+    },
+    {
+      "attribute": "ideographic",
+      "elements": [
+        "font-face"
+      ],
+      "type": "svg",
+      "value": [
+        "<number>"
+      ]
+    },
+    {
+      "attribute": "initialVisibility",
+      "elements": [
+        "animation",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "\"whenStarted\"",
+        "\"always\""
+      ]
+    },
+    {
+      "attribute": "k",
+      "elements": [
+        "hkern"
+      ],
+      "type": "svg",
+      "value": [
+        "<number>"
+      ]
+    },
+    {
+      "attribute": "keyPoints",
+      "elements": [
+        "animateMotion"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "keySplines",
+      "elements": [
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "keyTimes",
+      "elements": [
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "lang",
+      "elements": [
+        "glyph"
+      ],
+      "type": "svg",
+      "value": [
+        "<list-of-language-ids>"
+      ]
+    },
+    {
+      "attribute": "mathematical",
+      "elements": [
+        "font-face"
+      ],
+      "type": "svg",
+      "value": [
+        "<number>"
+      ]
+    },
+    {
+      "attribute": "max",
+      "elements": [
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "set",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "mediaCharacterEncoding",
+      "elements": [
+        "prefetch"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "mediaContentEncodings",
+      "elements": [
+        "prefetch"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "mediaSize",
+      "elements": [
+        "prefetch"
+      ],
+      "type": "svg",
+      "value": [
+        "<number>"
+      ]
+    },
+    {
+      "attribute": "mediaTime",
+      "elements": [
+        "prefetch"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "min",
+      "elements": [
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "set",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "nav-down",
+      "elements": [
+        "a",
+        "animation",
+        "circle",
+        "ellipse",
+        "foreignObject",
+        "g",
+        "image",
+        "line",
+        "path",
+        "polygon",
+        "polyline",
+        "rect",
+        "svg",
+        "switch",
+        "text",
+        "textArea",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<focus>"
+      ]
+    },
+    {
+      "attribute": "nav-down-left",
+      "elements": [
+        "a",
+        "animation",
+        "circle",
+        "ellipse",
+        "foreignObject",
+        "g",
+        "image",
+        "line",
+        "path",
+        "polygon",
+        "polyline",
+        "rect",
+        "svg",
+        "switch",
+        "text",
+        "textArea",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<focus>"
+      ]
+    },
+    {
+      "attribute": "nav-down-right",
+      "elements": [
+        "a",
+        "animation",
+        "circle",
+        "ellipse",
+        "foreignObject",
+        "g",
+        "image",
+        "line",
+        "path",
+        "polygon",
+        "polyline",
+        "rect",
+        "svg",
+        "switch",
+        "text",
+        "textArea",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<focus>"
+      ]
+    },
+    {
+      "attribute": "nav-left",
+      "elements": [
+        "a",
+        "animation",
+        "circle",
+        "ellipse",
+        "foreignObject",
+        "g",
+        "image",
+        "line",
+        "path",
+        "polygon",
+        "polyline",
+        "rect",
+        "svg",
+        "switch",
+        "text",
+        "textArea",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<focus>"
+      ]
+    },
+    {
+      "attribute": "nav-next",
+      "elements": [
+        "a",
+        "animation",
+        "circle",
+        "ellipse",
+        "foreignObject",
+        "g",
+        "image",
+        "line",
+        "path",
+        "polygon",
+        "polyline",
+        "rect",
+        "svg",
+        "switch",
+        "text",
+        "textArea",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<focus>"
+      ]
+    },
+    {
+      "attribute": "nav-prev",
+      "elements": [
+        "a",
+        "animation",
+        "circle",
+        "ellipse",
+        "foreignObject",
+        "g",
+        "image",
+        "line",
+        "path",
+        "polygon",
+        "polyline",
+        "rect",
+        "svg",
+        "switch",
+        "text",
+        "textArea",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<focus>"
+      ]
+    },
+    {
+      "attribute": "nav-right",
+      "elements": [
+        "a",
+        "animation",
+        "circle",
+        "ellipse",
+        "foreignObject",
+        "g",
+        "image",
+        "line",
+        "path",
+        "polygon",
+        "polyline",
+        "rect",
+        "svg",
+        "switch",
+        "text",
+        "textArea",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<focus>"
+      ]
+    },
+    {
+      "attribute": "nav-up",
+      "elements": [
+        "a",
+        "animation",
+        "circle",
+        "ellipse",
+        "foreignObject",
+        "g",
+        "image",
+        "line",
+        "path",
+        "polygon",
+        "polyline",
+        "rect",
+        "svg",
+        "switch",
+        "text",
+        "textArea",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<focus>"
+      ]
+    },
+    {
+      "attribute": "nav-up-left",
+      "elements": [
+        "a",
+        "animation",
+        "circle",
+        "ellipse",
+        "foreignObject",
+        "g",
+        "image",
+        "line",
+        "path",
+        "polygon",
+        "polyline",
+        "rect",
+        "svg",
+        "switch",
+        "text",
+        "textArea",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<focus>"
+      ]
+    },
+    {
+      "attribute": "nav-up-right",
+      "elements": [
+        "a",
+        "animation",
+        "circle",
+        "ellipse",
+        "foreignObject",
+        "g",
+        "image",
+        "line",
+        "path",
+        "polygon",
+        "polyline",
+        "rect",
+        "svg",
+        "switch",
+        "text",
+        "textArea",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<focus>"
+      ]
+    },
+    {
+      "attribute": "observer",
+      "elements": [
+        "listener"
+      ],
+      "type": "svg",
+      "value": [
+        "<IDREF>"
+      ]
+    },
+    {
+      "attribute": "offset",
+      "elements": [
+        "stop"
+      ],
+      "type": "svg",
+      "value": [
+        "<number>"
+      ]
+    },
+    {
+      "attribute": "origin",
+      "elements": [
+        "animateMotion"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "overlay",
+      "elements": [
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "\"none\"",
+        "\"top\""
+      ]
+    },
+    {
+      "attribute": "overline-position",
+      "elements": [
+        "font-face"
+      ],
+      "type": "svg",
+      "value": [
+        "<number>"
+      ]
+    },
+    {
+      "attribute": "overline-thickness",
+      "elements": [
+        "font-face"
+      ],
+      "type": "svg",
+      "value": [
+        "<number>"
+      ]
+    },
+    {
+      "attribute": "panose-1",
+      "elements": [
+        "font-face"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "path",
+      "elements": [
+        "animateMotion"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "pathLength",
+      "elements": [
+        "path"
+      ],
+      "type": "svg",
+      "value": [
+        "<number>"
+      ]
+    },
+    {
+      "attribute": "phase",
+      "elements": [
+        "listener"
+      ],
+      "type": "svg",
+      "value": [
+        "\"default\"",
+        "\"capture\""
+      ]
+    },
+    {
+      "attribute": "playbackOrder",
+      "elements": [
+        "svg"
+      ],
+      "type": "svg",
+      "value": [
+        "\"all\"",
+        "\"forwardOnly\""
+      ]
+    },
+    {
+      "attribute": "points",
+      "elements": [
+        "polygon",
+        "polyline"
+      ],
+      "type": "svg",
+      "value": [
+        "<points-data>"
+      ]
+    },
+    {
+      "attribute": "preserveAspectRatio",
+      "elements": [
+        "animation",
+        "image",
+        "svg",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "propagate",
+      "elements": [
+        "listener"
+      ],
+      "type": "svg",
+      "value": [
+        "\"continue\"",
+        "\"stop\""
+      ]
+    },
+    {
+      "attribute": "property",
+      "elements": [
+        "a",
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "circle",
+        "defs",
+        "desc",
+        "discard",
+        "ellipse",
+        "font",
+        "font-face",
+        "font-face-src",
+        "font-face-uri",
+        "foreignObject",
+        "g",
+        "glyph",
+        "handler",
+        "hkern",
+        "image",
+        "line",
+        "linearGradient",
+        "listener",
+        "metadata",
+        "missing-glyph",
+        "mpath",
+        "path",
+        "polygon",
+        "polyline",
+        "prefetch",
+        "radialGradient",
+        "rect",
+        "script",
+        "set",
+        "solidColor",
+        "stop",
+        "svg",
+        "switch",
+        "tbreak",
+        "text",
+        "textArea",
+        "title",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<list-of-strings>"
+      ]
+    },
+    {
+      "attribute": "r",
+      "elements": [
+        "circle",
+        "radialGradient"
+      ],
+      "type": "svg",
+      "value": [
+        "<length>"
+      ]
+    },
+    {
+      "attribute": "rel",
+      "elements": [
+        "a",
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "circle",
+        "defs",
+        "desc",
+        "discard",
+        "ellipse",
+        "font",
+        "font-face",
+        "font-face-src",
+        "font-face-uri",
+        "foreignObject",
+        "g",
+        "glyph",
+        "handler",
+        "hkern",
+        "image",
+        "line",
+        "linearGradient",
+        "listener",
+        "metadata",
+        "missing-glyph",
+        "mpath",
+        "path",
+        "polygon",
+        "polyline",
+        "prefetch",
+        "radialGradient",
+        "rect",
+        "script",
+        "set",
+        "solidColor",
+        "stop",
+        "svg",
+        "switch",
+        "tbreak",
+        "text",
+        "textArea",
+        "title",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<list-of-strings>"
+      ]
+    },
+    {
+      "attribute": "repeatCount",
+      "elements": [
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "set",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "repeatDur",
+      "elements": [
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "set",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "requiredExtensions",
+      "elements": [
+        "a",
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "circle",
+        "desc",
+        "discard",
+        "ellipse",
+        "foreignObject",
+        "g",
+        "image",
+        "line",
+        "metadata",
+        "path",
+        "polygon",
+        "polyline",
+        "rect",
+        "set",
+        "switch",
+        "tbreak",
+        "text",
+        "textArea",
+        "title",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<list-of-IRIs>"
+      ]
+    },
+    {
+      "attribute": "requiredFeatures",
+      "elements": [
+        "a",
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "circle",
+        "desc",
+        "discard",
+        "ellipse",
+        "foreignObject",
+        "g",
+        "image",
+        "line",
+        "metadata",
+        "path",
+        "polygon",
+        "polyline",
+        "rect",
+        "set",
+        "switch",
+        "tbreak",
+        "text",
+        "textArea",
+        "title",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<list-of-IRIs>"
+      ]
+    },
+    {
+      "attribute": "requiredFonts",
+      "elements": [
+        "a",
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "circle",
+        "desc",
+        "discard",
+        "ellipse",
+        "foreignObject",
+        "g",
+        "image",
+        "line",
+        "metadata",
+        "path",
+        "polygon",
+        "polyline",
+        "rect",
+        "set",
+        "switch",
+        "tbreak",
+        "text",
+        "textArea",
+        "title",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<list-of-family-names>"
+      ]
+    },
+    {
+      "attribute": "requiredFormats",
+      "elements": [
+        "a",
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "circle",
+        "desc",
+        "discard",
+        "ellipse",
+        "foreignObject",
+        "g",
+        "image",
+        "line",
+        "metadata",
+        "path",
+        "polygon",
+        "polyline",
+        "rect",
+        "set",
+        "switch",
+        "tbreak",
+        "text",
+        "textArea",
+        "title",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<list-of-content-types>"
+      ]
+    },
+    {
+      "attribute": "resource",
+      "elements": [
+        "a",
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "circle",
+        "defs",
+        "desc",
+        "discard",
+        "ellipse",
+        "font",
+        "font-face",
+        "font-face-src",
+        "font-face-uri",
+        "foreignObject",
+        "g",
+        "glyph",
+        "handler",
+        "hkern",
+        "image",
+        "line",
+        "linearGradient",
+        "listener",
+        "metadata",
+        "missing-glyph",
+        "mpath",
+        "path",
+        "polygon",
+        "polyline",
+        "prefetch",
+        "radialGradient",
+        "rect",
+        "script",
+        "set",
+        "solidColor",
+        "stop",
+        "svg",
+        "switch",
+        "tbreak",
+        "text",
+        "textArea",
+        "title",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<string>"
+      ]
+    },
+    {
+      "attribute": "restart",
+      "elements": [
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "set",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "\"always\"",
+        "\"never\"",
+        "\"whenNotActive\""
+      ]
+    },
+    {
+      "attribute": "rev",
+      "elements": [
+        "a",
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "circle",
+        "defs",
+        "desc",
+        "discard",
+        "ellipse",
+        "font",
+        "font-face",
+        "font-face-src",
+        "font-face-uri",
+        "foreignObject",
+        "g",
+        "glyph",
+        "handler",
+        "hkern",
+        "image",
+        "line",
+        "linearGradient",
+        "listener",
+        "metadata",
+        "missing-glyph",
+        "mpath",
+        "path",
+        "polygon",
+        "polyline",
+        "prefetch",
+        "radialGradient",
+        "rect",
+        "script",
+        "set",
+        "solidColor",
+        "stop",
+        "svg",
+        "switch",
+        "tbreak",
+        "text",
+        "textArea",
+        "title",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<list-of-strings>"
+      ]
+    },
+    {
+      "attribute": "role",
+      "elements": [
+        "a",
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "circle",
+        "defs",
+        "desc",
+        "discard",
+        "ellipse",
+        "font",
+        "font-face",
+        "font-face-src",
+        "font-face-uri",
+        "foreignObject",
+        "g",
+        "glyph",
+        "handler",
+        "hkern",
+        "image",
+        "line",
+        "linearGradient",
+        "listener",
+        "metadata",
+        "missing-glyph",
+        "mpath",
+        "path",
+        "polygon",
+        "polyline",
+        "prefetch",
+        "radialGradient",
+        "rect",
+        "script",
+        "set",
+        "solidColor",
+        "stop",
+        "svg",
+        "switch",
+        "tbreak",
+        "text",
+        "textArea",
+        "title",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<list-of-strings>"
+      ]
+    },
+    {
+      "attribute": "rotate",
+      "elements": [
+        "animateMotion"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "rotate",
+      "elements": [
+        "text"
+      ],
+      "type": "svg",
+      "value": [
+        "<list-of-numbers>"
+      ]
+    },
+    {
+      "attribute": "rx",
+      "elements": [
+        "ellipse",
+        "rect"
+      ],
+      "type": "svg",
+      "value": [
+        "<length>"
+      ]
+    },
+    {
+      "attribute": "ry",
+      "elements": [
+        "ellipse",
+        "rect"
+      ],
+      "type": "svg",
+      "value": [
+        "<length>"
+      ]
+    },
+    {
+      "attribute": "slope",
+      "elements": [
+        "font-face"
+      ],
+      "type": "svg",
+      "value": [
+        "<number>"
+      ]
+    },
+    {
+      "attribute": "snapshotTime",
+      "elements": [
+        "svg"
+      ],
+      "type": "svg",
+      "value": [
+        "\"none\"",
+        "<Clock-value>"
+      ]
+    },
+    {
+      "attribute": "stemh",
+      "elements": [
+        "font-face"
+      ],
+      "type": "svg",
+      "value": [
+        "<number>"
+      ]
+    },
+    {
+      "attribute": "stemv",
+      "elements": [
+        "font-face"
+      ],
+      "type": "svg",
+      "value": [
+        "<number>"
+      ]
+    },
+    {
+      "attribute": "strikethrough-position",
+      "elements": [
+        "font-face"
+      ],
+      "type": "svg",
+      "value": [
+        "<number>"
+      ]
+    },
+    {
+      "attribute": "strikethrough-thickness",
+      "elements": [
+        "font-face"
+      ],
+      "type": "svg",
+      "value": [
+        "<number>"
+      ]
+    },
+    {
+      "attribute": "syncBehavior",
+      "elements": [
+        "animation",
+        "audio",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "\"canSlip\"",
+        "\"locked\"",
+        "\"independent\"",
+        "\"default\""
+      ]
+    },
+    {
+      "attribute": "syncBehaviorDefault",
+      "elements": [
+        "svg"
+      ],
+      "type": "svg",
+      "value": [
+        "\"canSlip\"",
+        "\"locked\"",
+        "\"independent\"",
+        "\"inherit\""
+      ]
+    },
+    {
+      "attribute": "syncMaster",
+      "elements": [
+        "animation",
+        "audio",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<boolean>"
+      ]
+    },
+    {
+      "attribute": "syncTolerance",
+      "elements": [
+        "animation",
+        "audio",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<Clock-value>",
+        "\"default\""
+      ]
+    },
+    {
+      "attribute": "syncToleranceDefault",
+      "elements": [
+        "svg"
+      ],
+      "type": "svg",
+      "value": [
+        "<Clock-value>",
+        "\"inherit\""
+      ]
+    },
+    {
+      "attribute": "systemLanguage",
+      "elements": [
+        "a",
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "circle",
+        "desc",
+        "discard",
+        "ellipse",
+        "foreignObject",
+        "g",
+        "image",
+        "line",
+        "metadata",
+        "path",
+        "polygon",
+        "polyline",
+        "rect",
+        "set",
+        "switch",
+        "tbreak",
+        "text",
+        "textArea",
+        "title",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<list-of-language-ids>"
+      ]
+    },
+    {
+      "attribute": "target",
+      "elements": [
+        "a"
+      ],
+      "type": "svg",
+      "value": [
+        "\"_replace\"",
+        "\"_self\"",
+        "\"_parent\"",
+        "\"_top\"",
+        "\"_blank\"",
+        "<XML-Name>"
+      ]
+    },
+    {
+      "attribute": "target",
+      "elements": [
+        "listener"
+      ],
+      "type": "svg",
+      "value": [
+        "<IDREF>"
+      ]
+    },
+    {
+      "attribute": "timelineBegin",
+      "elements": [
+        "svg"
+      ],
+      "type": "svg",
+      "value": [
+        "\"onLoad\"",
+        "\"onStart\""
+      ]
+    },
+    {
+      "attribute": "to",
+      "elements": [
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "set"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "transform",
+      "elements": [
+        "a",
+        "animation",
+        "circle",
+        "ellipse",
+        "foreignObject",
+        "g",
+        "image",
+        "line",
+        "path",
+        "polygon",
+        "polyline",
+        "rect",
+        "switch",
+        "text",
+        "textArea",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<transform>",
+        "\"none\""
+      ]
+    },
+    {
+      "attribute": "transformBehavior",
+      "elements": [
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "\"geometric\"",
+        "\"pinned\"",
+        "\"pinned90\"",
+        "\"pinned180\"",
+        "\"pinned270\""
+      ]
+    },
+    {
+      "attribute": "type",
+      "elements": [
+        "handler",
+        "script"
+      ],
+      "type": "svg",
+      "value": [
+        "<content-type>"
+      ]
+    },
+    {
+      "attribute": "type",
+      "elements": [
+        "audio",
+        "image",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<content-type>"
+      ]
+    },
+    {
+      "attribute": "type",
+      "elements": [
+        "animateTransform"
+      ],
+      "type": "svg",
+      "value": [
+        "\"translate\"",
+        "\"scale\"",
+        "\"rotate\"",
+        "\"skewX\"",
+        "\"skewY\""
+      ]
+    },
+    {
+      "attribute": "typeof",
+      "elements": [
+        "a",
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "circle",
+        "defs",
+        "desc",
+        "discard",
+        "ellipse",
+        "font",
+        "font-face",
+        "font-face-src",
+        "font-face-uri",
+        "foreignObject",
+        "g",
+        "glyph",
+        "handler",
+        "hkern",
+        "image",
+        "line",
+        "linearGradient",
+        "listener",
+        "metadata",
+        "missing-glyph",
+        "mpath",
+        "path",
+        "polygon",
+        "polyline",
+        "prefetch",
+        "radialGradient",
+        "rect",
+        "script",
+        "set",
+        "solidColor",
+        "stop",
+        "svg",
+        "switch",
+        "tbreak",
+        "text",
+        "textArea",
+        "title",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<list-of-strings>"
+      ]
+    },
+    {
+      "attribute": "u1",
+      "elements": [
+        "hkern"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "u2",
+      "elements": [
+        "hkern"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "underline-position",
+      "elements": [
+        "font-face"
+      ],
+      "type": "svg",
+      "value": [
+        "<number>"
+      ]
+    },
+    {
+      "attribute": "underline-thickness",
+      "elements": [
+        "font-face"
+      ],
+      "type": "svg",
+      "value": [
+        "<number>"
+      ]
+    },
+    {
+      "attribute": "unicode",
+      "elements": [
+        "glyph"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "unicode-range",
+      "elements": [
+        "font-face"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "units-per-em",
+      "elements": [
+        "font-face"
+      ],
+      "type": "svg",
+      "value": [
+        "<number>"
+      ]
+    },
+    {
+      "attribute": "values",
+      "elements": [
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "version",
+      "elements": [
+        "svg"
+      ],
+      "type": "svg",
+      "value": [
+        "\"1.0\"",
+        "\"1.1\"",
+        "\"1.2\""
+      ]
+    },
+    {
+      "attribute": "viewBox",
+      "elements": [
+        "svg"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "width",
+      "elements": [
+        "animation",
+        "foreignObject",
+        "image",
+        "rect",
+        "svg",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<length>"
+      ]
+    },
+    {
+      "attribute": "width",
+      "elements": [
+        "textArea"
+      ],
+      "type": "svg",
+      "value": [
+        "<length>",
+        "\"auto\""
+      ]
+    },
+    {
+      "attribute": "widths",
+      "elements": [
+        "font-face"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "x",
+      "elements": [
+        "animation",
+        "foreignObject",
+        "image",
+        "rect",
+        "textArea",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<coordinate>"
+      ]
+    },
+    {
+      "attribute": "x-height",
+      "elements": [
+        "font-face"
+      ],
+      "type": "svg",
+      "value": [
+        "<number>"
+      ]
+    },
+    {
+      "attribute": "x1",
+      "elements": [
+        "line",
+        "linearGradient"
+      ],
+      "type": "svg",
+      "value": [
+        "<coordinate>"
+      ]
+    },
+    {
+      "attribute": "x2",
+      "elements": [
+        "line",
+        "linearGradient"
+      ],
+      "type": "svg",
+      "value": [
+        "<coordinate>"
+      ]
+    },
+    {
+      "attribute": "x",
+      "elements": [
+        "text"
+      ],
+      "type": "svg",
+      "value": [
+        "<list-of-coordinates>"
+      ]
+    },
+    {
+      "attribute": "xlink:actuate",
+      "elements": [
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "discard",
+        "font-face-uri",
+        "foreignObject",
+        "handler",
+        "image",
+        "mpath",
+        "prefetch",
+        "script",
+        "set",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "\"onLoad\""
+      ]
+    },
+    {
+      "attribute": "xlink:actuate",
+      "elements": [
+        "a"
+      ],
+      "type": "svg",
+      "value": [
+        "\"onRequest\""
+      ]
+    },
+    {
+      "attribute": "xlink:arcrole",
+      "elements": [
+        "a",
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "discard",
+        "font-face-uri",
+        "foreignObject",
+        "handler",
+        "image",
+        "mpath",
+        "prefetch",
+        "script",
+        "set",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<IRI>"
+      ]
+    },
+    {
+      "attribute": "xlink:href",
+      "elements": [
+        "a",
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "discard",
+        "font-face-uri",
+        "foreignObject",
+        "handler",
+        "image",
+        "mpath",
+        "prefetch",
+        "script",
+        "set",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<IRI>"
+      ]
+    },
+    {
+      "attribute": "xlink:role",
+      "elements": [
+        "a",
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "discard",
+        "font-face-uri",
+        "foreignObject",
+        "handler",
+        "image",
+        "mpath",
+        "prefetch",
+        "script",
+        "set",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<IRI>"
+      ]
+    },
+    {
+      "attribute": "xlink:show",
+      "elements": [
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "discard",
+        "font-face-uri",
+        "handler",
+        "mpath",
+        "prefetch",
+        "script",
+        "set"
+      ],
+      "type": "svg",
+      "value": [
+        "\"other\""
+      ]
+    },
+    {
+      "attribute": "xlink:show",
+      "elements": [
+        "animation",
+        "audio",
+        "foreignObject",
+        "image",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "\"embed\""
+      ]
+    },
+    {
+      "attribute": "xlink:show",
+      "elements": [
+        "a"
+      ],
+      "type": "svg",
+      "value": [
+        "\"new\"",
+        "\"replace\""
+      ]
+    },
+    {
+      "attribute": "xlink:title",
+      "elements": [
+        "a",
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "discard",
+        "font-face-uri",
+        "foreignObject",
+        "handler",
+        "image",
+        "mpath",
+        "prefetch",
+        "script",
+        "set",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<text>"
+      ]
+    },
+    {
+      "attribute": "xlink:type",
+      "elements": [
+        "a",
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "discard",
+        "font-face-uri",
+        "foreignObject",
+        "handler",
+        "image",
+        "mpath",
+        "prefetch",
+        "script",
+        "set",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "\"simple\""
+      ]
+    },
+    {
+      "attribute": "xml:base",
+      "elements": [
+        "a",
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "circle",
+        "defs",
+        "desc",
+        "discard",
+        "ellipse",
+        "font",
+        "font-face",
+        "font-face-src",
+        "font-face-uri",
+        "foreignObject",
+        "g",
+        "glyph",
+        "handler",
+        "hkern",
+        "image",
+        "line",
+        "linearGradient",
+        "listener",
+        "metadata",
+        "missing-glyph",
+        "mpath",
+        "path",
+        "polygon",
+        "polyline",
+        "prefetch",
+        "radialGradient",
+        "rect",
+        "script",
+        "set",
+        "solidColor",
+        "stop",
+        "svg",
+        "switch",
+        "tbreak",
+        "text",
+        "textArea",
+        "title",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<IRI>"
+      ]
+    },
+    {
+      "attribute": "xml:id",
+      "elements": [
+        "a",
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "circle",
+        "defs",
+        "desc",
+        "discard",
+        "ellipse",
+        "font",
+        "font-face",
+        "font-face-src",
+        "font-face-uri",
+        "foreignObject",
+        "g",
+        "glyph",
+        "handler",
+        "hkern",
+        "image",
+        "line",
+        "linearGradient",
+        "listener",
+        "metadata",
+        "missing-glyph",
+        "mpath",
+        "path",
+        "polygon",
+        "polyline",
+        "prefetch",
+        "radialGradient",
+        "rect",
+        "script",
+        "set",
+        "solidColor",
+        "stop",
+        "svg",
+        "switch",
+        "tbreak",
+        "text",
+        "textArea",
+        "title",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<NCName>"
+      ]
+    },
+    {
+      "attribute": "xml:lang",
+      "elements": [
+        "a",
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "circle",
+        "defs",
+        "desc",
+        "discard",
+        "ellipse",
+        "font",
+        "font-face",
+        "font-face-src",
+        "font-face-uri",
+        "foreignObject",
+        "g",
+        "glyph",
+        "handler",
+        "hkern",
+        "image",
+        "line",
+        "linearGradient",
+        "listener",
+        "metadata",
+        "missing-glyph",
+        "mpath",
+        "path",
+        "polygon",
+        "polyline",
+        "prefetch",
+        "radialGradient",
+        "rect",
+        "script",
+        "set",
+        "solidColor",
+        "stop",
+        "svg",
+        "switch",
+        "tbreak",
+        "text",
+        "textArea",
+        "title",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<language-id>"
+      ]
+    },
+    {
+      "attribute": "xml:space",
+      "elements": [
+        "a",
+        "animate",
+        "animateColor",
+        "animateMotion",
+        "animateTransform",
+        "animation",
+        "audio",
+        "circle",
+        "defs",
+        "desc",
+        "discard",
+        "ellipse",
+        "font",
+        "font-face",
+        "font-face-src",
+        "font-face-uri",
+        "foreignObject",
+        "g",
+        "glyph",
+        "hkern",
+        "image",
+        "line",
+        "linearGradient",
+        "listener",
+        "metadata",
+        "missing-glyph",
+        "mpath",
+        "path",
+        "polygon",
+        "polyline",
+        "prefetch",
+        "radialGradient",
+        "rect",
+        "set",
+        "solidColor",
+        "stop",
+        "svg",
+        "switch",
+        "tbreak",
+        "text",
+        "textArea",
+        "title",
+        "tspan",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "\"default\"",
+        "\"preserve\""
+      ]
+    },
+    {
+      "attribute": "xml:space",
+      "elements": [
+        "handler",
+        "script"
+      ],
+      "type": "svg",
+      "value": [
+        "\"preserve\""
+      ]
+    },
+    {
+      "attribute": "y",
+      "elements": [
+        "animation",
+        "foreignObject",
+        "image",
+        "rect",
+        "textArea",
+        "use",
+        "video"
+      ],
+      "type": "svg",
+      "value": [
+        "<coordinate>"
+      ]
+    },
+    {
+      "attribute": "y1",
+      "elements": [
+        "line",
+        "linearGradient"
+      ],
+      "type": "svg",
+      "value": [
+        "<coordinate>"
+      ]
+    },
+    {
+      "attribute": "y2",
+      "elements": [
+        "line",
+        "linearGradient"
+      ],
+      "type": "svg",
+      "value": [
+        "<coordinate>"
+      ]
+    },
+    {
+      "attribute": "y",
+      "elements": [
+        "text"
+      ],
+      "type": "svg",
+      "value": [
+        "<list-of-coordinates>"
+      ]
+    },
+    {
+      "attribute": "zoomAndPan",
+      "elements": [
+        "svg"
+      ],
+      "type": "svg",
+      "value": [
+        "\"disable\"",
+        "\"magnify\""
+      ]
+    }
+  ],
   "svgElements": [
     {
-      "tag": "animate",
       "attributes": [
         "accumulate",
         "additive",
@@ -96,10 +3155,10 @@
         "values",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "animate"
     },
     {
-      "tag": "set",
       "attributes": [
         "attributeName",
         "autofocus",
@@ -186,10 +3245,10 @@
         "to",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "set"
     },
     {
-      "tag": "animateMotion",
       "attributes": [
         "accumulate",
         "additive",
@@ -287,10 +3346,10 @@
         "values",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "animateMotion"
     },
     {
-      "tag": "mpath",
       "attributes": [
         "autofocus",
         "class",
@@ -361,10 +3420,10 @@
         "tabindex",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "mpath"
     },
     {
-      "tag": "animateTransform",
       "attributes": [
         "accumulate",
         "additive",
@@ -460,10 +3519,10 @@
         "values",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "animateTransform"
     },
     {
-      "tag": "clipPath",
       "attributes": [
         "class",
         "externalResourcesRequired",
@@ -477,10 +3536,10 @@
         "xml:lang",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "clipPath"
     },
     {
-      "tag": "mask",
       "attributes": [
         "class",
         "id",
@@ -492,10 +3551,10 @@
         "xml:lang",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "mask"
     },
     {
-      "tag": "image",
       "attributes": [
         "autofocus",
         "class",
@@ -577,10 +3636,10 @@
         "xml:space",
         "y"
       ],
-      "children": []
+      "children": [],
+      "tag": "image"
     },
     {
-      "tag": "foreignObject",
       "attributes": [
         "autofocus",
         "class",
@@ -657,10 +3716,10 @@
         "xml:space",
         "y"
       ],
-      "children": []
+      "children": [],
+      "tag": "foreignObject"
     },
     {
-      "tag": "filter",
       "attributes": [
         "class",
         "externalResourcesRequired",
@@ -670,10 +3729,10 @@
         "xml:lang",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "filter"
     },
     {
-      "tag": "feBlend",
       "attributes": [
         "class",
         "id",
@@ -682,10 +3741,10 @@
         "xml:lang",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "feBlend"
     },
     {
-      "tag": "feColorMatrix",
       "attributes": [
         "class",
         "id",
@@ -694,10 +3753,10 @@
         "xml:lang",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "feColorMatrix"
     },
     {
-      "tag": "feComponentTransfer",
       "attributes": [
         "class",
         "id",
@@ -706,62 +3765,50 @@
         "xml:lang",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "feComponentTransfer"
     },
     {
-      "tag": "feFuncR",
       "attributes": [
         "id",
         "xml:base",
         "xml:lang",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "feFuncR"
     },
     {
-      "tag": "feFuncG",
       "attributes": [
         "id",
         "xml:base",
         "xml:lang",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "feFuncG"
     },
     {
-      "tag": "feFuncB",
       "attributes": [
         "id",
         "xml:base",
         "xml:lang",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "feFuncB"
     },
     {
-      "tag": "feFuncA",
       "attributes": [
         "id",
         "xml:base",
         "xml:lang",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "feFuncA"
     },
     {
-      "tag": "feComposite",
-      "attributes": [
-        "class",
-        "id",
-        "style",
-        "xml:base",
-        "xml:lang",
-        "xml:space"
-      ],
-      "children": []
-    },
-    {
-      "tag": "feConvolveMatrix",
       "attributes": [
         "class",
         "id",
@@ -770,10 +3817,10 @@
         "xml:lang",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "feComposite"
     },
     {
-      "tag": "feDiffuseLighting",
       "attributes": [
         "class",
         "id",
@@ -782,10 +3829,10 @@
         "xml:lang",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "feConvolveMatrix"
     },
     {
-      "tag": "feDisplacementMap",
       "attributes": [
         "class",
         "id",
@@ -794,10 +3841,10 @@
         "xml:lang",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "feDiffuseLighting"
     },
     {
-      "tag": "feDropShadow",
       "attributes": [
         "class",
         "id",
@@ -806,10 +3853,10 @@
         "xml:lang",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "feDisplacementMap"
     },
     {
-      "tag": "feFlood",
       "attributes": [
         "class",
         "id",
@@ -818,10 +3865,10 @@
         "xml:lang",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "feDropShadow"
     },
     {
-      "tag": "feGaussianBlur",
       "attributes": [
         "class",
         "id",
@@ -830,10 +3877,22 @@
         "xml:lang",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "feFlood"
     },
     {
-      "tag": "feImage",
+      "attributes": [
+        "class",
+        "id",
+        "style",
+        "xml:base",
+        "xml:lang",
+        "xml:space"
+      ],
+      "children": [],
+      "tag": "feGaussianBlur"
+    },
+    {
       "attributes": [
         "class",
         "externalResourcesRequired",
@@ -843,10 +3902,10 @@
         "xml:lang",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "feImage"
     },
     {
-      "tag": "feMerge",
       "attributes": [
         "class",
         "id",
@@ -855,32 +3914,20 @@
         "xml:lang",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "feMerge"
     },
     {
-      "tag": "feMergeNode",
       "attributes": [
         "id",
         "xml:base",
         "xml:lang",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "feMergeNode"
     },
     {
-      "tag": "feMorphology",
-      "attributes": [
-        "class",
-        "id",
-        "style",
-        "xml:base",
-        "xml:lang",
-        "xml:space"
-      ],
-      "children": []
-    },
-    {
-      "tag": "feOffset",
       "attributes": [
         "class",
         "id",
@@ -889,10 +3936,10 @@
         "xml:lang",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "feMorphology"
     },
     {
-      "tag": "feSpecularLighting",
       "attributes": [
         "class",
         "id",
@@ -901,10 +3948,10 @@
         "xml:lang",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "feOffset"
     },
     {
-      "tag": "feTile",
       "attributes": [
         "class",
         "id",
@@ -913,10 +3960,10 @@
         "xml:lang",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "feSpecularLighting"
     },
     {
-      "tag": "feTurbulence",
       "attributes": [
         "class",
         "id",
@@ -925,40 +3972,52 @@
         "xml:lang",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "feTile"
     },
     {
-      "tag": "feDistantLight",
+      "attributes": [
+        "class",
+        "id",
+        "style",
+        "xml:base",
+        "xml:lang",
+        "xml:space"
+      ],
+      "children": [],
+      "tag": "feTurbulence"
+    },
+    {
       "attributes": [
         "id",
         "xml:base",
         "xml:lang",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "feDistantLight"
     },
     {
-      "tag": "fePointLight",
       "attributes": [
         "id",
         "xml:base",
         "xml:lang",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "fePointLight"
     },
     {
-      "tag": "feSpotLight",
       "attributes": [
         "id",
         "xml:base",
         "xml:lang",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "feSpotLight"
     },
     {
-      "tag": "script",
       "attributes": [
         "autofocus",
         "class",
@@ -1033,10 +4092,10 @@
         "xlink:title",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "script"
     },
     {
-      "tag": "a",
       "attributes": [
         "autofocus",
         "class",
@@ -1119,10 +4178,10 @@
         "xlink:title",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "a"
     },
     {
-      "tag": "view",
       "attributes": [
         "autofocus",
         "class",
@@ -1195,10 +4254,10 @@
         "viewBox",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "view"
     },
     {
-      "tag": "linearGradient",
       "attributes": [
         "autofocus",
         "class",
@@ -1278,10 +4337,10 @@
         "y1",
         "y2"
       ],
-      "children": []
+      "children": [],
+      "tag": "linearGradient"
     },
     {
-      "tag": "radialGradient",
       "attributes": [
         "autofocus",
         "class",
@@ -1363,10 +4422,10 @@
         "xlink:title",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "radialGradient"
     },
     {
-      "tag": "stop",
       "attributes": [
         "autofocus",
         "class",
@@ -1437,10 +4496,10 @@
         "tabindex",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "stop"
     },
     {
-      "tag": "pattern",
       "attributes": [
         "autofocus",
         "class",
@@ -1522,10 +4581,10 @@
         "xml:space",
         "y"
       ],
-      "children": []
+      "children": [],
+      "tag": "pattern"
     },
     {
-      "tag": "marker",
       "attributes": [
         "autofocus",
         "class",
@@ -1603,10 +4662,10 @@
         "viewBox",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "marker"
     },
     {
-      "tag": "path",
       "attributes": [
         "autofocus",
         "class",
@@ -1681,10 +4740,10 @@
         "tabindex",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "path"
     },
     {
-      "tag": "rect",
       "attributes": [
         "autofocus",
         "class",
@@ -1764,10 +4823,10 @@
         "xml:space",
         "y"
       ],
-      "children": []
+      "children": [],
+      "tag": "rect"
     },
     {
-      "tag": "circle",
       "attributes": [
         "autofocus",
         "class",
@@ -1844,10 +4903,10 @@
         "tabindex",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "circle"
     },
     {
-      "tag": "ellipse",
       "attributes": [
         "autofocus",
         "class",
@@ -1925,10 +4984,10 @@
         "tabindex",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "ellipse"
     },
     {
-      "tag": "line",
       "attributes": [
         "autofocus",
         "class",
@@ -2006,10 +5065,10 @@
         "y1",
         "y2"
       ],
-      "children": []
+      "children": [],
+      "tag": "line"
     },
     {
-      "tag": "polyline",
       "attributes": [
         "autofocus",
         "class",
@@ -2084,10 +5143,10 @@
         "tabindex",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "polyline"
     },
     {
-      "tag": "polygon",
       "attributes": [
         "autofocus",
         "class",
@@ -2162,10 +5221,10 @@
         "tabindex",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "polygon"
     },
     {
-      "tag": "svg",
       "attributes": [
         "autofocus",
         "class",
@@ -2247,10 +5306,10 @@
         "xml:space",
         "y"
       ],
-      "children": []
+      "children": [],
+      "tag": "svg"
     },
     {
-      "tag": "g",
       "attributes": [
         "autofocus",
         "class",
@@ -2323,10 +5382,10 @@
         "tabindex",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "g"
     },
     {
-      "tag": "defs",
       "attributes": [
         "autofocus",
         "class",
@@ -2396,10 +5455,10 @@
         "tabindex",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "defs"
     },
     {
-      "tag": "symbol",
       "attributes": [
         "autofocus",
         "class",
@@ -2478,10 +5537,10 @@
         "xml:space",
         "y"
       ],
-      "children": []
+      "children": [],
+      "tag": "symbol"
     },
     {
-      "tag": "use",
       "attributes": [
         "autofocus",
         "class",
@@ -2561,10 +5620,10 @@
         "xml:space",
         "y"
       ],
-      "children": []
+      "children": [],
+      "tag": "use"
     },
     {
-      "tag": "switch",
       "attributes": [
         "autofocus",
         "class",
@@ -2637,10 +5696,10 @@
         "tabindex",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "switch"
     },
     {
-      "tag": "title",
       "attributes": [
         "autofocus",
         "class",
@@ -2710,10 +5769,10 @@
         "tabindex",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "title"
     },
     {
-      "tag": "desc",
       "attributes": [
         "autofocus",
         "class",
@@ -2783,10 +5842,10 @@
         "tabindex",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "desc"
     },
     {
-      "tag": "metadata",
       "attributes": [
         "autofocus",
         "class",
@@ -2856,10 +5915,10 @@
         "tabindex",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "metadata"
     },
     {
-      "tag": "style",
       "attributes": [
         "autofocus",
         "class",
@@ -2932,10 +5991,10 @@
         "type",
         "xml:space"
       ],
-      "children": []
+      "children": [],
+      "tag": "style"
     },
     {
-      "tag": "text",
       "attributes": [
         "autofocus",
         "class",
@@ -3015,10 +6074,10 @@
         "xml:space",
         "y"
       ],
-      "children": []
+      "children": [],
+      "tag": "text"
     },
     {
-      "tag": "tspan",
       "attributes": [
         "autofocus",
         "class",
@@ -3098,10 +6157,10 @@
         "xml:space",
         "y"
       ],
-      "children": []
+      "children": [],
+      "tag": "tspan"
     },
     {
-      "tag": "textPath",
       "attributes": [
         "autofocus",
         "class",
@@ -3184,3067 +6243,8 @@
         "xlink:title",
         "xml:space"
       ],
-      "children": []
-    }
-  ],
-  "svgAttributes": [
-    {
-      "attribute": "about",
-      "value": [
-        "<list-of-strings>"
-      ],
-      "elements": [
-        "a",
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "circle",
-        "defs",
-        "desc",
-        "discard",
-        "ellipse",
-        "font",
-        "font-face",
-        "font-face-src",
-        "font-face-uri",
-        "foreignObject",
-        "g",
-        "glyph",
-        "handler",
-        "hkern",
-        "image",
-        "line",
-        "linearGradient",
-        "listener",
-        "metadata",
-        "missing-glyph",
-        "mpath",
-        "path",
-        "polygon",
-        "polyline",
-        "prefetch",
-        "radialGradient",
-        "rect",
-        "script",
-        "set",
-        "solidColor",
-        "stop",
-        "svg",
-        "switch",
-        "tbreak",
-        "text",
-        "textArea",
-        "title",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "accent-height",
-      "value": [
-        "<number>"
-      ],
-      "elements": [
-        "font-face"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "accumulate",
-      "value": [
-        "\"none\"",
-        "\"sum\""
-      ],
-      "elements": [
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "additive",
-      "value": [
-        "\"replace\"",
-        "\"sum\""
-      ],
-      "elements": [
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "alphabetic",
-      "value": [
-        "<number>"
-      ],
-      "elements": [
-        "font-face"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "arabic-form",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "glyph"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "ascent",
-      "value": [
-        "<number>"
-      ],
-      "elements": [
-        "font-face"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "attributeName",
-      "value": [
-        "<QName>"
-      ],
-      "elements": [
-        "animate",
-        "animateColor",
-        "animateTransform",
-        "set"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "attributeType",
-      "value": [
-        "\"XML\"",
-        "\"CSS\"",
-        "\"auto\""
-      ],
-      "elements": [
-        "animate",
-        "animateColor",
-        "animateTransform",
-        "set"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "bandwidth",
-      "value": [
-        "<number>",
-        "\"auto\""
-      ],
-      "elements": [
-        "prefetch"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "baseProfile",
-      "value": [
-        "\"none\"",
-        "\"tiny\"",
-        "\"basic\"",
-        "\"full\""
-      ],
-      "elements": [
-        "svg"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "bbox",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "font-face"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "begin",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "discard",
-        "set",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "by",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "calcMode",
-      "value": [
-        "\"discrete\"",
-        "\"linear\"",
-        "\"paced\"",
-        "\"spline\""
-      ],
-      "elements": [
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "cap-height",
-      "value": [
-        "<number>"
-      ],
-      "elements": [
-        "font-face"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "class",
-      "value": [
-        "<XML-NMTOKENS>"
-      ],
-      "elements": [
-        "a",
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "circle",
-        "defs",
-        "desc",
-        "discard",
-        "ellipse",
-        "font",
-        "font-face",
-        "font-face-src",
-        "font-face-uri",
-        "foreignObject",
-        "g",
-        "glyph",
-        "handler",
-        "hkern",
-        "image",
-        "line",
-        "linearGradient",
-        "listener",
-        "metadata",
-        "missing-glyph",
-        "mpath",
-        "path",
-        "polygon",
-        "polyline",
-        "prefetch",
-        "radialGradient",
-        "rect",
-        "script",
-        "set",
-        "solidColor",
-        "stop",
-        "svg",
-        "switch",
-        "tbreak",
-        "text",
-        "textArea",
-        "title",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "content",
-      "value": [
-        "<string>"
-      ],
-      "elements": [
-        "a",
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "circle",
-        "defs",
-        "desc",
-        "discard",
-        "ellipse",
-        "font",
-        "font-face",
-        "font-face-src",
-        "font-face-uri",
-        "foreignObject",
-        "g",
-        "glyph",
-        "handler",
-        "hkern",
-        "image",
-        "line",
-        "linearGradient",
-        "listener",
-        "metadata",
-        "missing-glyph",
-        "mpath",
-        "path",
-        "polygon",
-        "polyline",
-        "prefetch",
-        "radialGradient",
-        "rect",
-        "script",
-        "set",
-        "solidColor",
-        "stop",
-        "svg",
-        "switch",
-        "tbreak",
-        "text",
-        "textArea",
-        "title",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "contentScriptType",
-      "value": [
-        "<content-type>"
-      ],
-      "elements": [
-        "svg"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "cx",
-      "value": [
-        "<coordinate>"
-      ],
-      "elements": [
-        "circle",
-        "ellipse",
-        "radialGradient"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "cy",
-      "value": [
-        "<coordinate>"
-      ],
-      "elements": [
-        "circle",
-        "ellipse",
-        "radialGradient"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "d",
-      "value": [
-        "<path-data>"
-      ],
-      "elements": [
-        "glyph",
-        "missing-glyph",
-        "path"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "datatype",
-      "value": [
-        "<string>"
-      ],
-      "elements": [
-        "a",
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "circle",
-        "defs",
-        "desc",
-        "discard",
-        "ellipse",
-        "font",
-        "font-face",
-        "font-face-src",
-        "font-face-uri",
-        "foreignObject",
-        "g",
-        "glyph",
-        "handler",
-        "hkern",
-        "image",
-        "line",
-        "linearGradient",
-        "listener",
-        "metadata",
-        "missing-glyph",
-        "mpath",
-        "path",
-        "polygon",
-        "polyline",
-        "prefetch",
-        "radialGradient",
-        "rect",
-        "script",
-        "set",
-        "solidColor",
-        "stop",
-        "svg",
-        "switch",
-        "tbreak",
-        "text",
-        "textArea",
-        "title",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "defaultAction",
-      "value": [
-        "\"perform\"",
-        "\"cancel\""
-      ],
-      "elements": [
-        "listener"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "descent",
-      "value": [
-        "<number>"
-      ],
-      "elements": [
-        "font-face"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "dur",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "set",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "editable",
-      "value": [
-        "\"none\"",
-        "\"simple\""
-      ],
-      "elements": [
-        "text",
-        "textArea"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "end",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "set",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "ev:event",
-      "value": [
-        "<XML-NMTOKEN>"
-      ],
-      "elements": [
-        "handler"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "event",
-      "value": [
-        "<XML-NMTOKEN>"
-      ],
-      "elements": [
-        "listener"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "externalResourcesRequired",
-      "value": [
-        "<boolean>"
-      ],
-      "elements": [
-        "a",
-        "animation",
-        "audio",
-        "font",
-        "font-face",
-        "font-face-uri",
-        "foreignObject",
-        "g",
-        "handler",
-        "image",
-        "script",
-        "svg",
-        "switch",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "fill",
-      "value": [
-        "\"remove\"",
-        "\"freeze\""
-      ],
-      "elements": [
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "set",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "focusHighlight",
-      "value": [
-        "\"auto\"",
-        "\"none\""
-      ],
-      "elements": [
-        "a",
-        "animation",
-        "circle",
-        "ellipse",
-        "foreignObject",
-        "g",
-        "image",
-        "line",
-        "path",
-        "polygon",
-        "polyline",
-        "rect",
-        "svg",
-        "switch",
-        "text",
-        "textArea",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "focusable",
-      "value": [
-        "\"auto\"",
-        "<boolean>"
-      ],
-      "elements": [
-        "a",
-        "animation",
-        "circle",
-        "ellipse",
-        "foreignObject",
-        "g",
-        "image",
-        "line",
-        "path",
-        "polygon",
-        "polyline",
-        "rect",
-        "svg",
-        "switch",
-        "text",
-        "textArea",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "font-family",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "font-face"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "font-stretch",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "font-face"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "font-style",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "font-face"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "font-variant",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "font-face"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "font-weight",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "font-face"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "from",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "g1",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "hkern"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "g2",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "hkern"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "glyph-name",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "glyph"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "gradientUnits",
-      "value": [
-        "\"userSpaceOnUse\"",
-        "\"objectBoundingBox\""
-      ],
-      "elements": [
-        "linearGradient",
-        "radialGradient"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "handler",
-      "value": [
-        "<IRI>"
-      ],
-      "elements": [
-        "listener"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "hanging",
-      "value": [
-        "<number>"
-      ],
-      "elements": [
-        "font-face"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "height",
-      "value": [
-        "<length>"
-      ],
-      "elements": [
-        "animation",
-        "foreignObject",
-        "image",
-        "rect",
-        "svg",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "height",
-      "value": [
-        "<length>",
-        "\"auto\""
-      ],
-      "elements": [
-        "textArea"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "horiz-adv-x",
-      "value": [
-        "<number>"
-      ],
-      "elements": [
-        "font",
-        "glyph",
-        "missing-glyph"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "horiz-origin-x",
-      "value": [
-        "<number>"
-      ],
-      "elements": [
-        "font"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "id",
-      "value": [
-        "<ID>",
-        "<NCName>"
-      ],
-      "elements": [
-        "a",
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "circle",
-        "defs",
-        "desc",
-        "discard",
-        "ellipse",
-        "font",
-        "font-face",
-        "font-face-src",
-        "font-face-uri",
-        "foreignObject",
-        "g",
-        "glyph",
-        "handler",
-        "hkern",
-        "image",
-        "line",
-        "linearGradient",
-        "listener",
-        "metadata",
-        "missing-glyph",
-        "mpath",
-        "path",
-        "polygon",
-        "polyline",
-        "prefetch",
-        "radialGradient",
-        "rect",
-        "script",
-        "set",
-        "solidColor",
-        "stop",
-        "svg",
-        "switch",
-        "tbreak",
-        "text",
-        "textArea",
-        "title",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "ideographic",
-      "value": [
-        "<number>"
-      ],
-      "elements": [
-        "font-face"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "initialVisibility",
-      "value": [
-        "\"whenStarted\"",
-        "\"always\""
-      ],
-      "elements": [
-        "animation",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "k",
-      "value": [
-        "<number>"
-      ],
-      "elements": [
-        "hkern"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "keyPoints",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "animateMotion"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "keySplines",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "keyTimes",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "lang",
-      "value": [
-        "<list-of-language-ids>"
-      ],
-      "elements": [
-        "glyph"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "mathematical",
-      "value": [
-        "<number>"
-      ],
-      "elements": [
-        "font-face"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "max",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "set",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "mediaCharacterEncoding",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "prefetch"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "mediaContentEncodings",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "prefetch"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "mediaSize",
-      "value": [
-        "<number>"
-      ],
-      "elements": [
-        "prefetch"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "mediaTime",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "prefetch"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "min",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "set",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "nav-down",
-      "value": [
-        "<focus>"
-      ],
-      "elements": [
-        "a",
-        "animation",
-        "circle",
-        "ellipse",
-        "foreignObject",
-        "g",
-        "image",
-        "line",
-        "path",
-        "polygon",
-        "polyline",
-        "rect",
-        "svg",
-        "switch",
-        "text",
-        "textArea",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "nav-down-left",
-      "value": [
-        "<focus>"
-      ],
-      "elements": [
-        "a",
-        "animation",
-        "circle",
-        "ellipse",
-        "foreignObject",
-        "g",
-        "image",
-        "line",
-        "path",
-        "polygon",
-        "polyline",
-        "rect",
-        "svg",
-        "switch",
-        "text",
-        "textArea",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "nav-down-right",
-      "value": [
-        "<focus>"
-      ],
-      "elements": [
-        "a",
-        "animation",
-        "circle",
-        "ellipse",
-        "foreignObject",
-        "g",
-        "image",
-        "line",
-        "path",
-        "polygon",
-        "polyline",
-        "rect",
-        "svg",
-        "switch",
-        "text",
-        "textArea",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "nav-left",
-      "value": [
-        "<focus>"
-      ],
-      "elements": [
-        "a",
-        "animation",
-        "circle",
-        "ellipse",
-        "foreignObject",
-        "g",
-        "image",
-        "line",
-        "path",
-        "polygon",
-        "polyline",
-        "rect",
-        "svg",
-        "switch",
-        "text",
-        "textArea",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "nav-next",
-      "value": [
-        "<focus>"
-      ],
-      "elements": [
-        "a",
-        "animation",
-        "circle",
-        "ellipse",
-        "foreignObject",
-        "g",
-        "image",
-        "line",
-        "path",
-        "polygon",
-        "polyline",
-        "rect",
-        "svg",
-        "switch",
-        "text",
-        "textArea",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "nav-prev",
-      "value": [
-        "<focus>"
-      ],
-      "elements": [
-        "a",
-        "animation",
-        "circle",
-        "ellipse",
-        "foreignObject",
-        "g",
-        "image",
-        "line",
-        "path",
-        "polygon",
-        "polyline",
-        "rect",
-        "svg",
-        "switch",
-        "text",
-        "textArea",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "nav-right",
-      "value": [
-        "<focus>"
-      ],
-      "elements": [
-        "a",
-        "animation",
-        "circle",
-        "ellipse",
-        "foreignObject",
-        "g",
-        "image",
-        "line",
-        "path",
-        "polygon",
-        "polyline",
-        "rect",
-        "svg",
-        "switch",
-        "text",
-        "textArea",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "nav-up",
-      "value": [
-        "<focus>"
-      ],
-      "elements": [
-        "a",
-        "animation",
-        "circle",
-        "ellipse",
-        "foreignObject",
-        "g",
-        "image",
-        "line",
-        "path",
-        "polygon",
-        "polyline",
-        "rect",
-        "svg",
-        "switch",
-        "text",
-        "textArea",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "nav-up-left",
-      "value": [
-        "<focus>"
-      ],
-      "elements": [
-        "a",
-        "animation",
-        "circle",
-        "ellipse",
-        "foreignObject",
-        "g",
-        "image",
-        "line",
-        "path",
-        "polygon",
-        "polyline",
-        "rect",
-        "svg",
-        "switch",
-        "text",
-        "textArea",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "nav-up-right",
-      "value": [
-        "<focus>"
-      ],
-      "elements": [
-        "a",
-        "animation",
-        "circle",
-        "ellipse",
-        "foreignObject",
-        "g",
-        "image",
-        "line",
-        "path",
-        "polygon",
-        "polyline",
-        "rect",
-        "svg",
-        "switch",
-        "text",
-        "textArea",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "observer",
-      "value": [
-        "<IDREF>"
-      ],
-      "elements": [
-        "listener"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "offset",
-      "value": [
-        "<number>"
-      ],
-      "elements": [
-        "stop"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "origin",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "animateMotion"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "overlay",
-      "value": [
-        "\"none\"",
-        "\"top\""
-      ],
-      "elements": [
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "overline-position",
-      "value": [
-        "<number>"
-      ],
-      "elements": [
-        "font-face"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "overline-thickness",
-      "value": [
-        "<number>"
-      ],
-      "elements": [
-        "font-face"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "panose-1",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "font-face"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "path",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "animateMotion"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "pathLength",
-      "value": [
-        "<number>"
-      ],
-      "elements": [
-        "path"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "phase",
-      "value": [
-        "\"default\"",
-        "\"capture\""
-      ],
-      "elements": [
-        "listener"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "playbackOrder",
-      "value": [
-        "\"all\"",
-        "\"forwardOnly\""
-      ],
-      "elements": [
-        "svg"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "points",
-      "value": [
-        "<points-data>"
-      ],
-      "elements": [
-        "polygon",
-        "polyline"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "preserveAspectRatio",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "animation",
-        "image",
-        "svg",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "propagate",
-      "value": [
-        "\"continue\"",
-        "\"stop\""
-      ],
-      "elements": [
-        "listener"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "property",
-      "value": [
-        "<list-of-strings>"
-      ],
-      "elements": [
-        "a",
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "circle",
-        "defs",
-        "desc",
-        "discard",
-        "ellipse",
-        "font",
-        "font-face",
-        "font-face-src",
-        "font-face-uri",
-        "foreignObject",
-        "g",
-        "glyph",
-        "handler",
-        "hkern",
-        "image",
-        "line",
-        "linearGradient",
-        "listener",
-        "metadata",
-        "missing-glyph",
-        "mpath",
-        "path",
-        "polygon",
-        "polyline",
-        "prefetch",
-        "radialGradient",
-        "rect",
-        "script",
-        "set",
-        "solidColor",
-        "stop",
-        "svg",
-        "switch",
-        "tbreak",
-        "text",
-        "textArea",
-        "title",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "r",
-      "value": [
-        "<length>"
-      ],
-      "elements": [
-        "circle",
-        "radialGradient"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "rel",
-      "value": [
-        "<list-of-strings>"
-      ],
-      "elements": [
-        "a",
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "circle",
-        "defs",
-        "desc",
-        "discard",
-        "ellipse",
-        "font",
-        "font-face",
-        "font-face-src",
-        "font-face-uri",
-        "foreignObject",
-        "g",
-        "glyph",
-        "handler",
-        "hkern",
-        "image",
-        "line",
-        "linearGradient",
-        "listener",
-        "metadata",
-        "missing-glyph",
-        "mpath",
-        "path",
-        "polygon",
-        "polyline",
-        "prefetch",
-        "radialGradient",
-        "rect",
-        "script",
-        "set",
-        "solidColor",
-        "stop",
-        "svg",
-        "switch",
-        "tbreak",
-        "text",
-        "textArea",
-        "title",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "repeatCount",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "set",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "repeatDur",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "set",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "requiredExtensions",
-      "value": [
-        "<list-of-IRIs>"
-      ],
-      "elements": [
-        "a",
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "circle",
-        "desc",
-        "discard",
-        "ellipse",
-        "foreignObject",
-        "g",
-        "image",
-        "line",
-        "metadata",
-        "path",
-        "polygon",
-        "polyline",
-        "rect",
-        "set",
-        "switch",
-        "tbreak",
-        "text",
-        "textArea",
-        "title",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "requiredFeatures",
-      "value": [
-        "<list-of-IRIs>"
-      ],
-      "elements": [
-        "a",
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "circle",
-        "desc",
-        "discard",
-        "ellipse",
-        "foreignObject",
-        "g",
-        "image",
-        "line",
-        "metadata",
-        "path",
-        "polygon",
-        "polyline",
-        "rect",
-        "set",
-        "switch",
-        "tbreak",
-        "text",
-        "textArea",
-        "title",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "requiredFonts",
-      "value": [
-        "<list-of-family-names>"
-      ],
-      "elements": [
-        "a",
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "circle",
-        "desc",
-        "discard",
-        "ellipse",
-        "foreignObject",
-        "g",
-        "image",
-        "line",
-        "metadata",
-        "path",
-        "polygon",
-        "polyline",
-        "rect",
-        "set",
-        "switch",
-        "tbreak",
-        "text",
-        "textArea",
-        "title",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "requiredFormats",
-      "value": [
-        "<list-of-content-types>"
-      ],
-      "elements": [
-        "a",
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "circle",
-        "desc",
-        "discard",
-        "ellipse",
-        "foreignObject",
-        "g",
-        "image",
-        "line",
-        "metadata",
-        "path",
-        "polygon",
-        "polyline",
-        "rect",
-        "set",
-        "switch",
-        "tbreak",
-        "text",
-        "textArea",
-        "title",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "resource",
-      "value": [
-        "<string>"
-      ],
-      "elements": [
-        "a",
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "circle",
-        "defs",
-        "desc",
-        "discard",
-        "ellipse",
-        "font",
-        "font-face",
-        "font-face-src",
-        "font-face-uri",
-        "foreignObject",
-        "g",
-        "glyph",
-        "handler",
-        "hkern",
-        "image",
-        "line",
-        "linearGradient",
-        "listener",
-        "metadata",
-        "missing-glyph",
-        "mpath",
-        "path",
-        "polygon",
-        "polyline",
-        "prefetch",
-        "radialGradient",
-        "rect",
-        "script",
-        "set",
-        "solidColor",
-        "stop",
-        "svg",
-        "switch",
-        "tbreak",
-        "text",
-        "textArea",
-        "title",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "restart",
-      "value": [
-        "\"always\"",
-        "\"never\"",
-        "\"whenNotActive\""
-      ],
-      "elements": [
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "set",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "rev",
-      "value": [
-        "<list-of-strings>"
-      ],
-      "elements": [
-        "a",
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "circle",
-        "defs",
-        "desc",
-        "discard",
-        "ellipse",
-        "font",
-        "font-face",
-        "font-face-src",
-        "font-face-uri",
-        "foreignObject",
-        "g",
-        "glyph",
-        "handler",
-        "hkern",
-        "image",
-        "line",
-        "linearGradient",
-        "listener",
-        "metadata",
-        "missing-glyph",
-        "mpath",
-        "path",
-        "polygon",
-        "polyline",
-        "prefetch",
-        "radialGradient",
-        "rect",
-        "script",
-        "set",
-        "solidColor",
-        "stop",
-        "svg",
-        "switch",
-        "tbreak",
-        "text",
-        "textArea",
-        "title",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "role",
-      "value": [
-        "<list-of-strings>"
-      ],
-      "elements": [
-        "a",
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "circle",
-        "defs",
-        "desc",
-        "discard",
-        "ellipse",
-        "font",
-        "font-face",
-        "font-face-src",
-        "font-face-uri",
-        "foreignObject",
-        "g",
-        "glyph",
-        "handler",
-        "hkern",
-        "image",
-        "line",
-        "linearGradient",
-        "listener",
-        "metadata",
-        "missing-glyph",
-        "mpath",
-        "path",
-        "polygon",
-        "polyline",
-        "prefetch",
-        "radialGradient",
-        "rect",
-        "script",
-        "set",
-        "solidColor",
-        "stop",
-        "svg",
-        "switch",
-        "tbreak",
-        "text",
-        "textArea",
-        "title",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "rotate",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "animateMotion"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "rotate",
-      "value": [
-        "<list-of-numbers>"
-      ],
-      "elements": [
-        "text"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "rx",
-      "value": [
-        "<length>"
-      ],
-      "elements": [
-        "ellipse",
-        "rect"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "ry",
-      "value": [
-        "<length>"
-      ],
-      "elements": [
-        "ellipse",
-        "rect"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "slope",
-      "value": [
-        "<number>"
-      ],
-      "elements": [
-        "font-face"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "snapshotTime",
-      "value": [
-        "\"none\"",
-        "<Clock-value>"
-      ],
-      "elements": [
-        "svg"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "stemh",
-      "value": [
-        "<number>"
-      ],
-      "elements": [
-        "font-face"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "stemv",
-      "value": [
-        "<number>"
-      ],
-      "elements": [
-        "font-face"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "strikethrough-position",
-      "value": [
-        "<number>"
-      ],
-      "elements": [
-        "font-face"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "strikethrough-thickness",
-      "value": [
-        "<number>"
-      ],
-      "elements": [
-        "font-face"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "syncBehavior",
-      "value": [
-        "\"canSlip\"",
-        "\"locked\"",
-        "\"independent\"",
-        "\"default\""
-      ],
-      "elements": [
-        "animation",
-        "audio",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "syncBehaviorDefault",
-      "value": [
-        "\"canSlip\"",
-        "\"locked\"",
-        "\"independent\"",
-        "\"inherit\""
-      ],
-      "elements": [
-        "svg"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "syncMaster",
-      "value": [
-        "<boolean>"
-      ],
-      "elements": [
-        "animation",
-        "audio",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "syncTolerance",
-      "value": [
-        "<Clock-value>",
-        "\"default\""
-      ],
-      "elements": [
-        "animation",
-        "audio",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "syncToleranceDefault",
-      "value": [
-        "<Clock-value>",
-        "\"inherit\""
-      ],
-      "elements": [
-        "svg"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "systemLanguage",
-      "value": [
-        "<list-of-language-ids>"
-      ],
-      "elements": [
-        "a",
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "circle",
-        "desc",
-        "discard",
-        "ellipse",
-        "foreignObject",
-        "g",
-        "image",
-        "line",
-        "metadata",
-        "path",
-        "polygon",
-        "polyline",
-        "rect",
-        "set",
-        "switch",
-        "tbreak",
-        "text",
-        "textArea",
-        "title",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "target",
-      "value": [
-        "\"_replace\"",
-        "\"_self\"",
-        "\"_parent\"",
-        "\"_top\"",
-        "\"_blank\"",
-        "<XML-Name>"
-      ],
-      "elements": [
-        "a"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "target",
-      "value": [
-        "<IDREF>"
-      ],
-      "elements": [
-        "listener"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "timelineBegin",
-      "value": [
-        "\"onLoad\"",
-        "\"onStart\""
-      ],
-      "elements": [
-        "svg"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "to",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "set"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "transform",
-      "value": [
-        "<transform>",
-        "\"none\""
-      ],
-      "elements": [
-        "a",
-        "animation",
-        "circle",
-        "ellipse",
-        "foreignObject",
-        "g",
-        "image",
-        "line",
-        "path",
-        "polygon",
-        "polyline",
-        "rect",
-        "switch",
-        "text",
-        "textArea",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "transformBehavior",
-      "value": [
-        "\"geometric\"",
-        "\"pinned\"",
-        "\"pinned90\"",
-        "\"pinned180\"",
-        "\"pinned270\""
-      ],
-      "elements": [
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "type",
-      "value": [
-        "<content-type>"
-      ],
-      "elements": [
-        "handler",
-        "script"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "type",
-      "value": [
-        "<content-type>"
-      ],
-      "elements": [
-        "audio",
-        "image",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "type",
-      "value": [
-        "\"translate\"",
-        "\"scale\"",
-        "\"rotate\"",
-        "\"skewX\"",
-        "\"skewY\""
-      ],
-      "elements": [
-        "animateTransform"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "typeof",
-      "value": [
-        "<list-of-strings>"
-      ],
-      "elements": [
-        "a",
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "circle",
-        "defs",
-        "desc",
-        "discard",
-        "ellipse",
-        "font",
-        "font-face",
-        "font-face-src",
-        "font-face-uri",
-        "foreignObject",
-        "g",
-        "glyph",
-        "handler",
-        "hkern",
-        "image",
-        "line",
-        "linearGradient",
-        "listener",
-        "metadata",
-        "missing-glyph",
-        "mpath",
-        "path",
-        "polygon",
-        "polyline",
-        "prefetch",
-        "radialGradient",
-        "rect",
-        "script",
-        "set",
-        "solidColor",
-        "stop",
-        "svg",
-        "switch",
-        "tbreak",
-        "text",
-        "textArea",
-        "title",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "u1",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "hkern"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "u2",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "hkern"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "underline-position",
-      "value": [
-        "<number>"
-      ],
-      "elements": [
-        "font-face"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "underline-thickness",
-      "value": [
-        "<number>"
-      ],
-      "elements": [
-        "font-face"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "unicode",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "glyph"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "unicode-range",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "font-face"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "units-per-em",
-      "value": [
-        "<number>"
-      ],
-      "elements": [
-        "font-face"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "values",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "version",
-      "value": [
-        "\"1.0\"",
-        "\"1.1\"",
-        "\"1.2\""
-      ],
-      "elements": [
-        "svg"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "viewBox",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "svg"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "width",
-      "value": [
-        "<length>"
-      ],
-      "elements": [
-        "animation",
-        "foreignObject",
-        "image",
-        "rect",
-        "svg",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "width",
-      "value": [
-        "<length>",
-        "\"auto\""
-      ],
-      "elements": [
-        "textArea"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "widths",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "font-face"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "x",
-      "value": [
-        "<coordinate>"
-      ],
-      "elements": [
-        "animation",
-        "foreignObject",
-        "image",
-        "rect",
-        "textArea",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "x-height",
-      "value": [
-        "<number>"
-      ],
-      "elements": [
-        "font-face"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "x1",
-      "value": [
-        "<coordinate>"
-      ],
-      "elements": [
-        "line",
-        "linearGradient"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "x2",
-      "value": [
-        "<coordinate>"
-      ],
-      "elements": [
-        "line",
-        "linearGradient"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "x",
-      "value": [
-        "<list-of-coordinates>"
-      ],
-      "elements": [
-        "text"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "xlink:actuate",
-      "value": [
-        "\"onLoad\""
-      ],
-      "elements": [
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "discard",
-        "font-face-uri",
-        "foreignObject",
-        "handler",
-        "image",
-        "mpath",
-        "prefetch",
-        "script",
-        "set",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "xlink:actuate",
-      "value": [
-        "\"onRequest\""
-      ],
-      "elements": [
-        "a"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "xlink:arcrole",
-      "value": [
-        "<IRI>"
-      ],
-      "elements": [
-        "a",
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "discard",
-        "font-face-uri",
-        "foreignObject",
-        "handler",
-        "image",
-        "mpath",
-        "prefetch",
-        "script",
-        "set",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "xlink:href",
-      "value": [
-        "<IRI>"
-      ],
-      "elements": [
-        "a",
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "discard",
-        "font-face-uri",
-        "foreignObject",
-        "handler",
-        "image",
-        "mpath",
-        "prefetch",
-        "script",
-        "set",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "xlink:role",
-      "value": [
-        "<IRI>"
-      ],
-      "elements": [
-        "a",
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "discard",
-        "font-face-uri",
-        "foreignObject",
-        "handler",
-        "image",
-        "mpath",
-        "prefetch",
-        "script",
-        "set",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "xlink:show",
-      "value": [
-        "\"other\""
-      ],
-      "elements": [
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "discard",
-        "font-face-uri",
-        "handler",
-        "mpath",
-        "prefetch",
-        "script",
-        "set"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "xlink:show",
-      "value": [
-        "\"embed\""
-      ],
-      "elements": [
-        "animation",
-        "audio",
-        "foreignObject",
-        "image",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "xlink:show",
-      "value": [
-        "\"new\"",
-        "\"replace\""
-      ],
-      "elements": [
-        "a"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "xlink:title",
-      "value": [
-        "<text>"
-      ],
-      "elements": [
-        "a",
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "discard",
-        "font-face-uri",
-        "foreignObject",
-        "handler",
-        "image",
-        "mpath",
-        "prefetch",
-        "script",
-        "set",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "xlink:type",
-      "value": [
-        "\"simple\""
-      ],
-      "elements": [
-        "a",
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "discard",
-        "font-face-uri",
-        "foreignObject",
-        "handler",
-        "image",
-        "mpath",
-        "prefetch",
-        "script",
-        "set",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "xml:base",
-      "value": [
-        "<IRI>"
-      ],
-      "elements": [
-        "a",
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "circle",
-        "defs",
-        "desc",
-        "discard",
-        "ellipse",
-        "font",
-        "font-face",
-        "font-face-src",
-        "font-face-uri",
-        "foreignObject",
-        "g",
-        "glyph",
-        "handler",
-        "hkern",
-        "image",
-        "line",
-        "linearGradient",
-        "listener",
-        "metadata",
-        "missing-glyph",
-        "mpath",
-        "path",
-        "polygon",
-        "polyline",
-        "prefetch",
-        "radialGradient",
-        "rect",
-        "script",
-        "set",
-        "solidColor",
-        "stop",
-        "svg",
-        "switch",
-        "tbreak",
-        "text",
-        "textArea",
-        "title",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "xml:id",
-      "value": [
-        "<NCName>"
-      ],
-      "elements": [
-        "a",
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "circle",
-        "defs",
-        "desc",
-        "discard",
-        "ellipse",
-        "font",
-        "font-face",
-        "font-face-src",
-        "font-face-uri",
-        "foreignObject",
-        "g",
-        "glyph",
-        "handler",
-        "hkern",
-        "image",
-        "line",
-        "linearGradient",
-        "listener",
-        "metadata",
-        "missing-glyph",
-        "mpath",
-        "path",
-        "polygon",
-        "polyline",
-        "prefetch",
-        "radialGradient",
-        "rect",
-        "script",
-        "set",
-        "solidColor",
-        "stop",
-        "svg",
-        "switch",
-        "tbreak",
-        "text",
-        "textArea",
-        "title",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "xml:lang",
-      "value": [
-        "<language-id>"
-      ],
-      "elements": [
-        "a",
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "circle",
-        "defs",
-        "desc",
-        "discard",
-        "ellipse",
-        "font",
-        "font-face",
-        "font-face-src",
-        "font-face-uri",
-        "foreignObject",
-        "g",
-        "glyph",
-        "handler",
-        "hkern",
-        "image",
-        "line",
-        "linearGradient",
-        "listener",
-        "metadata",
-        "missing-glyph",
-        "mpath",
-        "path",
-        "polygon",
-        "polyline",
-        "prefetch",
-        "radialGradient",
-        "rect",
-        "script",
-        "set",
-        "solidColor",
-        "stop",
-        "svg",
-        "switch",
-        "tbreak",
-        "text",
-        "textArea",
-        "title",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "xml:space",
-      "value": [
-        "\"default\"",
-        "\"preserve\""
-      ],
-      "elements": [
-        "a",
-        "animate",
-        "animateColor",
-        "animateMotion",
-        "animateTransform",
-        "animation",
-        "audio",
-        "circle",
-        "defs",
-        "desc",
-        "discard",
-        "ellipse",
-        "font",
-        "font-face",
-        "font-face-src",
-        "font-face-uri",
-        "foreignObject",
-        "g",
-        "glyph",
-        "hkern",
-        "image",
-        "line",
-        "linearGradient",
-        "listener",
-        "metadata",
-        "missing-glyph",
-        "mpath",
-        "path",
-        "polygon",
-        "polyline",
-        "prefetch",
-        "radialGradient",
-        "rect",
-        "set",
-        "solidColor",
-        "stop",
-        "svg",
-        "switch",
-        "tbreak",
-        "text",
-        "textArea",
-        "title",
-        "tspan",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "xml:space",
-      "value": [
-        "\"preserve\""
-      ],
-      "elements": [
-        "handler",
-        "script"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "y",
-      "value": [
-        "<coordinate>"
-      ],
-      "elements": [
-        "animation",
-        "foreignObject",
-        "image",
-        "rect",
-        "textArea",
-        "use",
-        "video"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "y1",
-      "value": [
-        "<coordinate>"
-      ],
-      "elements": [
-        "line",
-        "linearGradient"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "y2",
-      "value": [
-        "<coordinate>"
-      ],
-      "elements": [
-        "line",
-        "linearGradient"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "y",
-      "value": [
-        "<list-of-coordinates>"
-      ],
-      "elements": [
-        "text"
-      ],
-      "type": "svg"
-    },
-    {
-      "attribute": "zoomAndPan",
-      "value": [
-        "\"disable\"",
-        "\"magnify\""
-      ],
-      "elements": [
-        "svg"
-      ],
-      "type": "svg"
+      "children": [],
+      "tag": "textPath"
     }
   ]
 }

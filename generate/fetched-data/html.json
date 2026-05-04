@@ -1,1396 +1,4 @@
 {
-  "htmlElements": [
-    {
-      "tag": "a",
-      "children": [
-        "transparent*"
-      ],
-      "attributes": [
-        "globals",
-        "href",
-        "target",
-        "download",
-        "ping",
-        "rel",
-        "hreflang",
-        "type",
-        "referrerpolicy"
-      ]
-    },
-    {
-      "tag": "abbr",
-      "children": [
-        "phrasing"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "address",
-      "children": [
-        "flow*"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "area",
-      "children": [
-        "empty"
-      ],
-      "attributes": [
-        "globals",
-        "alt",
-        "coords",
-        "shape",
-        "href",
-        "target",
-        "download",
-        "ping",
-        "rel",
-        "referrerpolicy"
-      ]
-    },
-    {
-      "tag": "article",
-      "children": [
-        "flow"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "aside",
-      "children": [
-        "flow"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "audio",
-      "children": [
-        "source*",
-        "track*",
-        "transparent*"
-      ],
-      "attributes": [
-        "globals",
-        "src",
-        "crossorigin",
-        "preload",
-        "autoplay",
-        "loading",
-        "loop",
-        "muted",
-        "controls"
-      ]
-    },
-    {
-      "tag": "b",
-      "children": [
-        "phrasing"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "base",
-      "children": [
-        "empty"
-      ],
-      "attributes": [
-        "globals",
-        "href",
-        "target"
-      ]
-    },
-    {
-      "tag": "bdi",
-      "children": [
-        "phrasing"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "bdo",
-      "children": [
-        "phrasing"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "blockquote",
-      "children": [
-        "flow"
-      ],
-      "attributes": [
-        "globals",
-        "cite"
-      ]
-    },
-    {
-      "tag": "body",
-      "children": [
-        "flow"
-      ],
-      "attributes": [
-        "globals",
-        "onafterprint",
-        "onbeforeprint",
-        "onbeforeunload",
-        "onhashchange",
-        "onlanguagechange",
-        "onmessage",
-        "onmessageerror",
-        "onoffline",
-        "ononline",
-        "onpageswap",
-        "onpagehide",
-        "onpagereveal",
-        "onpageshow",
-        "onpopstate",
-        "onrejectionhandled",
-        "onstorage",
-        "onunhandledrejection",
-        "onunload"
-      ]
-    },
-    {
-      "tag": "br",
-      "children": [
-        "empty"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "button",
-      "children": [
-        "phrasing*"
-      ],
-      "attributes": [
-        "globals",
-        "command",
-        "commandfor",
-        "disabled",
-        "form",
-        "formaction",
-        "formenctype",
-        "formmethod",
-        "formnovalidate",
-        "formtarget",
-        "name",
-        "popovertarget",
-        "popovertargetaction",
-        "type",
-        "value"
-      ]
-    },
-    {
-      "tag": "canvas",
-      "children": [
-        "transparent"
-      ],
-      "attributes": [
-        "globals",
-        "width",
-        "height"
-      ]
-    },
-    {
-      "tag": "caption",
-      "children": [
-        "flow*"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "cite",
-      "children": [
-        "phrasing"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "code",
-      "children": [
-        "phrasing"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "col",
-      "children": [
-        "empty"
-      ],
-      "attributes": [
-        "globals",
-        "span"
-      ]
-    },
-    {
-      "tag": "colgroup",
-      "children": [
-        "col*",
-        "template*"
-      ],
-      "attributes": [
-        "globals",
-        "span"
-      ]
-    },
-    {
-      "tag": "data",
-      "children": [
-        "phrasing"
-      ],
-      "attributes": [
-        "globals",
-        "value"
-      ]
-    },
-    {
-      "tag": "datalist",
-      "children": [
-        "phrasing*",
-        "option*",
-        "script-supporting elements*"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "dd",
-      "children": [
-        "flow"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "del",
-      "children": [
-        "transparent"
-      ],
-      "attributes": [
-        "globals",
-        "cite",
-        "datetime"
-      ]
-    },
-    {
-      "tag": "details",
-      "children": [
-        "summary*",
-        "flow"
-      ],
-      "attributes": [
-        "globals",
-        "name",
-        "open"
-      ]
-    },
-    {
-      "tag": "dfn",
-      "children": [
-        "phrasing*"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "dialog",
-      "children": [
-        "flow"
-      ],
-      "attributes": [
-        "globals",
-        "open"
-      ]
-    },
-    {
-      "tag": "div",
-      "children": [
-        "flow\n         select element inner content elements*",
-        "optgroup element inner content elements*",
-        "option element inner content elements*"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "dl",
-      "children": [
-        "dt*",
-        "dd*",
-        "div*",
-        "script-supporting elements"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "dt",
-      "children": [
-        "flow*"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "em",
-      "children": [
-        "phrasing"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "embed",
-      "children": [
-        "empty"
-      ],
-      "attributes": [
-        "globals",
-        "src",
-        "type",
-        "width",
-        "height",
-        "any*"
-      ]
-    },
-    {
-      "tag": "fieldset",
-      "children": [
-        "legend*",
-        "flow"
-      ],
-      "attributes": [
-        "globals",
-        "disabled",
-        "form",
-        "name"
-      ]
-    },
-    {
-      "tag": "figcaption",
-      "children": [
-        "flow"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "figure",
-      "children": [
-        "figcaption*",
-        "flow"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "footer",
-      "children": [
-        "flow*"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "form",
-      "children": [
-        "flow*"
-      ],
-      "attributes": [
-        "globals",
-        "accept-charset",
-        "action",
-        "autocomplete",
-        "enctype",
-        "method",
-        "name",
-        "novalidate",
-        "rel",
-        "target"
-      ]
-    },
-    {
-      "tag": "h1, h2, h3, h4, h5, h6",
-      "children": [
-        "phrasing"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "head",
-      "children": [
-        "metadata content*"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "header",
-      "children": [
-        "flow*"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "hgroup",
-      "children": [
-        "h1",
-        "h2",
-        "h3",
-        "h4",
-        "h5",
-        "h6",
-        "p",
-        "script-supporting elements"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "hr",
-      "children": [
-        "empty"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "html",
-      "children": [
-        "head*",
-        "body*"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "i",
-      "children": [
-        "phrasing"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "iframe",
-      "children": [
-        "empty"
-      ],
-      "attributes": [
-        "globals",
-        "src",
-        "srcdoc",
-        "name",
-        "sandbox",
-        "allow",
-        "allowfullscreen",
-        "width",
-        "height",
-        "referrerpolicy",
-        "loading"
-      ]
-    },
-    {
-      "tag": "img",
-      "children": [
-        "empty"
-      ],
-      "attributes": [
-        "globals",
-        "alt",
-        "src",
-        "srcset",
-        "sizes",
-        "crossorigin",
-        "usemap",
-        "ismap",
-        "controls",
-        "width",
-        "height",
-        "referrerpolicy",
-        "decoding",
-        "loading",
-        "fetchpriority"
-      ]
-    },
-    {
-      "tag": "input",
-      "children": [
-        "empty"
-      ],
-      "attributes": [
-        "globals",
-        "accept",
-        "alpha",
-        "alt",
-        "autocomplete",
-        "checked",
-        "colorspace",
-        "dirname",
-        "disabled",
-        "form",
-        "formaction",
-        "formenctype",
-        "formmethod",
-        "formnovalidate",
-        "formtarget",
-        "height",
-        "list",
-        "max",
-        "maxlength",
-        "min",
-        "minlength",
-        "multiple",
-        "name",
-        "pattern",
-        "placeholder",
-        "popovertarget",
-        "popovertargetaction",
-        "readonly",
-        "required",
-        "size",
-        "src",
-        "step",
-        "type",
-        "value",
-        "width"
-      ]
-    },
-    {
-      "tag": "ins",
-      "children": [
-        "transparent"
-      ],
-      "attributes": [
-        "globals",
-        "cite",
-        "datetime"
-      ]
-    },
-    {
-      "tag": "kbd",
-      "children": [
-        "phrasing"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "label",
-      "children": [
-        "phrasing*"
-      ],
-      "attributes": [
-        "globals",
-        "for"
-      ]
-    },
-    {
-      "tag": "legend",
-      "children": [
-        "phrasing*",
-        "heading content"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "li",
-      "children": [
-        "flow"
-      ],
-      "attributes": [
-        "globals",
-        "value*"
-      ]
-    },
-    {
-      "tag": "link",
-      "children": [
-        "empty"
-      ],
-      "attributes": [
-        "globals",
-        "href",
-        "crossorigin",
-        "rel",
-        "as",
-        "media",
-        "hreflang",
-        "type",
-        "sizes",
-        "imagesrcset",
-        "imagesizes",
-        "referrerpolicy",
-        "integrity",
-        "blocking",
-        "color",
-        "disabled",
-        "fetchpriority"
-      ]
-    },
-    {
-      "tag": "main",
-      "children": [
-        "flow"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "map",
-      "children": [
-        "transparent",
-        "area*"
-      ],
-      "attributes": [
-        "globals",
-        "name"
-      ]
-    },
-    {
-      "tag": "mark",
-      "children": [
-        "phrasing"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "MathML math",
-      "children": [
-        "per [MATHML]"
-      ],
-      "attributes": [
-        "per [MATHML]"
-      ]
-    },
-    {
-      "tag": "menu",
-      "children": [
-        "li",
-        "script-supporting elements"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "meta",
-      "children": [
-        "empty"
-      ],
-      "attributes": [
-        "globals",
-        "name",
-        "http-equiv",
-        "content",
-        "charset",
-        "media"
-      ]
-    },
-    {
-      "tag": "meter",
-      "children": [
-        "phrasing*"
-      ],
-      "attributes": [
-        "globals",
-        "value",
-        "min",
-        "max",
-        "low",
-        "high",
-        "optimum"
-      ]
-    },
-    {
-      "tag": "nav",
-      "children": [
-        "flow"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "noscript",
-      "children": [
-        "varies*"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "object",
-      "children": [
-        "transparent"
-      ],
-      "attributes": [
-        "globals",
-        "data",
-        "type",
-        "name",
-        "form",
-        "width",
-        "height"
-      ]
-    },
-    {
-      "tag": "ol",
-      "children": [
-        "li",
-        "script-supporting elements"
-      ],
-      "attributes": [
-        "globals",
-        "reversed",
-        "start",
-        "type"
-      ]
-    },
-    {
-      "tag": "optgroup",
-      "children": [
-        "optgroup element inner content elements",
-        "legend*"
-      ],
-      "attributes": [
-        "globals",
-        "disabled",
-        "label"
-      ]
-    },
-    {
-      "tag": "option",
-      "children": [
-        "text*",
-        "option element inner content elements*"
-      ],
-      "attributes": [
-        "globals",
-        "disabled",
-        "label",
-        "selected",
-        "value"
-      ]
-    },
-    {
-      "tag": "output",
-      "children": [
-        "phrasing"
-      ],
-      "attributes": [
-        "globals",
-        "for",
-        "form",
-        "name"
-      ]
-    },
-    {
-      "tag": "p",
-      "children": [
-        "phrasing"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "picture",
-      "children": [
-        "source*",
-        "one img",
-        "script-supporting elements"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "pre",
-      "children": [
-        "phrasing"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "progress",
-      "children": [
-        "phrasing*"
-      ],
-      "attributes": [
-        "globals",
-        "value",
-        "max"
-      ]
-    },
-    {
-      "tag": "q",
-      "children": [
-        "phrasing"
-      ],
-      "attributes": [
-        "globals",
-        "cite"
-      ]
-    },
-    {
-      "tag": "rp",
-      "children": [
-        "text"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "rt",
-      "children": [
-        "phrasing"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "ruby",
-      "children": [
-        "phrasing",
-        "rt",
-        "rp*"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "s",
-      "children": [
-        "phrasing"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "samp",
-      "children": [
-        "phrasing"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "script",
-      "children": [
-        "script, data, or script documentation*"
-      ],
-      "attributes": [
-        "globals",
-        "src",
-        "type",
-        "nomodule",
-        "async",
-        "defer",
-        "crossorigin",
-        "integrity",
-        "referrerpolicy",
-        "blocking",
-        "fetchpriority"
-      ]
-    },
-    {
-      "tag": "search",
-      "children": [
-        "flow"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "section",
-      "children": [
-        "flow"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "select",
-      "children": [
-        "select element inner content elements",
-        "button*"
-      ],
-      "attributes": [
-        "globals",
-        "autocomplete",
-        "disabled",
-        "form",
-        "multiple",
-        "name",
-        "required",
-        "size"
-      ]
-    },
-    {
-      "tag": "selectedcontent",
-      "children": [
-        "empty"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "slot",
-      "children": [
-        "transparent"
-      ],
-      "attributes": [
-        "globals",
-        "name"
-      ]
-    },
-    {
-      "tag": "small",
-      "children": [
-        "phrasing"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "source",
-      "children": [
-        "empty"
-      ],
-      "attributes": [
-        "globals",
-        "type",
-        "media",
-        "src",
-        "srcset",
-        "sizes",
-        "width",
-        "height"
-      ]
-    },
-    {
-      "tag": "span",
-      "children": [
-        "phrasing"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "strong",
-      "children": [
-        "phrasing"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "style",
-      "children": [
-        "text*"
-      ],
-      "attributes": [
-        "globals",
-        "media",
-        "blocking"
-      ]
-    },
-    {
-      "tag": "sub",
-      "children": [
-        "phrasing"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "summary",
-      "children": [
-        "phrasing",
-        "heading content"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "sup",
-      "children": [
-        "phrasing"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "SVG svg",
-      "children": [
-        "per [SVG]"
-      ],
-      "attributes": [
-        "per [SVG]"
-      ]
-    },
-    {
-      "tag": "table",
-      "children": [
-        "caption*",
-        "colgroup*",
-        "thead*",
-        "tbody*",
-        "tfoot*",
-        "tr*",
-        "script-supporting elements"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "tbody",
-      "children": [
-        "tr",
-        "script-supporting elements"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "td",
-      "children": [
-        "flow"
-      ],
-      "attributes": [
-        "globals",
-        "colspan",
-        "rowspan",
-        "headers"
-      ]
-    },
-    {
-      "tag": "template",
-      "children": [
-        "empty"
-      ],
-      "attributes": [
-        "globals",
-        "shadowrootmode",
-        "shadowrootdelegatesfocus",
-        "shadowrootslotassignment",
-        "shadowrootclonable",
-        "shadowrootserializable",
-        "shadowrootcustomelementregistry"
-      ]
-    },
-    {
-      "tag": "textarea",
-      "children": [
-        "text"
-      ],
-      "attributes": [
-        "globals",
-        "autocomplete",
-        "cols",
-        "dirname",
-        "disabled",
-        "form",
-        "maxlength",
-        "minlength",
-        "name",
-        "placeholder",
-        "readonly",
-        "required",
-        "rows",
-        "wrap"
-      ]
-    },
-    {
-      "tag": "tfoot",
-      "children": [
-        "tr",
-        "script-supporting elements"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "th",
-      "children": [
-        "flow*"
-      ],
-      "attributes": [
-        "globals",
-        "colspan",
-        "rowspan",
-        "headers",
-        "scope",
-        "abbr"
-      ]
-    },
-    {
-      "tag": "thead",
-      "children": [
-        "tr",
-        "script-supporting elements"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "time",
-      "children": [
-        "phrasing"
-      ],
-      "attributes": [
-        "globals",
-        "datetime"
-      ]
-    },
-    {
-      "tag": "title",
-      "children": [
-        "text*"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "tr",
-      "children": [
-        "th*",
-        "td",
-        "script-supporting elements"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "track",
-      "children": [
-        "empty"
-      ],
-      "attributes": [
-        "globals",
-        "default",
-        "kind",
-        "label",
-        "src",
-        "srclang"
-      ]
-    },
-    {
-      "tag": "u",
-      "children": [
-        "phrasing"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "ul",
-      "children": [
-        "li",
-        "script-supporting elements"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "var",
-      "children": [
-        "phrasing"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "video",
-      "children": [
-        "source*",
-        "track*",
-        "transparent*"
-      ],
-      "attributes": [
-        "globals",
-        "src",
-        "crossorigin",
-        "poster",
-        "preload",
-        "autoplay",
-        "playsinline",
-        "loading",
-        "loop",
-        "muted",
-        "controls",
-        "width",
-        "height"
-      ]
-    },
-    {
-      "tag": "wbr",
-      "children": [
-        "empty"
-      ],
-      "attributes": [
-        "globals"
-      ]
-    },
-    {
-      "tag": "autonomous custom elements",
-      "children": [
-        "transparent"
-      ],
-      "attributes": [
-        "globals",
-        "any, as decided by the element's author"
-      ]
-    }
-  ],
-  "globalEvents": [
-    "onauxclick",
-    "onbeforeinput",
-    "onbeforematch",
-    "onbeforetoggle",
-    "onblur",
-    "oncancel",
-    "oncanplay",
-    "oncanplaythrough",
-    "onchange",
-    "onclick",
-    "onclose",
-    "oncommand",
-    "oncontextlost",
-    "oncontextmenu",
-    "oncontextrestored",
-    "oncopy",
-    "oncuechange",
-    "oncut",
-    "ondblclick",
-    "ondrag",
-    "ondragend",
-    "ondragenter",
-    "ondragleave",
-    "ondragover",
-    "ondragstart",
-    "ondrop",
-    "ondurationchange",
-    "onemptied",
-    "onended",
-    "onerror",
-    "onfocus",
-    "onformdata",
-    "oninput",
-    "oninvalid",
-    "onkeydown",
-    "onkeypress",
-    "onkeyup",
-    "onload",
-    "onloadeddata",
-    "onloadedmetadata",
-    "onloadstart",
-    "onmousedown",
-    "onmouseenter",
-    "onmouseleave",
-    "onmousemove",
-    "onmouseout",
-    "onmouseover",
-    "onmouseup",
-    "onpaste",
-    "onpause",
-    "onplay",
-    "onplaying",
-    "onprogress",
-    "onratechange",
-    "onreset",
-    "onresize",
-    "onscroll",
-    "onscrollend",
-    "onsecuritypolicyviolation",
-    "onseeked",
-    "onseeking",
-    "onselect",
-    "onslotchange",
-    "onstalled",
-    "onsubmit",
-    "onsuspend",
-    "ontimeupdate",
-    "ontoggle",
-    "onvolumechange",
-    "onwaiting",
-    "onwheel"
-  ],
   "attributes": [
     {
       "attribute": "abbr",
@@ -3289,6 +1897,1398 @@
         "\"true\"",
         "\"false\"",
         "the empty string"
+      ]
+    }
+  ],
+  "globalEvents": [
+    "onauxclick",
+    "onbeforeinput",
+    "onbeforematch",
+    "onbeforetoggle",
+    "onblur",
+    "oncancel",
+    "oncanplay",
+    "oncanplaythrough",
+    "onchange",
+    "onclick",
+    "onclose",
+    "oncommand",
+    "oncontextlost",
+    "oncontextmenu",
+    "oncontextrestored",
+    "oncopy",
+    "oncuechange",
+    "oncut",
+    "ondblclick",
+    "ondrag",
+    "ondragend",
+    "ondragenter",
+    "ondragleave",
+    "ondragover",
+    "ondragstart",
+    "ondrop",
+    "ondurationchange",
+    "onemptied",
+    "onended",
+    "onerror",
+    "onfocus",
+    "onformdata",
+    "oninput",
+    "oninvalid",
+    "onkeydown",
+    "onkeypress",
+    "onkeyup",
+    "onload",
+    "onloadeddata",
+    "onloadedmetadata",
+    "onloadstart",
+    "onmousedown",
+    "onmouseenter",
+    "onmouseleave",
+    "onmousemove",
+    "onmouseout",
+    "onmouseover",
+    "onmouseup",
+    "onpaste",
+    "onpause",
+    "onplay",
+    "onplaying",
+    "onprogress",
+    "onratechange",
+    "onreset",
+    "onresize",
+    "onscroll",
+    "onscrollend",
+    "onsecuritypolicyviolation",
+    "onseeked",
+    "onseeking",
+    "onselect",
+    "onslotchange",
+    "onstalled",
+    "onsubmit",
+    "onsuspend",
+    "ontimeupdate",
+    "ontoggle",
+    "onvolumechange",
+    "onwaiting",
+    "onwheel"
+  ],
+  "htmlElements": [
+    {
+      "tag": "a",
+      "children": [
+        "transparent*"
+      ],
+      "attributes": [
+        "globals",
+        "href",
+        "target",
+        "download",
+        "ping",
+        "rel",
+        "hreflang",
+        "type",
+        "referrerpolicy"
+      ]
+    },
+    {
+      "tag": "abbr",
+      "children": [
+        "phrasing"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "address",
+      "children": [
+        "flow*"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "area",
+      "children": [
+        "empty"
+      ],
+      "attributes": [
+        "globals",
+        "alt",
+        "coords",
+        "shape",
+        "href",
+        "target",
+        "download",
+        "ping",
+        "rel",
+        "referrerpolicy"
+      ]
+    },
+    {
+      "tag": "article",
+      "children": [
+        "flow"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "aside",
+      "children": [
+        "flow"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "audio",
+      "children": [
+        "source*",
+        "track*",
+        "transparent*"
+      ],
+      "attributes": [
+        "globals",
+        "src",
+        "crossorigin",
+        "preload",
+        "autoplay",
+        "loading",
+        "loop",
+        "muted",
+        "controls"
+      ]
+    },
+    {
+      "tag": "b",
+      "children": [
+        "phrasing"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "base",
+      "children": [
+        "empty"
+      ],
+      "attributes": [
+        "globals",
+        "href",
+        "target"
+      ]
+    },
+    {
+      "tag": "bdi",
+      "children": [
+        "phrasing"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "bdo",
+      "children": [
+        "phrasing"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "blockquote",
+      "children": [
+        "flow"
+      ],
+      "attributes": [
+        "globals",
+        "cite"
+      ]
+    },
+    {
+      "tag": "body",
+      "children": [
+        "flow"
+      ],
+      "attributes": [
+        "globals",
+        "onafterprint",
+        "onbeforeprint",
+        "onbeforeunload",
+        "onhashchange",
+        "onlanguagechange",
+        "onmessage",
+        "onmessageerror",
+        "onoffline",
+        "ononline",
+        "onpageswap",
+        "onpagehide",
+        "onpagereveal",
+        "onpageshow",
+        "onpopstate",
+        "onrejectionhandled",
+        "onstorage",
+        "onunhandledrejection",
+        "onunload"
+      ]
+    },
+    {
+      "tag": "br",
+      "children": [
+        "empty"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "button",
+      "children": [
+        "phrasing*"
+      ],
+      "attributes": [
+        "globals",
+        "command",
+        "commandfor",
+        "disabled",
+        "form",
+        "formaction",
+        "formenctype",
+        "formmethod",
+        "formnovalidate",
+        "formtarget",
+        "name",
+        "popovertarget",
+        "popovertargetaction",
+        "type",
+        "value"
+      ]
+    },
+    {
+      "tag": "canvas",
+      "children": [
+        "transparent"
+      ],
+      "attributes": [
+        "globals",
+        "width",
+        "height"
+      ]
+    },
+    {
+      "tag": "caption",
+      "children": [
+        "flow*"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "cite",
+      "children": [
+        "phrasing"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "code",
+      "children": [
+        "phrasing"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "col",
+      "children": [
+        "empty"
+      ],
+      "attributes": [
+        "globals",
+        "span"
+      ]
+    },
+    {
+      "tag": "colgroup",
+      "children": [
+        "col*",
+        "template*"
+      ],
+      "attributes": [
+        "globals",
+        "span"
+      ]
+    },
+    {
+      "tag": "data",
+      "children": [
+        "phrasing"
+      ],
+      "attributes": [
+        "globals",
+        "value"
+      ]
+    },
+    {
+      "tag": "datalist",
+      "children": [
+        "phrasing*",
+        "option*",
+        "script-supporting elements*"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "dd",
+      "children": [
+        "flow"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "del",
+      "children": [
+        "transparent"
+      ],
+      "attributes": [
+        "globals",
+        "cite",
+        "datetime"
+      ]
+    },
+    {
+      "tag": "details",
+      "children": [
+        "summary*",
+        "flow"
+      ],
+      "attributes": [
+        "globals",
+        "name",
+        "open"
+      ]
+    },
+    {
+      "tag": "dfn",
+      "children": [
+        "phrasing*"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "dialog",
+      "children": [
+        "flow"
+      ],
+      "attributes": [
+        "globals",
+        "open"
+      ]
+    },
+    {
+      "tag": "div",
+      "children": [
+        "flow\n         select element inner content elements*",
+        "optgroup element inner content elements*",
+        "option element inner content elements*"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "dl",
+      "children": [
+        "dt*",
+        "dd*",
+        "div*",
+        "script-supporting elements"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "dt",
+      "children": [
+        "flow*"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "em",
+      "children": [
+        "phrasing"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "embed",
+      "children": [
+        "empty"
+      ],
+      "attributes": [
+        "globals",
+        "src",
+        "type",
+        "width",
+        "height",
+        "any*"
+      ]
+    },
+    {
+      "tag": "fieldset",
+      "children": [
+        "legend*",
+        "flow"
+      ],
+      "attributes": [
+        "globals",
+        "disabled",
+        "form",
+        "name"
+      ]
+    },
+    {
+      "tag": "figcaption",
+      "children": [
+        "flow"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "figure",
+      "children": [
+        "figcaption*",
+        "flow"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "footer",
+      "children": [
+        "flow*"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "form",
+      "children": [
+        "flow*"
+      ],
+      "attributes": [
+        "globals",
+        "accept-charset",
+        "action",
+        "autocomplete",
+        "enctype",
+        "method",
+        "name",
+        "novalidate",
+        "rel",
+        "target"
+      ]
+    },
+    {
+      "tag": "h1, h2, h3, h4, h5, h6",
+      "children": [
+        "phrasing"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "head",
+      "children": [
+        "metadata content*"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "header",
+      "children": [
+        "flow*"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "hgroup",
+      "children": [
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "h5",
+        "h6",
+        "p",
+        "script-supporting elements"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "hr",
+      "children": [
+        "empty"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "html",
+      "children": [
+        "head*",
+        "body*"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "i",
+      "children": [
+        "phrasing"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "iframe",
+      "children": [
+        "empty"
+      ],
+      "attributes": [
+        "globals",
+        "src",
+        "srcdoc",
+        "name",
+        "sandbox",
+        "allow",
+        "allowfullscreen",
+        "width",
+        "height",
+        "referrerpolicy",
+        "loading"
+      ]
+    },
+    {
+      "tag": "img",
+      "children": [
+        "empty"
+      ],
+      "attributes": [
+        "globals",
+        "alt",
+        "src",
+        "srcset",
+        "sizes",
+        "crossorigin",
+        "usemap",
+        "ismap",
+        "controls",
+        "width",
+        "height",
+        "referrerpolicy",
+        "decoding",
+        "loading",
+        "fetchpriority"
+      ]
+    },
+    {
+      "tag": "input",
+      "children": [
+        "empty"
+      ],
+      "attributes": [
+        "globals",
+        "accept",
+        "alpha",
+        "alt",
+        "autocomplete",
+        "checked",
+        "colorspace",
+        "dirname",
+        "disabled",
+        "form",
+        "formaction",
+        "formenctype",
+        "formmethod",
+        "formnovalidate",
+        "formtarget",
+        "height",
+        "list",
+        "max",
+        "maxlength",
+        "min",
+        "minlength",
+        "multiple",
+        "name",
+        "pattern",
+        "placeholder",
+        "popovertarget",
+        "popovertargetaction",
+        "readonly",
+        "required",
+        "size",
+        "src",
+        "step",
+        "type",
+        "value",
+        "width"
+      ]
+    },
+    {
+      "tag": "ins",
+      "children": [
+        "transparent"
+      ],
+      "attributes": [
+        "globals",
+        "cite",
+        "datetime"
+      ]
+    },
+    {
+      "tag": "kbd",
+      "children": [
+        "phrasing"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "label",
+      "children": [
+        "phrasing*"
+      ],
+      "attributes": [
+        "globals",
+        "for"
+      ]
+    },
+    {
+      "tag": "legend",
+      "children": [
+        "phrasing*",
+        "heading content"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "li",
+      "children": [
+        "flow"
+      ],
+      "attributes": [
+        "globals",
+        "value*"
+      ]
+    },
+    {
+      "tag": "link",
+      "children": [
+        "empty"
+      ],
+      "attributes": [
+        "globals",
+        "href",
+        "crossorigin",
+        "rel",
+        "as",
+        "media",
+        "hreflang",
+        "type",
+        "sizes",
+        "imagesrcset",
+        "imagesizes",
+        "referrerpolicy",
+        "integrity",
+        "blocking",
+        "color",
+        "disabled",
+        "fetchpriority"
+      ]
+    },
+    {
+      "tag": "main",
+      "children": [
+        "flow"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "map",
+      "children": [
+        "transparent",
+        "area*"
+      ],
+      "attributes": [
+        "globals",
+        "name"
+      ]
+    },
+    {
+      "tag": "mark",
+      "children": [
+        "phrasing"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "MathML math",
+      "children": [
+        "per [MATHML]"
+      ],
+      "attributes": [
+        "per [MATHML]"
+      ]
+    },
+    {
+      "tag": "menu",
+      "children": [
+        "li",
+        "script-supporting elements"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "meta",
+      "children": [
+        "empty"
+      ],
+      "attributes": [
+        "globals",
+        "name",
+        "http-equiv",
+        "content",
+        "charset",
+        "media"
+      ]
+    },
+    {
+      "tag": "meter",
+      "children": [
+        "phrasing*"
+      ],
+      "attributes": [
+        "globals",
+        "value",
+        "min",
+        "max",
+        "low",
+        "high",
+        "optimum"
+      ]
+    },
+    {
+      "tag": "nav",
+      "children": [
+        "flow"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "noscript",
+      "children": [
+        "varies*"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "object",
+      "children": [
+        "transparent"
+      ],
+      "attributes": [
+        "globals",
+        "data",
+        "type",
+        "name",
+        "form",
+        "width",
+        "height"
+      ]
+    },
+    {
+      "tag": "ol",
+      "children": [
+        "li",
+        "script-supporting elements"
+      ],
+      "attributes": [
+        "globals",
+        "reversed",
+        "start",
+        "type"
+      ]
+    },
+    {
+      "tag": "optgroup",
+      "children": [
+        "optgroup element inner content elements",
+        "legend*"
+      ],
+      "attributes": [
+        "globals",
+        "disabled",
+        "label"
+      ]
+    },
+    {
+      "tag": "option",
+      "children": [
+        "text*",
+        "option element inner content elements*"
+      ],
+      "attributes": [
+        "globals",
+        "disabled",
+        "label",
+        "selected",
+        "value"
+      ]
+    },
+    {
+      "tag": "output",
+      "children": [
+        "phrasing"
+      ],
+      "attributes": [
+        "globals",
+        "for",
+        "form",
+        "name"
+      ]
+    },
+    {
+      "tag": "p",
+      "children": [
+        "phrasing"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "picture",
+      "children": [
+        "source*",
+        "one img",
+        "script-supporting elements"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "pre",
+      "children": [
+        "phrasing"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "progress",
+      "children": [
+        "phrasing*"
+      ],
+      "attributes": [
+        "globals",
+        "value",
+        "max"
+      ]
+    },
+    {
+      "tag": "q",
+      "children": [
+        "phrasing"
+      ],
+      "attributes": [
+        "globals",
+        "cite"
+      ]
+    },
+    {
+      "tag": "rp",
+      "children": [
+        "text"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "rt",
+      "children": [
+        "phrasing"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "ruby",
+      "children": [
+        "phrasing",
+        "rt",
+        "rp*"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "s",
+      "children": [
+        "phrasing"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "samp",
+      "children": [
+        "phrasing"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "script",
+      "children": [
+        "script, data, or script documentation*"
+      ],
+      "attributes": [
+        "globals",
+        "src",
+        "type",
+        "nomodule",
+        "async",
+        "defer",
+        "crossorigin",
+        "integrity",
+        "referrerpolicy",
+        "blocking",
+        "fetchpriority"
+      ]
+    },
+    {
+      "tag": "search",
+      "children": [
+        "flow"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "section",
+      "children": [
+        "flow"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "select",
+      "children": [
+        "select element inner content elements",
+        "button*"
+      ],
+      "attributes": [
+        "globals",
+        "autocomplete",
+        "disabled",
+        "form",
+        "multiple",
+        "name",
+        "required",
+        "size"
+      ]
+    },
+    {
+      "tag": "selectedcontent",
+      "children": [
+        "empty"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "slot",
+      "children": [
+        "transparent"
+      ],
+      "attributes": [
+        "globals",
+        "name"
+      ]
+    },
+    {
+      "tag": "small",
+      "children": [
+        "phrasing"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "source",
+      "children": [
+        "empty"
+      ],
+      "attributes": [
+        "globals",
+        "type",
+        "media",
+        "src",
+        "srcset",
+        "sizes",
+        "width",
+        "height"
+      ]
+    },
+    {
+      "tag": "span",
+      "children": [
+        "phrasing"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "strong",
+      "children": [
+        "phrasing"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "style",
+      "children": [
+        "text*"
+      ],
+      "attributes": [
+        "globals",
+        "media",
+        "blocking"
+      ]
+    },
+    {
+      "tag": "sub",
+      "children": [
+        "phrasing"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "summary",
+      "children": [
+        "phrasing",
+        "heading content"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "sup",
+      "children": [
+        "phrasing"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "SVG svg",
+      "children": [
+        "per [SVG]"
+      ],
+      "attributes": [
+        "per [SVG]"
+      ]
+    },
+    {
+      "tag": "table",
+      "children": [
+        "caption*",
+        "colgroup*",
+        "thead*",
+        "tbody*",
+        "tfoot*",
+        "tr*",
+        "script-supporting elements"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "tbody",
+      "children": [
+        "tr",
+        "script-supporting elements"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "td",
+      "children": [
+        "flow"
+      ],
+      "attributes": [
+        "globals",
+        "colspan",
+        "rowspan",
+        "headers"
+      ]
+    },
+    {
+      "tag": "template",
+      "children": [
+        "empty"
+      ],
+      "attributes": [
+        "globals",
+        "shadowrootmode",
+        "shadowrootdelegatesfocus",
+        "shadowrootslotassignment",
+        "shadowrootclonable",
+        "shadowrootserializable",
+        "shadowrootcustomelementregistry"
+      ]
+    },
+    {
+      "tag": "textarea",
+      "children": [
+        "text"
+      ],
+      "attributes": [
+        "globals",
+        "autocomplete",
+        "cols",
+        "dirname",
+        "disabled",
+        "form",
+        "maxlength",
+        "minlength",
+        "name",
+        "placeholder",
+        "readonly",
+        "required",
+        "rows",
+        "wrap"
+      ]
+    },
+    {
+      "tag": "tfoot",
+      "children": [
+        "tr",
+        "script-supporting elements"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "th",
+      "children": [
+        "flow*"
+      ],
+      "attributes": [
+        "globals",
+        "colspan",
+        "rowspan",
+        "headers",
+        "scope",
+        "abbr"
+      ]
+    },
+    {
+      "tag": "thead",
+      "children": [
+        "tr",
+        "script-supporting elements"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "time",
+      "children": [
+        "phrasing"
+      ],
+      "attributes": [
+        "globals",
+        "datetime"
+      ]
+    },
+    {
+      "tag": "title",
+      "children": [
+        "text*"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "tr",
+      "children": [
+        "th*",
+        "td",
+        "script-supporting elements"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "track",
+      "children": [
+        "empty"
+      ],
+      "attributes": [
+        "globals",
+        "default",
+        "kind",
+        "label",
+        "src",
+        "srclang"
+      ]
+    },
+    {
+      "tag": "u",
+      "children": [
+        "phrasing"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "ul",
+      "children": [
+        "li",
+        "script-supporting elements"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "var",
+      "children": [
+        "phrasing"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "video",
+      "children": [
+        "source*",
+        "track*",
+        "transparent*"
+      ],
+      "attributes": [
+        "globals",
+        "src",
+        "crossorigin",
+        "poster",
+        "preload",
+        "autoplay",
+        "playsinline",
+        "loading",
+        "loop",
+        "muted",
+        "controls",
+        "width",
+        "height"
+      ]
+    },
+    {
+      "tag": "wbr",
+      "children": [
+        "empty"
+      ],
+      "attributes": [
+        "globals"
+      ]
+    },
+    {
+      "tag": "autonomous custom elements",
+      "children": [
+        "transparent"
+      ],
+      "attributes": [
+        "globals",
+        "any, as decided by the element's author"
       ]
     }
   ]
