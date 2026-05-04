@@ -86,6 +86,9 @@ export default function parseData(htmlData, svgData, mathElements) {
         values.join(' | '),
       ];
     }
+    if (attr.attribute.startsWith('on')) {
+      return ['[String, Function]', 'string | ((event: Event) => void)'];
+    }
     return ['String', 'string'];
   }
 
@@ -96,6 +99,13 @@ export default function parseData(htmlData, svgData, mathElements) {
       type,
       value,
     };
+  }
+
+  function attrFallback(name) {
+    if (name.startsWith('on')) {
+      return { name, type: 'string | ((event: Event) => void)', value: '[String, Function]' };
+    }
+    return { name, type: 'string', value: 'String' };
   }
 
   const globalAttributes = attributes
@@ -125,7 +135,7 @@ export default function parseData(htmlData, svgData, mathElements) {
           return a.attribute === attr && a.elements.some(e => e.trim().split(/\s+/).includes(el.tag));
         });
         const found = match ?? attributes.find(a => a.attribute === attr && a.elements.includes('HTML elements'));
-        return found ? mapAttr(found) : { name: attr, type: 'string', value: 'String' };
+        return found ? mapAttr(found) : attrFallback(attr);
       });
     el.methodName = kebabToCamel(el.tag);
     el.pascalTag = kebabToPascal(el.tag);

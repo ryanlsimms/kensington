@@ -217,7 +217,7 @@ export function buildAttributes({ elements, globalAttributes, globalEvents }) {
 };
   
 export const globalEvents = {
-  ${globalEvents.map(a => `'${a}': String,`).join('\n  ')}
+  ${globalEvents.map(a => `'${a}': [String, Function],`).join('\n  ')}
 };
 
 ${elements.map(el =>

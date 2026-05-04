@@ -94,6 +94,9 @@ export default class ContentTag {
     if (['number', 'string'].includes(typeof type)) {
       return value === type;
     }
+    if (type === Function) {
+      return typeof value === 'function';
+    }
     if (type === Boolean) {
       return [true, false, undefined, null].includes(value);
     }
@@ -148,8 +151,20 @@ export default class ContentTag {
   }
 
   attributeString() {
+    if (this.validationLevel !== 'off') {
+      Object.entries(this.attributes).forEach(([attrName, v]) => {
+        if (typeof v === 'function') {
+          showInvalid(
+            `function value for attribute \`${attrName}\` is not supported in toString()`,
+            this.validationLevel,
+            this.logger,
+          );
+        }
+      });
+    }
     const attrString = attributesStringFromObject(
-      this.attributes, { attrsSet: this.allowedAttributeMap, encode: true },
+      this.attributes,
+      { attrsSet: this.allowedAttributeMap, encode: true },
     );
     return attrString ? ` ${attrString}` : '';
   }

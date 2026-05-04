@@ -98,7 +98,7 @@ type CustomTagArguments<T = null> = [attributes?: T | UniversalAttributes, conte
  */
 export type ContentMethod<T = null> = (...args: CustomTagArguments<T>) => ContentTag;
 
-type PrimitiveConstructor = StringConstructor | NumberConstructor | BooleanConstructor;
+type PrimitiveConstructor = StringConstructor | NumberConstructor | BooleanConstructor | FunctionConstructor;
 type Primitive = string | number | boolean | Function;
 type AttributeValue = PrimitiveConstructor | Primitive | (PrimitiveConstructor | Primitive)[];
 

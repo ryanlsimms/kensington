@@ -84,7 +84,7 @@
     "node": "23.9.0"
   },
   "simple-git-hooks": {
-    "pre-commit": "npx lint-staged"
+    "pre-commit": "npm run build && git add esm/kensington.js esm/attributes.js types.d.ts attributes.d.ts && npx lint-staged"
   },
   "lint-staged": {
     "*.js": "eslint"

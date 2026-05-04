@@ -109,8 +109,16 @@ t.input({ type: 'text', oninput: (event: Event) => { console.log(event); } });
 t.div({ onmouseover: 'highlight(this)' });
 t.div({ onmouseover: () => {} });
 
+// element-specific on* attributes (e.g. SVG animation events) accept string or function
+t.animate({ onbegin: 'handleBegin()' });
+t.animate({ onbegin: (event: Event) => { console.log(event); } });
+t.animate({ onend: () => {} });
+
 // @ts-expect-error - number is not a valid event handler type
 t.div({ onclick: 42 });
+
+// @ts-expect-error - number is not a valid event handler type for element-specific on* attributes
+t.animate({ onbegin: 42 });
 
 // ─── numeric attributes ──────────────────────────────────────────────────────
 

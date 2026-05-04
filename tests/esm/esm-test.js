@@ -333,6 +333,49 @@ describe('argument validation', () => {
   });
 });
 
+// ─── function attributes ───────────────────────────────────────────────────
+
+describe('function attributes in toString()', () => {
+  it('does not throw at tag creation for on* attributes with validationLevel error', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.doesNotThrow(() => tt.button({ onclick: () => {} }));
+  });
+  it('throws at toString for on* attributes with validationLevel error', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => tt.button({ onclick: () => {} }).toString());
+  });
+  it('throws at tag creation for non-event attributes with validationLevel error', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => tt.button({ class: () => {} }));
+  });
+  it('silently omits on* function attributes with validationLevel off', () => {
+    assert.strictEqual(t.button({ onclick: () => {} }).toString(), '<button></button>');
+  });
+  it('warns and omits on* function attributes with validationLevel warn', () => {
+    const messages = [];
+    const tt = new Kensington({ validationLevel: 'warn', logger: m => messages.push(m) });
+    const result = tt.button({ onclick: () => {} }).toString();
+    assert.ok(messages.length > 0);
+    assert.strictEqual(result, '<button></button>');
+  });
+  it('accepts a string value for on* attributes with validationLevel error', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.doesNotThrow(() => tt.button({ onclick: 'handleClick()' }).toString());
+  });
+  it('does not throw at tag creation for element-specific on* attributes with function value', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.doesNotThrow(() => tt.animate({ onbegin: () => {} }));
+  });
+  it('throws at toString for element-specific on* attributes with function value', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => tt.animate({ onbegin: () => {} }).toString());
+  });
+  it('accepts a string value for element-specific on* attributes with validationLevel error', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.doesNotThrow(() => tt.animate({ onbegin: 'handleBegin()' }).toString());
+  });
+});
+
 // ─── namespaces ────────────────────────────────────────────────────────────
 
 describe('namespaces', () => {
@@ -383,6 +426,17 @@ describe('custom tags', () => {
     assert.doesNotThrow(() => tt.customElement({ customAttr: 'a string' }).toString());
     assert.throws(() => tt.customElement({ customAttr: 'some other string' }).toString());
   });
+  it('accepts a function as a custom validator', () => {
+    class Custom extends Kensington {
+      customElement = this.createCustomTag('custom-element', {
+        score: v => typeof v === 'number' && v >= 0 && v <= 100,
+      });
+    }
+    const tt = new Custom({ validationLevel: 'error' });
+    assert.doesNotThrow(() => tt.customElement({ score: 42 }).toString());
+    assert.throws(() => tt.customElement({ score: 101 }).toString());
+    assert.throws(() => tt.customElement({ score: 'high' }).toString());
+  });
 });
 
 // ─── other ─────────────────────────────────────────────────────────────────
@@ -419,6 +473,22 @@ describe('other', () => {
     };
     const tt = new Kensington({ validationLevel: 'warn', logger });
     assert.doesNotThrow(() => tt.div({ id: '123-abc' }).toString());
+  });
+});
+
+// ─── slim build ───────────────────────────────────────────────────────────
+
+describe('slim build', () => {
+  it('throws when validationLevel is not off', async () => {
+    const { default: SlimKensington } = await import('../../dist/kensington.slim.js');
+    assert.throws(
+      () => new SlimKensington({ validationLevel: 'warn' }),
+      { message: "The slim build does not include attribute data. Set validationLevel: 'off' or use the full build." },
+    );
+  });
+  it('does not throw when validationLevel is off', async () => {
+    const { default: SlimKensington } = await import('../../dist/kensington.slim.js');
+    assert.doesNotThrow(() => new SlimKensington({ validationLevel: 'off' }));
   });
 });
 

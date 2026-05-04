@@ -99,9 +99,10 @@ import Kensington from 'kensington';
 
 class MyEngine extends Kensington {
   myCard = this.createCustomTag('my-card', {
-    'card-type': ['primary', 'secondary'],  // allowed string literals
-    'loading': Boolean,                     // boolean attribute
-    'max-items': Number,                    // numeric attribute
+    'card-type': ['primary', 'secondary'],           // allowed string literals
+    'loading': Boolean,                              // boolean attribute
+    'max-items': Number,                             // numeric attribute
+    'score': v => typeof v === 'number' && v <= 100, // custom validator function
   });
 }
 
@@ -141,10 +142,14 @@ t.form({ hxPost: '/api/submit', hxSwap: 'outerHTML' });
 ```javascript
 import { t } from 'kensington';
 
-// Function event attributes are wired via addEventListener, not set as strings
+// Event handler attributes accept a function or a string.
+// Functions are wired via addEventListener; strings are set via setAttribute (inline handler).
+// In toString(), function values are not serializable and are omitted
+// (warn/error validationLevel will log a warning or throw).
 const button = t.button({
   type: 'button',
-  onclick: (event) => console.log('clicked', event),
+  onclick: (event) => console.log('clicked', event), // wired via addEventListener
+  // onclick: 'handleClick()',                        // set via setAttribute
 }, 'Click Me').toElement();
 
 document.body.append(button);

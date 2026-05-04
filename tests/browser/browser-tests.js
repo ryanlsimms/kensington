@@ -145,6 +145,16 @@ export function registerTests(bundle) {
     await expect(page.locator('body')).toHaveAttribute('data-clicked', 'yes');
   });
 
+  test('string on* value sets attribute via setAttribute, not addEventListener', async ({ page }) => {
+    const attrValue = await page.evaluate(async src => {
+      const { t } = await import(src);
+      const btn = t.button({ type: 'button', onclick: 'return false' }, 'x').toElement();
+      document.body.append(btn);
+      return btn.getAttribute('onclick');
+    }, bundle);
+    expect(attrValue).toBe('return false');
+  });
+
   test('attaches non-click event listener via function attribute', async ({ page }) => {
     await page.evaluate(async src => {
       const { t } = await import(src);
@@ -157,6 +167,24 @@ export function registerTests(bundle) {
     }, bundle);
     await page.locator('input').fill('hi');
     await expect(page.locator('body')).toHaveAttribute('data-typed', 'yes');
+  });
+
+  test('attaches event listener on SVG element via function attribute', async ({ page }) => {
+    await page.evaluate(async src => {
+      const { t } = await import(src);
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('width', '100');
+      svg.setAttribute('height', '100');
+      const rect = t.rect({
+        width: 100,
+        height: 100,
+        onclick: () => { document.body.dataset.svgClicked = 'yes'; },
+      }).toElement();
+      svg.append(rect);
+      document.body.append(svg);
+    }, bundle);
+    await page.locator('rect').click();
+    await expect(page.locator('body')).toHaveAttribute('data-svg-clicked', 'yes');
   });
 
   test('sets aria attributes on element', async ({ page }) => {

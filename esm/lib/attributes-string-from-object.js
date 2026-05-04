@@ -37,6 +37,9 @@ export default function attributesStringFromObject(obj, { attrsSet = new Map(), 
       finalStr += '"';
       continue;
     }
+    if (typeof val === 'function') {
+      continue;
+    }
 
     if (finalStr) { finalStr += ' '; }
     finalStr += attrName;

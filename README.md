@@ -11,6 +11,9 @@ HTML/SVG/MathML template engine for JavaScript and TypeScript. Every tag is a me
 ```bash
 npm install kensington
 ```
+```javascript
+import Kensington, { t } from 'kensington';
+```
 
 Or in a browser without a build step, via CDN:
 
@@ -20,7 +23,7 @@ Or in a browser without a build step, via CDN:
 </script>
 ```
 
-**Slim build** — omits attribute validation data (~77% smaller minified); use when `validationLevel` is `'off'`:
+**Slim build** - omits attribute validation data (~77% smaller minified). Useful for production deployment where validation should be turned off anyway:
 
 ```javascript
 // bundler / node_modules
@@ -104,11 +107,11 @@ const page = t.htmlWithDocType({ lang: 'en' }, [
 Content elements accept optional attributes and/or content:
 
 ```javascript
-t.div({ id: 'app', class: 'container' }, 'text');  // attributes + content
-t.div({ id: 'app' });                               // attributes only
-t.div('text content');                              // content only
-t.div([t.p('a'), t.p('b')]);                       // content array
-t.div();                                            // empty
+t.div({ id: 'app', class: 'container' }, 'text'); // attributes + content
+t.div({ id: 'app' });                             // attributes only
+t.div('text content');                            // content only
+t.div([t.p('a'), t.p('b')]);                      // content array
+t.div();                                          // empty
 ```
 
 Void elements (`br`, `hr`, `input`, `img`, `link`, `meta`, etc.) take only attributes:
@@ -126,7 +129,6 @@ t.meta({ charset: 'utf-8' });
 - **class as array**: `{ class: ['foo', 'bar'] }` → `class="foo bar"`
 - **style as object**: `{ style: { backgroundColor: 'red', zIndex: 2 } }` → `style="background-color: red; z-index: 2"`. camelCase keys convert to kebab-case; `null`/`undefined`/`false`/empty-string values are silently omitted.
 - **Always allowed**: `data-*`, `aria-*`, and all [global HTML attributes](https://html.spec.whatwg.org/multipage/dom.html#global-attributes)
-- **Validation** is checked against the HTML/SVG/MathML spec at `'warn'` or `'error'` level (default `'warn'`)
 
 ## Content rules
 
@@ -161,6 +163,35 @@ const t = new Kensington({
 });
 ```
 
+## Validation
+
+The `validationLevel` option controls how attribute problems are handled:
+
+| Level | Behaviour |
+|-------|-----------|
+| `'off'` | No validation. Best for production. Required when using the slim build. |
+| `'warn'` | Logs a message via `logger` (default `console.log`). Does not throw. **Default.** |
+| `'error'` | Throws an `Error`. Useful for CI or strict development environments. |
+
+What gets validated:
+
+- **Attribute names** — checked against the HTML/SVG/MathML spec for the element. `data-*`, `aria-*`, and any `additionalNamespaces` are always allowed.
+- **Attribute values** — checked against allowed types/literals for each attribute (e.g. `type` on `<input>` only accepts known values; `id` must not start with a digit).
+- **Style object values** — non-string/number values (other than `null`, `undefined`, `false`) are flagged.
+- **Function values in `toString()`** — event handler attributes (`onclick`, etc.) accept functions for use with `.toElement()`, but functions cannot be serialized to a string. Passing a function and calling `.toString()` logs a warning (`'warn'`) or throws (`'error'`); the attribute is omitted in either case.
+
+```javascript
+const t = new Kensington({ validationLevel: 'error' });
+
+t.div({ class: 'ok' });                        // fine
+t.div({ unknownAttr: 'x' });                   // throws — not a known attribute
+t.input({ type: 'checkbox' });                 // fine
+t.input({ type: 'notatype' });                 // throws — not an allowed value
+t.button({ onclick: () => {} });               // fine at creation…
+t.button({ onclick: () => {} }).toString();    // throws — function not serializable
+t.button({ onclick: 'doThing()' }).toString(); // fine — string serializes normally
+```
+
 ## Custom elements
 
 ```javascript
@@ -168,9 +199,10 @@ import Kensington from 'kensington';
 
 class MyEngine extends Kensington {
   myCard = this.createCustomTag('my-card', {
-    'card-type': ['primary', 'secondary'],  // allowed string literals
-    'loading': Boolean,                     // boolean attribute
-    'max-items': Number,                    // numeric attribute
+    'card-type': ['primary', 'secondary'],           // allowed string literals
+    'loading': Boolean,                              // boolean attribute
+    'max-items': Number,                             // numeric attribute
+    'score': v => typeof v === 'number' && v <= 100, // custom validator function
   });
 }
 
@@ -179,6 +211,27 @@ t.myCard({ 'card-type': 'primary' }, t.p('content')).toString();
 // → <my-card card-type="primary">
 //     <p>content</p>
 //   </my-card>
+```
+
+## Browser — toElement()
+
+`.toElement()` renders a tag tree to a live DOM node. SVG and MathML elements are created with the correct namespace via `createElementNS`.
+
+Event handler attributes (`onclick`, `oninput`, etc.) accept a **function** or a **string**. Functions are wired via `addEventListener`; strings are set via `setAttribute` (inline handler). In `toString()`, function values cannot be serialized and are omitted — a warning is logged when `validationLevel` is `'warn'` or an error thrown when `'error'`.
+
+```javascript
+import { t } from 'kensington';
+
+const button = t.button({
+  type: 'button',
+  onclick: e => console.log('clicked', e),
+}, 'Click Me').toElement();
+
+document.body.append(button);
+
+const svg = t.svg({ viewBox: '0 0 100 100' }, [
+  t.circle({ cx: 50, cy: 50, r: 40, fill: 'steelblue' }),
+]).toElement();
 ```
 
 ## TypeScript
@@ -208,30 +261,11 @@ t.div({ hxBoost: 'true', hxTarget: '#result' });
 t.form({ hxPost: '/api/submit', hxSwap: 'outerHTML' });
 ```
 
-## Browser — toElement()
-
-`.toElement()` renders a tag tree to a live DOM node. Function-valued event attributes are wired via `addEventListener`. SVG and MathML elements are created with the correct namespace via `createElementNS`.
-
-```javascript
-import { t } from 'kensington';
-
-const button = t.button({
-  type: 'button',
-  onclick: e => console.log('clicked', e),
-}, 'Click Me').toElement();
-
-document.body.append(button);
-
-const svg = t.svg({ viewBox: '0 0 100 100' }, [
-  t.circle({ cx: 50, cy: 50, r: 40, fill: 'steelblue' }),
-]).toElement();
-```
-
 ## Imports
 
 ```javascript
-import Kensington from 'kensington';          // class — for subclassing or custom config
-import { t } from 'kensington';              // shared default instance
+import Kensington from 'kensington';                     // class — for subclassing or custom config
+import { t } from 'kensington';                          // shared default instance
 import { formAttributes } from 'kensington/attributes';  // per-element attribute data
 ```
 

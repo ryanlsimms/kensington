@@ -69,6 +69,7 @@ Kensington is an HTML template engine that generates HTML strings (or DOM elemen
 - Boolean attributes are included when `true`, omitted when `false`
 - `style` accepts a plain object: `{ style: { backgroundColor: 'red', zIndex: 2 } }` → `style="background-color: red; z-index: 2"`. camelCase keys are converted to kebab-case; `null`/`undefined`/`false` values are silently omitted; other non-string/number values are flagged by validation.
 - `data-*` and `aria-*` namespaces are always allowed; additional namespaces (e.g. `hx` for htmx) are passed via constructor
+- Event handler attributes (`onclick`, `oninput`, and all `on*`) accept `[String, Function]`. Functions are valid at tag creation and wired via `addEventListener` in `toElement()`. In `toString()`, function values cannot be serialized — they are omitted, with the `handleFunctionValues` callback in `attributesStringFromObject` invoking `showInvalid` at that point rather than at creation time.
 
 ### Testing setup
 
