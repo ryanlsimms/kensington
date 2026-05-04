@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect,test } from '@playwright/test';
 
 export function registerTests(bundle) {
   test.beforeEach(async ({ page }) => {
@@ -137,8 +137,8 @@ export function registerTests(bundle) {
       document.body.append(
         t.button({
           type: 'button',
-          onclick: () => { document.body.dataset.clicked = 'yes'; }
-        }, 'Click Me').toElement()
+          onclick: () => { document.body.dataset.clicked = 'yes'; },
+        }, 'Click Me').toElement(),
       );
     }, bundle);
     await page.locator('button').click();
@@ -151,8 +151,8 @@ export function registerTests(bundle) {
       document.body.append(
         t.input({
           type: 'text',
-          oninput: () => { document.body.dataset.typed = 'yes'; }
-        }).toElement()
+          oninput: () => { document.body.dataset.typed = 'yes'; },
+        }).toElement(),
       );
     }, bundle);
     await page.locator('input').fill('hi');

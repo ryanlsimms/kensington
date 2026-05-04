@@ -1,11 +1,11 @@
 import he from './he.js';
-import { getAttrName } from './text-utils.js';
 import { styleObjectToCss } from './style-utils.js';
+import { getAttrName } from './text-utils.js';
 
-export default function attributesArrayFromObject(obj, { encode, attrsSet = new Map(), prefix = '' } = {}) {
-  let finalArr = [];
+export default function attributesArrayFromObject(obj, { attrsSet = new Map(), encode, prefix = '' } = {}) {
+  const finalArr = [];
 
-  for (const attr in obj) {
+  for (const attr of Object.keys(obj)) {
     const val = obj[attr];
     if ([false, null, undefined].includes(val)) {
       continue;
@@ -24,7 +24,7 @@ export default function attributesArrayFromObject(obj, { encode, attrsSet = new 
       continue;
     }
     if (val?.constructor === Object) {
-      finalArr.push(...attributesArrayFromObject(val, { encode, attrsSet, prefix: attrName }));
+      finalArr.push(...attributesArrayFromObject(val, { attrsSet, encode, prefix: attrName }));
       continue;
     }
     if (attr === 'class' && Array.isArray(val)) {

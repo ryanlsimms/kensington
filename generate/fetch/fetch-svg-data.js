@@ -13,7 +13,7 @@ async function getElements(url) {
       .map(span => span.textContent.replaceAll(/[\u2018\u2019]/g, ''))
       .filter(attr => !attr.startsWith('aria'))
       .sort())];
-    elements.push({ tag, attributes, children: [] });
+    elements.push({ attributes, children: [], tag });
   }
 
   return elements;
@@ -32,7 +32,7 @@ async function getDraftElements(url) {
       .map(span => span.textContent.replaceAll(/[\u2018\u2019]/g, ''))
       .filter(attr => !attr.startsWith('aria'))
       .sort())];
-    elements.push({ tag, attributes, children: [] });
+    elements.push({ attributes, children: [], tag });
   }
 
   return elements;
@@ -46,10 +46,10 @@ async function getAttributes(url) {
   return [...rows].map(row => {
     return {
       attribute: row.querySelector('.attribute-name').textContent,
-      value:  row.querySelector('.attribute-value').textContent.split("|").map(v => v.replaceAll(`'`, '"').trim()),
-      elements:  row.querySelector('.attribute-parents').textContent.split(",").map(v => v.trim()),
-      type: 'svg'
-    }
+      elements:  row.querySelector('.attribute-parents').textContent.split(',').map(v => v.trim()),
+      type: 'svg',
+      value:  row.querySelector('.attribute-value').textContent.split('|').map(v => v.replaceAll(`'`, '"').trim()),
+    };
   });
 }
 
@@ -87,6 +87,7 @@ export default async function fetchSvgData() {
   ]);
 
   return {
+    svgAttributes,
     svgElements: [
       ...animationElements,
       ...cssMaskingElements,
@@ -102,6 +103,5 @@ export default async function fetchSvgData() {
       ...stylingElements,
       ...textElements,
     ],
-    svgAttributes,
-  }
+  };
 }

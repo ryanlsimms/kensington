@@ -2,7 +2,7 @@ import { kebabToCamel } from './utils/text-utils.js';
 
 function attributesType({ attributes = [], globalTypes }) {
   if (!attributes.length) {
-    return globalTypes.join(' & ')
+    return globalTypes.join(' & ');
   }
   const styleType = 'string | Record<string, string | number | false | null>';
   const classType = 'string | string[]';
@@ -185,12 +185,12 @@ export default class Kensington {
 
   ${elements.flatMap(el => {
     if (el.returnTagType === 'Void') {
-      return [`${el.methodName}(attributes?: ${el.attributesTypeName}): VoidTag;`]
+      return [`${el.methodName}(attributes?: ${el.attributesTypeName}): VoidTag;`];
     }
     return [
       `${el.methodName}(attributes: ${el.attributesTypeName}, content?: Content): ${el.returnTagType}Tag;`,
-      `${el.methodName}(content?: Content): ${el.returnTagType}Tag;`
-    ]
+      `${el.methodName}(content?: Content): ${el.returnTagType}Tag;`,
+    ];
   }).join('\n  ')}
 }
 

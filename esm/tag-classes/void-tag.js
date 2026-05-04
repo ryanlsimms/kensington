@@ -1,5 +1,5 @@
-import ContentTag from './content-tag.js';
 import showInvalid from '../lib/show-invalid.js';
+import ContentTag from './content-tag.js';
 
 export default class VoidTag extends ContentTag {
   validate() {

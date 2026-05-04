@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import buildDeclarations from '../build-declarations.js';
+
 import buildAttributesDeclarations from '../build-attributes-declarations.js';
+import buildDeclarations from '../build-declarations.js';
 import { buildAttributes, buildMain } from '../build-javascript.js';
 import parseData from '../parse-data.js';
 

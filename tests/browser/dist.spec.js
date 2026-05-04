@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { expect,test } from '@playwright/test';
+
 import { registerTests } from './browser-tests.js';
 
 for (const bundle of ['/dist/kensington.js', '/dist/kensington.min.js']) {
@@ -24,8 +25,8 @@ for (const bundle of ['/dist/kensington.js', '/dist/kensington.min.js']) {
         const { default: Kensington } = await import(src);
         let warned = false;
         const tt = new Kensington({
+          logger() { warned = true; },
           validationLevel: 'warn',
-          logger() { warned = true; }
         });
         try {
           tt.div({ invalidAttr: 'value' }).toString();
@@ -45,15 +46,15 @@ for (const bundle of ['/dist/kensington.slim.js', '/dist/kensington.slim.min.js'
 
     for (const level of ['error', 'warn']) {
       test(`throws when validationLevel is '${level}'`, async ({ page }) => {
-        const threw = await page.evaluate(async ({ src, level }) => {
+        const threw = await page.evaluate(async ({ level: validationLevel, src }) => {
           const { default: Kensington } = await import(src);
           try {
-            new Kensington({ validationLevel: level });
+            new Kensington({ validationLevel });
             return false;
           } catch {
             return true;
           }
-        }, { src: bundle, level });
+        }, { level, src: bundle });
         expect(threw).toBe(true);
       });
     }

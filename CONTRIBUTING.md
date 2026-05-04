@@ -24,8 +24,9 @@ Open an issue describing the use case. Explaining *why* you need the feature is 
    ```
 4. Make your changes — see [Architecture](#architecture) below
 5. Add or update tests and run the full suite: `npm test`
-6. Add a line to `## [Unreleased]` in `CHANGELOG.md` (consumer-facing changes only)
-7. Open a pull request against `master`
+6. Run the linter: `npm run lint`
+7. Add a line to `## [Unreleased]` in `CHANGELOG.md` (consumer-facing changes only)
+8. Open a pull request against `master`
 
 ## Running tests
 
@@ -36,6 +37,15 @@ npm run test-cjs       # CJS unit tests
 npm run test-ts        # TypeScript type-checking
 npm run test-browser   # Playwright browser tests
 ```
+
+## Linting
+
+```bash
+npm run lint    # lint the whole project
+npm run build   # regenerate files and lint the generated output
+```
+
+ESLint is configured in `eslint.config.js`. The generated files `esm/kensington.js` and `esm/attributes.js` are included in linting — `npm run build` lints them automatically after generation. If you change the generator templates in `generate/build-javascript.js` or `generate/parse-data.js`, run `npm run build` to confirm the output is lint-clean.
 
 ## Architecture
 

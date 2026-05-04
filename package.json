@@ -60,8 +60,10 @@
     "url": "git+https://github.com/ryanlsimms/kensington.git"
   },
   "scripts": {
+    "prepare": "simple-git-hooks",
     "prepack": "node generate/bin/build-cjs.js && node generate/bin/build-browser.js",
-    "build": "cd generate/bin && node write-code-files.js",
+    "build": "(cd generate/bin && node write-code-files.js) && eslint esm/kensington.js esm/attributes.js",
+    "lint": "eslint .",
     "build-cjs": "node generate/bin/build-cjs.js",
     "build-browser": "node generate/bin/build-browser.js",
     "fetch": "node generate/bin/fetch-all.js",
@@ -80,15 +82,28 @@
   "volta": {
     "node": "23.9.0"
   },
+  "simple-git-hooks": {
+    "pre-commit": "npx lint-staged"
+  },
+  "lint-staged": {
+    "*.js": "eslint"
+  },
   "devDependencies": {
+    "@eslint/js": "^9.39.2",
     "@playwright/test": "^1.58.2",
     "@rollup/plugin-commonjs": "^29.0.2",
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@rollup/plugin-terser": "^1.0.0",
+    "@stylistic/eslint-plugin": "^5.8.0",
     "@types/node": "^25.5.0",
+    "eslint": "^9.39.2",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "globals": "^17.3.0",
     "html-validate": "^9.4.1",
     "jsdom": "^26.0.0",
+    "lint-staged": "^16.2.7",
     "rollup": "^4.35.0",
+    "simple-git-hooks": "^2.13.1",
     "typescript": "^6.0.3"
   }
 }

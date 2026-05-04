@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+
 import he from '../esm/lib/he.js';
 
 const WARMUP = 3;
@@ -23,8 +24,8 @@ const fns = {
     const k = new Kensington({ indentationLevel: 0, validationLevel: 'off' });
     k.div(
       Array.from({ length: 50_000 }, (_, i) =>
-        k.span({ title: `<item ${i} & "x">` }, `value < ${i} > 0`)
-      )
+        k.span({ title: `<item ${i} & "x">` }, `value < ${i} > 0`),
+      ),
     ).toString();
   },
 
@@ -34,10 +35,10 @@ const fns = {
       Array.from({ length: 20_000 }, (_, i) =>
         k.div({ class: 'outer' },
           k.div({ class: 'middle' },
-            k.span(String(i))
-          )
-        )
-      )
+            k.span(String(i)),
+          ),
+        ),
+      ),
     ).toString();
   },
 
@@ -52,8 +53,8 @@ const fns = {
           dataIndex: i,
           ariaLabel: `item ${i}`,
           tabindex: i % 10,
-        }, i)
-      )
+        }, i),
+      ),
     ).toString();
   },
 
@@ -62,9 +63,9 @@ const fns = {
     k.div(
       Array.from({ length: 30_000 }, (_, i) =>
         k.div({ class: 'item', id: `item-${i}` },
-          k.span(String(i))
-        )
-      )
+          k.span(String(i)),
+        ),
+      ),
     ).toString();
   },
 
@@ -81,8 +82,8 @@ const fns = {
           dataBsTarget: '#panel',
           ariaExpanded: 'false',
           ariaControls: 'panel',
-        })
-      )
+        }),
+      ),
     ).toString();
   },
 
@@ -93,8 +94,8 @@ const fns = {
     const k = new Kensington({ indentationLevel: 0, validationLevel: 'error' });
     k.div(
       Array.from({ length: 50_000 }, (_, i) =>
-        k.span({ class: 'item', id: `item-${i}`, tabindex: i % 10, title: 'x' })
-      )
+        k.span({ class: 'item', id: `item-${i}`, tabindex: i % 10, title: 'x' }),
+      ),
     ).toString();
   },
 
@@ -107,7 +108,7 @@ const baselines = {
     const contentPrefix = 'value <';
     const contentSuffix = '> 0';
     const spans = Array.from({ length: 50_000 }, (_, i) =>
-      `<span title="${he.encode(`${titlePrefix} ${i} ${titleSuffix}`)}">${he.encode(`${contentPrefix} ${i} ${contentSuffix}`)}</span>`
+      `<span title="${he.encode(`${titlePrefix} ${i} ${titleSuffix}`)}">${he.encode(`${contentPrefix} ${i} ${contentSuffix}`)}</span>`,
     ).join('');
     `<div>${spans}</div>`;
   },
@@ -116,7 +117,7 @@ const baselines = {
     const outerClass = 'outer';
     const middleClass = 'middle';
     const rows = Array.from({ length: 20_000 }, (_, i) =>
-      `  <div class="${outerClass}">\n    <div class="${middleClass}">\n      <span>${i}</span>\n    </div>\n  </div>`
+      `  <div class="${outerClass}">\n    <div class="${middleClass}">\n      <span>${i}</span>\n    </div>\n  </div>`,
     ).join('\n');
     `<div>\n${rows}\n</div>`;
   },
@@ -125,7 +126,7 @@ const baselines = {
     const cls = 'a b c';
     const baseUrl = 'https://example.com/';
     const divs = Array.from({ length: 30_000 }, (_, i) =>
-      `<div id="el-${i}" class="${cls}" data-src="${baseUrl}${i}" data-index="${i}" aria-label="item ${i}" tabindex="${i % 10}">${i}</div>`
+      `<div id="el-${i}" class="${cls}" data-src="${baseUrl}${i}" data-index="${i}" aria-label="item ${i}" tabindex="${i % 10}">${i}</div>`,
     ).join('');
     `<div>${divs}</div>`;
   },
@@ -133,7 +134,7 @@ const baselines = {
   validationHeavy() {
     const cls = 'item';
     const items = Array.from({ length: 30_000 }, (_, i) =>
-      `<div class="${cls}" id="item-${i}"><span>${i}</span></div>`
+      `<div class="${cls}" id="item-${i}"><span>${i}</span></div>`,
     ).join('');
     `<div>${items}</div>`;
   },
@@ -144,7 +145,7 @@ const baselines = {
     const expanded = 'false';
     const controls = 'panel';
     const spans = Array.from({ length: 50_000 }, () =>
-      `<span data-bs-toggle="${toggle}" data-bs-target="${target}" aria-expanded="${expanded}" aria-controls="${controls}"></span>`
+      `<span data-bs-toggle="${toggle}" data-bs-target="${target}" aria-expanded="${expanded}" aria-controls="${controls}"></span>`,
     ).join('');
     `<div>${spans}</div>`;
   },
@@ -153,7 +154,7 @@ const baselines = {
     const cls = 'item';
     const title = 'x';
     const spans = Array.from({ length: 50_000 }, (_, i) =>
-      `<span class="${cls}" id="item-${i}" tabindex="${i % 10}" title="${title}"></span>`
+      `<span class="${cls}" id="item-${i}" tabindex="${i % 10}" title="${title}"></span>`,
     ).join('');
     `<div>${spans}</div>`;
   },
@@ -181,7 +182,7 @@ if (scenario) {
   times.sort((a, b) => a - b);
   const mean = times.reduce((a, b) => a + b) / times.length;
   const median = times[Math.floor(times.length / 2)];
-  process.stdout.write(JSON.stringify({ mean, median, min: times[0], max: times[times.length - 1] }) + '\n');
+  process.stdout.write(`${JSON.stringify({ mean, median, min: times[0], max: times[times.length - 1] })  }\n`);
 } else {
   const self = fileURLToPath(import.meta.url);
 
@@ -216,12 +217,12 @@ if (scenario) {
   const header = `${'scenario'.padEnd(nameW)}  ${pad('mean', numW)}  ${pad('median', numW)}  ${pad('min', numW)}  ${pad('max', numW)}  ${pad('baseline', numW)}  ${pad('ratio', ratioW)}`;
   const rule = '─'.repeat(header.length);
 
-  console.log('\n' + rule);
+  console.log(`\n${  rule}`);
   console.log(header);
   console.log(rule);
   for (const r of results) {
     const ratio = `${(r.median / r.siMedian).toFixed(1)}x`;
     console.log(`${r.name.padEnd(nameW)}  ${pad(fmt(r.mean), numW)}  ${pad(fmt(r.median), numW)}  ${pad(fmt(r.min), numW)}  ${pad(fmt(r.max), numW)}  ${pad(fmt(r.siMedian), numW)}  ${pad(ratio, ratioW)}`);
   }
-  console.log(rule + '\n');
+  console.log(`${rule  }\n`);
 }

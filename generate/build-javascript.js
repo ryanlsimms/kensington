@@ -1,18 +1,18 @@
 function attributesObject(attributes) {
   return `{
-  ${attributes.map(a => `'${a.name}': ${a.value}`).join(',\n  ')}
+  ${attributes.map(a => `'${a.name}': ${a.value},`).join('\n  ')}
 }`;
 }
 
 export function buildMain({ elements }) {
-  return `import ContentTag from './tag-classes/content-tag.js';
+  return `import * as allAttributes from './attributes.js';
+import getPrototypeMethods from './lib/get-prototype-methods.js';
+import showInvalid from './lib/show-invalid.js';
+import { camelToKebab } from './lib/text-utils.js';
+import ContentTag from './tag-classes/content-tag.js';
 import HtmlWithDoctypeTag from './tag-classes/html-with-doctype-tag.js';
 import LiteralTag from './tag-classes/literal-tag.js';
 import VoidTag from './tag-classes/void-tag.js';
-import getPrototypeMethods from './lib/get-prototype-methods.js';
-import * as allAttributes from './attributes.js';
-import { camelToKebab } from './lib/text-utils.js';
-import showInvalid from './lib/show-invalid.js';
 
 /**
  * HTML/SVG/MathML template engine. Every tag is a method that accepts optional attributes
@@ -33,11 +33,11 @@ export default class Kensington {
    * @param {number} [options.indentationLevel] - Spaces per indent level. Default: 2.
    * @param {function} [options.logger] - Function called with warning messages when \`validationLevel\` is \`'warn'\`. Default: \`console.log\`.
    */
-  constructor({ 
-    additionalNamespaces = [], 
-    validationLevel = 'off', 
-    indentationLevel = 2, 
+  constructor({
+    additionalNamespaces = [],
+    indentationLevel = 2,
     logger = console.log,
+    validationLevel = 'off',
   } = {}) {
     if (allAttributes.__slim__ && validationLevel !== 'off') {
       throw new Error("The slim build does not include attribute data. Set validationLevel: 'off' or use the full build.");
@@ -62,7 +62,7 @@ export default class Kensington {
    * }
    */
   createCustomTag(tagName, allowedAttributes = {}) {
-    const kebabAttributes = Object.fromEntries(Object.entries(allowedAttributes).map(([k,v]) => [camelToKebab(k), v]))
+    const kebabAttributes = Object.fromEntries(Object.entries(allowedAttributes).map(([k,v]) => [camelToKebab(k), v]));
     return this.createTag(tagName, kebabAttributes, ContentTag, {
       includeGlobalAttributes: true,
       includeGlobalEvents: true,
@@ -86,10 +86,10 @@ export default class Kensington {
 
   createLiteralContentTag(tagName, allowedAttributes = {}) {
     return this.createTag(tagName, allowedAttributes, ContentTag, {
-      includeGlobalAttributes: true,
-      includeGlobalEvents: true,
       contentIsLiteral: true,
       encodeContent: !['script', 'style'].includes(tagName),
+      includeGlobalAttributes: true,
+      includeGlobalEvents: true,
     });
   }
 
@@ -110,11 +110,11 @@ export default class Kensington {
 
   createTag(tagName, allowedAttributes = {}, Klass, options) {
     const {
+      contentIsLiteral = false,
+      encodeContent = true,
       includeGlobalAttributes,
       includeGlobalEvents,
       namespace,
-      contentIsLiteral = false,
-      encodeContent = true,
     } = options;
     const allowedAttributeMap = new Map(Object.entries(allowedAttributes));
     const invalidTypes = [...allowedAttributeMap.values()].filter(type => {
@@ -158,12 +158,12 @@ export default class Kensington {
         allowedAttributeMap,
         attributes,
         content,
+        contentIsLiteral,
         encodeContent,
         indentationLevel: this.indentationLevel,
         logger: this.logger,
         namespace,
         namespaces: this.namespaces,
-        contentIsLiteral,
         tagName,
         validationLevel: this.validationLevel,
       });
@@ -172,7 +172,7 @@ export default class Kensington {
         instance.validate(this.validationLevel);
       }
       return instance;
-    }
+    };
   }
 
   /**
@@ -184,7 +184,7 @@ export default class Kensington {
    */
   literal(str) {
     if (str.includes('<script')) {
-      throw new Error('<script> tags are not allowed to be passed in literal html.  Use the .unsafeLiteral if you can vouch for the string')
+      throw new Error('<script> tags are not allowed to be passed in literal html.  Use the .unsafeLiteral if you can vouch for the string');
     }
     return new LiteralTag(str);
   }
@@ -208,12 +208,11 @@ export default class Kensington {
 }
 
 export const t = new Kensington();
-`
+`;
 }
 
-export function buildAttributes({ elements, globalEvents, globalAttributes }) {
-  return `
-export const globalAttributes = {
+export function buildAttributes({ elements, globalAttributes, globalEvents }) {
+  return `export const globalAttributes = {
   ${globalAttributes.map(a => `'${a.name}': ${a.value},`).join('\n  ')}
 };
   
@@ -222,7 +221,7 @@ export const globalEvents = {
 };
 
 ${elements.map(el =>
-  `export const ${el.attributesName} = ${el.attributes.length ? attributesObject(el.attributes) : '{}'};`
-  ).join('\n')}
-`
+  `export const ${el.attributesName} = ${el.attributes.length ? attributesObject(el.attributes) : '{}'};`,
+).join('\n')}
+`;
 }

@@ -18,7 +18,11 @@ npm run test-browser  # Playwright browser tests
 npm run dom-server
 
 # Regenerate esm/kensington.js, esm/attributes.js, types.d.ts, cjs/, and dist/ from spec data
+# Also lints the generated output — if the generator templates produce invalid JS, this fails
 npm run build
+
+# Lint the whole project
+npm run lint
 
 # Build only the browser dist bundle (dist/kensington.js and dist/kensington.min.js)
 npm run build-browser

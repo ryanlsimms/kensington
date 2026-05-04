@@ -5,8 +5,8 @@ export default function parseTable(table, prop, otherProps) {
       ...Object.fromEntries(otherProps.map(([key, index]) => {
         const cell = tr.querySelector(`td:nth-child(${index})`);
         const cellContents = cell.textContent.trim().split(/;/).map(el => el.trim());
-        return [key, cellContents]
+        return [key, cellContents];
       })),
-    }
+    };
   });
 }

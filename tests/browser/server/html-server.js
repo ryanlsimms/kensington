@@ -1,12 +1,12 @@
-import * as http from 'node:http';
 import fs from 'node:fs';
+import * as http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
-http.createServer(async (req, res) =>  {
-  res.status = 200
+http.createServer((req, res) => {
+  res.status = 200;
   try {
     if (req.url === '/') {
       res.setHeader('Content-Type', 'text/html');
@@ -18,8 +18,9 @@ http.createServer(async (req, res) =>  {
     } else if (req.url.endsWith('.js')) {
       const file = fs.readFileSync(path.join(dirname, '..', '..', '..', req.url));
       res.setHeader('Content-Type', 'text/javascript');
-      res.end(file);
+      return res.end(file);
     }
+    return res.end('');
   } catch (err) {
     console.error(err);
     res.status = 404;

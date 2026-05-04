@@ -6,5 +6,4 @@ export default function getPrototypeMethods(instance) {
     return methods;
   }
   return methods.concat(getPrototypeMethods(Object.getPrototypeOf(instance)));
-
 }

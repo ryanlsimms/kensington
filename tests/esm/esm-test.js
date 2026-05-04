@@ -1,7 +1,9 @@
-import Kensington, { t } from 'kensington';
-import attributesArrayFromObject from '../../esm/lib/attributes-array-from-object.js';
-import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
+
+import Kensington, { t } from 'kensington';
+
+import attributesArrayFromObject from '../../esm/lib/attributes-array-from-object.js';
 
 // ─── content tag ───────────────────────────────────────────────────────────
 
@@ -48,11 +50,11 @@ describe('content tag', () => {
   it('flattens nested arrays in content', () => {
     assert.strictEqual(
       t.div([['a', 'b'], 'c']).toString(),
-      t.div(['a', 'b', 'c']).toString()
+      t.div(['a', 'b', 'c']).toString(),
     );
     assert.strictEqual(
       t.div([t.span('x'), [t.span('y'), t.span('z')]]).toString(),
-      t.div([t.span('x'), t.span('y'), t.span('z')]).toString()
+      t.div([t.span('x'), t.span('y'), t.span('z')]).toString(),
     );
   });
   it('ignores empty content', () => {
@@ -79,29 +81,29 @@ describe('literal content', () => {
   it('does not encode script tags', () => {
     assert.strictEqual(
       t.body(t.script(`const x = "<div></div>";\nconsole.log(x);`)).toString(),
-      `<body>\n  <script>const x = "<div></div>";\n  console.log(x);</script>\n</body>`
+      `<body>\n  <script>const x = "<div></div>";\n  console.log(x);</script>\n</body>`,
     );
   });
   it('encodes pre tag content', () => {
     assert.strictEqual(
       t.div(t.pre('<div></div')).toString(),
-      `<div>\n  <pre>&#x3C;div&#x3E;&#x3C;/div</pre>\n</div>`
+      `<div>\n  <pre>&#x3C;div&#x3E;&#x3C;/div</pre>\n</div>`,
     );
   });
   it('does not add whitespace inside textarea and pre', () => {
     assert.strictEqual(
       t.div(t.div(t.textarea('line1\r\nline2'))).toString(),
-      `<div>\n  <div>\n    <textarea>line1\nline2</textarea>\n  </div>\n</div>`
+      `<div>\n  <div>\n    <textarea>line1\nline2</textarea>\n  </div>\n</div>`,
     );
     assert.strictEqual(
       t.div(t.div(t.pre('line1\r\nline2'))).toString(),
-      `<div>\n  <div>\n    <pre>line1\nline2</pre>\n  </div>\n</div>`
+      `<div>\n  <div>\n    <pre>line1\nline2</pre>\n  </div>\n</div>`,
     );
   });
   it('does not escape style tag content', () => {
     assert.strictEqual(
       t.style('td:nth-of-type(1):before { content: "Date"; }').toString(),
-      '<style>td:nth-of-type(1):before { content: "Date"; }</style>'
+      '<style>td:nth-of-type(1):before { content: "Date"; }</style>',
     );
   });
   it('joins multiple content items with newline', () => {
@@ -164,55 +166,55 @@ describe('attributes', () => {
     it('converts camelCase keys to css properties', () => {
       assert.strictEqual(
         t.div({ style: { backgroundColor: 'red', fontSize: '14px' } }).toString(),
-        '<div style="background-color: red; font-size: 14px"></div>'
+        '<div style="background-color: red; font-size: 14px"></div>',
       );
     });
     it('passes kebab-case keys through unchanged', () => {
       assert.strictEqual(
         t.div({ style: { 'background-color': 'red', 'font-size': '14px' } }).toString(),
-        '<div style="background-color: red; font-size: 14px"></div>'
+        '<div style="background-color: red; font-size: 14px"></div>',
       );
     });
     it('handles mixed camelCase and kebab-case keys', () => {
       assert.strictEqual(
         t.div({ style: { backgroundColor: 'red', 'font-size': '14px' } }).toString(),
-        '<div style="background-color: red; font-size: 14px"></div>'
+        '<div style="background-color: red; font-size: 14px"></div>',
       );
     });
     it('accepts number values', () => {
       assert.strictEqual(
         t.div({ style: { zIndex: 2, opacity: 0.5 } }).toString(),
-        '<div style="z-index: 2; opacity: 0.5"></div>'
+        '<div style="z-index: 2; opacity: 0.5"></div>',
       );
     });
     it('keeps 0 as a valid value', () => {
       assert.strictEqual(
         t.div({ style: { opacity: 0 } }).toString(),
-        '<div style="opacity: 0"></div>'
+        '<div style="opacity: 0"></div>',
       );
     });
     it('drops null values', () => {
       assert.strictEqual(
         t.div({ style: { color: null, fontWeight: 'bold' } }).toString(),
-        '<div style="font-weight: bold"></div>'
+        '<div style="font-weight: bold"></div>',
       );
     });
     it('drops undefined values', () => {
       assert.strictEqual(
         t.div({ style: { color: undefined, fontWeight: 'bold' } }).toString(),
-        '<div style="font-weight: bold"></div>'
+        '<div style="font-weight: bold"></div>',
       );
     });
     it('drops false values', () => {
       assert.strictEqual(
         t.div({ style: { color: false, fontWeight: 'bold' } }).toString(),
-        '<div style="font-weight: bold"></div>'
+        '<div style="font-weight: bold"></div>',
       );
     });
     it('drops true values', () => {
       assert.strictEqual(
         t.div({ style: { color: true, fontWeight: 'bold' } }).toString(),
-        '<div style="font-weight: bold"></div>'
+        '<div style="font-weight: bold"></div>',
       );
     });
     it('throws on true value when validationLevel is error', () => {
@@ -222,7 +224,7 @@ describe('attributes', () => {
     it('warns on true value when validationLevel is warn', (test, done) => {
       const expectedMessage = 'invalid attribute `style="color: true"` given for element `div`';
       let callCount = 0;
-      const logger = (message) => {
+      const logger = message => {
         if (++callCount === 2) {
           assert.ok(message.startsWith(`Error: ${expectedMessage}\n`));
           done();
@@ -240,13 +242,13 @@ describe('attributes', () => {
     it('drops empty string values', () => {
       assert.strictEqual(
         t.div({ style: { color: '', fontWeight: 'bold' } }).toString(),
-        '<div style="font-weight: bold"></div>'
+        '<div style="font-weight: bold"></div>',
       );
     });
     it('omits style attribute when all values are invalid', () => {
       assert.strictEqual(
         t.div({ style: { color: null, opacity: undefined } }).toString(),
-        '<div></div>'
+        '<div></div>',
       );
     });
     it('omits style attribute for empty object', () => {
@@ -255,7 +257,7 @@ describe('attributes', () => {
     it('still accepts a plain string', () => {
       assert.strictEqual(
         t.div({ style: 'color: red' }).toString(),
-        '<div style="color: red"></div>'
+        '<div style="color: red"></div>',
       );
     });
     it('builds style in attribute array', () => {
@@ -286,7 +288,7 @@ describe('attributes', () => {
     });
     assert.strictEqual(
       JSON.stringify(result),
-      '[["id","a"],["data-name","b"],["data-nested-attr","c"],["data-nested","d"],["data-camel-case","e"],["data-deeply-nested-attr","f"],["checked",""]]'
+      '[["id","a"],["data-name","b"],["data-nested-attr","c"],["data-nested","d"],["data-camel-case","e"],["data-deeply-nested-attr","f"],["checked",""]]',
     );
   });
 
@@ -407,7 +409,7 @@ describe('other', () => {
   it('warn validation level calls logger with message and stack', (test, done) => {
     let callCount = 0;
     const errorMessage = 'invalid attribute `id="123-abc"` given for element `div`';
-    const logger = (message) => {
+    const logger = message => {
       if (++callCount === 2) {
         assert.ok(message.startsWith(`Error: ${errorMessage}\n`));
         done();
@@ -426,13 +428,13 @@ describe('htmlWithDocType', () => {
   it('prepends doctype declaration', () => {
     assert.strictEqual(
       t.htmlWithDocType(t.body('hello')).toString(),
-      '<!DOCTYPE html>\n<html>\n  <body>hello</body>\n</html>'
+      '<!DOCTYPE html>\n<html>\n  <body>hello</body>\n</html>',
     );
   });
   it('accepts attributes', () => {
     assert.strictEqual(
       t.htmlWithDocType({ lang: 'en' }, t.body('hello')).toString(),
-      '<!DOCTYPE html>\n<html lang="en">\n  <body>hello</body>\n</html>'
+      '<!DOCTYPE html>\n<html lang="en">\n  <body>hello</body>\n</html>',
     );
   });
 });
@@ -443,7 +445,7 @@ describe('svg tag', () => {
   it('renders svg element to string', () => {
     assert.strictEqual(
       t.svg(t.circle({ r: 5, cx: 5, cy: 5 })).toString(),
-      '<svg>\n  <circle r="5" cx="5" cy="5"></circle>\n</svg>'
+      '<svg>\n  <circle r="5" cx="5" cy="5"></circle>\n</svg>',
     );
   });
 });
@@ -454,7 +456,7 @@ describe('math tag', () => {
   it('renders math element to string', () => {
     assert.strictEqual(
       t.math(t.mfrac([t.mn(1), t.mn(2)])).toString(),
-      '<math>\n  <mfrac>\n    <mn>1</mn>\n    <mn>2</mn>\n  </mfrac>\n</math>'
+      '<math>\n  <mfrac>\n    <mn>1</mn>\n    <mn>2</mn>\n  </mfrac>\n</math>',
     );
   });
 });

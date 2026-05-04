@@ -1,4 +1,3 @@
-'use strict';
 
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
@@ -44,7 +43,7 @@ describe('core output', () => {
   it('nested elements', () => {
     assert.strictEqual(
       t.ul([t.li('one'), t.li('two')]).toString(),
-      '<ul>\n  <li>one</li>\n  <li>two</li>\n</ul>'
+      '<ul>\n  <li>one</li>\n  <li>two</li>\n</ul>',
     );
   });
 
@@ -83,7 +82,7 @@ describe('attributes', () => {
   it('nested object flattens to kebab-case', () => {
     assert.strictEqual(
       t.div({ data: { bs: { toggle: 'collapse', target: '#x' } } }).toString(),
-      '<div data-bs-toggle="collapse" data-bs-target="#x"></div>'
+      '<div data-bs-toggle="collapse" data-bs-target="#x"></div>',
     );
   });
 
@@ -102,13 +101,13 @@ describe('attributes', () => {
   it('style as object converts camelCase keys to css properties', () => {
     assert.strictEqual(
       t.div({ style: { backgroundColor: 'red', fontSize: '14px' } }).toString(),
-      '<div style="background-color: red; font-size: 14px"></div>'
+      '<div style="background-color: red; font-size: 14px"></div>',
     );
   });
   it('style as object drops null, undefined, false values', () => {
     assert.strictEqual(
       t.div({ style: { color: null, fontWeight: 'bold' } }).toString(),
-      '<div style="font-weight: bold"></div>'
+      '<div style="font-weight: bold"></div>',
     );
   });
   it('style as object still accepts a plain string', () => {
@@ -143,7 +142,7 @@ describe('subclassing', () => {
     const engine = new MyEngine();
     assert.strictEqual(
       engine.myCard({ 'card-type': 'primary' }, 'hi').toString(),
-      '<my-card card-type="primary">hi</my-card>'
+      '<my-card card-type="primary">hi</my-card>',
     );
   });
 
@@ -162,7 +161,7 @@ describe('subclassing', () => {
   });
   it('logger option receives warning messages', () => {
     const messages = [];
-    const engine = new Kensington({ validationLevel: 'warn', logger: (m) => messages.push(m) });
+    const engine = new Kensington({ validationLevel: 'warn', logger: m => messages.push(m) });
     engine.div({ id: '123-abc' }).toString();
     assert.ok(messages.length >= 1);
     assert.ok(messages[0].includes('123-abc'));

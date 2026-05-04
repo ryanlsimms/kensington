@@ -1,11 +1,10 @@
+import he from './he.js';
 import { LINE_BREAK_REGEX, preserveSpaces } from './text-utils.js';
-import he from './he.js'
-
 
 export default function stringifyContentArray(arr) {
   let content = '';
 
-  function handleItem (node) {
+  function handleItem(node) {
     if (Array.isArray(node)) {
       node.forEach(handleItem);
       return;

@@ -1,5 +1,5 @@
-import parseTable from '../utils/parse-table.js';
 import fetchAsDom from '../utils/fetch-as-dom.js';
+import parseTable from '../utils/parse-table.js';
 
 export default async function fetchHtmlData() {
   const dom = await fetchAsDom('https://html.spec.whatwg.org/multipage/indices.html');
@@ -25,5 +25,5 @@ export default async function fetchHtmlData() {
     }
   });
 
-  return { htmlElements: elements, globalEvents, attributes };
+  return { attributes, globalEvents, htmlElements: elements };
 }

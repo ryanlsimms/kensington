@@ -1,12 +1,12 @@
-import attributesStringFromObject from '../lib/attributes-string-from-object.js';
-import indent from '../lib/indent.js';
-import he from '../lib/he.js';
-import showInvalid from '../lib/show-invalid.js';
-import { camelToKebab, LINE_BREAK_TEST_REGEX, preserveSpaces } from '../lib/text-utils.js';
-import { styleObjectToCss } from '../lib/style-utils.js';
-import LiteralTag from './literal-tag.js';
-import stringifyContentArray from '../lib/stringify-content-array.js';
 import attributesArrayFromObject from '../lib/attributes-array-from-object.js';
+import attributesStringFromObject from '../lib/attributes-string-from-object.js';
+import he from '../lib/he.js';
+import indent from '../lib/indent.js';
+import showInvalid from '../lib/show-invalid.js';
+import stringifyContentArray from '../lib/stringify-content-array.js';
+import { styleObjectToCss } from '../lib/style-utils.js';
+import { camelToKebab, LINE_BREAK_TEST_REGEX, preserveSpaces } from '../lib/text-utils.js';
+import LiteralTag from './literal-tag.js';
 
 // TODO validate via "import elements from 'html-validate/dist/es/html5.js'";
 
@@ -20,7 +20,7 @@ export default class ContentTag {
     this.attributes = options.attributes;
     this.allowedAttributeMap = options.allowedAttributeMap ?? new Map();
     this.contentIsLiteral = options.contentIsLiteral;
-    this.indentationLevel = options.indentationLevel ?? 2
+    this.indentationLevel = options.indentationLevel ?? 2;
     this.namespaces = options.namespaces;
     this.validationLevel = options.validationLevel;
     this.logger = options.logger;
@@ -28,7 +28,7 @@ export default class ContentTag {
     this.namespace = options.namespace;
     this.encodeContent = options.encodeContent;
 
-    const handleItem = (c) =>  {
+    const handleItem = c =>  {
       if ([undefined, null, ''].includes(c)) {
         return;
       }
@@ -37,7 +37,7 @@ export default class ContentTag {
         return;
       }
       this.content.push(c);
-    }
+    };
 
     [].concat(options.content).forEach(handleItem);
   }
@@ -49,7 +49,7 @@ export default class ContentTag {
     }
 
     const invalidAttributeValues = Object.entries(this.attributes).filter(([attr, value]) => {
-      return !unallowedAttributes.includes(attr) && !this.attributeValueIsValid(attr, value)
+      return !unallowedAttributes.includes(attr) && !this.attributeValueIsValid(attr, value);
     });
     if (invalidAttributeValues.length) {
       const attrString = invalidAttributeValues.map(([attr, value]) => {
@@ -59,7 +59,7 @@ export default class ContentTag {
         return `${attr}="${value}"`;
       }).join(', ');
       const message = `invalid attribute \`${attrString}\` given for element \`${this.tagName}\``;
-      showInvalid(message, this.validationLevel, this.logger)
+      showInvalid(message, this.validationLevel, this.logger);
     }
   }
 
@@ -81,7 +81,7 @@ export default class ContentTag {
       return true;
     }
     if (attr === 'id' && /^\d/.test(value)) {
-      return false
+      return false;
     }
     if (attr === 'style' && value?.constructor === Object) {
       return Object.values(value).every(isValidStyleValue);
@@ -110,6 +110,7 @@ export default class ContentTag {
     if (Array.isArray(type)) {
       return type.some(typeItem => this.validateAttributeByType(typeItem, value));
     }
+    return false;
   }
 
   validateContent() {
@@ -117,7 +118,7 @@ export default class ContentTag {
       this.content.some(c => !['string', 'number'].includes(typeof c) &&
         (this.contentIsLiteral ||
         (!(c instanceof ContentTag) &&
-        !(c instanceof LiteralTag)))
+        !(c instanceof LiteralTag))),
       )
     ) {
       throw new Error(`Invalid content passed to element \`${this.tagName}\``);
@@ -147,12 +148,14 @@ export default class ContentTag {
   }
 
   attributeString() {
-    let attrString = attributesStringFromObject(this.attributes, { encode: true, attrsSet: this.allowedAttributeMap });
+    const attrString = attributesStringFromObject(
+      this.attributes, { attrsSet: this.allowedAttributeMap, encode: true },
+    );
     return attrString ? ` ${attrString}` : '';
   }
 
   attributeArray() {
-    return attributesArrayFromObject(this.attributes, { encode: false, attrsSet: this.allowedAttributeMap });
+    return attributesArrayFromObject(this.attributes, { attrsSet: this.allowedAttributeMap, encode: false });
   }
 
   toString() {
@@ -165,13 +168,12 @@ export default class ContentTag {
     str += this.attributeString();
     str += '>';
 
-
     if (this.contentIsLiteral) {
       str += this.content.map(c => {
         if (typeof c === 'string' && this.encodeContent) {
-          return he.encode(c)
+          return he.encode(c);
         }
-        return c
+        return c;
       }).join('\n');
     } else if (this.contentIsShort()) {
       for (const c of this.content) {
@@ -209,7 +211,6 @@ export default class ContentTag {
     } else {
       element = document.createElement(this.tagName);
     }
-
 
     for (const [attrName, attrValue] of this.attributeArray()) {
       if (attrName.startsWith('on') && typeof attrValue === 'function') {

@@ -20,7 +20,7 @@ export default async function fetchMathMlData() {
       attribute,
       elements,
       value: [],
-    }
+    };
   });
 
   attributes.forEach(({ attribute, elements }) => {
@@ -31,9 +31,8 @@ export default async function fetchMathMlData() {
     });
   });
 
-
-  const elements = Object.entries(elementObj).map(([tag, attributes]) => ({
-    attributes: [...new Set([...attributes, ...globalAttributes, 'href'])].sort(),
+  const elements = Object.entries(elementObj).map(([tag, tagAttributes]) => ({
+    attributes: [...new Set([...tagAttributes, ...globalAttributes, 'href'])].sort(),
     children: [],
     tag,
   }));

@@ -4,12 +4,12 @@ const tagsToSkip = [
   'autonomous custom elements',
   'h1, h2, h3, h4, h5, h6',
   'MathML math',
-  'SVG svg'
+  'SVG svg',
 ];
 
 export default function parseData(htmlData, svgData, mathElements) {
-  const { svgElements, svgAttributes } = svgData
-  const { htmlElements, globalEvents, attributes } = htmlData
+  const { svgAttributes, svgElements } = svgData;
+  const { attributes, globalEvents, htmlElements } = htmlData;
 
   const headingElement = htmlElements.find(e => e.tag === 'h1, h2, h3, h4, h5, h6');
   ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].forEach(tag => htmlElements.push({
@@ -45,9 +45,9 @@ export default function parseData(htmlData, svgData, mathElements) {
             attribute: mathAttr,
             elements: [],
             value: [],
-          })
+          });
         }
-      })
+      });
     }
   });
 
@@ -56,7 +56,7 @@ export default function parseData(htmlData, svgData, mathElements) {
   function getAttributeType(attr) {
     const values = (attr.value ?? []).filter(value => value !== 'the empty string');
     if (attr.attribute === 'value') {
-      return ['[Number,String]', 'number | string']
+      return ['[Number,String]', 'number | string'];
     }
     if (values[0]?.toLowerCase?.() === 'boolean attribute') {
       return ['Boolean', 'boolean'];
@@ -66,23 +66,23 @@ export default function parseData(htmlData, svgData, mathElements) {
       'Valid non-negative integer',
       'Valid integer',
     ].includes(values[0])) {
-      return ['Number', 'number']
+      return ['Number', 'number'];
     }
     if (values[0] === '<boolean>') {
       return [
         `[true,false]`,
         '"true" | "false"',
-      ]
+      ];
     }
     if (values[0] === '<number>') {
-      return ['Number', 'number']
+      return ['Number', 'number'];
     }
     if (['<length>', '<coordinate>', '<integer>', '<long>', '<length-percentage>'].includes(values[0])) {
-      return ['[Number,String]', 'number | string']
+      return ['[Number,String]', 'number | string'];
     }
     if (values.length && values.every(value => /^".*"$/.test(value))) {
       return [
-        `[${values.join()}]`,
+        `['${values.map(v => v.slice(1, -1)).join("', '")}']`,
         values.join(' | '),
       ];
     }
@@ -122,17 +122,17 @@ export default function parseData(htmlData, svgData, mathElements) {
       .sort()
       .map(attr => {
         const match = attributes.find(a => {
-          return a.attribute === attr && a.elements.some(e => e.trim().split(/\s+/).includes(el.tag))
+          return a.attribute === attr && a.elements.some(e => e.trim().split(/\s+/).includes(el.tag));
         });
         const found = match ?? attributes.find(a => a.attribute === attr && a.elements.includes('HTML elements'));
         return found ? mapAttr(found) : { name: attr, type: 'string', value: 'String' };
       });
     el.methodName = kebabToCamel(el.tag);
     el.pascalTag = kebabToPascal(el.tag);
-    el.attributesName = `${el.methodName}Attributes`
-    el.attributesTypeName = `${el.pascalTag}Attributes`
-    el.returnTagType = el.tagType === 'Void' ? el.tagType : 'Content'
-    el.globalTypes = getGlobalsByTagType(el.tagType)
+    el.attributesName = `${el.methodName}Attributes`;
+    el.attributesTypeName = `${el.pascalTag}Attributes`;
+    el.returnTagType = el.tagType === 'Void' ? el.tagType : 'Content';
+    el.globalTypes = getGlobalsByTagType(el.tagType);
   });
 
   return {
