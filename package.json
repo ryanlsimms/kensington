@@ -55,6 +55,7 @@
     "url": "https://www.ryansimms.com"
   },
   "homepage": "https://github.com/ryanlsimms/kensington#readme",
+  "bugs": "https://github.com/ryanlsimms/kensington/issues",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ryanlsimms/kensington.git"
