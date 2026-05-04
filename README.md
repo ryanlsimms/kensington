@@ -21,7 +21,13 @@ Or in a browser without a build step, via CDN:
 
 **Slim build** — omits attribute validation data (~77% smaller minified); use when `validationLevel` is `'off'`:
 
+```javascript
+// bundler / node_modules
+import Kensington from 'kensington/dist/slim';
+```
+
 ```html
+<!-- CDN -->
 <script type="module">
   import Kensington from 'https://cdn.jsdelivr.net/npm/kensington/dist/kensington.slim.min.js';
 </script>
