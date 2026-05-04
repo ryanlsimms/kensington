@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [0.13.0] - 2026-05-04
 
 ### Added
 - Multiple consecutive spaces in text content are replaced with non-breaking spaces (` `) so spacing is preserved when rendered in a browser. Single spaces are unaffected. Preformatted elements (`pre`, `script`, `style`, `textarea`) are exempt.
