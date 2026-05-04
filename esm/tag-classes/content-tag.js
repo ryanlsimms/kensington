@@ -8,10 +8,30 @@ import { styleObjectToCss } from '../lib/style-utils.js';
 import { camelToKebab, LINE_BREAK_TEST_REGEX, preserveSpaces } from '../lib/text-utils.js';
 import LiteralTag from './literal-tag.js';
 
-// TODO validate via "import elements from 'html-validate/dist/es/html5.js'";
-
 function isValidStyleValue(v) {
   return [null, undefined, false].includes(v) || ['string', 'number'].includes(typeof v);
+}
+
+function isValidContentItem(c, contentIsLiteral) {
+  if (['string', 'number'].includes(typeof c)) {
+    return true;
+  }
+  return !contentIsLiteral && (c instanceof ContentTag || c instanceof LiteralTag);
+}
+
+function collectContent(items) {
+  const out = [];
+  for (const c of [].concat(items)) {
+    if ([undefined, null, ''].includes(c)) {
+      continue;
+    }
+    if (Array.isArray(c)) {
+      out.push(...collectContent(c));
+      continue;
+    }
+    out.push(c);
+  }
+  return out;
 }
 
 export default class ContentTag {
@@ -24,22 +44,9 @@ export default class ContentTag {
     this.namespaces = options.namespaces;
     this.validationLevel = options.validationLevel;
     this.logger = options.logger;
-    this.content = [];
+    this.content = collectContent(options.content);
     this.namespace = options.namespace;
     this.encodeContent = options.encodeContent;
-
-    const handleItem = c =>  {
-      if ([undefined, null, ''].includes(c)) {
-        return;
-      }
-      if (Array.isArray(c)) {
-        c.forEach(handleItem);
-        return;
-      }
-      this.content.push(c);
-    };
-
-    [].concat(options.content).forEach(handleItem);
   }
 
   validate() {
@@ -117,13 +124,7 @@ export default class ContentTag {
   }
 
   validateContent() {
-    if (
-      this.content.some(c => !['string', 'number'].includes(typeof c) &&
-        (this.contentIsLiteral ||
-        (!(c instanceof ContentTag) &&
-        !(c instanceof LiteralTag))),
-      )
-    ) {
+    if (!this.content.every(c => isValidContentItem(c, this.contentIsLiteral))) {
       throw new Error(`Invalid content passed to element \`${this.tagName}\``);
     }
   }
@@ -152,7 +153,7 @@ export default class ContentTag {
 
   attributeString() {
     if (this.validationLevel !== 'off') {
-      Object.entries(this.attributes).forEach(([attrName, v]) => {
+      for (const [attrName, v] of Object.entries(this.attributes)) {
         if (typeof v === 'function') {
           showInvalid(
             `function value for attribute \`${attrName}\` is not supported in toString()`,
@@ -160,7 +161,7 @@ export default class ContentTag {
             this.logger,
           );
         }
-      });
+      }
     }
     const attrString = attributesStringFromObject(
       this.attributes,
@@ -184,12 +185,12 @@ export default class ContentTag {
     str += '>';
 
     if (this.contentIsLiteral) {
-      str += this.content.map(c => {
-        if (typeof c === 'string' && this.encodeContent) {
-          return he.encode(c);
-        }
-        return c;
-      }).join('\n');
+      let literalStr = '';
+      for (const c of this.content) {
+        if (literalStr) { literalStr += '\n'; }
+        literalStr += typeof c === 'string' && this.encodeContent ? he.encode(c) : c;
+      }
+      str += literalStr;
     } else if (this.contentIsShort()) {
       for (const c of this.content) {
         if (typeof c === 'string' && this.encodeContent) {
@@ -236,16 +237,16 @@ export default class ContentTag {
       }
     }
 
-    this.content.forEach(node => {
+    for (let node of this.content) {
       if (node instanceof ContentTag || node instanceof LiteralTag) {
         element.append(node.toElement());
-      } else {
-        if (!this.contentIsLiteral && typeof node === 'string') {
-          node = preserveSpaces(node);
-        }
-        element.append(document.createTextNode(node));
+        continue;
       }
-    });
+      if (!this.contentIsLiteral && typeof node === 'string') {
+        node = preserveSpaces(node);
+      }
+      element.append(document.createTextNode(node));
+    }
 
     return element;
   }

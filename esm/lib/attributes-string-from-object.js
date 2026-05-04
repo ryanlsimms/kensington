@@ -3,7 +3,7 @@ import { styleObjectToCss } from './style-utils.js';
 import { getAttrName } from './text-utils.js';
 
 export default function attributesStringFromObject(obj, { attrsSet = new Map(), encode, prefix = '' } = {}) {
-  let finalStr = '';
+  let result = '';
 
   for (const attr of Object.keys(obj)) {
     const val = obj[attr];
@@ -13,43 +13,44 @@ export default function attributesStringFromObject(obj, { attrsSet = new Map(), 
     const attrName = getAttrName(attr, prefix, attrsSet);
 
     if (val === true) {
-      if (finalStr) { finalStr += ' '; }
-      finalStr += attrName;
+      if (result) { result += ' '; }
+      result += attrName;
       continue;
     }
     if (attr === 'style' && val?.constructor === Object) {
       const css = styleObjectToCss(val);
-      if (!css) { continue; }
-      if (finalStr) { finalStr += ' '; }
-      finalStr += `${attrName}="${css}"`;
+      if (css) {
+        if (result) { result += ' '; }
+        result += `${attrName}="${css}"`;
+      }
       continue;
     }
     if (val?.constructor === Object) {
-      if (finalStr) { finalStr += ' '; }
-      finalStr += attributesStringFromObject(val, { attrsSet, encode, prefix: attrName });
+      if (result) { result += ' '; }
+      result += attributesStringFromObject(val, { attrsSet, encode, prefix: attrName });
       continue;
     }
     if (attr === 'class' && Array.isArray(val)) {
-      if (finalStr) { finalStr += ' '; }
-      finalStr += attrName;
-      finalStr += '="';
-      finalStr += val.join(' ');
-      finalStr += '"';
+      if (result) { result += ' '; }
+      result += attrName;
+      result += '="';
+      result += val.join(' ');
+      result += '"';
       continue;
     }
     if (typeof val === 'function') {
       continue;
     }
 
-    if (finalStr) { finalStr += ' '; }
-    finalStr += attrName;
-    finalStr += '="';
+    if (result) { result += ' '; }
+    result += attrName;
+    result += '="';
     if (encode) {
-      finalStr += he.encode(val.toString());
+      result += he.encode(val.toString());
     } else {
-      finalStr += val.toString();
+      result += val.toString();
     }
-    finalStr += '"';
+    result += '"';
   }
-  return finalStr;
+  return result;
 }

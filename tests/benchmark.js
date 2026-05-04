@@ -182,7 +182,7 @@ if (scenario) {
   times.sort((a, b) => a - b);
   const mean = times.reduce((a, b) => a + b) / times.length;
   const median = times[Math.floor(times.length / 2)];
-  process.stdout.write(`${JSON.stringify({ mean, median, min: times[0], max: times[times.length - 1] })  }\n`);
+  process.stdout.write(`${JSON.stringify({ mean, median, min: times[0], max: times[times.length - 1] }) }\n`);
 } else {
   const self = fileURLToPath(import.meta.url);
 
@@ -217,12 +217,12 @@ if (scenario) {
   const header = `${'scenario'.padEnd(nameW)}  ${pad('mean', numW)}  ${pad('median', numW)}  ${pad('min', numW)}  ${pad('max', numW)}  ${pad('baseline', numW)}  ${pad('ratio', ratioW)}`;
   const rule = '─'.repeat(header.length);
 
-  console.log(`\n${  rule}`);
+  console.log(`\n${ rule}`);
   console.log(header);
   console.log(rule);
   for (const r of results) {
     const ratio = `${(r.median / r.siMedian).toFixed(1)}x`;
     console.log(`${r.name.padEnd(nameW)}  ${pad(fmt(r.mean), numW)}  ${pad(fmt(r.median), numW)}  ${pad(fmt(r.min), numW)}  ${pad(fmt(r.max), numW)}  ${pad(fmt(r.siMedian), numW)}  ${pad(ratio, ratioW)}`);
   }
-  console.log(`${rule  }\n`);
+  console.log(`${rule }\n`);
 }

@@ -75,6 +75,7 @@ export default [
           'named': 'never',
         },
       ],
+      '@stylistic/js/no-multi-spaces': 'error',
       '@stylistic/js/wrap-regex': 'off',
       'arrow-body-style': 'off',
       'capitalized-comments': 'off',
@@ -99,6 +100,7 @@ export default [
       'no-await-in-loop': 'off',
       'no-console': 'off',
       'no-continue': 'off',
+      'no-else-return': ['error', { 'allowElseIf': false }],
       'no-empty-function': 'off',
       'no-inline-comments': 'off',
       'no-invalid-this': 'off',
@@ -110,6 +112,7 @@ export default [
       'no-ternary': 'off',
       'no-undefined': 'off',
       'no-underscore-dangle': 'off',
+      'no-use-before-define': ['error', { 'classes': false }],
       'no-unused-expressions': 'off',
       'no-unused-vars': [
         'error',

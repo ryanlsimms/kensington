@@ -3,7 +3,7 @@ import { styleObjectToCss } from './style-utils.js';
 import { getAttrName } from './text-utils.js';
 
 export default function attributesArrayFromObject(obj, { attrsSet = new Map(), encode, prefix = '' } = {}) {
-  const finalArr = [];
+  const result = [];
 
   for (const attr of Object.keys(obj)) {
     const val = obj[attr];
@@ -13,32 +13,34 @@ export default function attributesArrayFromObject(obj, { attrsSet = new Map(), e
     const attrName = getAttrName(attr, prefix, attrsSet);
 
     if (val === true) {
-      finalArr.push([attrName, '']);
+      result.push([attrName, '']);
       continue;
     }
     if (attr === 'style' && val?.constructor === Object) {
       const css = styleObjectToCss(val);
       if (css) {
-        finalArr.push([attrName, css]);
+        result.push([attrName, css]);
       }
       continue;
     }
     if (val?.constructor === Object) {
-      finalArr.push(...attributesArrayFromObject(val, { attrsSet, encode, prefix: attrName }));
+      result.push(...attributesArrayFromObject(val, { attrsSet, encode, prefix: attrName }));
       continue;
     }
     if (attr === 'class' && Array.isArray(val)) {
-      finalArr.push([attrName, val.join(' ')]);
+      result.push([attrName, val.join(' ')]);
       continue;
     }
 
+    if (typeof val === 'function') {
+      result.push([attrName, val]);
+      continue;
+    }
     if (encode) {
-      finalArr.push([attrName, he.encode(val.toString())]);
-    } else if (typeof val === 'function') {
-      finalArr.push([attrName, val]);
+      result.push([attrName, he.encode(val.toString())]);
     } else {
-      finalArr.push([attrName, val.toString()]);
+      result.push([attrName, val.toString()]);
     }
   }
-  return finalArr;
+  return result;
 }

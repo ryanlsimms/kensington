@@ -11,11 +11,13 @@ http.createServer((req, res) => {
     if (req.url === '/') {
       res.setHeader('Content-Type', 'text/html');
       return res.end('<!DOCTYPE html><html><head></head><body></body></html>');
-    } else if (req.url.endsWith('.html')) {
+    }
+    if (req.url.endsWith('.html')) {
       const html = fs.readFileSync(path.join(dirname, '..', 'pages', req.url));
       res.setHeader('Content-Type', 'text/html');
       return res.end(html);
-    } else if (req.url.endsWith('.js')) {
+    }
+    if (req.url.endsWith('.js')) {
       const file = fs.readFileSync(path.join(dirname, '..', '..', '..', req.url));
       res.setHeader('Content-Type', 'text/javascript');
       return res.end(file);
