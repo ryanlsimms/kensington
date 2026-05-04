@@ -1,28 +1,11 @@
-This template engine is a way to create html via nested method calls.  Each tag is a method on a TemplateEngine instance which can receive an object literal of attributes and their values, and/or content.  The output is a nicely formatted html string.
+# Kensington
 
-* arguments can be an object of attributes, content (string, element, or array of either), or both
-* nested attributes are converted to kebab-case `{ data: { bs: { toggle: 'collapse' } } }` becomes `data-bs-toggle="collapse"`
-* camelCase attibute become kebabcase `{ dataBsToggle: 'collapse' }` becomes `data-bs-toggle="collapse"`
-* attributes are validated against those found [here](https://html.spec.whatwg.org/multipage/indices.html#elements-3)
-* attributes with a boolean value will either be included or not: `t.input({ type: 'checkbox', checked: true })` becomes `<input type="checkbox" checked>` or `<input type="checkbox">` if `checked` is false
-* `class` can be passed as an array: `{ class: ['foo', 'bar'] }` becomes `class="foo bar"`
-* `style` can be passed as a JS object: `{ style: { backgroundColor: 'red', zIndex: 2 } }` becomes `style="background-color: red; z-index: 2"`. camelCase keys are converted to kebab-case. Values of `null`, `undefined`, `false`, or empty string are silently omitted.
-* [Global attributes](https://html.spec.whatwg.org/multipage/dom.html#global-attributes) are always allowed, along with `aria-*` and `data-*` attributes.
-* Additional attribute namespaces (like `hx` when using [htmx](https://htmx.org)) can be added by passing the `additionalNamespaces` property to the constructor
-* `validationLevel` can be set to `off`, `warn`, or `error`. When set to `warn`, validation messages are passed to `logger`.
-* `logger` is a function that receives warning messages when `validationLevel` is `'warn'`. Defaults to `console.log`. 
-* the `.literal` method allows you to pass in html as a string.
-* `.htmlWithDocType` is the same as `.html`, but adds the `<!DOCTYPE html>` tag to the beginning of the string.
-* call `.toString()` on the outermost method to expicitly convert to string.  This can often be omitted if the output is sent as a string.
-* string interpolation automatically converts the tag to string ``` `${t.html(t.body('hello'))}` ```
-* In the browser, call `.toElement()` to create a DOM element instead of a string; function values on event attributes (e.g. `onclick`) are wired up via `addEventListener` rather than set as attribute strings; SVG and MathML elements are created with the correct namespace via `createElementNS`
-* you can add your own custom elements:
-    * extend the `Kensington` class with your own
-    * set a property equal to `this.createCustomTag()` with the following arguments
-        * `tagName` - the name that is used in the `<some-custom-element></some-custom-element>`
-        * `allowedAttributes` - an optional object of allowed attribute names and types.  Global and data/aria attributes are always allowed
+[![npm](https://img.shields.io/npm/v/kensington)](https://www.npmjs.com/package/kensington)
+[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
 
-### Installation
+HTML/SVG/MathML template engine for JavaScript and TypeScript. Every tag is a method on a `Kensington` instance that returns a tag object serialisable to a formatted HTML string via `.toString()` or a live DOM node via `.toElement()`.
+
+## Installation
 
 ```bash
 npm install kensington
@@ -36,7 +19,7 @@ Or in a browser without a build step, via CDN:
 </script>
 ```
 
-**Slim build** — if you don't use `validationLevel: 'error'` or `'warn'`, use the slim variant (~77% smaller) which omits all attribute validation data:
+**Slim build** — omits attribute validation data (~77% smaller minified); use when `validationLevel` is `'off'`:
 
 ```html
 <script type="module">
@@ -44,117 +27,217 @@ Or in a browser without a build step, via CDN:
 </script>
 ```
 
-**Attribute data** — the validation data for each element is also exported for direct use:
+## Example
 
 ```javascript
-import { globalAttributes, formAttributes, inputAttributes } from 'kensington/attributes';
-```
+import { t } from 'kensington'; // shared default instance
 
-### Example
-```typescript
-// TypeScript
-import Kensington from 'kensington';
-import type { ContentMethod } from 'kensington';
+const isCool = true;
 
-declare module 'kensington' {
-  interface NameSpaceAttributes {
-    [key: `hx${string}`]: string | object
-  }
-}
-
-class MyTemplateEngine extends Kensington {
-  someCustomElement: ContentMethod<{ someCustomAttribute?: boolean | 42 }> = this.createCustomTag('custom-element', { 'some-custom-attribute': [Boolean, 42] });
-}
-```
-```javascript
-// JavaScript
-import Kensington from 'kensington';
-
-class MyTemplateEngine extends Kensington {
-  someCustomElement = this.createCustomTag('some-custom-element', { 'some-custom-attribute': [Boolean, 42] });
-}
-```
-```javascript
-const t = new MyTemplateEngine({ 
-  validationLevel: 'warn', 
-  additionalNamespaces: ['hx'], 
-  indentationLevel: 2,
-  logger(message) { myLoggingLibrary.warn(message); },
-});
-
-const html = t.htmlWithDocType({ lang: 'en' }, [
-  t.head(t.title('My Page Title')),
+const page = t.htmlWithDocType({ lang: 'en' }, [
+  t.head([
+    t.meta({ charset: 'utf-8' }),
+    t.title('My Page'),
+    t.link({ rel: 'stylesheet', href: '/style.css' }),
+  ]),
   t.body(
-    t.main({ class: 'container' }, [
-      t.h1('My Great Project'),
-      t.h3({ class: 'small', style: { color: 'gray', marginTop: '0' } }, 'a new way'),
-      t.hr({ class: 'fancy-line' }),
+    t.main({ class: ['container', 'main'] }, [
+      t.h1({ style: { color: 'steelblue', marginBottom: '0' } }, 'My Project'),
+      t.p('Build HTML with JavaScript.'),
       t.section([
-        'To Do List',
         t.ul([
-          t.li({
-            data: {
-              bs: {
-                toggle: 'collapse',
-                target: '#some-id',
-              },
-            },
-            ariaExpanded: 'false',
-          }, 'this'),
+          // nested data-* attributes
+          t.li({ data: { bs: { toggle: 'collapse', target: '#details' } } }, 'Toggle'),
+          // boolean attribute: checked when true, omitted when false
           t.li([
-            t.input({ id: 'coolness', type: 'checkbox', checked: isCool }),
-            t.label({ for: 'coolness'}, 'Cool?')
+            t.input({ id: 'cool', type: 'checkbox', checked: isCool }),
+            t.label({ for: 'cool' }, 'Is it cool?'),
           ]),
-          t.literal('<li>some regular html</li>'),
+          // false is silently ignored — no conditional wrapper needed
+          isCool && t.li('yes, it is cool'),
+          // raw HTML passthrough
+          t.literal('<li>some legacy html</li>'),
         ]),
       ]),
-    ]),
+    ])
   ),
 ]).toString();
 ```
+
 ```html
-/* Generated html
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>My Page Title</title>
+    <meta charset="utf-8">
+    <title>My Page</title>
+    <link rel="stylesheet" href="/style.css">
   </head>
   <body>
-    <main class="container">
-      <h1>My Great Project</h1>
-      <h3 class="small" style="color: gray; margin-top: 0">a new way</h3>
-      <hr class="fancy-line">
+    <main class="container main">
+      <h1 style="color: steelblue; margin-bottom: 0">My Project</h1>
+      <p>Build HTML with JavaScript.</p>
       <section>
-        To Do List
         <ul>
-          <li data-bs-toggle="collapse" data-bs-target="#some-id" aria-expanded="false">this</li>
+          <li data-bs-toggle="collapse" data-bs-target="#details">Toggle</li>
           <li>
-            <input id="coolness" type="checkbox">
-            <label for="coolness">Cool?</label>
+            <input id="cool" type="checkbox" checked>
+            <label for="cool">Is it cool?</label>
           </li>
-          <li>some regular html</li>
+          <li>yes, it is cool</li>
+          <li>some legacy html</li>
         </ul>
       </section>
     </main>
   </body>
 </html>
-*/
 ```
 
+## Method signatures
+
+Content elements accept optional attributes and/or content:
+
 ```javascript
-// import instance directly if you don't need customization
-import { t } from 'kensington';
+t.div({ id: 'app', class: 'container' }, 'text');  // attributes + content
+t.div({ id: 'app' });                               // attributes only
+t.div('text content');                              // content only
+t.div([t.p('a'), t.p('b')]);                       // content array
+t.div();                                            // empty
 ```
 
-### Browser usage with `.toElement()`
+Void elements (`br`, `hr`, `input`, `img`, `link`, `meta`, etc.) take only attributes:
+
+```javascript
+t.input({ type: 'checkbox', checked: true });
+t.meta({ charset: 'utf-8' });
+```
+
+## Attribute rules
+
+- **camelCase → kebab-case**: `{ dataBsToggle: 'collapse' }` → `data-bs-toggle="collapse"`
+- **Nested objects flatten**: `{ data: { bs: { toggle: 'collapse' } } }` → `data-bs-toggle="collapse"`
+- **Boolean attributes**: `{ checked: true }` → `checked`; `{ checked: false }` → attribute omitted
+- **class as array**: `{ class: ['foo', 'bar'] }` → `class="foo bar"`
+- **style as object**: `{ style: { backgroundColor: 'red', zIndex: 2 } }` → `style="background-color: red; z-index: 2"`. camelCase keys convert to kebab-case; `null`/`undefined`/`false`/empty-string values are silently omitted.
+- **Always allowed**: `data-*`, `aria-*`, and all [global HTML attributes](https://html.spec.whatwg.org/multipage/dom.html#global-attributes)
+- **Validation** is checked against the HTML/SVG/MathML spec at `'warn'` or `'error'` level (default `'warn'`)
+
+## Content rules
+
+Valid content: strings, numbers, tag objects, or arrays of those. Falsy values (`null`, `undefined`, `false`, `''`) are silently ignored, making conditionals clean:
+
+```javascript
+t.ul([
+  t.li('text'),
+  t.li(42),
+  t.li(t.span('nested')),
+  isLoggedIn && t.li(t.a({ href: '/logout' }, 'Log out')),
+]);
+```
+
+## Raw HTML
+
+```javascript
+t.literal('<li>verbatim, HTML-encoded</li>'); // doesn't allow <script> tags
+t.unsafeLiteral('<li>trusted HTML, no encoding</li>');
+```
+
+## Constructor options
+
+```javascript
+import Kensington from 'kensington';
+
+const t = new Kensington({
+  validationLevel: 'warn',       // 'off' | 'warn' | 'error' — default 'warn'
+  additionalNamespaces: ['hx'],  // allow hx-* (htmx), x-* (alpine), etc.
+  indentationLevel: 2,           // spaces per indent — default 2, 0 to disable
+  logger: msg => myLogger(msg),  // receives validation warnings — default console.log
+});
+```
+
+## Custom elements
+
+```javascript
+import Kensington from 'kensington';
+
+class MyEngine extends Kensington {
+  myCard = this.createCustomTag('my-card', {
+    'card-type': ['primary', 'secondary'],  // allowed string literals
+    'loading': Boolean,                     // boolean attribute
+    'max-items': Number,                    // numeric attribute
+  });
+}
+
+const t = new MyEngine();
+t.myCard({ 'card-type': 'primary' }, t.p('content')).toString();
+// → <my-card card-type="primary">
+//     <p>content</p>
+//   </my-card>
+```
+
+## TypeScript
+
+Annotate custom elements with `ContentMethod<T>` for full attribute type-checking:
+
+```typescript
+import Kensington, { type ContentMethod } from 'kensington';
+
+class MyEngine extends Kensington {
+  myCard: ContentMethod<{ 'card-type'?: 'primary' | 'secondary'; loading?: boolean }> =
+    this.createCustomTag('my-card', { 'card-type': ['primary', 'secondary'], loading: Boolean });
+}
+```
+
+Add attribute namespaces globally via module augmentation:
+
+```typescript
+declare module 'kensington' {
+  interface NameSpaceAttributes {
+    [key: `hx${string}`]: string | object;
+  }
+}
+
+// Now valid anywhere in your project:
+t.div({ hxBoost: 'true', hxTarget: '#result' });
+t.form({ hxPost: '/api/submit', hxSwap: 'outerHTML' });
+```
+
+## Browser — toElement()
+
+`.toElement()` renders a tag tree to a live DOM node. Function-valued event attributes are wired via `addEventListener`. SVG and MathML elements are created with the correct namespace via `createElementNS`.
+
 ```javascript
 import { t } from 'kensington';
 
-// function attributes become event listeners, not attribute strings
 const button = t.button({
   type: 'button',
-  onclick: () => alert('clicked'),
+  onclick: e => console.log('clicked', e),
 }, 'Click Me').toElement();
 
 document.body.append(button);
+
+const svg = t.svg({ viewBox: '0 0 100 100' }, [
+  t.circle({ cx: 50, cy: 50, r: 40, fill: 'steelblue' }),
+]).toElement();
 ```
+
+## Imports
+
+```javascript
+import Kensington from 'kensington';          // class — for subclassing or custom config
+import { t } from 'kensington';              // shared default instance
+import { formAttributes } from 'kensington/attributes';  // per-element attribute data
+```
+
+```typescript
+import type { ContentMethod, Content, ContentTag, VoidTag, LiteralTag } from 'kensington';
+import type { NameSpaceAttributes } from 'kensington';  // for namespace augmentation
+```
+
+| Type | Description |
+|------|-------------|
+| `ContentTag` | Returned by content element methods (`div`, `p`, `span`, …) |
+| `VoidTag` | Returned by void element methods (`br`, `input`, …) |
+| `LiteralTag` | Returned by `.literal()` / `.unsafeLiteral()` |
+| `Content` | `string \| number \| ContentTag \| VoidTag \| LiteralTag \| Content[]` |
+| `ContentMethod<T>` | Type of a custom element method; `T` is the element-specific attribute shape |
+| `NameSpaceAttributes` | Interface to extend for custom attribute namespaces |
