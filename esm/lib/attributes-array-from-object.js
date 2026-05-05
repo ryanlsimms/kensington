@@ -1,4 +1,5 @@
 import he from './he.js';
+import Signal from './signal.js';
 import { styleObjectToCss } from './style-utils.js';
 import { getAttrName } from './text-utils.js';
 
@@ -60,6 +61,10 @@ export default function attributesArrayFromObject(obj, options = {}) {
       if (attrName.startsWith('on')) { // only event handlers. String serialization can't represent functions
         result.push([attrName, val]);
       }
+      continue;
+    }
+    if (val instanceof Signal) {
+      result.push([attrName, val]);
       continue;
     }
     if (encode) {
