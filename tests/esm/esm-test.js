@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import Kensington, { t } from 'kensington';
+import Kensington, { computed, effect, signal, t } from 'kensington';
 
 import attributesArrayFromObject from '../../esm/lib/attributes-array-from-object.js';
 
@@ -1073,5 +1073,170 @@ describe('math tag', () => {
       t.math(t.mfrac([t.mn(1), t.mn(2)])).toString(),
       '<math>\n  <mfrac>\n    <mn>1</mn>\n    <mn>2</mn>\n  </mfrac>\n</math>',
     );
+  });
+});
+
+// ─── signal ────────────────────────────────────────────────────────────────
+
+describe('signal', () => {
+  it('get() returns initial value', () => {
+    const s = signal(42);
+    assert.strictEqual(s.get(), 42);
+  });
+  it('set(value) updates the value', () => {
+    const s = signal(0);
+    s.set(5);
+    assert.strictEqual(s.get(), 5);
+  });
+  it('set(fn) updates via updater function', () => {
+    const s = signal(3);
+    s.set(n => n * 2);
+    assert.strictEqual(s.get(), 6);
+  });
+  it('set() with same value does not notify subscribers', () => {
+    const s = signal('a');
+    let calls = 0;
+    s.subscribe(() => { calls++; });
+    s.set('a');
+    assert.strictEqual(calls, 0);
+  });
+  it('subscribe() receives new value on change', () => {
+    const s = signal(0);
+    const received = [];
+    s.subscribe(v => received.push(v));
+    s.set(1);
+    s.set(2);
+    assert.deepEqual(received, [1, 2]);
+  });
+  it('subscribe() returns an unsubscribe function', () => {
+    const s = signal(0);
+    let calls = 0;
+    const unsub = s.subscribe(() => { calls++; });
+    s.set(1);
+    unsub();
+    s.set(2);
+    assert.strictEqual(calls, 1);
+  });
+  it('signal as string content snapshots current value in toString()', () => {
+    const s = signal('hello');
+    assert.strictEqual(t.span(s).toString(), '<span>hello</span>');
+    s.set('world');
+    assert.strictEqual(t.span(s).toString(), '<span>world</span>');
+  });
+  it('signal as tag content snapshots current value in toString()', () => {
+    const s = signal(t.em('hi'));
+    assert.strictEqual(t.p(s).toString(), '<p>\n  <em>hi</em>\n</p>');
+  });
+  it('signal as attribute value snapshots current value in toString()', () => {
+    const s = signal('active');
+    assert.strictEqual(t.div({ class: s }).toString(), '<div class="active"></div>');
+    s.set('inactive');
+    assert.strictEqual(t.div({ class: s }).toString(), '<div class="inactive"></div>');
+  });
+  it('signal as boolean attribute toggles presence in toString()', () => {
+    const s = signal(true);
+    assert.strictEqual(t.input({ checked: s }).toString(), '<input checked>');
+    s.set(false);
+    assert.strictEqual(t.input({ checked: s }).toString(), '<input>');
+  });
+  it('signal holding array snapshots items in toString()', () => {
+    const items = signal([t.li('one'), t.li('two')]);
+    assert.strictEqual(t.ul(items).toString(), '<ul>\n  <li>one</li>\n  <li>two</li>\n</ul>');
+    items.set([t.li('a'), t.li('b'), t.li('c')]);
+    assert.strictEqual(t.ul(items).toString(), '<ul>\n  <li>a</li>\n  <li>b</li>\n  <li>c</li>\n</ul>');
+  });
+});
+
+// ─── signal.transform ──────────────────────────────────────────────────────
+
+describe('signal.transform', () => {
+  it('returns a new signal with the transformed value', () => {
+    const s = signal(3);
+    const doubled = s.transform(v => v * 2);
+    assert.strictEqual(doubled.get(), 6);
+  });
+  it('updates when the source signal changes', () => {
+    const s = signal('hello');
+    const upper = s.transform(v => v.toUpperCase());
+    s.set('world');
+    assert.strictEqual(upper.get(), 'WORLD');
+  });
+  it('can chain multiple transforms', () => {
+    const s = signal(2);
+    const result = s.transform(v => v * 3).transform(v => v + 1);
+    assert.strictEqual(result.get(), 7);
+    s.set(4);
+    assert.strictEqual(result.get(), 13);
+  });
+});
+
+// ─── computed signal ───────────────────────────────────────────────────────
+
+describe('computed signal', () => {
+  it('returns the initial derived value', () => {
+    const s = signal(2);
+    const doubled = computed(() => s.get() * 2);
+    assert.strictEqual(doubled.get(), 4);
+  });
+  it('updates when a dependency changes', () => {
+    const s = signal(1);
+    const doubled = computed(() => s.get() * 2);
+    s.set(5);
+    assert.strictEqual(doubled.get(), 10);
+  });
+  it('tracks multiple dependencies', () => {
+    const a = signal(1);
+    const b = signal(2);
+    const sum = computed(() => a.get() + b.get());
+    assert.strictEqual(sum.get(), 3);
+    a.set(10);
+    assert.strictEqual(sum.get(), 12);
+    b.set(20);
+    assert.strictEqual(sum.get(), 30);
+  });
+  it('does not notify if computed value is unchanged', () => {
+    const s = signal('a');
+    const upper = computed(() => s.get().toUpperCase());
+    let calls = 0;
+    upper.subscribe(() => { calls++; });
+    s.set('A'); // same result after toUpperCase
+    assert.strictEqual(calls, 0);
+  });
+  it('computed value used in toString()', () => {
+    const active = signal(true);
+    const cls = computed(() => active.get() ? 'on' : 'off');
+    assert.strictEqual(t.div({ class: cls }).toString(), '<div class="on"></div>');
+    active.set(false);
+    assert.strictEqual(t.div({ class: cls }).toString(), '<div class="off"></div>');
+  });
+});
+
+// ─── effect ────────────────────────────────────────────────────────────────
+
+describe('effect', () => {
+  it('runs immediately', () => {
+    const s = signal(1);
+    let result = 0;
+    effect(() => { result = s.get() * 2; });
+    assert.strictEqual(result, 2);
+  });
+  it('re-runs when a dependency changes', () => {
+    const s = signal('a');
+    const log = [];
+    effect(() => { log.push(s.get()); });
+    s.set('b');
+    s.set('c');
+    assert.deepStrictEqual(log, ['a', 'b', 'c']);
+  });
+  it('tracks multiple signal dependencies', () => {
+    const a = signal(1);
+    const b = signal(10);
+    let result = 0;
+    effect(() => { result = a.get() + b.get(); });
+    assert.strictEqual(result, 11);
+    a.set(2);
+    assert.strictEqual(result, 12);
+    b.set(20);
+    assert.strictEqual(result, 22);
   });
 });

@@ -2,7 +2,9 @@ import attributesArrayFromObject from '../lib/attributes-array-from-object.js';
 import attributesStringFromObject from '../lib/attributes-string-from-object.js';
 import he from '../lib/he.js';
 import indent from '../lib/indent.js';
+import { reconcile } from '../lib/reconcile.js';
 import showInvalid from '../lib/show-invalid.js';
+import Signal from '../lib/signal.js';
 import stringifyContentArray from '../lib/stringify-content-array.js';
 import { styleObjectToCss } from '../lib/style-utils.js';
 import { camelToKebab, LINE_BREAK_TEST_REGEX, preserveSpaces } from '../lib/text-utils.js';
@@ -20,7 +22,31 @@ function isValidContentItem(c, contentIsLiteral) {
   if (typeof c === 'number') {
     return isFinite(c); // NaN/Infinity cannot be rendered as text
   }
-  return !contentIsLiteral && (c instanceof ContentTag || c instanceof LiteralTag || c instanceof CommentTag); // literal tags (script/style) accept only raw strings, not child tag objects
+  return !contentIsLiteral && (c instanceof ContentTag || c instanceof LiteralTag || c instanceof CommentTag || c instanceof Signal); // literal tags (script/style) accept only raw strings, not child tag objects
+}
+
+function resolveSignalNode(val) {
+  if (val instanceof ContentTag || val instanceof LiteralTag || val instanceof CommentTag) {
+    return val.toElement();
+  }
+  if (val === null || val === undefined || val === false) {
+    return document.createTextNode('');
+  }
+  return document.createTextNode(String(val));
+}
+
+function applySignalAttribute(element, attrName, signal) {
+  function apply(val) {
+    if (val === false || val === null || val === undefined) {
+      element.removeAttribute(attrName);
+    } else if (val === true) {
+      element.setAttribute(attrName, '');
+    } else {
+      element.setAttribute(attrName, String(val));
+    }
+  }
+  apply(signal.get());
+  signal.subscribe(apply);
 }
 
 function isPropWritable(element, propName) {
@@ -210,7 +236,8 @@ export default class ContentTag {
       return false;
     }
 
-    const [content] = this.content;
+    let [content] = this.content;
+    if (content instanceof Signal) { content = content.get(); }
 
     if (!['string', 'number'].includes(typeof content)) {
       return false;
@@ -257,14 +284,19 @@ export default class ContentTag {
       str += literalStr;
     } else if (this.contentIsShort()) {
       for (const c of this.content) {
-        if (typeof c === 'string' && this.encodeContent) {
-          str += he.encode(preserveSpaces(c));
+        const val = c instanceof Signal ? c.get() : c;
+        if (typeof val === 'string' && this.encodeContent) {
+          str += he.encode(preserveSpaces(val));
         } else {
-          str += c;
+          str += val;
         }
       }
     } else {
-      let content = stringifyContentArray(this.content);
+      const resolved = this.content.flatMap(c => {
+        const val = c instanceof Signal ? c.get() : c;
+        return Array.isArray(val) ? val : [val];
+      });
+      let content = stringifyContentArray(resolved);
 
       if (this.indentationLevel) { // falsy (0) means no indentation. Skip the pass entirely rather than calling indent with level 0
         content = indent(content, this.indentationLevel);
@@ -295,6 +327,8 @@ export default class ContentTag {
     for (const [attrName, attrValue] of this.attributeArray()) {
       if (/^on[a-z]/.test(attrName) && typeof attrValue === 'function') {
         element.addEventListener(attrName.slice(2), attrValue);
+      } else if (attrValue instanceof Signal) {
+        applySignalAttribute(element, attrName, attrValue);
       } else {
         element.setAttribute(attrName, attrValue);
       }
@@ -322,6 +356,27 @@ export default class ContentTag {
     for (let node of this.content) { // let, not const: node is reassigned to preserveSpaces(node) below
       if (node instanceof ContentTag || node instanceof LiteralTag || node instanceof CommentTag) {
         element.append(node.toElement());
+        continue;
+      }
+      if (node instanceof Signal) {
+        const initialVal = node.get();
+        if (Array.isArray(initialVal)) {
+          const startAnchor = document.createComment('');
+          const endAnchor = document.createComment('');
+          element.append(startAnchor, endAnchor);
+          reconcile(element, startAnchor, endAnchor, initialVal);
+          node.subscribe(newItems => {
+            reconcile(element, startAnchor, endAnchor, newItems);
+          });
+        } else {
+          let currentNode = resolveSignalNode(initialVal);
+          element.append(currentNode);
+          node.subscribe(val => {
+            const newNode = resolveSignalNode(val);
+            currentNode.replaceWith(newNode);
+            currentNode = newNode;
+          });
+        }
         continue;
       }
       if (!this.contentIsLiteral && typeof node === 'string') { // literal tags (script/style) need exact spacing preserved. Only convert for regular tags
