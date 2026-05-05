@@ -75,6 +75,17 @@ export class CommentTag {
 }
 
 /**
+ * Returned by \`.signal()\`. Pass as content or an attribute value — the DOM updates automatically
+ * when the signal changes. In \`.toString()\` the current value is used as a snapshot.
+ */
+export class Signal<T> {
+  get(): T;
+  set(valueOrFn: T | ((current: T) => T)): void;
+  subscribe(fn: (value: T) => void): () => void;
+  transform<U>(fn: (value: T) => U): Signal<U>;
+}
+
+/**
  * Extend this interface via module augmentation to allow additional attribute namespaces.
  * \`data-*\` and \`aria-*\` are always allowed without augmentation.
  *
@@ -119,7 +130,7 @@ ${elements.map(e => `type ${e.attributesTypeName} = ${e.tagType === 'SvgContent'
  * @example
  * t.ul([t.li('one'), t.li(2), t.li(t.span('three'))]);
  */
-export type Content = ContentTag | VoidTag | LiteralTag | CommentTag | string | number | boolean | null | undefined | (ContentTag | VoidTag | LiteralTag | CommentTag | string | number | boolean | null | undefined)[];
+export type Content = ContentTag | VoidTag | LiteralTag | CommentTag | Signal<any> | string | number | boolean | null | undefined | (ContentTag | VoidTag | LiteralTag | CommentTag | Signal<any> | string | number | boolean | null | undefined)[];
 
 type UniversalAttributes = NameSpaceAttributes | GlobalAttributes | GlobalEvents;
 
@@ -248,6 +259,34 @@ export default class Kensington {
  * const html = t.p({ class: 'intro' }, 'Hello world').toString();
  */
 export const t: InstanceType<typeof Kensington>;
+
+/**
+ * Creates a reactive signal. Pass as content or an attribute value — the DOM updates live.
+ * @example
+ * const count = signal(0);
+ * document.body.append(t.div(count).toElement());
+ * count.set(n => n + 1);
+ */
+export function signal<T>(initial: T): Signal<T>;
+
+/**
+ * Creates a read-only signal derived from other signals. Re-runs automatically whenever
+ * any signal read via \`.get()\` inside the function changes.
+ * @example
+ * const active = signal(true);
+ * const cls = computed(() => active.get() ? 'btn-primary' : 'btn-outline');
+ */
+export function computed<T>(fn: () => T): Signal<T>;
+
+/**
+ * Runs \`fn\` immediately and re-runs it whenever any signal read via \`.get()\` inside changes.
+ * Use for side effects: syncing to localStorage, updating the URL, fetching data, etc.
+ * @example
+ * effect(() => {
+ *   localStorage.setItem('sort', sortKey.get());
+ * });
+ */
+export function effect(fn: () => void): void;
 
 `;
 }
