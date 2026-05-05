@@ -48,6 +48,14 @@ export class LiteralTag {
 }
 
 /**
+ * Returned by \`.inlineComment()\`.
+ */
+export class CommentTag {
+  toString(): string;
+  toElement(): Comment;
+}
+
+/**
  * Extend this interface via module augmentation to allow additional attribute namespaces.
  * \`data-*\` and \`aria-*\` are always allowed without augmentation.
  *
@@ -80,7 +88,7 @@ ${elements.map(e => `type ${e.attributesTypeName} = ${attributesType(e)};`).join
  * @example
  * t.ul([t.li('one'), t.li(2), t.li(t.span('three'))]);
  */
-export type Content = ContentTag | VoidTag | LiteralTag | string | number | (ContentTag | VoidTag | LiteralTag | string | number)[];
+export type Content = ContentTag | VoidTag | LiteralTag | CommentTag | string | number | (ContentTag | VoidTag | LiteralTag | CommentTag | string | number)[];
 
 type UniversalAttributes = NameSpaceAttributes | GlobalAttributes | GlobalEvents;
 type CustomTagArguments<T = null> = [attributes?: T | UniversalAttributes, content?: Content] | [content: Content];
@@ -172,6 +180,13 @@ export default class Kensington {
    * Like \`.literal()\` but skips HTML encoding — use only for trusted HTML.
    */
   unsafeLiteral(str: string): LiteralTag
+
+  /**
+   * Creates an HTML comment. Multi-line strings are formatted across multiple lines.
+   * @example
+   * t.inlineComment('hello world')  // <!-- hello world -->
+   */
+  inlineComment(str: string | number): CommentTag
 
   /**
    * Renders a full HTML document. Identical to \`.html()\` but prepends \`<!DOCTYPE html>\`.

@@ -2,6 +2,7 @@ import * as allAttributes from './attributes.js';
 import getPrototypeMethods from './lib/get-prototype-methods.js';
 import showInvalid from './lib/show-invalid.js';
 import { camelToKebab } from './lib/text-utils.js';
+import CommentTag from './tag-classes/comment-tag.js';
 import ContentTag from './tag-classes/content-tag.js';
 import HtmlWithDoctypeTag from './tag-classes/html-with-doctype-tag.js';
 import LiteralTag from './tag-classes/literal-tag.js';
@@ -189,6 +190,25 @@ export default class Kensington {
    */
   unsafeLiteral(str) {
     return new LiteralTag(str);
+  }
+
+  /**
+   * Creates an HTML comment. Multi-line strings are formatted across multiple lines.
+   * @param {string | number} str
+   * @returns {CommentTag}
+   * @example
+   * t.inlineComment('hello world')  // <!-- hello world -->
+   * t.inlineComment('line 1\nline 2')
+   * // <!--
+   * //   line 1
+   * //   line 2
+   * // -->
+   */
+  inlineComment(str) {
+    if (!['string', 'number'].includes(typeof str)) {
+      throw new Error('inlineComment only accepts a string or number');
+    }
+    return new CommentTag(str.toString());
   }
 
   /** @returns {ContentTag} */

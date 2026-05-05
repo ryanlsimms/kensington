@@ -73,6 +73,24 @@ describe('content tag', () => {
     assert.throws(() => t.div(t.literal('<script></script>')).toString());
     assert.strictEqual(t.div(t.unsafeLiteral('<script>console.log("hello");</script>')).toString(), '<div>\n  <script>console.log("hello");</script>\n</div>');
   });
+  it('inlineComment single-line', () => {
+    assert.strictEqual(t.inlineComment('hello world').toString(), '<!-- hello world -->');
+  });
+  it('inlineComment number', () => {
+    assert.strictEqual(t.inlineComment(42).toString(), '<!-- 42 -->');
+  });
+  it('inlineComment multi-line', () => {
+    assert.strictEqual(t.inlineComment('line 1\nline 2').toString(), '<!--\n  line 1\n  line 2\n-->');
+  });
+  it('inlineComment throws on non-string/number', () => {
+    assert.throws(() => t.inlineComment({}));
+  });
+  it('inlineComment between nested tags', () => {
+    assert.strictEqual(
+      t.div([t.p('hello'), t.inlineComment('separator'), t.p('world')]).toString(),
+      '<div>\n  <p>hello</p>\n  <!-- separator -->\n  <p>world</p>\n</div>',
+    );
+  });
 });
 
 // ─── literal content ───────────────────────────────────────────────────────

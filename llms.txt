@@ -56,7 +56,7 @@ t.meta({ charset: 'utf-8' });
 
 ## Content rules
 
-Valid content: strings, numbers, tag instances (`ContentTag`, `VoidTag`, `LiteralTag`), or arrays of those. Falsy values (`null`, `undefined`, `''`) are silently ignored. Multiple consecutive spaces are replaced with non-breaking spaces (` `) so spacing is preserved in the browser — single spaces and preformatted elements (`pre`, `script`, `style`, `textarea`) are unaffected.
+Valid content: strings, numbers, tag instances (`ContentTag`, `VoidTag`, `LiteralTag`, `CommentTag`), or arrays of those. Falsy values (`null`, `undefined`, `''`) are silently ignored. Multiple consecutive spaces are replaced with non-breaking spaces (` `) so spacing is preserved in the browser — single spaces and preformatted elements (`pre`, `script`, `style`, `textarea`) are unaffected.
 
 ```javascript
 t.ul([
@@ -76,6 +76,16 @@ t.ul([
 ]);
 t.unsafeLiteral('<script>alert(1)</script>');  // skips encoding, trusted HTML only
 ```
+
+## HTML comments — inlineComment()
+
+```javascript
+t.inlineComment('hello world');          // <!-- hello world -->
+t.inlineComment('line 1\nline 2');       // <!--\n  line 1\n  line 2\n-->
+t.div([t.p('before'), t.inlineComment('note'), t.p('after')]);
+```
+
+`.toElement()` returns a DOM `Comment` node via `document.createComment()`.
 
 ## Constructor options
 
@@ -211,7 +221,7 @@ import { formAttributes } from 'kensington/attributes';  // attribute objects fo
 ```
 
 ```typescript
-import type { ContentMethod, Content, ContentTag, VoidTag, LiteralTag } from 'kensington';
+import type { ContentMethod, Content, ContentTag, VoidTag, LiteralTag, CommentTag } from 'kensington';
 import type { NameSpaceAttributes } from 'kensington';  // for module augmentation
 ```
 
@@ -222,6 +232,7 @@ import type { NameSpaceAttributes } from 'kensington';  // for module augmentati
 | `ContentTag` | Returned by content element methods (`div`, `p`, `span`, …). Has `.toString()` and `.toElement()`. |
 | `VoidTag` | Returned by void element methods (`br`, `hr`, `input`, …). Has `.toString()` and `.toElement()`. |
 | `LiteralTag` | Returned by `.literal()` / `.unsafeLiteral()`. |
-| `Content` | `string \| number \| ContentTag \| VoidTag \| LiteralTag \| Content[]` — valid content for any tag method. |
+| `CommentTag` | Returned by `.inlineComment()`. |
+| `Content` | `string \| number \| ContentTag \| VoidTag \| LiteralTag \| CommentTag \| Content[]` — valid content for any tag method. |
 | `ContentMethod<T>` | Type of a custom element method. `T` is the element-specific attribute type. |
 | `NameSpaceAttributes` | Interface to extend for custom attribute namespaces. |

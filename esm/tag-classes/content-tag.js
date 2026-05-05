@@ -6,6 +6,7 @@ import showInvalid from '../lib/show-invalid.js';
 import stringifyContentArray from '../lib/stringify-content-array.js';
 import { styleObjectToCss } from '../lib/style-utils.js';
 import { camelToKebab, LINE_BREAK_TEST_REGEX, preserveSpaces } from '../lib/text-utils.js';
+import CommentTag from './comment-tag.js';
 import LiteralTag from './literal-tag.js';
 
 function isValidStyleValue(v) {
@@ -16,7 +17,7 @@ function isValidContentItem(c, contentIsLiteral) {
   if (['string', 'number'].includes(typeof c)) {
     return true;
   }
-  return !contentIsLiteral && (c instanceof ContentTag || c instanceof LiteralTag);
+  return !contentIsLiteral && (c instanceof ContentTag || c instanceof LiteralTag || c instanceof CommentTag);
 }
 
 function collectContent(items) {
@@ -238,7 +239,7 @@ export default class ContentTag {
     }
 
     for (let node of this.content) {
-      if (node instanceof ContentTag || node instanceof LiteralTag) {
+      if (node instanceof ContentTag || node instanceof LiteralTag || node instanceof CommentTag) {
         element.append(node.toElement());
         continue;
       }

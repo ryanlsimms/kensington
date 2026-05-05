@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- `.inlineComment(str)` method creates an HTML comment node. Multi-line strings are formatted across multiple lines. `.toElement()` returns a `Comment` DOM node via `document.createComment()`.
+
 ### Fixed
 - Disallow functions as attribute values when `.toString()` is called.
 

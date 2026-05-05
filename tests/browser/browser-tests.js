@@ -129,6 +129,23 @@ export function registerTests(bundle) {
     await expect(page.locator('#from-literal')).toHaveText('hello');
   });
 
+  test('inlineComment renders as a comment node between nested elements', async ({ page }) => {
+    const result = await page.evaluate(async src => {
+      const { t } = await import(src);
+      const div = t.div([t.p('before'), t.inlineComment('separator'), t.p('after')]).toElement();
+      document.body.append(div);
+      const children = Array.from(div.childNodes);
+      return {
+        count: children.length,
+        middleType: children[1].nodeType,
+        middleValue: children[1].nodeValue,
+      };
+    }, bundle);
+    expect(result.count).toBe(3);
+    expect(result.middleType).toBe(8); // Node.COMMENT_NODE
+    expect(result.middleValue).toBe('separator');
+  });
+
   // ─── event listeners ───────────────────────────────────────────────────────
 
   test('attaches event listener via function attribute', async ({ page }) => {

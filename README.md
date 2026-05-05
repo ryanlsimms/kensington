@@ -150,6 +150,19 @@ t.literal('<li>verbatim, HTML-encoded</li>'); // doesn't allow <script> tags
 t.unsafeLiteral('<li>trusted HTML, no encoding</li>');
 ```
 
+## HTML comments
+
+```javascript
+t.inlineComment('hello world');
+// <!-- hello world -->
+
+t.inlineComment('line 1\nline 2');
+// <!--
+//   line 1
+//   line 2
+// -->
+```
+
 ## Constructor options
 
 ```javascript
@@ -270,7 +283,7 @@ import { formAttributes } from 'kensington/attributes';  // per-element attribut
 ```
 
 ```typescript
-import type { ContentMethod, Content, ContentTag, VoidTag, LiteralTag } from 'kensington';
+import type { ContentMethod, Content, ContentTag, VoidTag, LiteralTag, CommentTag } from 'kensington';
 import type { NameSpaceAttributes } from 'kensington';  // for namespace augmentation
 ```
 
@@ -279,6 +292,7 @@ import type { NameSpaceAttributes } from 'kensington';  // for namespace augment
 | `ContentTag` | Returned by content element methods (`div`, `p`, `span`, …) |
 | `VoidTag` | Returned by void element methods (`br`, `input`, …) |
 | `LiteralTag` | Returned by `.literal()` / `.unsafeLiteral()` |
-| `Content` | `string \| number \| ContentTag \| VoidTag \| LiteralTag \| Content[]` |
+| `CommentTag` | Returned by `.inlineComment()` |
+| `Content` | `string \| number \| ContentTag \| VoidTag \| LiteralTag \| CommentTag \| Content[]` |
 | `ContentMethod<T>` | Type of a custom element method; `T` is the element-specific attribute shape |
 | `NameSpaceAttributes` | Interface to extend for custom attribute namespaces |
