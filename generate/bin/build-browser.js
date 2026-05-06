@@ -3,7 +3,7 @@ import nodeResolve from '@rollup/plugin-node-resolve';
 import terser from '@rollup/plugin-terser';
 import { rollup } from 'rollup';
 
-const entry = new URL('../../esm/kensington.js', import.meta.url).pathname;
+const entry = new URL('../../esm/index.js', import.meta.url).pathname;
 const attributesId = new URL('../../esm/attributes.js', import.meta.url).pathname;
 
 const slimPlugin = {

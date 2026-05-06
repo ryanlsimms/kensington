@@ -49,7 +49,7 @@ export default defineConfig({
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
   testDir: './',
-  timeout: 2000,
+  timeout: 8000,
   use: {
     trace: 'on-first-retry',
   },

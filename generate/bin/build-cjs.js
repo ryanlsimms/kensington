@@ -6,7 +6,7 @@ import { rollup } from 'rollup';
 const root = path.resolve(import.meta.dirname, '../..');
 
 const result = await rollup({
-  input: [path.resolve(root, 'esm/kensington.js')],
+  input: [path.resolve(root, 'esm/index.js')],
   onwarn(warning, warn) {
     if (warning.code === 'MISSING_EXPORT') {return;}
     warn(warning);

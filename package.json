@@ -35,11 +35,11 @@
     ".": {
       "import": {
         "types": "./types.d.ts",
-        "default": "./esm/kensington.js"
+        "default": "./esm/index.js"
       },
       "require": {
         "types": "./types.d.ts",
-        "default": "./cjs/kensington.js"
+        "default": "./cjs/index.js"
       }
     }
   },

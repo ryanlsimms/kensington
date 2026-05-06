@@ -1,9 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+import buildAttributes from '../build-attributes.js';
 import buildAttributesDeclarations from '../build-attributes-declarations.js';
 import buildDeclarations from '../build-declarations.js';
-import { buildAttributes, buildMain } from '../build-javascript.js';
+import buildKensington from '../build-kensington.js';
 import parseData from '../parse-data.js';
 
 const { default: htmlData } = await import('../fetched-data/html.json', { with: { type: 'json' } });
@@ -26,7 +27,7 @@ const declarationsContent = buildDeclarations({
 
 const attributesDeclarationsContent = buildAttributesDeclarations({ elements });
 
-const kensingtonClassContent = buildMain({ elements });
+const kensingtonClassContent = buildKensington({ elements });
 
 const attributesContent = buildAttributes({
   elements,

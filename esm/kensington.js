@@ -619,5 +619,3 @@ export default class Kensington {
   /** @returns {VoidTag} */
   wbr = this.createVoidTag('wbr', allAttributes.wbrAttributes);
 }
-
-export const t = new Kensington();
