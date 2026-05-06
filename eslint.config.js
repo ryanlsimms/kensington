@@ -44,8 +44,8 @@ export default [
       '@stylistic/js/max-len': ['error', {
         code: 120,
         ignoreComments: true,
+        ignorePattern: '^\\s*["\']',
         ignoreRegExpLiterals: true,
-        ignoreStrings: true,
         ignoreTemplateLiterals: true,
         ignoreTrailingComments: true,
       }],
@@ -55,7 +55,7 @@ export default [
       '@stylistic/js/no-extra-parens': 'off',
       '@stylistic/js/no-multiple-empty-lines': ['error', { 'max': 1, 'maxEOF': 1 }],
       '@stylistic/js/object-curly-spacing': ['error', 'always'],
-      '@stylistic/js/object-property-newline': 'off',
+      '@stylistic/js/object-property-newline': ['error', { allowAllPropertiesOnSameLine: true }],
       '@stylistic/js/padded-blocks': ['error', 'never'],
       '@stylistic/js/quote-props': 'off',
       '@stylistic/js/quotes': [

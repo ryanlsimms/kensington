@@ -6,7 +6,11 @@
   "types": "./types.d.ts",
   "sideEffects": false,
   "license": "ISC",
+  "bin": {
+    "kensington": "bin/html-to-kensington.js"
+  },
   "files": [
+    "bin",
     "esm",
     "cjs",
     "dist",
@@ -69,11 +73,12 @@
     "build-browser": "node generate/bin/build-browser.js",
     "fetch": "node generate/bin/fetch-all.js",
     "fetch-and-build": "npm run fetch && npm run build",
-    "test": "npm run test-esm && npm run test-cjs && npm run test-ts && npm run test-browser && echo 'All tests passed'",
+    "test": "npm run test-esm && npm run test-cjs && npm run test-ts && npm run test-browser && npm run test-cli && echo 'All tests passed'",
     "test-browser": "npx playwright test --config ./tests/browser/playwright.config.js",
     "test-esm": "node --test \"./tests/esm/esm-test.js\"",
     "test-cjs": "node --test \"./tests/cjs/cjs-test.js\"",
     "test-ts": "tsc --noEmit -p tests/typescript/tsconfig.json && echo 'TypeScript types OK'",
+    "test-cli": "node --test \"./tests/html-to-kensington-test.js\"",
     "benchmark": "node tests/benchmark.js",
     "dom-server": "node --watch-path=./tests/browser/pages --watch-path=./esm ./tests/browser/server/html-server.js"
   },
@@ -106,5 +111,8 @@
     "rollup": "^4.35.0",
     "simple-git-hooks": "^2.13.1",
     "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "parse5": "^8.0.1"
   }
 }

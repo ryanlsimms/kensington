@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- `html-to-kensington` CLI: convert HTML to Kensington code via `npx kensington`. Accepts a file argument, pipe/redirect, or interactive terminal paste. The `--copy`/`-c` flag copies output to the clipboard. Attributes are converted to camelCase, `style` is expanded to a JS object, and two or more `data-*` or `aria-*` attributes sharing a prefix are grouped into a nested object. Full documents (with `<!DOCTYPE html>`) map to `htmlWithDocType`; multiple root nodes produce an array. SVG camelCase element names (e.g. `linearGradient`) are preserved. Comments convert to `inlineComment()` and `script`/`style` text content is passed through as a plain string. If ESLint or Prettier is installed in the working directory, the converter reads `max-len`/`printWidth` for line-breaking and runs the formatter over the output.
+
 ## [0.14.0] - 2026-05-04
 
 ### Added

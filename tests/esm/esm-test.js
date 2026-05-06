@@ -71,7 +71,7 @@ describe('content tag', () => {
   });
   it('literal script content throws', () => {
     assert.throws(() => t.div(t.literal('<script></script>')).toString());
-    assert.strictEqual(t.div(t.unsafeLiteral('<script>console.log("hello");</script>')).toString(), '<div>\n  <script>console.log("hello");</script>\n</div>');
+    assert.strictEqual(t.div(t.unsafeLiteral('<script>console.log("hello");</script>')).toString(), `<div>\n  <script>console.log("hello");</script>\n</div>`);
   });
   it('inlineComment single-line', () => {
     assert.strictEqual(t.inlineComment('hello world').toString(), '<!-- hello world -->');

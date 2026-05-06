@@ -190,14 +190,22 @@ if (scenario) {
   for (const name of Object.keys(fns)) {
     process.stdout.write(`  running ${name}...`);
 
-    const { stdout: kOut, stderr: kErr, status: kStatus } = spawnSync(process.execPath, [self, name], { encoding: 'utf8' });
+    const {
+      stdout: kOut,
+      stderr: kErr,
+      status: kStatus,
+    } = spawnSync(process.execPath, [self, name], { encoding: 'utf8' });
     if (kStatus !== 0) {
       process.stdout.write('\n');
       console.error(kErr);
       process.exit(1);
     }
 
-    const { stdout: siOut, stderr: siErr, status: siStatus } = spawnSync(process.execPath, [self, name, 'baseline'], { encoding: 'utf8' });
+    const {
+      stdout: siOut,
+      stderr: siErr,
+      status: siStatus,
+    } = spawnSync(process.execPath, [self, name, 'baseline'], { encoding: 'utf8' });
     if (siStatus !== 0) {
       process.stdout.write('\n');
       console.error(siErr);

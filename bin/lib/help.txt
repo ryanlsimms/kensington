@@ -1,0 +1,15 @@
+Usage: npx kensington [options] [file]
+
+Convert HTML to kensington format.
+
+Arguments:
+  file              HTML file to convert
+
+Input (when no file is given):
+  pipe              echo '<div>hello</div>' | npx kensington
+  redirect          npx kensington < file.html
+  interactive       paste in terminal (when stdin is a TTY)
+
+Options:
+  -c, --copy        Copy output to clipboard
+  -h, --help        Show this help message

@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-# Run all tests (ESM, CJS, TypeScript types, browser)
+# Run all tests (ESM, CJS, TypeScript types, browser, CLI)
 npm test
 
 # Individual suites
@@ -13,6 +13,7 @@ npm run test-esm      # ESM unit tests
 npm run test-cjs      # CJS unit tests
 npm run test-ts       # TypeScript type-checking (tsc --noEmit)
 npm run test-browser  # Playwright browser tests
+npm run test-cli      # html-to-kensington CLI integration tests
 
 # Start dev server for manual browser testing
 npm run dom-server
@@ -72,6 +73,17 @@ Kensington is an HTML template engine that generates HTML strings (or DOM elemen
 - `data-*` and `aria-*` namespaces are always allowed; additional namespaces (e.g. `hx` for htmx) are passed via constructor
 - Event handler attributes (`onclick`, `oninput`, and all `on*`) accept `[String, Function]`. Functions are valid at tag creation and wired via `addEventListener` in `toElement()`. In `toString()`, function values cannot be serialized — they are omitted, with the `handleFunctionValues` callback in `attributesStringFromObject` invoking `showInvalid` at that point rather than at creation time.
 
+### CLI — html-to-kensington
+
+`bin/html-to-kensington.js` is the `kensington` binary (set in `package.json` `"bin"`). It reads HTML from a file argument, stdin (pipe/redirect), or interactive terminal paste using bracketed paste mode, then converts it to Kensington code via `bin/lib/convert-html.js`.
+
+- `bin/lib/convert-html.js` — top-level converter; uses `parse5` to parse HTML/fragments, then delegates per-node to `node-to-code.js`
+- `bin/lib/node-to-code.js` — converts a single parse5 node to a Kensington method call string
+- `bin/lib/attrs-to-code.js` — converts a parse5 attribute list to a JS object literal string; groups `data-*`/`aria-*` prefixes, expands `style`, converts kebab-case to camelCase
+- `bin/lib/formatter.js` — detects ESLint or Prettier in the cwd; reads `max-len`/`printWidth` for line-breaking and runs the formatter over the output
+- `bin/lib/read-html.js` — reads HTML from stdin (TTY: bracketed paste mode; non-TTY: stream)
+- `bin/lib/clipboard.js` — copies output to the system clipboard (`--copy` flag)
+
 ### Testing setup
 
 Each test subdirectory has its own `package.json` and a `node_modules/kensington` symlink to the project root so `import/require('kensington')` resolves locally without a global `npm link`.
@@ -80,3 +92,4 @@ Each test subdirectory has its own `package.json` and a `node_modules/kensington
 - `tests/cjs/` — CJS unit tests (`node:test`, `"type": "commonjs"`)
 - `tests/typescript/` — TypeScript type tests (`tsc --noEmit`)
 - `tests/browser/` — Playwright end-to-end tests; a local server serves pages from `tests/browser/pages/`
+- `tests/html-to-kensington-test.js` — CLI integration tests (`node:test`); spawns the CLI via `spawnSync` with piped stdin, including ESLint and Prettier formatting tests using temp directories

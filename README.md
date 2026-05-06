@@ -296,3 +296,45 @@ import type { NameSpaceAttributes } from 'kensington';  // for namespace augment
 | `Content` | `string \| number \| ContentTag \| VoidTag \| LiteralTag \| CommentTag \| Content[]` |
 | `ContentMethod<T>` | Type of a custom element method; `T` is the element-specific attribute shape |
 | `NameSpaceAttributes` | Interface to extend for custom attribute namespaces |
+
+## HTML → Kensington
+
+The `kensington` CLI converts HTML to Kensington code. Run it with `npx kensington` after installing the package.
+
+**Input**
+
+```html
+<nav class="navbar" aria-label="main" aria-expanded="true">
+  <a href="/" class="nav-link">Home</a>
+  <a href="/about" class="nav-link">About</a>
+</nav>
+```
+
+**Output**
+
+```javascript
+t.nav({ class: "navbar", aria: { label: "main", expanded: "true" } }, [
+  t.a({ href: "/", class: "nav-link" }, "Home"),
+  t.a({ href: "/about", class: "nav-link" }, "About"),
+])
+```
+
+**Input modes**
+
+| Mode | Command |
+|------|---------|
+| Interactive | `npx kensington` — paste in the terminal |
+| File | `npx kensington index.html` |
+| Pipe | `echo '<p>hello</p>' \| npx kensington` |
+| Redirect | `npx kensington < page.html` |
+
+**Options**
+
+| Flag | Description |
+|------|-------------|
+| `--copy`, `-c` | Copy output to clipboard |
+| `--help`, `-h` | Print usage |
+
+**Auto-formatting**
+
+If ESLint or Prettier is present in the working directory, the converter runs the formatter over the output.

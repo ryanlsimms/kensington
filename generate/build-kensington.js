@@ -35,7 +35,7 @@ export default class Kensington {
     validationLevel = 'off',
   } = {}) {
     if (allAttributes.__slim__ && validationLevel !== 'off') {
-      throw new Error("The slim build does not include attribute data. Set validationLevel: 'off' or use the full build.");
+      throw new Error(\`The slim build does not include attribute data. Set validationLevel: 'off' or use the full build.\`);
     }
     getPrototypeMethods(this).forEach(key => {
       this[key] = this[key].bind(this);
@@ -179,7 +179,7 @@ export default class Kensington {
    */
   literal(str) {
     if (str.includes('<script')) {
-      throw new Error('<script> tags are not allowed to be passed in literal html.  Use the .unsafeLiteral if you can vouch for the string');
+      throw new Error(\`<script> tags are not allowed to be passed in literal html.  Use the .unsafeLiteral if you can vouch for the string\`);
     }
     return new LiteralTag(str);
   }
@@ -213,7 +213,12 @@ export default class Kensington {
   }
 
   /** @returns {ContentTag} */
-  htmlWithDocType = this.createTag('html', allAttributes.htmlAttributes, HtmlWithDoctypeTag, { includeGlobalAttributes: true, includeGlobalEvents: true });
+  htmlWithDocType = this.createTag(
+    'html',
+    allAttributes.htmlAttributes,
+    HtmlWithDoctypeTag,
+    { includeGlobalAttributes: true, includeGlobalEvents: true },
+  );
 
   ${elements.map(el => {
     const returnType = el.returnTagType === 'Void' ? 'VoidTag' : 'ContentTag';
