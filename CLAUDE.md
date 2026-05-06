@@ -37,9 +37,29 @@ npm run fetch-and-build
 
 To run a single test: Node's built-in runner doesn't support filtering by name via the CLI; use `it.only()` temporarily.
 
+## Releasing
+
+```bash
+# Stable release (from master)
+scripts/release.sh patch
+scripts/release.sh minor
+scripts/release.sh major
+
+# Prerelease (from next branch) — second arg is the preid, defaults to 'beta'
+scripts/release.sh premajor          # → 1.0.0-beta.0
+scripts/release.sh prerelease        # → 1.0.0-beta.1
+scripts/release.sh premajor rc       # → 1.0.0-rc.0
+```
+
+`release.sh` requires a clean working tree and an `## [Unreleased]` section in `CHANGELOG.md`. It bumps the version, stamps the changelog, commits, tags, pushes, and creates a GitHub release. Prerelease builds are marked as pre-release on GitHub.
+
+**npm dist-tag**: `publish.yml` detects a prerelease version (contains `-`) and publishes with `--tag <preid>` so `npm install kensington` stays on the latest stable. Users opt in with `npm install kensington@beta`.
+
+**Branches**: `master` is the 0.x stable line. `next` is the 1.0 beta line. Cherry-pick fixes from `master` → `next` as needed.
+
 ## Architecture
 
-Kensington is an HTML template engine that generates HTML strings (or DOM elements) via nested method calls on a `Kensington` class instance.
+Kensington is an HTML template library that generates HTML strings (or DOM elements) via nested method calls on a `Kensington` class instance.
 
 ### Generated vs. hand-written files
 

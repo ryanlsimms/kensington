@@ -39,6 +39,13 @@ jobs:
         run: npm test
 
       - name: Publish
-        run: npm publish --provenance --access public
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if [[ "$VERSION" == *"-"* ]]; then
+            PREID=$(echo "$VERSION" | sed 's/.*-\([^.]*\)\..*/\1/')
+            npm publish --provenance --access public --tag "$PREID"
+          else
+            npm publish --provenance --access public
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

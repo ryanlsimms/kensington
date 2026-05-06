@@ -1,6 +1,6 @@
 # Kensington
 
-HTML/SVG/MathML template engine for JavaScript and TypeScript. Every tag is a method on a `Kensington` instance. Methods accept optional attributes and/or content and return a tag object that serialises to a formatted HTML string via `.toString()`, or to a live DOM node via `.toElement()`.
+HTML/SVG/MathML template library for JavaScript and TypeScript. Every tag is a method on a `Kensington` instance. Methods accept optional attributes and/or content and return a tag object that serialises to a formatted HTML string via `.toString()`, or to a live DOM node via `.toElement()`.
 
 ## Installation
 
@@ -204,12 +204,12 @@ t.script([
 
 ## String interpolation and toString()
 
-Tag objects convert to strings automatically in template literals and string contexts. Explicit `.toString()` is only needed at the top level when assigned to a variable:
+Tag objects convert to strings automatically in template literals and string concatenation. Explicit `.toString()` is needed when assigning to a variable or passing to a function that won't coerce the argument (e.g. `res.send()`):
 
 ```javascript
-const snippet = t.p('hello').toString();       // explicit
-const html = `<div>${t.p('hello')}</div>`;     // automatic
-res.send(t.html(t.body('page')));              // automatic (Express etc.)
+const snippet = t.p('hello').toString();            // explicit — assigned to variable
+const html = `<div>${t.p('hello')}</div>`;          // automatic — template literal
+res.send(t.html(t.body('page')).toString());        // explicit — res.send won't coerce
 ```
 
 ## Imports
