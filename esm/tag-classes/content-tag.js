@@ -72,9 +72,14 @@ export default class ContentTag {
           return `style="${styleObjectToCss(value, ([, v]) => !isValidStyleValue(v))}"`;
         }
         if (Array.isArray(value)) {
-          return `${attr}=${JSON.stringify(value)}`;
+          const parts = value.map(v => (typeof v === 'symbol' ? String(v) : JSON.stringify(v)));
+          return `${attr}=[${parts.join(',')}]`;
         }
-        return `${attr}="${String(value)}"`;
+        try {
+          return `${attr}="${String(value)}"`;
+        } catch {
+          return `${attr}=[non-serializable]`;
+        }
       }).join(', ');
       const message = `invalid attribute \`${attrString}\` given for element \`${this.tagName}\``;
       showInvalid(message, this.validationLevel, this.logger);
@@ -96,6 +101,9 @@ export default class ContentTag {
     if ([undefined, null].includes(value)) {
       return true;
     }
+    if (typeof value === 'symbol') {
+      return false;
+    }
     if (typeof value === 'number' && !isFinite(value)) {
       return false;
     }
@@ -105,8 +113,22 @@ export default class ContentTag {
     if (attr === 'id' && typeof value === 'string' && /^\d/.test(value)) {
       return false;
     }
+    if (attr === 'class' && Array.isArray(value)) {
+      return true;
+    }
     if (attr === 'style' && value !== null && typeof value === 'object' && !Array.isArray(value)) {
-      return Object.values(value).every(isValidStyleValue);
+      for (const k of Object.keys(value)) {
+        let v;
+        try {
+          v = value[k];
+        } catch {
+          continue;
+        }
+        if (!isValidStyleValue(v)) {
+          return false;
+        }
+      }
+      return true;
     }
     const type = this.allowedAttributeMap.get(attr) ?? this.allowedAttributeMap.get(camelToKebab(attr));
     return this.validateAttributeByType(type, value);
@@ -127,6 +149,7 @@ export default class ContentTag {
     }
     if (type === Number) {
       if (typeof value === 'number') { return isFinite(value); }
+      if (typeof value !== 'string') { return false; }
       return Number(value).toString() === value;
     }
     if (typeof type === 'function') {

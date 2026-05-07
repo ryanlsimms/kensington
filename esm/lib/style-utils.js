@@ -7,8 +7,17 @@ function isSerializableStyleValue([k, v]) {
 }
 
 export function styleObjectToCss(obj, filter = isSerializableStyleValue) {
-  return Object.entries(obj)
-    .filter(filter)
-    .map(([k, v]) => `${camelToKebab(k)}: ${String(v)}`)
-    .join('; ');
+  const parts = [];
+  for (const k of Object.keys(obj)) {
+    let v;
+    try {
+      v = obj[k];
+    } catch {
+      continue;
+    }
+    if (filter([k, v])) {
+      parts.push(`${camelToKebab(k)}: ${String(v)}`);
+    }
+  }
+  return parts.join('; ');
 }

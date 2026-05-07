@@ -582,6 +582,47 @@ describe('argument validation', () => {
     const tt = new Kensington({ validationLevel: 'error' });
     assert.throws(() => tt.div({ id: Symbol('x') }), /id="Symbol\(x\)"/);
   });
+  it('Symbol on Number-typed attribute gives a validation error without crashing', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => tt.div({ tabindex: Symbol('x') }), /tabindex/);
+  });
+  it('Symbol in createCustomTag Number attribute gives a validation error without crashing', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    const xEl = tt.createCustomTag('x-el', { count: Number });
+    assert.throws(() => xEl({ count: Symbol('x') }), /count/);
+  });
+  it('style object with throwing getter renders without crashing', () => {
+    const style = Object.defineProperty({}, 'color', {
+      get() { throw new Error('getter exploded'); },
+      enumerable: true,
+    });
+    assert.strictEqual(t.div({ style }).toString(), '<div></div>');
+  });
+  it('style object with throwing getter does not crash with validationLevel error', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    const style = Object.defineProperty({ fontSize: '12px' }, 'color', {
+      get() { throw new Error('getter exploded'); },
+      enumerable: true,
+    });
+    assert.strictEqual(tt.div({ style }).toString(), '<div style="font-size: 12px"></div>');
+  });
+  it('null-proto object as non-namespace attribute value gives a validation error without crashing', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    const nullProto = Object.create(null);
+    assert.throws(() => tt.div({ id: nullProto }), /non-serializable/);
+  });
+  it('class array is valid when validationLevel is error', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.strictEqual(tt.div({ class: ['container', 'main'] }).toString(), '<div class="container main"></div>');
+  });
+  it('class array with Symbol items renders valid items without crashing', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.strictEqual(tt.div({ class: [Symbol('x'), 'foo'] }).toString(), '<div class="foo"></div>');
+  });
+  it('array error message shows Symbol values rather than null', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => tt.div({ tabindex: [Symbol('x'), 'y'] }), /Symbol\(x\)/);
+  });
   it('circular content array does not stack overflow', () => {
     const arr = ['a'];
     arr.push(arr);

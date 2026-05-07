@@ -132,7 +132,8 @@ t.input({ maxlength: 100 });
 t.td({ colspan: 3 });
 t.td({ rowspan: 2 });
 
-// @ts-expect-error - string is not valid where number is expected
+t.input({ size: '-1' }); // numeric string representation is valid
+// @ts-expect-error - arbitrary string is not valid where number | `${number}` is expected
 t.input({ size: 'big' });
 
 // ─── module augmentation — hx namespace ─────────────────────────────────────

@@ -52,6 +52,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A circular reference in a content array no longer causes a stack overflow; the circular path is silently skipped.
 - `NaN`, `Infinity`, and `-Infinity` passed as content now raise a validation error when `validationLevel` is `'warn'` or `'error'`. With `validationLevel: 'off'` they render literally, consistent with the permissive contract of that mode.
 - Empty or whitespace-only property names in a `style` object (e.g. `{ '': 'red' }`) are now silently skipped, preventing invalid CSS like `": red"` in the output.
+- A `Symbol` passed as a `Number`-typed attribute value (e.g. `{ tabindex: Symbol('x') }`) no longer crashes with a raw `TypeError: Cannot convert a Symbol value to a number`; it is now treated as an invalid value and raises a proper validation error.
+- A non-string, non-number value (array, object, Symbol, etc.) passed as a `Number`-typed attribute value no longer attempts numeric coercion, which could throw for values like Symbol-containing arrays. Only strings are now coerced to check for numeric string representation.
+- A `style` object whose properties include throwing getters no longer crashes. Such properties are silently skipped in both serialisation and validation, consistent with how throwing getters on attribute objects are handled.
+- A `class` array (e.g. `{ class: ['container', 'main'] }`) is no longer rejected as an invalid attribute value when `validationLevel` is `'warn'` or `'error'`. Class arrays are a documented input form; the validator was incorrectly checking them against the `String` spec type.
+- A null-prototype object or other non-serialisable value as an attribute value no longer crashes the validation error message formatter. The message now shows `[non-serializable]` instead of throwing `Cannot convert object to primitive value`.
+- A `Symbol` inside an array attribute value (e.g. `{ tabindex: [Symbol('x'), 'y'] }`) no longer shows as `null` in the validation error message; it is now shown as `Symbol(x)`.
+- `Number`-typed attributes (e.g. `tabindex`, `colspan`, `rowspan`) now accept a numeric string (e.g. `tabindex="-1"`) in both the runtime validator and the TypeScript type (``number | `${number}` ``). This was already the runtime behaviour; the TypeScript type now reflects it.
+- `createCustomTag` return type now infers both kebab-case and camelCase attribute names, eliminating false IDE type warnings at call sites (e.g. `{ customAttr: 4 }` where the spec key is `custom-attr`).
 
 ## [0.15.1] - 2026-05-07
 

@@ -53,6 +53,9 @@ export default function parseData(htmlData, svgData, mathElements) {
 
   const elements = htmlElements.filter(e => !tagsToSkip.includes(e.tag)).sort((a, b) => a.tag.localeCompare(b.tag));
 
+  // eslint-disable-next-line no-template-curly-in-string
+  const numberTsType = 'number | `${number}`';
+
   function getAttributeType(attr) {
     const values = (attr.value ?? []).filter(value => value !== 'the empty string');
     if (attr.attribute === 'value') {
@@ -66,7 +69,7 @@ export default function parseData(htmlData, svgData, mathElements) {
       'Valid non-negative integer',
       'Valid integer',
     ].includes(values[0])) {
-      return ['Number', 'number'];
+      return ['Number', numberTsType];
     }
     if (values[0] === '<boolean>') {
       return [
@@ -75,7 +78,7 @@ export default function parseData(htmlData, svgData, mathElements) {
       ];
     }
     if (values[0] === '<number>') {
-      return ['Number', 'number'];
+      return ['Number', numberTsType];
     }
     if (['<length>', '<coordinate>', '<integer>', '<long>', '<length-percentage>'].includes(values[0])) {
       return ['[Number,String]', 'number | string'];

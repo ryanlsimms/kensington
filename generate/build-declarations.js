@@ -93,7 +93,6 @@ ${elements.map(e => `type ${e.attributesTypeName} = ${attributesType(e)};`).join
 export type Content = ContentTag | VoidTag | LiteralTag | CommentTag | string | number | (ContentTag | VoidTag | LiteralTag | CommentTag | string | number)[];
 
 type UniversalAttributes = NameSpaceAttributes | GlobalAttributes | GlobalEvents;
-type CustomTagArguments<T = null> = [attributes?: T | UniversalAttributes, content?: Content] | [content: Content];
 
 /**
  * The type of a custom element method created with \`createCustomTag\`.
@@ -106,11 +105,15 @@ type CustomTagArguments<T = null> = [attributes?: T | UniversalAttributes, conte
  *     this.createCustomTag('my-card', { 'card-type': ['primary', 'secondary'] });
  * }
  */
-export type ContentMethod<T = null> = (...args: CustomTagArguments<T>) => ContentTag;
+export interface ContentMethod<T = Record<string, unknown>> {
+  (attributes: T | UniversalAttributes, content?: Content): ContentTag;
+  (content?: Content): ContentTag;
+}
 
 type PrimitiveConstructor = StringConstructor | NumberConstructor | BooleanConstructor | FunctionConstructor;
 type Primitive = string | number | boolean | Function;
 type AttributeValue = PrimitiveConstructor | Primitive | (PrimitiveConstructor | Primitive)[];
+type CamelCase<S extends string> = S extends \`\${infer Head}-\${infer Rest}\` ? \`\${Head}\${Capitalize<CamelCase<Rest>>}\` : S;
 
 /**
  * HTML/SVG/MathML template engine. Every tag is a method that accepts optional attributes
@@ -164,10 +167,10 @@ export default class Kensington {
    * const t = new MyEngine();
    * t.myCard({ 'card-type': 'primary' }, 'Content here').toString();
    */
-  createCustomTag(
+  createCustomTag<A extends Record<string, AttributeValue> = Record<string, AttributeValue>>(
     tagName: string,
-    allowedAttributes?: Record<string, AttributeValue>
-  ): (...args: CustomTagArguments) => ContentTag
+    allowedAttributes?: A
+  ): ContentMethod<{ [K in keyof A as K | CamelCase<K & string>]?: unknown }>
 
   /**
    * Embeds a raw HTML string verbatim into the output (HTML-encoded when used as text content).

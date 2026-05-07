@@ -79,7 +79,7 @@ type GlobalAttributes = {
   slot?: string;
   spellcheck?: "true" | "false";
   style?: string | csstype.Properties<string | number>;
-  tabindex?: number;
+  tabindex?: number | `${number}`;
   title?: string;
   translate?: "yes" | "no";
   writingsuggestions?: "true" | "false";
@@ -263,7 +263,7 @@ type AnimateAttributes = {
   'restart'?: "always" | "never" | "whenNotActive";
   'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'to'?: string;
   'values'?: string;
   'xml:space'?: "default" | "preserve";
@@ -361,7 +361,7 @@ type AnimateMotionAttributes = {
   'rotate'?: string;
   'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'to'?: string;
   'values'?: string;
   'xml:space'?: "default" | "preserve";
@@ -456,7 +456,7 @@ type AnimateTransformAttributes = {
   'restart'?: "always" | "never" | "whenNotActive";
   'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'to'?: string;
   'type'?: "translate" | "scale" | "rotate" | "skewX" | "skewY";
   'values'?: string;
@@ -476,7 +476,7 @@ type AnnotationAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
 type AnnotationXmlAttributes = {
@@ -492,7 +492,7 @@ type AnnotationXmlAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
 type AreaAttributes = {
@@ -578,8 +578,8 @@ type ButtonAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type CanvasAttributes = {
-  'height'?: number;
-  'width'?: number;
+  'height'?: number | `${number}`;
+  'width'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type CaptionAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -657,7 +657,7 @@ type CircleAttributes = {
   'role'?: string;
   'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
@@ -680,11 +680,11 @@ type ClipPathAttributes = {
 type CodeAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ColAttributes = {
-  'span'?: number;
+  'span'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ColgroupAttributes = {
-  'span'?: number;
+  'span'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type DataAttributes = {
@@ -761,7 +761,7 @@ type DefsAttributes = {
   'onwaiting'?: string | ((event: Event) => void);
   'onwheel'?: string | ((event: Event) => void);
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
@@ -836,7 +836,7 @@ type DescAttributes = {
   'onwaiting'?: string | ((event: Event) => void);
   'onwheel'?: string | ((event: Event) => void);
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
@@ -931,17 +931,17 @@ type EllipseAttributes = {
   'ry'?: number | string;
   'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type EmAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type EmbedAttributes = {
-  'height'?: number;
+  'height'?: number | `${number}`;
   'src'?: string;
   'type'?: string;
-  'width'?: number;
+  'width'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeBlendAttributes = {
@@ -1246,7 +1246,7 @@ type ForeignObjectAttributes = {
   'role'?: string;
   'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'width'?: number | string;
   'x'?: number | string;
   'xml:space'?: "default" | "preserve";
@@ -1335,7 +1335,7 @@ type GAttributes = {
   'role'?: string;
   'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
@@ -1366,14 +1366,14 @@ type IAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 type IframeAttributes = {
   'allow'?: string;
   'allowfullscreen'?: boolean;
-  'height'?: number;
+  'height'?: number | `${number}`;
   'loading'?: "lazy" | "eager";
   'name'?: string;
   'referrerpolicy'?: string;
   'sandbox'?: string;
   'src'?: string;
   'srcdoc'?: string;
-  'width'?: number;
+  'width'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ImageAttributes = {
@@ -1449,7 +1449,7 @@ type ImageAttributes = {
   'role'?: string;
   'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'width'?: number | string;
   'x'?: number | string;
   'xlink:href'?: string;
@@ -1464,7 +1464,7 @@ type ImgAttributes = {
   'crossorigin'?: "anonymous" | "use-credentials";
   'decoding'?: "sync" | "async" | "auto";
   'fetchpriority'?: "auto" | "high" | "low";
-  'height'?: number;
+  'height'?: number | `${number}`;
   'ismap'?: boolean;
   'loading'?: "lazy" | "eager";
   'referrerpolicy'?: string;
@@ -1472,7 +1472,7 @@ type ImgAttributes = {
   'src'?: string;
   'srcset'?: string;
   'usemap'?: string;
-  'width'?: number;
+  'width'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type InputAttributes = {
@@ -1490,12 +1490,12 @@ type InputAttributes = {
   'formmethod'?: "get" | "GET" | "post" | "POST" | "dialog" | "DIALOG";
   'formnovalidate'?: boolean;
   'formtarget'?: string;
-  'height'?: number;
+  'height'?: number | `${number}`;
   'list'?: string;
   'max'?: string;
-  'maxlength'?: number;
+  'maxlength'?: number | `${number}`;
   'min'?: string;
-  'minlength'?: number;
+  'minlength'?: number | `${number}`;
   'multiple'?: boolean;
   'name'?: string;
   'pattern'?: string;
@@ -1504,12 +1504,12 @@ type InputAttributes = {
   'popovertargetaction'?: "toggle" | "show" | "hide";
   'readonly'?: boolean;
   'required'?: boolean;
-  'size'?: number;
+  'size'?: number | `${number}`;
   'src'?: string;
   'step'?: string;
   'type'?: "hidden" | "text" | "search" | "tel" | "url" | "email" | "password" | "date" | "month" | "week" | "time" | "datetime-local" | "number" | "range" | "color" | "checkbox" | "radio" | "file" | "submit" | "image" | "reset" | "button";
   'value'?: number | string;
-  'width'?: number;
+  'width'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type InsAttributes = {
@@ -1599,7 +1599,7 @@ type LineAttributes = {
   'role'?: string;
   'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'x1'?: number | string;
   'x2'?: number | string;
   'xml:space'?: "default" | "preserve";
@@ -1677,7 +1677,7 @@ type LinearGradientAttributes = {
   'onwheel'?: string | ((event: Event) => void);
   'spreadMethod'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'x1'?: number | string;
   'x2'?: number | string;
   'xlink:href'?: string;
@@ -1787,7 +1787,7 @@ type MarkerAttributes = {
   'refX'?: string;
   'refY'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'viewBox'?: string;
   'xml:space'?: string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -1818,7 +1818,7 @@ type MathAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'xmlns'?: string;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -1836,7 +1836,7 @@ type MencloseAttributes = {
   'notation'?: string;
   'scriptlevel'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MenuAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -1854,7 +1854,7 @@ type MerrorAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MetaAttributes = {
@@ -1932,7 +1932,7 @@ type MetadataAttributes = {
   'onwaiting'?: string | ((event: Event) => void);
   'onwheel'?: string | ((event: Event) => void);
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
@@ -1959,7 +1959,7 @@ type MfracAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MiAttributes = {
@@ -1975,7 +1975,7 @@ type MiAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MmultiscriptsAttributes = {
@@ -1991,7 +1991,7 @@ type MmultiscriptsAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MnAttributes = {
@@ -2007,7 +2007,7 @@ type MnAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MoAttributes = {
@@ -2033,7 +2033,7 @@ type MoAttributes = {
   'stretchy'?: string;
   'style'?: string | csstype.Properties<string | number>;
   'symmetric'?: string;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MoverAttributes = {
@@ -2050,7 +2050,7 @@ type MoverAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MpaddedAttributes = {
@@ -2069,7 +2069,7 @@ type MpaddedAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'voffset'?: string;
   'width'?: string;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2141,7 +2141,7 @@ type MpathAttributes = {
   'onwaiting'?: string | ((event: Event) => void);
   'onwheel'?: string | ((event: Event) => void);
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
@@ -2158,7 +2158,7 @@ type MphantomAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MprescriptsAttributes = {
@@ -2174,7 +2174,7 @@ type MprescriptsAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MrootAttributes = {
@@ -2190,7 +2190,7 @@ type MrootAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MrowAttributes = {
@@ -2206,7 +2206,7 @@ type MrowAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MsAttributes = {
@@ -2222,7 +2222,7 @@ type MsAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MspaceAttributes = {
@@ -2239,7 +2239,7 @@ type MspaceAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'width'?: string;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2256,7 +2256,7 @@ type MsqrtAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MstyleAttributes = {
@@ -2272,7 +2272,7 @@ type MstyleAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MsubAttributes = {
@@ -2288,7 +2288,7 @@ type MsubAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MsubsupAttributes = {
@@ -2304,7 +2304,7 @@ type MsubsupAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MsupAttributes = {
@@ -2320,7 +2320,7 @@ type MsupAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MtableAttributes = {
@@ -2345,7 +2345,7 @@ type MtableAttributes = {
   'rowspacing'?: string;
   'scriptlevel'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'width'?: string;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2366,7 +2366,7 @@ type MtdAttributes = {
   'rowspan'?: string;
   'scriptlevel'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MtextAttributes = {
@@ -2382,7 +2382,7 @@ type MtextAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MtrAttributes = {
@@ -2400,7 +2400,7 @@ type MtrAttributes = {
   'rowalign'?: string;
   'scriptlevel'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MunderAttributes = {
@@ -2417,7 +2417,7 @@ type MunderAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MunderoverAttributes = {
@@ -2435,7 +2435,7 @@ type MunderoverAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
 type NavAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -2445,15 +2445,15 @@ type NoscriptAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 type ObjectAttributes = {
   'data'?: string;
   'form'?: string;
-  'height'?: number;
+  'height'?: number | `${number}`;
   'name'?: string;
   'type'?: string;
-  'width'?: number;
+  'width'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type OlAttributes = {
   'reversed'?: boolean;
-  'start'?: number;
+  'start'?: number | `${number}`;
   'type'?: "1" | "a" | "A" | "i" | "I";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
@@ -2543,12 +2543,12 @@ type PathAttributes = {
   'onvolumechange'?: string | ((event: Event) => void);
   'onwaiting'?: string | ((event: Event) => void);
   'onwheel'?: string | ((event: Event) => void);
-  'pathLength'?: number;
+  'pathLength'?: number | `${number}`;
   'requiredExtensions'?: string;
   'role'?: string;
   'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
@@ -2624,7 +2624,7 @@ type PatternAttributes = {
   'patternUnits'?: string;
   'preserveAspectRatio'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'viewBox'?: string;
   'width'?: string;
   'x'?: string;
@@ -2707,7 +2707,7 @@ type PolygonAttributes = {
   'role'?: string;
   'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
@@ -2782,7 +2782,7 @@ type PolylineAttributes = {
   'role'?: string;
   'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
@@ -2873,7 +2873,7 @@ type RadialGradientAttributes = {
   'r'?: number | string;
   'spreadMethod'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'xlink:href'?: string;
   'xlink:title'?: string;
   'xml:space'?: "default" | "preserve";
@@ -2952,7 +2952,7 @@ type RectAttributes = {
   'ry'?: number | string;
   'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'width'?: number | string;
   'x'?: number | string;
   'xml:space'?: "default" | "preserve";
@@ -2993,7 +2993,7 @@ type SelectAttributes = {
   'multiple'?: boolean;
   'name'?: string;
   'required'?: boolean;
-  'size'?: number;
+  'size'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type SelectedcontentAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -3011,7 +3011,7 @@ type SemanticsAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
 type SetAttributes = {
@@ -3096,7 +3096,7 @@ type SetAttributes = {
   'restart'?: "always" | "never" | "whenNotActive";
   'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'to'?: string;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -3108,13 +3108,13 @@ type SlotAttributes = {
 type SmallAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type SourceAttributes = {
-  'height'?: number;
+  'height'?: number | `${number}`;
   'media'?: string;
   'sizes'?: string;
   'src'?: string;
   'srcset'?: string;
   'type'?: string;
-  'width'?: number;
+  'width'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type SpanAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -3124,7 +3124,7 @@ type StopAttributes = {
   'class'?: string | string[];
   'id'?: string;
   'lang'?: string;
-  'offset'?: number;
+  'offset'?: number | `${number}`;
   'oncancel'?: string | ((event: Event) => void);
   'oncanplay'?: string | ((event: Event) => void);
   'oncanplaythrough'?: string | ((event: Event) => void);
@@ -3186,7 +3186,7 @@ type StopAttributes = {
   'onwaiting'?: string | ((event: Event) => void);
   'onwheel'?: string | ((event: Event) => void);
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
@@ -3276,7 +3276,7 @@ type SvgAttributes = {
   'role'?: string;
   'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'transform'?: string;
   'viewBox'?: string;
   'width'?: number | string;
@@ -3354,7 +3354,7 @@ type SwitchAttributes = {
   'role'?: string;
   'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
@@ -3429,7 +3429,7 @@ type SymbolAttributes = {
   'refY'?: string;
   'role'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'viewBox'?: string;
   'width'?: string;
   'x'?: string;
@@ -3442,9 +3442,9 @@ type TableAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 type TbodyAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type TdAttributes = {
-  'colspan'?: number;
+  'colspan'?: number | `${number}`;
   'headers'?: string;
-  'rowspan'?: number;
+  'rowspan'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type TemplateAttributes = {
@@ -3529,7 +3529,7 @@ type TextAttributes = {
   'rotate'?: string;
   'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'textLength'?: string;
   'x'?: string;
   'xml:space'?: "default" | "preserve";
@@ -3538,17 +3538,17 @@ type TextAttributes = {
 
 type TextareaAttributes = {
   'autocomplete'?: string;
-  'cols'?: number;
+  'cols'?: number | `${number}`;
   'dirname'?: string;
   'disabled'?: boolean;
   'form'?: string;
-  'maxlength'?: number;
-  'minlength'?: number;
+  'maxlength'?: number | `${number}`;
+  'minlength'?: number | `${number}`;
   'name'?: string;
   'placeholder'?: string;
   'readonly'?: boolean;
   'required'?: boolean;
-  'rows'?: number;
+  'rows'?: number | `${number}`;
   'wrap'?: "soft" | "hard";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
@@ -3628,7 +3628,7 @@ type TextPathAttributes = {
   'startOffset'?: string;
   'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'textLength'?: string;
   'xlink:href'?: string;
   'xlink:title'?: string;
@@ -3639,9 +3639,9 @@ type TfootAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ThAttributes = {
   'abbr'?: string;
-  'colspan'?: number;
+  'colspan'?: number | `${number}`;
   'headers'?: string;
-  'rowspan'?: number;
+  'rowspan'?: number | `${number}`;
   'scope'?: "row" | "ROW" | "col" | "COL" | "rowgroup" | "ROWGROUP" | "colgroup" | "COLGROUP";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
@@ -3736,7 +3736,7 @@ type TspanAttributes = {
   'rotate'?: string;
   'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'textLength'?: string;
   'x'?: string;
   'xml:space'?: "default" | "preserve";
@@ -3818,7 +3818,7 @@ type UseAttributes = {
   'role'?: string;
   'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'width'?: string;
   'x'?: number | string;
   'xlink:href'?: string;
@@ -3833,7 +3833,7 @@ type VideoAttributes = {
   'autoplay'?: boolean;
   'controls'?: boolean;
   'crossorigin'?: "anonymous" | "use-credentials";
-  'height'?: number;
+  'height'?: number | `${number}`;
   'loading'?: "lazy" | "eager";
   'loop'?: boolean;
   'muted'?: boolean;
@@ -3841,7 +3841,7 @@ type VideoAttributes = {
   'poster'?: string;
   'preload'?: "none" | "metadata" | "auto";
   'src'?: string;
-  'width'?: number;
+  'width'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ViewAttributes = {
@@ -3912,7 +3912,7 @@ type ViewAttributes = {
   'preserveAspectRatio'?: string;
   'role'?: string;
   'style'?: string | csstype.Properties<string | number>;
-  'tabindex'?: number;
+  'tabindex'?: number | `${number}`;
   'viewBox'?: string;
   'xml:space'?: string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -3929,7 +3929,6 @@ type WbrAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 export type Content = ContentTag | VoidTag | LiteralTag | CommentTag | string | number | (ContentTag | VoidTag | LiteralTag | CommentTag | string | number)[];
 
 type UniversalAttributes = NameSpaceAttributes | GlobalAttributes | GlobalEvents;
-type CustomTagArguments<T = null> = [attributes?: T | UniversalAttributes, content?: Content] | [content: Content];
 
 /**
  * The type of a custom element method created with `createCustomTag`.
@@ -3942,11 +3941,15 @@ type CustomTagArguments<T = null> = [attributes?: T | UniversalAttributes, conte
  *     this.createCustomTag('my-card', { 'card-type': ['primary', 'secondary'] });
  * }
  */
-export type ContentMethod<T = null> = (...args: CustomTagArguments<T>) => ContentTag;
+export interface ContentMethod<T = Record<string, unknown>> {
+  (attributes: T | UniversalAttributes, content?: Content): ContentTag;
+  (content?: Content): ContentTag;
+}
 
 type PrimitiveConstructor = StringConstructor | NumberConstructor | BooleanConstructor | FunctionConstructor;
 type Primitive = string | number | boolean | Function;
 type AttributeValue = PrimitiveConstructor | Primitive | (PrimitiveConstructor | Primitive)[];
+type CamelCase<S extends string> = S extends `${infer Head}-${infer Rest}` ? `${Head}${Capitalize<CamelCase<Rest>>}` : S;
 
 /**
  * HTML/SVG/MathML template engine. Every tag is a method that accepts optional attributes
@@ -4000,10 +4003,10 @@ export default class Kensington {
    * const t = new MyEngine();
    * t.myCard({ 'card-type': 'primary' }, 'Content here').toString();
    */
-  createCustomTag(
+  createCustomTag<A extends Record<string, AttributeValue> = Record<string, AttributeValue>>(
     tagName: string,
-    allowedAttributes?: Record<string, AttributeValue>
-  ): (...args: CustomTagArguments) => ContentTag
+    allowedAttributes?: A
+  ): ContentMethod<{ [K in keyof A as K | CamelCase<K & string>]?: unknown }>
 
   /**
    * Embeds a raw HTML string verbatim into the output (HTML-encoded when used as text content).
