@@ -129,6 +129,15 @@ export function registerTests(bundle) {
     await expect(page.locator('#from-literal')).toHaveText('hello');
   });
 
+  test('literal with multiple root nodes appends all of them', async ({ page }) => {
+    await page.evaluate(async src => {
+      const { t } = await import(src);
+      document.body.append(t.literal('<p id="lit-a">a</p><p id="lit-b">b</p>').toElement());
+    }, bundle);
+    await expect(page.locator('#lit-a')).toHaveText('a');
+    await expect(page.locator('#lit-b')).toHaveText('b');
+  });
+
   test('inlineComment renders as a comment node between nested elements', async ({ page }) => {
     const result = await page.evaluate(async src => {
       const { t } = await import(src);

@@ -26,8 +26,11 @@ export default function attributesStringFromObject(obj, { attrsSet = new Map(), 
       continue;
     }
     if (val?.constructor === Object) {
-      if (result) { result += ' '; }
-      result += attributesStringFromObject(val, { attrsSet, encode, prefix: attrName });
+      const nested = attributesStringFromObject(val, { attrsSet, encode, prefix: attrName });
+      if (nested) {
+        if (result) { result += ' '; }
+        result += nested;
+      }
       continue;
     }
     if (attr === 'class' && Array.isArray(val)) {

@@ -91,6 +91,10 @@ describe('content tag', () => {
   it('inlineComment multi-line', () => {
     assert.strictEqual(t.inlineComment('line 1\nline 2').toString(), '<!--\n  line 1\n  line 2\n-->');
   });
+  it('inlineComment normalizes CRLF and CR-only line endings', () => {
+    assert.strictEqual(t.inlineComment('line 1\r\nline 2').toString(), '<!--\n  line 1\n  line 2\n-->');
+    assert.strictEqual(t.inlineComment('line 1\rline 2').toString(), '<!--\n  line 1\n  line 2\n-->');
+  });
   it('inlineComment throws on non-string/number', () => {
     assert.throws(() => t.inlineComment({}));
   });
@@ -159,6 +163,10 @@ describe('attributes', () => {
   });
   it('converts nested object to kebab-case', () => {
     assert.strictEqual(t.div({ data: { bs: { target: 'abc' } } }).toString(), '<div data-bs-target="abc"></div>');
+  });
+  it('nested object with all-null values does not produce a trailing space', () => {
+    assert.strictEqual(t.div({ id: 'x', data: { foo: null } }).toString(), '<div id="x"></div>');
+    assert.strictEqual(t.div({ id: 'x', data: { foo: null }, aria: { label: null } }).toString(), '<div id="x"></div>');
   });
   it('allows pre-hyphenated attribute names', () => {
     const tt = new Kensington({ validationLevel: 'error' });
@@ -418,6 +426,10 @@ describe('namespaces', () => {
   it('allows extra attribute namespaces', () => {
     const tt = new Kensington({ validationLevel: 'error', additionalNamespaces: 'htmx' });
     assert.strictEqual(tt.div({ htmxTitle: 'abc' }).toString(), '<div htmx-title="abc"></div>');
+  });
+  it('does not crash when attribute name has no leading lowercase chars', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => tt.div({ ABC: 'value' }), /not allowed/);
   });
 });
 

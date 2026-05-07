@@ -10,6 +10,6 @@ export default class LiteralTag {
   toElement() {
     const template = document.createElement('template');
     template.innerHTML = this.str;
-    return template.content.firstChild;
+    return template.content;
   }
 }

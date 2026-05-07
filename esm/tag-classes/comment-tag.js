@@ -4,8 +4,9 @@ export default class CommentTag {
   }
 
   toString() {
-    if (this.text.includes('\n')) {
-      const indented = this.text.split('\n').map(line => `  ${line}`).join('\n');
+    if (/[\r\n]/.test(this.text)) {
+      const normalized = this.text.replace(/\r\n?/g, '\n');
+      const indented = normalized.split('\n').map(line => `  ${line}`).join('\n');
       return `<!--\n${indented}\n-->`;
     }
     return `<!-- ${this.text} -->`;

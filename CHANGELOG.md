@@ -12,6 +12,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `literal()` now throws a clear error when passed a non-string argument, and the `<script>` tag check is now case-insensitive so `<SCRIPT>` is also rejected.
 - `createCustomTag` attribute type specs now accept a string or number literal directly (e.g. `{ type: 'primary' }`) without incorrectly flagging it as an invalid type. String literals in arrays already worked; this makes the standalone form consistent.
 - `toElement()` now detects a non-browser environment correctly (`typeof document === 'undefined'`) so it throws the intended custom message rather than a `ReferenceError`.
+- A nested attribute object whose values are all falsy (e.g. `{ data: { key: null } }`) no longer produces a trailing space in the attribute string (`<div id="x" >` → `<div id="x">`).
+- `isValidNamespaceAttribute` no longer throws a `TypeError` when an attribute name consists entirely of uppercase letters or starts with one (e.g. `{ ABC: 'value' }`); it now reports a normal validation error.
+- `literal().toElement()` now returns a `DocumentFragment` instead of `firstChild`, so multi-root literals (`literal('<li>a</li><li>b</li>')`) append all nodes correctly instead of silently dropping all but the first.
+- `inlineComment` normalises `\r\n` and lone `\r` line endings in the comment text before formatting, so they no longer appear verbatim in the output.
 
 ## [0.15.1] - 2026-05-07
 

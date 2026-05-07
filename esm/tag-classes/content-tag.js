@@ -72,7 +72,8 @@ export default class ContentTag {
   }
 
   isValidNamespaceAttribute(attr) {
-    return this.namespaces.includes(attr.match(/[^A-Z|-]+/u)[0]); // characters before first uppercase or hyphen
+    const match = attr.match(/[^A-Z|-]+/u); // characters before first uppercase or hyphen
+    return match !== null && this.namespaces.includes(match[0]);
   }
 
   attributeIsValid(attr) {
