@@ -113,7 +113,10 @@ export default class Kensington {
     } = options;
     const allowedAttributeMap = new Map(Object.entries(allowedAttributes));
     const invalidTypes = [...allowedAttributeMap.values()].filter(type => {
-      return ![String, Number, Boolean].includes(type) && !Array.isArray(type) && typeof type !== 'function';
+      if ([String, Number, Boolean].includes(type) || Array.isArray(type)) {
+        return false;
+      }
+      return typeof type !== 'function' && typeof type !== 'string' && typeof type !== 'number';
     });
     if (invalidTypes.length) {
       showInvalid(\`invalid types for attribute(s): \${invalidTypes.join(', ')} given for \${tagName}\`, this.validationLevel, this.logger);
@@ -178,7 +181,10 @@ export default class Kensington {
    * t.ul([t.li('typed'), t.literal('<li>raw html</li>')]);
    */
   literal(str) {
-    if (str.includes('<script')) {
+    if (typeof str !== 'string') {
+      throw new Error('literal() only accepts a string');
+    }
+    if (/<script/i.test(str)) {
       throw new Error(\`<script> tags are not allowed to be passed in literal html.  Use the .unsafeLiteral if you can vouch for the string\`);
     }
     return new LiteralTag(str);

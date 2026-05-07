@@ -28,7 +28,10 @@ export default function attributesArrayFromObject(obj, { attrsSet = new Map(), e
       continue;
     }
     if (attr === 'class' && Array.isArray(val)) {
-      result.push([attrName, val.join(' ')]);
+      const classes = val.filter(Boolean).join(' ');
+      if (classes) {
+        result.push([attrName, classes]);
+      }
       continue;
     }
 

@@ -23,7 +23,7 @@ function isValidContentItem(c, contentIsLiteral) {
 function collectContent(items) {
   const out = [];
   for (const c of [].concat(items)) {
-    if ([undefined, null, ''].includes(c)) {
+    if ([undefined, null, '', false].includes(c)) {
       continue;
     }
     if (Array.isArray(c)) {
@@ -219,7 +219,7 @@ export default class ContentTag {
   }
 
   toElement() {
-    if (!document) {
+    if (typeof document === 'undefined') {
       throw new Error('toElement only supported in browser');
     }
     let element;

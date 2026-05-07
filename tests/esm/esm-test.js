@@ -63,15 +63,24 @@ describe('content tag', () => {
     assert.strictEqual(t.div([]).toString(), '<div></div>');
     assert.strictEqual(t.div('content\n\n').toString(), '<div>\n  content<br>\n</div>');
   });
-  it('ignores null, undefined, and empty string in content array', () => {
-    assert.strictEqual(t.div([null, undefined, '', 'real']).toString(), '<div>real</div>');
+  it('ignores null, undefined, false, and empty string in content array', () => {
+    assert.strictEqual(t.div([null, undefined, false, '', 'real']).toString(), '<div>real</div>');
+  });
+  it('ignores false from short-circuit conditional content', () => {
+    const show = false;
+    assert.strictEqual(t.div([show && t.span('hi'), 'real']).toString(), '<div>real</div>');
   });
   it('literal content', () => {
     assert.strictEqual(t.div(t.literal('<div></div>')).toString(), '<div>\n  <div></div>\n</div>');
   });
   it('literal script content throws', () => {
     assert.throws(() => t.div(t.literal('<script></script>')).toString());
+    assert.throws(() => t.literal('<SCRIPT>alert(1)</SCRIPT>'));
     assert.strictEqual(t.div(t.unsafeLiteral('<script>console.log("hello");</script>')).toString(), `<div>\n  <script>console.log("hello");</script>\n</div>`);
+  });
+  it('literal throws on non-string input with a clear message', () => {
+    assert.throws(() => t.literal(null), { message: 'literal() only accepts a string' });
+    assert.throws(() => t.literal(42), { message: 'literal() only accepts a string' });
   });
   it('inlineComment single-line', () => {
     assert.strictEqual(t.inlineComment('hello world').toString(), '<!-- hello world -->');
@@ -178,6 +187,15 @@ describe('attributes', () => {
   });
   it('class as array joins with space', () => {
     assert.strictEqual(t.div({ class: ['foo', 'bar'] }).toString(), '<div class="foo bar"></div>');
+  });
+  it('class array filters falsy values', () => {
+    const active = false;
+    assert.strictEqual(t.div({ class: [active && 'active', 'btn'] }).toString(), '<div class="btn"></div>');
+    assert.strictEqual(t.div({ class: ['foo', '', 'bar'] }).toString(), '<div class="foo bar"></div>');
+  });
+  it('class array omits attribute when all values are falsy', () => {
+    assert.strictEqual(t.div({ class: [] }).toString(), '<div></div>');
+    assert.strictEqual(t.div({ class: [false] }).toString(), '<div></div>');
   });
 
   describe('style as object', () => {
@@ -455,6 +473,14 @@ describe('custom tags', () => {
     assert.throws(() => tt.customElement({ score: 101 }).toString());
     assert.throws(() => tt.customElement({ score: 'high' }).toString());
   });
+  it('accepts a string literal as a direct attribute type', () => {
+    class Custom extends Kensington {
+      customElement = this.createCustomTag('custom-element', { type: 'primary' });
+    }
+    const tt = new Custom({ validationLevel: 'error' });
+    assert.doesNotThrow(() => tt.customElement({ type: 'primary' }).toString());
+    assert.throws(() => tt.customElement({ type: 'secondary' }).toString());
+  });
 });
 
 // ─── other ─────────────────────────────────────────────────────────────────
@@ -477,6 +503,9 @@ describe('other', () => {
   });
   it('string interpolation calls toString implicitly', () => {
     assert.strictEqual(`${t.div('hi')}`, '<div>hi</div>');
+  });
+  it('toElement throws with helpful message in non-browser environment', () => {
+    assert.throws(() => t.div().toElement(), { message: 'toElement only supported in browser' });
   });
   it('warn validation level calls logger with message and stack', (test, done) => {
     let callCount = 0;

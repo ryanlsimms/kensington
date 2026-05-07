@@ -31,11 +31,11 @@ export default function attributesStringFromObject(obj, { attrsSet = new Map(), 
       continue;
     }
     if (attr === 'class' && Array.isArray(val)) {
-      if (result) { result += ' '; }
-      result += attrName;
-      result += '="';
-      result += val.join(' ');
-      result += '"';
+      const classes = val.filter(Boolean).join(' ');
+      if (classes) {
+        if (result) { result += ' '; }
+        result += `${attrName}="${classes}"`;
+      }
       continue;
     }
     if (typeof val === 'function') {

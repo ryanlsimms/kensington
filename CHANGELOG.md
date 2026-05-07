@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Fixed
+- `false` in content arrays is now silently ignored, matching the documented behaviour for conditional content (`someCondition && t.span('...')`).
+- `class` array values: falsy entries (`false`, `''`) are filtered out before joining. An all-falsy array omits the `class` attribute entirely, consistent with how an empty `style` object is handled.
+- `literal()` now throws a clear error when passed a non-string argument, and the `<script>` tag check is now case-insensitive so `<SCRIPT>` is also rejected.
+- `createCustomTag` attribute type specs now accept a string or number literal directly (e.g. `{ type: 'primary' }`) without incorrectly flagging it as an invalid type. String literals in arrays already worked; this makes the standalone form consistent.
+- `toElement()` now detects a non-browser environment correctly (`typeof document === 'undefined'`) so it throws the intended custom message rather than a `ReferenceError`.
+
 ## [0.15.1] - 2026-05-07
 
 ### Added
