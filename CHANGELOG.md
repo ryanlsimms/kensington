@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- `signal(initial)`, `computed(fn)`, and `effect(fn)` reactive primitives for browser use. Pass a signal as content, an attribute value, a `.literal()` argument, or an `.inlineComment()` argument and the DOM updates automatically when the value changes.
+- Keyed list reconciliation: when a signal holds an array, adding `dataKey` to items enables DOM node reuse on reorder, addition, and removal.
+
 ## [0.15.2] - 2026-05-07
 
 ### Fixed
