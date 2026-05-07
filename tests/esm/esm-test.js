@@ -315,6 +315,31 @@ describe('attributes', () => {
         '<div style="font-weight: bold"></div>',
       );
     });
+    it('drops Symbol values without throwing', () => {
+      assert.strictEqual(
+        t.div({ style: { color: Symbol('red'), fontWeight: 'bold' } }).toString(),
+        '<div style="font-weight: bold"></div>',
+      );
+    });
+    it('drops object values without producing [object Object] in CSS', () => {
+      assert.strictEqual(
+        t.div({ style: { color: { r: 255 }, fontWeight: 'bold' } }).toString(),
+        '<div style="font-weight: bold"></div>',
+      );
+    });
+    it('drops array values without producing a,b in CSS', () => {
+      assert.strictEqual(
+        t.div({ style: { color: ['red', 'blue'], fontWeight: 'bold' } }).toString(),
+        '<div style="font-weight: bold"></div>',
+      );
+    });
+    it('shows Symbol clearly in validation error message rather than crashing', () => {
+      const tt = new Kensington({ validationLevel: 'error' });
+      assert.throws(
+        () => tt.div({ style: { color: Symbol('red') } }).toString(),
+        /Symbol\(red\)/,
+      );
+    });
     it('throws on true value when validationLevel is error', () => {
       const tt = new Kensington({ validationLevel: 'error' });
       assert.throws(() => tt.div({ style: { color: true, fontWeight: 'bold' } }).toString());

@@ -250,7 +250,7 @@ export default class ContentTag {
       if (!this.contentIsLiteral && typeof node === 'string') {
         node = preserveSpaces(node);
       }
-      element.append(document.createTextNode(node));
+      element.append(document.createTextNode(String(node)));
     }
 
     return element;
