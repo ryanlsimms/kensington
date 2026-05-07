@@ -7,5 +7,6 @@
 /tests/typescript/node_modules/
 /tests/cjs/node_modules/
 /local-notes.txt
+/memory/
 /test-results/
 /memory/

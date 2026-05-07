@@ -40,22 +40,18 @@ To run a single test: Node's built-in runner doesn't support filtering by name v
 ## Releasing
 
 ```bash
-# Stable release (from master)
+# Stable release (from master — 0.x line)
 scripts/release.sh patch
 scripts/release.sh minor
 scripts/release.sh major
 
-# Prerelease (from next branch) — second arg is the preid, defaults to 'beta'
-scripts/release.sh premajor          # → 1.0.0-beta.0
-scripts/release.sh prerelease        # → 1.0.0-beta.1
-scripts/release.sh premajor rc       # → 1.0.0-rc.0
+# 1.0 release (from next branch)
+scripts/release.sh major
 ```
 
-`release.sh` requires a clean working tree and an `## [Unreleased]` section in `CHANGELOG.md`. It bumps the version, stamps the changelog, commits, tags, pushes, and creates a GitHub release. Prerelease builds are marked as pre-release on GitHub.
+`release.sh` requires a clean working tree and an `## [Unreleased]` section in `CHANGELOG.md`. It bumps the version, stamps the changelog, commits, tags, pushes, and creates a GitHub release.
 
-**npm dist-tag**: `publish.yml` detects a prerelease version (contains `-`) and publishes with `--tag <preid>` so `npm install kensington` stays on the latest stable. Users opt in with `npm install kensington@beta`.
-
-**Branches**: `master` is the 0.x stable line. `next` is the 1.0 beta line. Cherry-pick fixes from `master` → `next` as needed.
+**Branches**: `master` is the 0.x stable line. `next` is the 1.0 line. Cherry-pick fixes from `master` → `next` as needed.
 
 ## Architecture
 

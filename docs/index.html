@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kensington</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --sidebar-width: 220px;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+      --color-text: #1f2328;
+      --color-muted: #57606a;
+      --color-border: #d0d7de;
+      --color-bg: #ffffff;
+      --color-sidebar-bg: #f6f8fa;
+      --color-link: #0969da;
+      --color-link-hover: #0550ae;
+      --color-heading: #1f2328;
+      --color-badge-bg: #f6f8fa;
+      --color-table-head: #f6f8fa;
+      --color-inline-code-bg: rgba(175, 184, 193, 0.2);
+    }
+
+    html { font-size: 16px; scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font);
+      color: var(--color-text);
+      background: var(--color-bg);
+      line-height: 1.6;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ── Sidebar ─────────────────────────────────────────────── */
+
+    nav#sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      width: var(--sidebar-width);
+      flex-shrink: 0;
+      overflow-y: auto;
+      background: var(--color-sidebar-bg);
+      border-right: 1px solid var(--color-border);
+      padding: 1.5rem 0;
+    }
+
+    nav#sidebar .sidebar-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--color-muted);
+      padding: 0 1rem 0.5rem;
+    }
+
+    nav#sidebar ul {
+      list-style: none;
+    }
+
+    nav#sidebar ul li a {
+      display: block;
+      padding: 0.3rem 1rem;
+      font-size: 0.875rem;
+      color: var(--color-text);
+      text-decoration: none;
+      border-left: 2px solid transparent;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+
+    nav#sidebar ul li a:hover {
+      color: var(--color-link);
+      background: rgba(9, 105, 218, 0.06);
+      border-left-color: var(--color-link);
+    }
+
+    nav#sidebar ul ul li a {
+      padding-left: 1.75rem;
+      font-size: 0.8125rem;
+      color: var(--color-muted);
+    }
+
+    /* ── Main content ─────────────────────────────────────────── */
+
+    main {
+      flex: 1;
+      min-width: 0;
+      padding: 2.5rem 3rem 4rem;
+      max-width: 1500px;
+    }
+
+    /* ── Header ───────────────────────────────────────────────── */
+
+    header {
+      margin-bottom: 2.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    header h1 {
+      font-size: 2.25rem;
+      font-weight: 700;
+      color: var(--color-heading);
+      margin-bottom: 0.75rem;
+    }
+
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 1rem;
+    }
+
+    .badges img { vertical-align: middle; }
+
+    header p {
+      font-size: 1.05rem;
+      color: var(--color-muted);
+    }
+
+    /* ── Sections ─────────────────────────────────────────────── */
+
+    section {
+      margin-bottom: 3rem;
+    }
+
+    section h2 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: var(--color-heading);
+      margin-bottom: 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    section h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--color-heading);
+      margin: 1.5rem 0 0.6rem;
+    }
+
+    p { margin-bottom: 0.9rem; }
+
+    ul, ol {
+      padding-left: 1.5rem;
+      margin-bottom: 0.9rem;
+    }
+
+    li { margin-bottom: 0.3rem; }
+
+    a {
+      color: var(--color-link);
+      text-decoration: none;
+    }
+    a:hover { color: var(--color-link-hover); text-decoration: underline; }
+
+    code:not([class]) {
+      font-family: var(--mono);
+      font-size: 0.875em;
+      background: var(--color-inline-code-bg);
+      padding: 0.15em 0.35em;
+      border-radius: 4px;
+    }
+
+    /* ── Code blocks (Prism) ──────────────────────────────────── */
+
+    pre[class*="language-"] {
+      margin: 0.75rem 0 1rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      line-height: 1.55;
+      overflow-x: auto;
+    }
+
+    /* ── Side-by-side panels ──────────────────────────────────── */
+
+    .panels {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 1rem;
+      margin: 0.75rem 0 1rem;
+    }
+
+    .panels > div {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panels > div pre {
+      flex: 1;
+    }
+
+    .panel-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-muted);
+      margin-bottom: 0.35rem;
+    }
+
+    /* ── Tables ───────────────────────────────────────────────── */
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+    }
+
+    thead th {
+      background: var(--color-table-head);
+      font-weight: 600;
+      text-align: left;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--color-border);
+    }
+
+    tbody td {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--color-border);
+      vertical-align: top;
+    }
+
+    tbody tr:nth-child(even) td { background: var(--color-sidebar-bg); }
+
+    p, pre, table {
+      max-width: 900px;
+    }
+    table td:first-child {
+      width: 13em;
+    }
+
+    /* ── Screenshots ─────────────────────────────────────────── */
+
+    .screenshot {
+      display: block;
+      max-width: 100%;
+      border-radius: 6px;
+      margin: 0.75rem 0 1rem;
+    }
+
+    /* ── Dark mode ───────────────────────────────────────────── */
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --color-text: #e6edf3;
+        --color-muted: #848d97;
+        --color-border: #30363d;
+        --color-bg: #0d1117;
+        --color-sidebar-bg: #161b22;
+        --color-link: #58a6ff;
+        --color-link-hover: #79c0ff;
+        --color-heading: #e6edf3;
+        --color-badge-bg: #161b22;
+        --color-table-head: #161b22;
+        --color-inline-code-bg: rgba(110, 118, 129, 0.4);
+      }
+
+      nav#sidebar ul li a:hover {
+        background: rgba(88, 166, 255, 0.1);
+      }
+    }
+
+    /* ── Responsive ───────────────────────────────────────────── */
+
+    @media (max-width: 1200px) {
+      .panels { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 768px) {
+      nav#sidebar { display: none; }
+      main { padding: 1.5rem 1.25rem 3rem; }
+    }
+  </style>
+</head>
+<body>
+
+<nav id="sidebar">
+  <div class="sidebar-title">Kensington</div>
+  <ul>
+    <li><a href="#installation">Installation</a></li>
+    <li><a href="#example">Example</a></li>
+    <li><a href="#method-signatures">Method signatures</a></li>
+    <li><a href="#attributes">Attributes</a></li>
+    <li><a href="#content">Content</a></li>
+    <li><a href="#raw-html">Raw HTML &amp; comments</a></li>
+    <li><a href="#constructor">Constructor options</a></li>
+    <li><a href="#validation">Validation</a></li>
+    <li><a href="#custom-elements">Custom elements</a></li>
+    <li><a href="#dom">Browser / DOM</a></li>
+    <li><a href="#typescript">TypeScript</a></li>
+    <li><a href="#imports">Imports &amp; Types</a></li>
+    <li><a href="#cli">HTML &rarr; Kensington</a></li>
+    <li><a href="#llms">AI assistants</a></li>
+    <li><a href="#more-examples">More examples</a>
+      <ul>
+        <li><a href="#reusable-components">Reusable components</a></li>
+        <li><a href="#server-and-browser">Server and browser</a></li>
+        <li><a href="#ssr">Server-side rendering</a></li>
+        <li><a href="#htmx">htmx</a></li>
+        <li><a href="#destructuring">Destructuring</a></li>
+        <li><a href="#form-from-schema">Form from schema</a></li>
+        <li><a href="#preformatted">Preformatted blocks</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+<main>
+
+  <header>
+    <h1>Kensington</h1>
+    <div class="badges">
+      <a href="https://www.npmjs.com/package/kensington"><img src="https://img.shields.io/npm/v/kensington" alt="npm"></a>
+      <a href="https://github.com/ryanlsimms/kensington/actions/workflows/ci.yml"><img src="https://github.com/ryanlsimms/kensington/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+      <a href="https://opensource.org/licenses/ISC"><img src="https://img.shields.io/badge/License-ISC-blue.svg" alt="License: ISC"></a>
+    </div>
+    <p>HTML/SVG/MathML template library for JavaScript and TypeScript. Comprehensive typing for attributes.</p>
+  </header>
+
+  <!-- ── Installation ──────────────────────────────────────────── -->
+
+  <section id="installation">
+    <h2>Installation</h2>
+
+    <pre><code class="language-bash">npm install kensington</code></pre>
+
+    <pre><code class="language-javascript">import Kensington, { t } from 'kensington';</code></pre>
+
+    <p>Browser via CDN:</p>
+
+    <pre><code class="language-html">&lt;script type="module"&gt;
+  import Kensington from 'https://cdn.jsdelivr.net/npm/kensington/dist/kensington.min.js';
+&lt;/script&gt;</code></pre>
+
+    <h3>Slim build</h3>
+
+    <p>Omits attribute validation data (~77% smaller minified). Requires <code>validationLevel: 'off'</code>.</p>
+
+    <pre><code class="language-javascript">import Kensington from 'kensington/dist/slim';</code></pre>
+
+    <pre><code class="language-html">&lt;!-- CDN --&gt;
+&lt;script type="module"&gt;
+  import Kensington from 'https://cdn.jsdelivr.net/npm/kensington/dist/kensington.slim.min.js';
+&lt;/script&gt;</code></pre>
+  </section>
+
+  <!-- ── Example ───────────────────────────────────────────────── -->
+
+  <section id="example">
+    <h2>Example</h2>
+
+    <div class="panels">
+      <div>
+        <div class="panel-label">JavaScript</div>
+        <pre><code class="language-javascript">import { t } from 'kensington';
+
+const users = [
+  { name: 'Alice', role: 'Admin',  active: true },
+  { name: 'Bob',   role: 'Editor', active: true },
+  { name: 'Carol', role: 'Viewer', active: false },
+];
+
+function userRow({ name, role, active }) {
+  return t.tr([
+    t.td(name),
+    t.td(role),
+    t.td([
+      t.input({ type: 'checkbox', checked: active, ariaLabel: `${name} is active` }),
+      active &amp;&amp; t.span({ class: 'label' }, 'Yes'),
+    ]),
+  ]);
+}
+
+const page = t.htmlWithDocType({ lang: 'en' }, [
+  t.head([
+    t.meta({ charset: 'utf-8' }),
+    t.title('Users'),
+    t.link({ rel: 'stylesheet', href: '/style.css' }),
+  ]),
+  t.body(
+    t.main({ class: ['container', 'padded'] }, [
+      t.h1({ style: { color: 'steelblue' } }, 'Users'),
+      t.table([
+        t.thead(t.tr(['Name', 'Role', 'Active'].map(h =&gt; t.th(h)))),
+        t.tbody(users.map(userRow)),
+      ]),
+    ])
+  ),
+]).toString();</code></pre>
+      </div>
+      <div>
+        <div class="panel-label">HTML output</div>
+        <pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+  &lt;head&gt;
+    &lt;meta charset="utf-8"&gt;
+    &lt;title&gt;Users&lt;/title&gt;
+    &lt;link rel="stylesheet" href="/style.css"&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;main class="container padded"&gt;
+      &lt;h1 style="color: steelblue"&gt;Users&lt;/h1&gt;
+      &lt;table&gt;
+        &lt;thead&gt;
+          &lt;tr&gt;
+            &lt;th&gt;Name&lt;/th&gt;
+            &lt;th&gt;Role&lt;/th&gt;
+            &lt;th&gt;Active&lt;/th&gt;
+          &lt;/tr&gt;
+        &lt;/thead&gt;
+        &lt;tbody&gt;
+          &lt;tr&gt;
+            &lt;td&gt;Alice&lt;/td&gt;
+            &lt;td&gt;Admin&lt;/td&gt;
+            &lt;td&gt;
+              &lt;input type="checkbox" checked aria-label="Alice is active"&gt;
+              &lt;span class="label"&gt;Yes&lt;/span&gt;
+            &lt;/td&gt;
+          &lt;/tr&gt;
+          &lt;tr&gt;
+            &lt;td&gt;Bob&lt;/td&gt;
+            &lt;td&gt;Editor&lt;/td&gt;
+            &lt;td&gt;
+              &lt;input type="checkbox" checked aria-label="Bob is active"&gt;
+              &lt;span class="label"&gt;Yes&lt;/span&gt;
+            &lt;/td&gt;
+          &lt;/tr&gt;
+          &lt;tr&gt;
+            &lt;td&gt;Carol&lt;/td&gt;
+            &lt;td&gt;Viewer&lt;/td&gt;
+            &lt;td&gt;
+              &lt;input type="checkbox" aria-label="Carol is active"&gt;
+            &lt;/td&gt;
+          &lt;/tr&gt;
+        &lt;/tbody&gt;
+      &lt;/table&gt;
+    &lt;/main&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Method signatures ─────────────────────────────────────── -->
+
+  <section id="method-signatures">
+    <h2>Method signatures</h2>
+
+    <pre><code class="language-javascript">t.div({ id: 'app', class: 'container' }, 'text'); // attributes + content
+t.div({ id: 'app' });                             // attributes only
+t.div('text content');                            // content only
+t.div([t.p('a'), t.p('b')]);                      // content array
+t.div();                                          // empty</code></pre>
+
+    <p>Void elements take only attributes:</p>
+
+    <pre><code class="language-javascript">t.input({ type: 'checkbox', checked: true });
+t.meta({ charset: 'utf-8' });</code></pre>
+  </section>
+
+  <!-- ── Attributes ────────────────────────────────────────────── -->
+
+  <section id="attributes">
+    <h2>Attributes</h2>
+
+    <ul>
+      <li><strong>camelCase &rarr; kebab-case:</strong> <code>{ dataBsToggle: 'collapse' }</code> &rarr; <code>data-bs-toggle="collapse"</code></li>
+      <li><strong>Nested objects flatten:</strong> <code>{ data: { bs: { toggle: 'collapse' } } }</code> &rarr; <code>data-bs-toggle="collapse"</code></li>
+      <li><strong>Boolean attributes:</strong> <code>{ checked: true }</code> &rarr; <code>checked</code>; <code>{ checked: false }</code> &rarr; attribute omitted</li>
+      <li><strong>class as array:</strong> <code>{ class: ['foo', 'bar'] }</code> &rarr; <code>class="foo bar"</code></li>
+      <li><strong>style as object:</strong> <code>{ style: { backgroundColor: 'red', zIndex: 2 } }</code> &rarr; <code>style="background-color: red; z-index: 2"</code>. camelCase keys convert to kebab-case. In TypeScript, typed with <a href="https://www.npmjs.com/package/csstype">csstype</a> for autocomplete on property names and values.</li>
+      <li><strong>Always allowed:</strong> <code>data-*</code>, <code>aria-*</code>, and all <a href="https://html.spec.whatwg.org/multipage/dom.html#global-attributes">global HTML attributes</a></li>
+    </ul>
+  </section>
+
+  <!-- ── Content ───────────────────────────────────────────────── -->
+
+  <section id="content">
+    <h2>Content</h2>
+
+    <p>Falsy values (<code>null</code>, <code>undefined</code>, <code>false</code>, <code>''</code>) are ignored, so no conditional wrappers needed. Multiple consecutive spaces become non-breaking spaces; <code>pre</code>, <code>script</code>, <code>style</code>, <code>textarea</code> are exempt.</p>
+
+    <pre><code class="language-javascript">t.ul([
+  t.li('text'),
+  t.li(42),
+  t.li(t.span('nested')),
+  isLoggedIn &amp;&amp; t.li(t.a({ href: '/logout' }, 'Log out')),
+]);</code></pre>
+
+  </section>
+
+  <!-- ── Raw HTML & Comments ──────────────────────────────────── -->
+
+  <section id="raw-html">
+    <h2>Raw HTML &amp; comments</h2>
+
+    <pre><code class="language-javascript">t.literal('&lt;li&gt;verbatim, HTML-encoded&lt;/li&gt;');   // throws if string contains &lt;script&gt;
+t.unsafeLiteral('&lt;li&gt;trusted HTML, no encoding&lt;/li&gt;');
+
+t.inlineComment('hello world');          // &lt;!-- hello world --&gt;
+t.inlineComment('line 1\nline 2');       // &lt;!--\n  line 1\n  line 2\n--&gt;</code></pre>
+  </section>
+
+  <!-- ── Constructor ───────────────────────────────────────────── -->
+
+  <section id="constructor">
+    <h2>Constructor options</h2>
+
+    <pre><code class="language-javascript">import Kensington from 'kensington';
+
+const t = new Kensington({
+  validationLevel: 'warn',       // 'off' | 'warn' | 'error', default 'warn'
+  additionalNamespaces: ['hx'],  // allow hx-* (htmx), x-* (alpine), etc.
+  indentationLevel: 2,           // spaces per indent, default 2, 0 to disable
+  logger: msg =&gt; myLogger(msg),  // receives validation warnings, default console.log
+});</code></pre>
+  </section>
+
+  <!-- ── Validation ────────────────────────────────────────────── -->
+
+  <section id="validation">
+    <h2>Validation</h2>
+
+    <table>
+      <thead>
+        <tr><th>Level</th><th>Behaviour</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>'off'</code></td><td>No validation. Best for production. Required when using the slim build.</td></tr>
+        <tr><td><code>'warn'</code></td><td>Logs via <code>logger</code> (default <code>console.log</code>). Does not throw. <strong>Default.</strong></td></tr>
+        <tr><td><code>'error'</code></td><td>Throws an <code>Error</code>. Useful for CI or strict development environments.</td></tr>
+      </tbody>
+    </table>
+
+    <ul>
+      <li><strong>Attribute names:</strong> checked against the HTML/SVG/MathML spec. <code>data-*</code>, <code>aria-*</code>, and <code>additionalNamespaces</code> are always allowed.</li>
+      <li><strong>Attribute values:</strong> checked against allowed types/literals (e.g. <code>type</code> on <code>input</code> only accepts known values; <code>id</code> must not start with a digit).</li>
+      <li><strong>Style object values:</strong> non-string/number values (other than <code>undefined</code>) are flagged.</li>
+      <li><strong>Function values in <code>toString()</code>:</strong> event handler attributes accept functions for <code>.toElement()</code>, but functions cannot be serialized. They are omitted with a warning or error.</li>
+    </ul>
+
+    <pre><code class="language-javascript">const t = new Kensington({ validationLevel: 'error' });
+
+t.div({ class: 'ok' });                        // fine
+t.div({ unknownAttr: 'x' });                   // throws: not a known attribute
+t.input({ type: 'checkbox' });                 // fine
+t.input({ type: 'notatype' });                 // throws: not an allowed value
+t.button({ onclick: () =&gt; {} });               // fine at creation…
+t.button({ onclick: () =&gt; {} }).toString();    // throws: function not serializable
+t.button({ onclick: 'doThing()' }).toString(); // fine: string serializes normally</code></pre>
+  </section>
+
+  <!-- ── Custom elements ───────────────────────────────────────── -->
+
+  <section id="custom-elements">
+    <h2>Custom elements</h2>
+
+    <pre><code class="language-javascript">import Kensington from 'kensington';
+
+class MyEngine extends Kensington {
+  myCard = this.createCustomTag('my-card', {
+    'card-type': ['primary', 'secondary'],           // allowed string literals
+    'loading': Boolean,                              // boolean attribute
+    'max-items': Number,                             // numeric attribute
+    'score': v =&gt; typeof v === 'number' &amp;&amp; v &lt;= 100, // custom validator function
+  });
+}
+
+const t = new MyEngine();
+t.myCard({ 'card-type': 'primary' }, t.p('content')).toString();
+// &rarr; &lt;my-card card-type="primary"&gt;
+//     &lt;p&gt;content&lt;/p&gt;
+//   &lt;/my-card&gt;</code></pre>
+  </section>
+
+  <!-- ── Browser / DOM ─────────────────────────────────────────── -->
+
+  <section id="dom">
+    <h2>Browser / DOM</h2>
+
+    <p>Event handlers accept a function (wired via <code>addEventListener</code>) or a string (set via <code>setAttribute</code>). SVG and MathML elements get the correct namespace automatically.</p>
+
+    <pre><code class="language-javascript">import { t } from 'kensington';
+
+const button = t.button({
+  type: 'button',
+  onclick: e =&gt; console.log('clicked', e),
+}, 'Click Me').toElement();
+
+document.body.append(button);
+
+const svg = t.svg({ viewBox: '0 0 100 100' }, [
+  t.circle({ cx: 50, cy: 50, r: 40, fill: 'steelblue' }),
+]).toElement();</code></pre>
+  </section>
+
+  <!-- ── TypeScript ─────────────────────────────────────────────── -->
+
+  <section id="typescript">
+    <h2>TypeScript</h2>
+
+    <p>Attribute names and values are typed against the HTML/SVG/MathML spec. You get autocomplete for valid values and a compile-time error when a value is wrong.</p>
+
+    <img class="screenshot" src="screenshot-ts-validation.png" alt="TypeScript error when an invalid formentype value is used" style="width: 914px;">
+
+    <pre><code class="language-typescript">import Kensington, { type ContentMethod } from 'kensington';
+
+class MyEngine extends Kensington {
+  myCard: ContentMethod&lt;{ 'card-type'?: 'primary' | 'secondary'; loading?: boolean }&gt; =
+    this.createCustomTag('my-card', { 'card-type': ['primary', 'secondary'], loading: Boolean });
+}</code></pre>
+
+    <p>Module augmentation for custom attribute namespaces:</p>
+
+    <pre><code class="language-typescript">declare module 'kensington' {
+  interface NameSpaceAttributes {
+    [key: `hx${string}`]: string | object;
+  }
+}
+
+t.div({ hxBoost: 'true', hxTarget: '#result' });
+t.form({ hxPost: '/api/submit', hxSwap: 'outerHTML' });</code></pre>
+  </section>
+
+  <!-- ── Imports & Types ───────────────────────────────────────── -->
+
+  <section id="imports">
+    <h2>Imports &amp; Types</h2>
+
+    <pre><code class="language-javascript">import Kensington from 'kensington';                     // class: for subclassing or custom config
+import { t } from 'kensington';                          // shared default instance
+import { formAttributes } from 'kensington/attributes';  // per-element attribute data</code></pre>
+
+    <pre><code class="language-typescript">import type { ContentMethod, Content, ContentTag, VoidTag, LiteralTag, CommentTag } from 'kensington';
+import type { NameSpaceAttributes } from 'kensington';  // for namespace augmentation</code></pre>
+
+    <table>
+      <thead>
+        <tr><th>Type</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>ContentTag</code></td><td>Returned by content element methods (<code>div</code>, <code>p</code>, <code>span</code>, &hellip;)</td></tr>
+        <tr><td><code>VoidTag</code></td><td>Returned by void element methods (<code>br</code>, <code>input</code>, &hellip;)</td></tr>
+        <tr><td><code>LiteralTag</code></td><td>Returned by <code>.literal()</code> / <code>.unsafeLiteral()</code></td></tr>
+        <tr><td><code>CommentTag</code></td><td>Returned by <code>.inlineComment()</code></td></tr>
+        <tr><td><code>Content</code></td><td><code>string | number | ContentTag | VoidTag | LiteralTag | CommentTag | Content[]</code></td></tr>
+        <tr><td><code>ContentMethod&lt;T&gt;</code></td><td>Type of a custom element method; <code>T</code> is the element-specific attribute shape</td></tr>
+        <tr><td><code>NameSpaceAttributes</code></td><td>Interface to extend for custom attribute namespaces</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── HTML → Kensington CLI ─────────────────────────────────── -->
+
+  <section id="cli">
+    <h2>HTML &rarr; Kensington</h2>
+
+    <div class="panels">
+      <div>
+        <div class="panel-label">HTML input</div>
+        <pre><code class="language-html">&lt;nav class="navbar" aria-label="main" aria-expanded="true"&gt;
+  &lt;a href="/" class="nav-link"&gt;Home&lt;/a&gt;
+  &lt;a href="/about" class="nav-link"&gt;About&lt;/a&gt;
+&lt;/nav&gt;</code></pre>
+      </div>
+      <div>
+        <div class="panel-label">Kensington output</div>
+        <pre><code class="language-javascript">t.nav({ class: "navbar", aria: { label: "main", expanded: "true" } }, [
+  t.a({ href: "/", class: "nav-link" }, "Home"),
+  t.a({ href: "/about", class: "nav-link" }, "About"),
+])</code></pre>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>Mode</th><th>Command</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Interactive</td><td><code>npx kensington</code> (paste in the terminal)</td></tr>
+        <tr><td>File</td><td><code>npx kensington index.html</code></td></tr>
+        <tr><td>Pipe</td><td><code>echo '&lt;p&gt;hello&lt;/p&gt;' | npx kensington</code></td></tr>
+        <tr><td>Redirect</td><td><code>npx kensington &lt; page.html</code></td></tr>
+      </tbody>
+    </table>
+
+    <table>
+      <thead>
+        <tr><th>Flag</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>--copy</code>, <code>-c</code></td><td>Copy output to clipboard</td></tr>
+        <tr><td><code>--help</code>, <code>-h</code></td><td>Print usage</td></tr>
+      </tbody>
+    </table>
+
+    <p>If ESLint or Prettier is present in the working directory, the converter runs the formatter over the output.</p>
+  </section>
+
+  <!-- ── AI assistants ────────────────────────────────────────── -->
+
+  <section id="llms">
+    <h2>AI assistants</h2>
+
+    <p>Kensington ships an <code>llms.txt</code> file at the package root. It is a compact, single-file reference of the full API: method signatures, attribute rules, constructor options, TypeScript types, and the CLI. AI coding assistants can read it to answer questions and generate accurate Kensington code without hallucinating APIs that don't exist.</p>
+
+    <p><code>llms.txt</code> is a <a href="https://llmstxt.org">community convention</a> for making library documentation machine-readable. The file lives at <code>node_modules/kensington/llms.txt</code> after installation.</p>
+
+    <h3>Using it</h3>
+
+    <p>Most AI editors and assistants let you add files or URLs as context. Point yours at <code>llms.txt</code> and it will have everything it needs to work with Kensington correctly:</p>
+
+    <ul>
+      <li><strong>Claude Code</strong>: reference the file path in your conversation, or add it to your project's <code>CLAUDE.md</code>.</li>
+      <li><strong>Cursor / Windsurf</strong>: add the file to your <code>.cursorrules</code> context or drag it into the chat.</li>
+      <li><strong>Any chat interface</strong>: paste the contents directly into the conversation before asking questions about Kensington.</li>
+    </ul>
+  </section>
+
+  <!-- ── More examples ────────────────────────────────────────── -->
+
+  <section id="more-examples">
+    <h2>More examples</h2>
+
+    <h3 id="reusable-components">Reusable components</h3>
+
+    <p>Plain functions work as components. They take arguments and return tag objects like any other call.</p>
+
+    <div class="panels">
+      <div>
+        <div class="panel-label">JavaScript</div>
+        <pre><code class="language-javascript">function card(heading, body) {
+  return t.div({ class: 'card' }, [
+    t.div({ class: 'card-header' }, heading),
+    t.div({ class: 'card-body' }, body),
+  ]);
+}
+
+function statusBadge(active) {
+  return t.span(
+    { class: ['badge', active ? 'badge-success' : 'badge-muted'] },
+    active ? 'Active' : 'Inactive',
+  );
+}
+
+t.div({ class: 'card-grid' }, [
+  card('Alice', [t.p('Role: Admin'), statusBadge(true)]),
+  card('Bob',   [t.p('Role: Editor'), statusBadge(false)]),
+]);</code></pre>
+      </div>
+      <div>
+        <div class="panel-label">HTML output</div>
+        <pre><code class="language-html">&lt;div class="card-grid"&gt;
+  &lt;div class="card"&gt;
+    &lt;div class="card-header"&gt;Alice&lt;/div&gt;
+    &lt;div class="card-body"&gt;
+      &lt;p&gt;Role: Admin&lt;/p&gt;
+      &lt;span class="badge badge-success"&gt;Active&lt;/span&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="card"&gt;
+    &lt;div class="card-header"&gt;Bob&lt;/div&gt;
+    &lt;div class="card-body"&gt;
+      &lt;p&gt;Role: Editor&lt;/p&gt;
+      &lt;span class="badge badge-muted"&gt;Inactive&lt;/span&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+      </div>
+    </div>
+
+    <h3 id="server-and-browser">Server and browser</h3>
+
+    <p>Because <code>.toString()</code> and <code>.toElement()</code> are just methods, the same component function works in both environments with no changes.</p>
+
+    <pre><code class="language-javascript">// components/product-card.js -- shared, runs anywhere
+import { t } from 'kensington';
+
+export function productCard({ name, price, image }) {
+  return t.div({ class: 'product-card' }, [
+    t.img({ src: image, alt: name }),
+    t.h3(name),
+    t.span({ class: 'price' }, `$${price.toFixed(2)}`),
+  ]);
+}</code></pre>
+
+    <div class="panels">
+      <div>
+        <div class="panel-label">Server (Node)</div>
+        <pre><code class="language-javascript">import { productCard } from './components/product-card.js';
+
+app.get('/products/:id', async (req, res) =&gt; {
+  const product = await db.getProduct(req.params.id);
+  res.send(productCard(product).toString());
+});</code></pre>
+      </div>
+      <div>
+        <div class="panel-label">Browser</div>
+        <pre><code class="language-javascript">import { productCard } from './components/product-card.js';
+
+const product = await fetch('/api/products/1').then(r =&gt; r.json());
+
+document.querySelector('#app').append(
+  productCard(product).toElement(),
+);</code></pre>
+      </div>
+    </div>
+
+    <h3 id="ssr">Server-side rendering</h3>
+
+    <p>Tag objects convert to strings automatically in template literals and string concatenation. Call <code>.toString()</code> explicitly when passing to a function like <code>res.send()</code>, which won't coerce the argument otherwise.</p>
+
+    <pre><code class="language-javascript">import express from 'express';
+import { t } from 'kensington';
+
+function layout(title, content) {
+  return t.htmlWithDocType({ lang: 'en' }, [
+    t.head([
+      t.meta({ charset: 'utf-8' }),
+      t.title(title),
+      t.link({ rel: 'stylesheet', href: '/style.css' }),
+    ]),
+    t.body(t.main({ class: 'container' }, content)),
+  ]).toString();
+}
+
+function usersPage(users) {
+  return [
+    t.h1('Users'),
+    t.table([
+      t.thead(t.tr(['Name', 'Role'].map(h =&gt; t.th(h)))),
+      t.tbody(users.map(u =&gt;
+        t.tr([t.td(u.name), t.td(u.role)])
+      )),
+    ]),
+  ];
+}
+
+const app = express();
+
+app.get('/users', async (req, res) =&gt; {
+  const users = await db.getUsers();
+  res.send(layout('Users', usersPage(users)));
+});</code></pre>
+
+    <h3 id="htmx">htmx</h3>
+
+    <p>Pass <code>'hx'</code> to <code>additionalNamespaces</code> to allow <code>hx-*</code> attributes. Alpine.js uses <code>'x'</code>.</p>
+
+    <pre><code class="language-javascript">import Kensington from 'kensington';
+
+const t = new Kensington({ additionalNamespaces: ['hx'] });
+
+// Live search: htmx swaps in the result fragment
+t.div([
+  t.input({
+    type: 'search',
+    name: 'q',
+    placeholder: 'Search...',
+    hxGet: '/search',
+    hxTrigger: 'input changed delay:300ms',
+    hxTarget: '#results',
+  }),
+  t.ul({ id: 'results' }),
+]);
+
+// The partial route returns just the &lt;li&gt; items (htmx swaps them into the &lt;ul&gt;)
+app.get('/search', async (req, res) =&gt; {
+  const rows = await db.search(req.query.q);
+  res.send(rows.map(r =&gt; t.li(r.name)).join('\n'));
+});</code></pre>
+
+    <h3 id="destructuring">Destructuring</h3>
+
+    <p>Tag methods are bound to the instance, so you can destructure them and call them directly.</p>
+
+    <pre><code class="language-javascript">const { div, p, ul, li, span } = t;
+
+div({ class: 'card' }, [
+  p('Methods are bound, so destructuring works anywhere.'),
+  ul([
+    li(span({ class: 'highlight' }, 'item one')),
+    li('item two'),
+  ]),
+]);</code></pre>
+
+    <h3 id="form-from-schema">Form from schema</h3>
+
+    <p>Build forms from a field definition array using a helper function.</p>
+
+    <div class="panels">
+      <div>
+        <div class="panel-label">JavaScript</div>
+        <pre><code class="language-javascript">const fields = [
+  { name: 'email',    type: 'email',    label: 'Email',    required: true },
+  { name: 'password', type: 'password', label: 'Password', required: true },
+  { name: 'remember', type: 'checkbox', label: 'Remember me' },
+];
+
+function formField({ name, type, label, required }) {
+  return t.div({ class: 'field' }, [
+    t.label({ for: name }, label),
+    t.input({ id: name, name, type, required }),
+  ]);
+}
+
+t.form({ action: '/login', method: 'post' }, [
+  ...fields.map(formField),
+  t.button({ type: 'submit' }, 'Log in'),
+]);</code></pre>
+      </div>
+      <div>
+        <div class="panel-label">HTML output</div>
+        <pre><code class="language-html">&lt;form action="/login" method="post"&gt;
+  &lt;div class="field"&gt;
+    &lt;label for="email"&gt;Email&lt;/label&gt;
+    &lt;input id="email" name="email" type="email" required&gt;
+  &lt;/div&gt;
+  &lt;div class="field"&gt;
+    &lt;label for="password"&gt;Password&lt;/label&gt;
+    &lt;input id="password" name="password" type="password" required&gt;
+  &lt;/div&gt;
+  &lt;div class="field"&gt;
+    &lt;label for="remember"&gt;Remember me&lt;/label&gt;
+    &lt;input id="remember" name="remember" type="checkbox"&gt;
+  &lt;/div&gt;
+  &lt;button type="submit"&gt;Log in&lt;/button&gt;
+&lt;/form&gt;</code></pre>
+      </div>
+    </div>
+
+    <h3 id="preformatted">Preformatted blocks</h3>
+
+    <p><code>script</code>, <code>style</code>, <code>pre</code>, and <code>textarea</code> join content arrays with newlines and skip indentation, so string content lands exactly as written.</p>
+
+    <div class="panels">
+      <div>
+        <div class="panel-label">JavaScript</div>
+        <pre><code class="language-javascript">t.style([
+  'body { margin: 0; }',
+  'h1 { color: steelblue; }',
+]);
+
+t.script(`
+  const el = document.getElementById("app");
+  el.textContent = "Hello";
+`);
+</code></pre>
+      </div>
+      <div>
+        <div class="panel-label">HTML output</div>
+        <pre><code class="language-html">&lt;style&gt;
+body { margin: 0; }
+h1 { color: steelblue; }
+&lt;/style&gt;
+
+&lt;script&gt;
+  const el = document.getElementById("app");
+  el.textContent = "Hello";
+&lt;/script&gt;</code></pre>
+      </div>
+    </div>
+
+  </section>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-core.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1/plugins/autoloader/prism-autoloader.min.js"
+  data-autoloader-path="https://cdn.jsdelivr.net/npm/prismjs@1/components/"></script>
+</body>
+</html>
