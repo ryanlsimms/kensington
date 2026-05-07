@@ -73,11 +73,14 @@ Kensington is an HTML template library that generates HTML strings (or DOM eleme
 
 ### Hand-written source (`esm/`)
 
+- `esm/index.js` — package entry point; re-exports `Kensington`, `t`, `signal()`, `computed`, and `effect`
 - `esm/tag-classes/content-tag.js` — base class for all HTML/SVG/MathML elements; handles attribute validation, content normalization, indentation, string serialization (`toString()`), and DOM creation (`toElement()`)
 - `esm/tag-classes/void-tag.js` — subclass for void elements (no closing tag, no content)
-- `esm/tag-classes/literal-tag.js` — wraps raw HTML strings passed via `.literal()` / `.unsafeLiteral()`
-- `esm/tag-classes/comment-tag.js` — wraps HTML comments created via `.inlineComment()`; `toString()` formats single/multi-line, `toElement()` uses `document.createComment()`
+- `esm/tag-classes/literal-tag.js` — wraps raw HTML strings passed via `.literal()` / `.unsafeLiteral()`; accepts a `Signal` — `toElement()` re-parses and replaces the element on each change
+- `esm/tag-classes/comment-tag.js` — wraps HTML comments created via `.inlineComment()`; accepts a `Signal` — `toElement()` updates `nodeValue` in place on each change
 - `esm/tag-classes/html-with-doctype-tag.js` — subclass for `.htmlWithDocType()` that prepends `<!DOCTYPE html>`
+- `esm/lib/signal.js` — `Signal` class with `.get()`, `.set()`, `.subscribe()`, `.transform()`; exports `computed()` and `effect()`
+- `esm/lib/reconcile.js` — DOM reconciler for signal arrays; matches nodes by `data-key` attribute for efficient reordering, addition, and removal
 - `esm/lib/` — utilities: attribute string/array builders, indentation, content stringification, `he` encoder wrapper, camelCase↔kebab-case conversion
 
 ### Tag creation flow
