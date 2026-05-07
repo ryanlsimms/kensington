@@ -127,7 +127,7 @@ t.meta({ charset: 'utf-8' });
 - **Nested objects flatten**: `{ data: { bs: { toggle: 'collapse' } } }` → `data-bs-toggle="collapse"`
 - **Boolean attributes**: `{ checked: true }` → `checked`; `{ checked: false }` → attribute omitted
 - **class as array**: `{ class: ['foo', 'bar'] }` → `class="foo bar"`
-- **style as object**: `{ style: { backgroundColor: 'red', zIndex: 2 } }` → `style="background-color: red; z-index: 2"`. camelCase keys convert to kebab-case; `null`/`undefined`/`false`/empty-string values are silently omitted.
+- **style as object**: `{ style: { backgroundColor: 'red', zIndex: 2 } }` → `style="background-color: red; z-index: 2"`. camelCase keys convert to kebab-case; `undefined` and empty-string values are silently omitted. In TypeScript, the style object is typed with [`csstype`](https://www.npmjs.com/package/csstype), giving autocomplete for CSS property names and values.
 - **Always allowed**: `data-*`, `aria-*`, and all [global HTML attributes](https://html.spec.whatwg.org/multipage/dom.html#global-attributes)
 
 ## Content rules
@@ -190,7 +190,7 @@ What gets validated:
 
 - **Attribute names** — checked against the HTML/SVG/MathML spec for the element. `data-*`, `aria-*`, and any `additionalNamespaces` are always allowed.
 - **Attribute values** — checked against allowed types/literals for each attribute (e.g. `type` on `<input>` only accepts known values; `id` must not start with a digit).
-- **Style object values** — non-string/number values (other than `null`, `undefined`, `false`) are flagged.
+- **Style object values** — non-string/number values (other than `undefined`) are flagged.
 - **Function values in `toString()`** — event handler attributes (`onclick`, etc.) accept functions for use with `.toElement()`, but functions cannot be serialized to a string. Passing a function and calling `.toString()` logs a warning (`'warn'`) or throws (`'error'`); the attribute is omitted in either case.
 
 ```javascript

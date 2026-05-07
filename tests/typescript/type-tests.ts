@@ -52,7 +52,12 @@ const _lit: LiteralTag = t.literal('<p>raw</p>');
 t.br();
 t.br({ class: 'foo' });
 t.br({ id: 'x', style: 'display:none' });
-t.div({ style: { backgroundColor: 'red', zIndex: 2, display: false, color: null } });
+t.div({ style: { backgroundColor: 'red', zIndex: 2, display: 'block', color: undefined } });
+
+// @ts-expect-error - false is not a valid style value
+t.div({ style: { display: false } });
+// @ts-expect-error - null is not a valid style value
+t.div({ style: { color: null } });
 // @ts-expect-error - true is not a valid style value
 t.div({ style: { color: true } });
 
@@ -150,7 +155,7 @@ t.div(t.literal('<hr>'));
 const content: Content = [t.p('a'), 'text', 42];
 t.section(content);
 
-// ─── overloaded signatures ───────────────────────────────────────────────────
+// ─── method signatures ───────────────────────────────────────────────────────
 
 t.a({ href: '/path' }, 'link text');
 t.a({ href: '/path' });
@@ -161,7 +166,7 @@ t.htmlWithDocType({ lang: 'en' }, t.body('hello'));
 t.htmlWithDocType(t.body('hello'));
 t.htmlWithDocType();
 
-// @ts-expect-error - too many arguments
+// @ts-expect-error - too many arguments when first arg is content
 t.a('link text', 'extra arg');
 
 // ─── custom element attributes ───────────────────────────────────────────────

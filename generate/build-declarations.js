@@ -4,7 +4,7 @@ function attributesType({ attributes = [], globalTypes }) {
   if (!attributes.length) {
     return globalTypes.join(' & ');
   }
-  const styleType = 'string | Record<string, string | number | false | null>';
+  const styleType = 'string | csstype.Properties<string | number>';
   const classType = 'string | string[]';
 
   return [`{
@@ -21,7 +21,9 @@ function attributesType({ attributes = [], globalTypes }) {
 }
 
 export default function buildDeclarations({ elements, globalAttributes, globalEvents }) {
-  return `/**
+  return `import type * as csstype from 'csstype';
+
+/**
  * Returned by content element methods (div, p, span, …).
  * Call \`.toString()\` to get the HTML string, or \`.toElement()\` to create a live DOM node.
  */
@@ -72,7 +74,7 @@ export interface NameSpaceAttributes {
 }
 
 type GlobalAttributes = {
-  ${globalAttributes.map(a => `${a.name}?: ${a.name === 'style' ? 'string | Record<string, string | number | false | null>' : a.name === 'class' ? 'string | string[]' : a.type};`).join('\n  ')}
+  ${globalAttributes.map(a => `${a.name}?: ${a.name === 'style' ? 'string | csstype.Properties<string | number>' : a.name === 'class' ? 'string | string[]' : a.type};`).join('\n  ')}
 }
 
 type GlobalEvents = {
@@ -195,17 +197,13 @@ export default class Kensington {
    * @example
    * t.htmlWithDocType({ lang: 'en' }, t.body('hello')).toString();
    */
-  htmlWithDocType(attributes: HtmlAttributes, content?: Content): ContentTag;
-  htmlWithDocType(content?: Content): ContentTag;
+  htmlWithDocType<T extends HtmlAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
 
   ${elements.flatMap(el => {
     if (el.returnTagType === 'Void') {
       return [`${el.methodName}(attributes?: ${el.attributesTypeName}): VoidTag;`];
     }
-    return [
-      `${el.methodName}(attributes: ${el.attributesTypeName}, content?: Content): ${el.returnTagType}Tag;`,
-      `${el.methodName}(content?: Content): ${el.returnTagType}Tag;`,
-    ];
+    return [`${el.methodName}<T extends ${el.attributesTypeName} | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ${el.returnTagType}Tag;`];
   }).join('\n  ')}
 }
 

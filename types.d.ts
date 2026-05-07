@@ -1,3 +1,5 @@
+import type * as csstype from 'csstype';
+
 /**
  * Returned by content element methods (div, p, span, …).
  * Call `.toString()` to get the HTML string, or `.toElement()` to create a live DOM node.
@@ -76,7 +78,7 @@ type GlobalAttributes = {
   role?: string;
   slot?: string;
   spellcheck?: "true" | "false";
-  style?: string | Record<string, string | number | false | null>;
+  style?: string | csstype.Properties<string | number>;
   tabindex?: number;
   title?: string;
   translate?: "yes" | "no";
@@ -259,7 +261,7 @@ type AnimateAttributes = {
   'repeatDur'?: string;
   'requiredExtensions'?: string;
   'restart'?: "always" | "never" | "whenNotActive";
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'to'?: string;
@@ -357,7 +359,7 @@ type AnimateMotionAttributes = {
   'requiredExtensions'?: string;
   'restart'?: "always" | "never" | "whenNotActive";
   'rotate'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'to'?: string;
@@ -452,7 +454,7 @@ type AnimateTransformAttributes = {
   'repeatDur'?: string;
   'requiredExtensions'?: string;
   'restart'?: "always" | "never" | "whenNotActive";
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'to'?: string;
@@ -473,7 +475,7 @@ type AnnotationAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -489,7 +491,7 @@ type AnnotationXmlAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -653,7 +655,7 @@ type CircleAttributes = {
   'r'?: number | string;
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
@@ -667,7 +669,7 @@ type ClipPathAttributes = {
   'id'?: string;
   'requiredExtensions'?: string;
   'requiredFeatures'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
   'transform'?: string;
   'xml:base'?: string;
@@ -758,7 +760,7 @@ type DefsAttributes = {
   'onvolumechange'?: string | ((event: Event) => void);
   'onwaiting'?: string | ((event: Event) => void);
   'onwheel'?: string | ((event: Event) => void);
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -833,7 +835,7 @@ type DescAttributes = {
   'onvolumechange'?: string | ((event: Event) => void);
   'onwaiting'?: string | ((event: Event) => void);
   'onwheel'?: string | ((event: Event) => void);
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -927,7 +929,7 @@ type EllipseAttributes = {
   'role'?: string;
   'rx'?: number | string;
   'ry'?: number | string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
@@ -945,7 +947,7 @@ type EmbedAttributes = {
 type FeBlendAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -954,7 +956,7 @@ type FeBlendAttributes = {
 type FeColorMatrixAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -963,7 +965,7 @@ type FeColorMatrixAttributes = {
 type FeComponentTransferAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -972,7 +974,7 @@ type FeComponentTransferAttributes = {
 type FeCompositeAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -981,7 +983,7 @@ type FeCompositeAttributes = {
 type FeConvolveMatrixAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -990,7 +992,7 @@ type FeConvolveMatrixAttributes = {
 type FeDiffuseLightingAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -999,7 +1001,7 @@ type FeDiffuseLightingAttributes = {
 type FeDisplacementMapAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -1015,7 +1017,7 @@ type FeDistantLightAttributes = {
 type FeDropShadowAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -1024,7 +1026,7 @@ type FeDropShadowAttributes = {
 type FeFloodAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -1061,7 +1063,7 @@ type FeFuncRAttributes = {
 type FeGaussianBlurAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -1071,7 +1073,7 @@ type FeImageAttributes = {
   'class'?: string | string[];
   'externalResourcesRequired'?: string;
   'id'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -1080,7 +1082,7 @@ type FeImageAttributes = {
 type FeMergeAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -1096,7 +1098,7 @@ type FeMergeNodeAttributes = {
 type FeMorphologyAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -1105,7 +1107,7 @@ type FeMorphologyAttributes = {
 type FeOffsetAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -1121,7 +1123,7 @@ type FePointLightAttributes = {
 type FeSpecularLightingAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -1137,7 +1139,7 @@ type FeSpotLightAttributes = {
 type FeTileAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -1146,7 +1148,7 @@ type FeTileAttributes = {
 type FeTurbulenceAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -1166,7 +1168,7 @@ type FilterAttributes = {
   'class'?: string | string[];
   'externalResourcesRequired'?: string;
   'id'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: string;
@@ -1242,7 +1244,7 @@ type ForeignObjectAttributes = {
   'onwheel'?: string | ((event: Event) => void);
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'width'?: number | string;
@@ -1331,7 +1333,7 @@ type GAttributes = {
   'onwheel'?: string | ((event: Event) => void);
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
@@ -1445,7 +1447,7 @@ type ImageAttributes = {
   'preserveAspectRatio'?: string;
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'width'?: number | string;
@@ -1595,7 +1597,7 @@ type LineAttributes = {
   'pathLength'?: string;
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'x1'?: number | string;
@@ -1674,7 +1676,7 @@ type LinearGradientAttributes = {
   'onwaiting'?: string | ((event: Event) => void);
   'onwheel'?: string | ((event: Event) => void);
   'spreadMethod'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
   'x1'?: number | string;
   'x2'?: number | string;
@@ -1784,7 +1786,7 @@ type MarkerAttributes = {
   'preserveAspectRatio'?: string;
   'refX'?: string;
   'refY'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
   'viewBox'?: string;
   'xml:space'?: string;
@@ -1795,7 +1797,7 @@ type MaskAttributes = {
   'id'?: string;
   'requiredExtensions'?: string;
   'requiredFeatures'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
   'xml:base'?: string;
   'xml:lang'?: string;
@@ -1815,7 +1817,7 @@ type MathAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
   'xmlns'?: string;
 } & NameSpaceAttributes & GlobalEvents;
@@ -1833,7 +1835,7 @@ type MencloseAttributes = {
   'nonce'?: string;
   'notation'?: string;
   'scriptlevel'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -1851,7 +1853,7 @@ type MerrorAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -1929,7 +1931,7 @@ type MetadataAttributes = {
   'onvolumechange'?: string | ((event: Event) => void);
   'onwaiting'?: string | ((event: Event) => void);
   'onwheel'?: string | ((event: Event) => void);
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -1956,7 +1958,7 @@ type MfracAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -1972,7 +1974,7 @@ type MiAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -1988,7 +1990,7 @@ type MmultiscriptsAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2004,7 +2006,7 @@ type MnAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2029,7 +2031,7 @@ type MoAttributes = {
   'scriptlevel'?: string;
   'separator'?: string;
   'stretchy'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'symmetric'?: string;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2047,7 +2049,7 @@ type MoverAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2066,7 +2068,7 @@ type MpaddedAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
   'voffset'?: string;
   'width'?: string;
@@ -2138,7 +2140,7 @@ type MpathAttributes = {
   'onvolumechange'?: string | ((event: Event) => void);
   'onwaiting'?: string | ((event: Event) => void);
   'onwheel'?: string | ((event: Event) => void);
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -2155,7 +2157,7 @@ type MphantomAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2171,7 +2173,7 @@ type MprescriptsAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2187,7 +2189,7 @@ type MrootAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2203,7 +2205,7 @@ type MrowAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2219,7 +2221,7 @@ type MsAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2236,7 +2238,7 @@ type MspaceAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
   'width'?: string;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2253,7 +2255,7 @@ type MsqrtAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2269,7 +2271,7 @@ type MstyleAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2285,7 +2287,7 @@ type MsubAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2301,7 +2303,7 @@ type MsubsupAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2317,7 +2319,7 @@ type MsupAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2342,7 +2344,7 @@ type MtableAttributes = {
   'rowlines'?: string;
   'rowspacing'?: string;
   'scriptlevel'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
   'width'?: string;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2363,7 +2365,7 @@ type MtdAttributes = {
   'rowalign'?: string;
   'rowspan'?: string;
   'scriptlevel'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2379,7 +2381,7 @@ type MtextAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2397,7 +2399,7 @@ type MtrAttributes = {
   'nonce'?: string;
   'rowalign'?: string;
   'scriptlevel'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2414,7 +2416,7 @@ type MunderAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2432,7 +2434,7 @@ type MunderoverAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2544,7 +2546,7 @@ type PathAttributes = {
   'pathLength'?: number;
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
@@ -2621,7 +2623,7 @@ type PatternAttributes = {
   'patternTransform'?: string;
   'patternUnits'?: string;
   'preserveAspectRatio'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
   'viewBox'?: string;
   'width'?: string;
@@ -2703,7 +2705,7 @@ type PolygonAttributes = {
   'points'?: string;
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
@@ -2778,7 +2780,7 @@ type PolylineAttributes = {
   'points'?: string;
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
@@ -2870,7 +2872,7 @@ type RadialGradientAttributes = {
   'onwheel'?: string | ((event: Event) => void);
   'r'?: number | string;
   'spreadMethod'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
   'xlink:href'?: string;
   'xlink:title'?: string;
@@ -2948,7 +2950,7 @@ type RectAttributes = {
   'role'?: string;
   'rx'?: number | string;
   'ry'?: number | string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'width'?: number | string;
@@ -3008,7 +3010,7 @@ type SemanticsAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3092,7 +3094,7 @@ type SetAttributes = {
   'repeatDur'?: string;
   'requiredExtensions'?: string;
   'restart'?: "always" | "never" | "whenNotActive";
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'to'?: string;
@@ -3183,7 +3185,7 @@ type StopAttributes = {
   'onvolumechange'?: string | ((event: Event) => void);
   'onwaiting'?: string | ((event: Event) => void);
   'onwheel'?: string | ((event: Event) => void);
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -3272,7 +3274,7 @@ type SvgAttributes = {
   'preserveAspectRatio'?: string;
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'transform'?: string;
@@ -3350,7 +3352,7 @@ type SwitchAttributes = {
   'onwheel'?: string | ((event: Event) => void);
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'xml:space'?: "default" | "preserve";
@@ -3426,7 +3428,7 @@ type SymbolAttributes = {
   'refX'?: string;
   'refY'?: string;
   'role'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
   'viewBox'?: string;
   'width'?: string;
@@ -3525,7 +3527,7 @@ type TextAttributes = {
   'requiredExtensions'?: string;
   'role'?: string;
   'rotate'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'textLength'?: string;
@@ -3624,7 +3626,7 @@ type TextPathAttributes = {
   'side'?: string;
   'spacing'?: string;
   'startOffset'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'textLength'?: string;
@@ -3732,7 +3734,7 @@ type TspanAttributes = {
   'requiredExtensions'?: string;
   'role'?: string;
   'rotate'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'textLength'?: string;
@@ -3814,7 +3816,7 @@ type UseAttributes = {
   'onwheel'?: string | ((event: Event) => void);
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'systemLanguage'?: string;
   'tabindex'?: number;
   'width'?: string;
@@ -3909,7 +3911,7 @@ type ViewAttributes = {
   'onwheel'?: string | ((event: Event) => void);
   'preserveAspectRatio'?: string;
   'role'?: string;
-  'style'?: string | Record<string, string | number | false | null>;
+  'style'?: string | csstype.Properties<string | number>;
   'tabindex'?: number;
   'viewBox'?: string;
   'xml:space'?: string;
@@ -4031,398 +4033,209 @@ export default class Kensington {
    * @example
    * t.htmlWithDocType({ lang: 'en' }, t.body('hello')).toString();
    */
-  htmlWithDocType(attributes: HtmlAttributes, content?: Content): ContentTag;
-  htmlWithDocType(content?: Content): ContentTag;
+  htmlWithDocType<T extends HtmlAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
 
-  a(attributes: AAttributes, content?: Content): ContentTag;
-  a(content?: Content): ContentTag;
-  abbr(attributes: AbbrAttributes, content?: Content): ContentTag;
-  abbr(content?: Content): ContentTag;
-  address(attributes: AddressAttributes, content?: Content): ContentTag;
-  address(content?: Content): ContentTag;
-  animate(attributes: AnimateAttributes, content?: Content): ContentTag;
-  animate(content?: Content): ContentTag;
-  animateMotion(attributes: AnimateMotionAttributes, content?: Content): ContentTag;
-  animateMotion(content?: Content): ContentTag;
-  animateTransform(attributes: AnimateTransformAttributes, content?: Content): ContentTag;
-  animateTransform(content?: Content): ContentTag;
-  annotation(attributes: AnnotationAttributes, content?: Content): ContentTag;
-  annotation(content?: Content): ContentTag;
-  annotationXml(attributes: AnnotationXmlAttributes, content?: Content): ContentTag;
-  annotationXml(content?: Content): ContentTag;
+  a<T extends AAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  abbr<T extends AbbrAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  address<T extends AddressAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  animate<T extends AnimateAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  animateMotion<T extends AnimateMotionAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  animateTransform<T extends AnimateTransformAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  annotation<T extends AnnotationAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  annotationXml<T extends AnnotationXmlAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   area(attributes?: AreaAttributes): VoidTag;
-  article(attributes: ArticleAttributes, content?: Content): ContentTag;
-  article(content?: Content): ContentTag;
-  aside(attributes: AsideAttributes, content?: Content): ContentTag;
-  aside(content?: Content): ContentTag;
-  audio(attributes: AudioAttributes, content?: Content): ContentTag;
-  audio(content?: Content): ContentTag;
-  b(attributes: BAttributes, content?: Content): ContentTag;
-  b(content?: Content): ContentTag;
+  article<T extends ArticleAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  aside<T extends AsideAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  audio<T extends AudioAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  b<T extends BAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   base(attributes?: BaseAttributes): VoidTag;
-  bdi(attributes: BdiAttributes, content?: Content): ContentTag;
-  bdi(content?: Content): ContentTag;
-  bdo(attributes: BdoAttributes, content?: Content): ContentTag;
-  bdo(content?: Content): ContentTag;
-  blockquote(attributes: BlockquoteAttributes, content?: Content): ContentTag;
-  blockquote(content?: Content): ContentTag;
-  body(attributes: BodyAttributes, content?: Content): ContentTag;
-  body(content?: Content): ContentTag;
+  bdi<T extends BdiAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  bdo<T extends BdoAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  blockquote<T extends BlockquoteAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  body<T extends BodyAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   br(attributes?: BrAttributes): VoidTag;
-  button(attributes: ButtonAttributes, content?: Content): ContentTag;
-  button(content?: Content): ContentTag;
-  canvas(attributes: CanvasAttributes, content?: Content): ContentTag;
-  canvas(content?: Content): ContentTag;
-  caption(attributes: CaptionAttributes, content?: Content): ContentTag;
-  caption(content?: Content): ContentTag;
-  circle(attributes: CircleAttributes, content?: Content): ContentTag;
-  circle(content?: Content): ContentTag;
-  cite(attributes: CiteAttributes, content?: Content): ContentTag;
-  cite(content?: Content): ContentTag;
-  clipPath(attributes: ClipPathAttributes, content?: Content): ContentTag;
-  clipPath(content?: Content): ContentTag;
-  code(attributes: CodeAttributes, content?: Content): ContentTag;
-  code(content?: Content): ContentTag;
+  button<T extends ButtonAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  canvas<T extends CanvasAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  caption<T extends CaptionAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  circle<T extends CircleAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  cite<T extends CiteAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  clipPath<T extends ClipPathAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  code<T extends CodeAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   col(attributes?: ColAttributes): VoidTag;
-  colgroup(attributes: ColgroupAttributes, content?: Content): ContentTag;
-  colgroup(content?: Content): ContentTag;
-  data(attributes: DataAttributes, content?: Content): ContentTag;
-  data(content?: Content): ContentTag;
-  datalist(attributes: DatalistAttributes, content?: Content): ContentTag;
-  datalist(content?: Content): ContentTag;
-  dd(attributes: DdAttributes, content?: Content): ContentTag;
-  dd(content?: Content): ContentTag;
-  defs(attributes: DefsAttributes, content?: Content): ContentTag;
-  defs(content?: Content): ContentTag;
-  del(attributes: DelAttributes, content?: Content): ContentTag;
-  del(content?: Content): ContentTag;
-  desc(attributes: DescAttributes, content?: Content): ContentTag;
-  desc(content?: Content): ContentTag;
-  details(attributes: DetailsAttributes, content?: Content): ContentTag;
-  details(content?: Content): ContentTag;
-  dfn(attributes: DfnAttributes, content?: Content): ContentTag;
-  dfn(content?: Content): ContentTag;
-  dialog(attributes: DialogAttributes, content?: Content): ContentTag;
-  dialog(content?: Content): ContentTag;
-  div(attributes: DivAttributes, content?: Content): ContentTag;
-  div(content?: Content): ContentTag;
-  dl(attributes: DlAttributes, content?: Content): ContentTag;
-  dl(content?: Content): ContentTag;
-  dt(attributes: DtAttributes, content?: Content): ContentTag;
-  dt(content?: Content): ContentTag;
-  ellipse(attributes: EllipseAttributes, content?: Content): ContentTag;
-  ellipse(content?: Content): ContentTag;
-  em(attributes: EmAttributes, content?: Content): ContentTag;
-  em(content?: Content): ContentTag;
+  colgroup<T extends ColgroupAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  data<T extends DataAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  datalist<T extends DatalistAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  dd<T extends DdAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  defs<T extends DefsAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  del<T extends DelAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  desc<T extends DescAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  details<T extends DetailsAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  dfn<T extends DfnAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  dialog<T extends DialogAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  div<T extends DivAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  dl<T extends DlAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  dt<T extends DtAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  ellipse<T extends EllipseAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  em<T extends EmAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   embed(attributes?: EmbedAttributes): VoidTag;
-  feBlend(attributes: FeBlendAttributes, content?: Content): ContentTag;
-  feBlend(content?: Content): ContentTag;
-  feColorMatrix(attributes: FeColorMatrixAttributes, content?: Content): ContentTag;
-  feColorMatrix(content?: Content): ContentTag;
-  feComponentTransfer(attributes: FeComponentTransferAttributes, content?: Content): ContentTag;
-  feComponentTransfer(content?: Content): ContentTag;
-  feComposite(attributes: FeCompositeAttributes, content?: Content): ContentTag;
-  feComposite(content?: Content): ContentTag;
-  feConvolveMatrix(attributes: FeConvolveMatrixAttributes, content?: Content): ContentTag;
-  feConvolveMatrix(content?: Content): ContentTag;
-  feDiffuseLighting(attributes: FeDiffuseLightingAttributes, content?: Content): ContentTag;
-  feDiffuseLighting(content?: Content): ContentTag;
-  feDisplacementMap(attributes: FeDisplacementMapAttributes, content?: Content): ContentTag;
-  feDisplacementMap(content?: Content): ContentTag;
-  feDistantLight(attributes: FeDistantLightAttributes, content?: Content): ContentTag;
-  feDistantLight(content?: Content): ContentTag;
-  feDropShadow(attributes: FeDropShadowAttributes, content?: Content): ContentTag;
-  feDropShadow(content?: Content): ContentTag;
-  feFlood(attributes: FeFloodAttributes, content?: Content): ContentTag;
-  feFlood(content?: Content): ContentTag;
-  feFuncA(attributes: FeFuncAAttributes, content?: Content): ContentTag;
-  feFuncA(content?: Content): ContentTag;
-  feFuncB(attributes: FeFuncBAttributes, content?: Content): ContentTag;
-  feFuncB(content?: Content): ContentTag;
-  feFuncG(attributes: FeFuncGAttributes, content?: Content): ContentTag;
-  feFuncG(content?: Content): ContentTag;
-  feFuncR(attributes: FeFuncRAttributes, content?: Content): ContentTag;
-  feFuncR(content?: Content): ContentTag;
-  feGaussianBlur(attributes: FeGaussianBlurAttributes, content?: Content): ContentTag;
-  feGaussianBlur(content?: Content): ContentTag;
-  feImage(attributes: FeImageAttributes, content?: Content): ContentTag;
-  feImage(content?: Content): ContentTag;
-  feMerge(attributes: FeMergeAttributes, content?: Content): ContentTag;
-  feMerge(content?: Content): ContentTag;
-  feMergeNode(attributes: FeMergeNodeAttributes, content?: Content): ContentTag;
-  feMergeNode(content?: Content): ContentTag;
-  feMorphology(attributes: FeMorphologyAttributes, content?: Content): ContentTag;
-  feMorphology(content?: Content): ContentTag;
-  feOffset(attributes: FeOffsetAttributes, content?: Content): ContentTag;
-  feOffset(content?: Content): ContentTag;
-  fePointLight(attributes: FePointLightAttributes, content?: Content): ContentTag;
-  fePointLight(content?: Content): ContentTag;
-  feSpecularLighting(attributes: FeSpecularLightingAttributes, content?: Content): ContentTag;
-  feSpecularLighting(content?: Content): ContentTag;
-  feSpotLight(attributes: FeSpotLightAttributes, content?: Content): ContentTag;
-  feSpotLight(content?: Content): ContentTag;
-  feTile(attributes: FeTileAttributes, content?: Content): ContentTag;
-  feTile(content?: Content): ContentTag;
-  feTurbulence(attributes: FeTurbulenceAttributes, content?: Content): ContentTag;
-  feTurbulence(content?: Content): ContentTag;
-  fieldset(attributes: FieldsetAttributes, content?: Content): ContentTag;
-  fieldset(content?: Content): ContentTag;
-  figcaption(attributes: FigcaptionAttributes, content?: Content): ContentTag;
-  figcaption(content?: Content): ContentTag;
-  figure(attributes: FigureAttributes, content?: Content): ContentTag;
-  figure(content?: Content): ContentTag;
-  filter(attributes: FilterAttributes, content?: Content): ContentTag;
-  filter(content?: Content): ContentTag;
-  footer(attributes: FooterAttributes, content?: Content): ContentTag;
-  footer(content?: Content): ContentTag;
-  foreignObject(attributes: ForeignObjectAttributes, content?: Content): ContentTag;
-  foreignObject(content?: Content): ContentTag;
-  form(attributes: FormAttributes, content?: Content): ContentTag;
-  form(content?: Content): ContentTag;
-  g(attributes: GAttributes, content?: Content): ContentTag;
-  g(content?: Content): ContentTag;
-  h1(attributes: H1Attributes, content?: Content): ContentTag;
-  h1(content?: Content): ContentTag;
-  h2(attributes: H2Attributes, content?: Content): ContentTag;
-  h2(content?: Content): ContentTag;
-  h3(attributes: H3Attributes, content?: Content): ContentTag;
-  h3(content?: Content): ContentTag;
-  h4(attributes: H4Attributes, content?: Content): ContentTag;
-  h4(content?: Content): ContentTag;
-  h5(attributes: H5Attributes, content?: Content): ContentTag;
-  h5(content?: Content): ContentTag;
-  h6(attributes: H6Attributes, content?: Content): ContentTag;
-  h6(content?: Content): ContentTag;
-  head(attributes: HeadAttributes, content?: Content): ContentTag;
-  head(content?: Content): ContentTag;
-  header(attributes: HeaderAttributes, content?: Content): ContentTag;
-  header(content?: Content): ContentTag;
-  hgroup(attributes: HgroupAttributes, content?: Content): ContentTag;
-  hgroup(content?: Content): ContentTag;
+  feBlend<T extends FeBlendAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  feColorMatrix<T extends FeColorMatrixAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  feComponentTransfer<T extends FeComponentTransferAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  feComposite<T extends FeCompositeAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  feConvolveMatrix<T extends FeConvolveMatrixAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  feDiffuseLighting<T extends FeDiffuseLightingAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  feDisplacementMap<T extends FeDisplacementMapAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  feDistantLight<T extends FeDistantLightAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  feDropShadow<T extends FeDropShadowAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  feFlood<T extends FeFloodAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  feFuncA<T extends FeFuncAAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  feFuncB<T extends FeFuncBAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  feFuncG<T extends FeFuncGAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  feFuncR<T extends FeFuncRAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  feGaussianBlur<T extends FeGaussianBlurAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  feImage<T extends FeImageAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  feMerge<T extends FeMergeAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  feMergeNode<T extends FeMergeNodeAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  feMorphology<T extends FeMorphologyAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  feOffset<T extends FeOffsetAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  fePointLight<T extends FePointLightAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  feSpecularLighting<T extends FeSpecularLightingAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  feSpotLight<T extends FeSpotLightAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  feTile<T extends FeTileAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  feTurbulence<T extends FeTurbulenceAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  fieldset<T extends FieldsetAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  figcaption<T extends FigcaptionAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  figure<T extends FigureAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  filter<T extends FilterAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  footer<T extends FooterAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  foreignObject<T extends ForeignObjectAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  form<T extends FormAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  g<T extends GAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  h1<T extends H1Attributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  h2<T extends H2Attributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  h3<T extends H3Attributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  h4<T extends H4Attributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  h5<T extends H5Attributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  h6<T extends H6Attributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  head<T extends HeadAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  header<T extends HeaderAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  hgroup<T extends HgroupAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   hr(attributes?: HrAttributes): VoidTag;
-  html(attributes: HtmlAttributes, content?: Content): ContentTag;
-  html(content?: Content): ContentTag;
-  i(attributes: IAttributes, content?: Content): ContentTag;
-  i(content?: Content): ContentTag;
-  iframe(attributes: IframeAttributes, content?: Content): ContentTag;
-  iframe(content?: Content): ContentTag;
-  image(attributes: ImageAttributes, content?: Content): ContentTag;
-  image(content?: Content): ContentTag;
+  html<T extends HtmlAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  i<T extends IAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  iframe<T extends IframeAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  image<T extends ImageAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   img(attributes?: ImgAttributes): VoidTag;
   input(attributes?: InputAttributes): VoidTag;
-  ins(attributes: InsAttributes, content?: Content): ContentTag;
-  ins(content?: Content): ContentTag;
-  kbd(attributes: KbdAttributes, content?: Content): ContentTag;
-  kbd(content?: Content): ContentTag;
-  label(attributes: LabelAttributes, content?: Content): ContentTag;
-  label(content?: Content): ContentTag;
-  legend(attributes: LegendAttributes, content?: Content): ContentTag;
-  legend(content?: Content): ContentTag;
-  li(attributes: LiAttributes, content?: Content): ContentTag;
-  li(content?: Content): ContentTag;
-  line(attributes: LineAttributes, content?: Content): ContentTag;
-  line(content?: Content): ContentTag;
-  linearGradient(attributes: LinearGradientAttributes, content?: Content): ContentTag;
-  linearGradient(content?: Content): ContentTag;
+  ins<T extends InsAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  kbd<T extends KbdAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  label<T extends LabelAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  legend<T extends LegendAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  li<T extends LiAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  line<T extends LineAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  linearGradient<T extends LinearGradientAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   link(attributes?: LinkAttributes): VoidTag;
-  main(attributes: MainAttributes, content?: Content): ContentTag;
-  main(content?: Content): ContentTag;
-  map(attributes: MapAttributes, content?: Content): ContentTag;
-  map(content?: Content): ContentTag;
-  mark(attributes: MarkAttributes, content?: Content): ContentTag;
-  mark(content?: Content): ContentTag;
-  marker(attributes: MarkerAttributes, content?: Content): ContentTag;
-  marker(content?: Content): ContentTag;
-  mask(attributes: MaskAttributes, content?: Content): ContentTag;
-  mask(content?: Content): ContentTag;
-  math(attributes: MathAttributes, content?: Content): ContentTag;
-  math(content?: Content): ContentTag;
-  menclose(attributes: MencloseAttributes, content?: Content): ContentTag;
-  menclose(content?: Content): ContentTag;
-  menu(attributes: MenuAttributes, content?: Content): ContentTag;
-  menu(content?: Content): ContentTag;
-  merror(attributes: MerrorAttributes, content?: Content): ContentTag;
-  merror(content?: Content): ContentTag;
+  main<T extends MainAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  map<T extends MapAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  mark<T extends MarkAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  marker<T extends MarkerAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  mask<T extends MaskAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  math<T extends MathAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  menclose<T extends MencloseAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  menu<T extends MenuAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  merror<T extends MerrorAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   meta(attributes?: MetaAttributes): VoidTag;
-  metadata(attributes: MetadataAttributes, content?: Content): ContentTag;
-  metadata(content?: Content): ContentTag;
-  meter(attributes: MeterAttributes, content?: Content): ContentTag;
-  meter(content?: Content): ContentTag;
-  mfrac(attributes: MfracAttributes, content?: Content): ContentTag;
-  mfrac(content?: Content): ContentTag;
-  mi(attributes: MiAttributes, content?: Content): ContentTag;
-  mi(content?: Content): ContentTag;
-  mmultiscripts(attributes: MmultiscriptsAttributes, content?: Content): ContentTag;
-  mmultiscripts(content?: Content): ContentTag;
-  mn(attributes: MnAttributes, content?: Content): ContentTag;
-  mn(content?: Content): ContentTag;
-  mo(attributes: MoAttributes, content?: Content): ContentTag;
-  mo(content?: Content): ContentTag;
-  mover(attributes: MoverAttributes, content?: Content): ContentTag;
-  mover(content?: Content): ContentTag;
-  mpadded(attributes: MpaddedAttributes, content?: Content): ContentTag;
-  mpadded(content?: Content): ContentTag;
-  mpath(attributes: MpathAttributes, content?: Content): ContentTag;
-  mpath(content?: Content): ContentTag;
-  mphantom(attributes: MphantomAttributes, content?: Content): ContentTag;
-  mphantom(content?: Content): ContentTag;
-  mprescripts(attributes: MprescriptsAttributes, content?: Content): ContentTag;
-  mprescripts(content?: Content): ContentTag;
-  mroot(attributes: MrootAttributes, content?: Content): ContentTag;
-  mroot(content?: Content): ContentTag;
-  mrow(attributes: MrowAttributes, content?: Content): ContentTag;
-  mrow(content?: Content): ContentTag;
-  ms(attributes: MsAttributes, content?: Content): ContentTag;
-  ms(content?: Content): ContentTag;
-  mspace(attributes: MspaceAttributes, content?: Content): ContentTag;
-  mspace(content?: Content): ContentTag;
-  msqrt(attributes: MsqrtAttributes, content?: Content): ContentTag;
-  msqrt(content?: Content): ContentTag;
-  mstyle(attributes: MstyleAttributes, content?: Content): ContentTag;
-  mstyle(content?: Content): ContentTag;
-  msub(attributes: MsubAttributes, content?: Content): ContentTag;
-  msub(content?: Content): ContentTag;
-  msubsup(attributes: MsubsupAttributes, content?: Content): ContentTag;
-  msubsup(content?: Content): ContentTag;
-  msup(attributes: MsupAttributes, content?: Content): ContentTag;
-  msup(content?: Content): ContentTag;
-  mtable(attributes: MtableAttributes, content?: Content): ContentTag;
-  mtable(content?: Content): ContentTag;
-  mtd(attributes: MtdAttributes, content?: Content): ContentTag;
-  mtd(content?: Content): ContentTag;
-  mtext(attributes: MtextAttributes, content?: Content): ContentTag;
-  mtext(content?: Content): ContentTag;
-  mtr(attributes: MtrAttributes, content?: Content): ContentTag;
-  mtr(content?: Content): ContentTag;
-  munder(attributes: MunderAttributes, content?: Content): ContentTag;
-  munder(content?: Content): ContentTag;
-  munderover(attributes: MunderoverAttributes, content?: Content): ContentTag;
-  munderover(content?: Content): ContentTag;
-  nav(attributes: NavAttributes, content?: Content): ContentTag;
-  nav(content?: Content): ContentTag;
-  noscript(attributes: NoscriptAttributes, content?: Content): ContentTag;
-  noscript(content?: Content): ContentTag;
-  object(attributes: ObjectAttributes, content?: Content): ContentTag;
-  object(content?: Content): ContentTag;
-  ol(attributes: OlAttributes, content?: Content): ContentTag;
-  ol(content?: Content): ContentTag;
-  optgroup(attributes: OptgroupAttributes, content?: Content): ContentTag;
-  optgroup(content?: Content): ContentTag;
-  option(attributes: OptionAttributes, content?: Content): ContentTag;
-  option(content?: Content): ContentTag;
-  output(attributes: OutputAttributes, content?: Content): ContentTag;
-  output(content?: Content): ContentTag;
-  p(attributes: PAttributes, content?: Content): ContentTag;
-  p(content?: Content): ContentTag;
-  path(attributes: PathAttributes, content?: Content): ContentTag;
-  path(content?: Content): ContentTag;
-  pattern(attributes: PatternAttributes, content?: Content): ContentTag;
-  pattern(content?: Content): ContentTag;
-  picture(attributes: PictureAttributes, content?: Content): ContentTag;
-  picture(content?: Content): ContentTag;
-  polygon(attributes: PolygonAttributes, content?: Content): ContentTag;
-  polygon(content?: Content): ContentTag;
-  polyline(attributes: PolylineAttributes, content?: Content): ContentTag;
-  polyline(content?: Content): ContentTag;
-  pre(attributes: PreAttributes, content?: Content): ContentTag;
-  pre(content?: Content): ContentTag;
-  progress(attributes: ProgressAttributes, content?: Content): ContentTag;
-  progress(content?: Content): ContentTag;
-  q(attributes: QAttributes, content?: Content): ContentTag;
-  q(content?: Content): ContentTag;
-  radialGradient(attributes: RadialGradientAttributes, content?: Content): ContentTag;
-  radialGradient(content?: Content): ContentTag;
-  rect(attributes: RectAttributes, content?: Content): ContentTag;
-  rect(content?: Content): ContentTag;
-  rp(attributes: RpAttributes, content?: Content): ContentTag;
-  rp(content?: Content): ContentTag;
-  rt(attributes: RtAttributes, content?: Content): ContentTag;
-  rt(content?: Content): ContentTag;
-  ruby(attributes: RubyAttributes, content?: Content): ContentTag;
-  ruby(content?: Content): ContentTag;
-  s(attributes: SAttributes, content?: Content): ContentTag;
-  s(content?: Content): ContentTag;
-  samp(attributes: SampAttributes, content?: Content): ContentTag;
-  samp(content?: Content): ContentTag;
-  script(attributes: ScriptAttributes, content?: Content): ContentTag;
-  script(content?: Content): ContentTag;
-  search(attributes: SearchAttributes, content?: Content): ContentTag;
-  search(content?: Content): ContentTag;
-  section(attributes: SectionAttributes, content?: Content): ContentTag;
-  section(content?: Content): ContentTag;
-  select(attributes: SelectAttributes, content?: Content): ContentTag;
-  select(content?: Content): ContentTag;
+  metadata<T extends MetadataAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  meter<T extends MeterAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  mfrac<T extends MfracAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  mi<T extends MiAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  mmultiscripts<T extends MmultiscriptsAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  mn<T extends MnAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  mo<T extends MoAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  mover<T extends MoverAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  mpadded<T extends MpaddedAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  mpath<T extends MpathAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  mphantom<T extends MphantomAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  mprescripts<T extends MprescriptsAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  mroot<T extends MrootAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  mrow<T extends MrowAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  ms<T extends MsAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  mspace<T extends MspaceAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  msqrt<T extends MsqrtAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  mstyle<T extends MstyleAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  msub<T extends MsubAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  msubsup<T extends MsubsupAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  msup<T extends MsupAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  mtable<T extends MtableAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  mtd<T extends MtdAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  mtext<T extends MtextAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  mtr<T extends MtrAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  munder<T extends MunderAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  munderover<T extends MunderoverAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  nav<T extends NavAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  noscript<T extends NoscriptAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  object<T extends ObjectAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  ol<T extends OlAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  optgroup<T extends OptgroupAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  option<T extends OptionAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  output<T extends OutputAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  p<T extends PAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  path<T extends PathAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  pattern<T extends PatternAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  picture<T extends PictureAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  polygon<T extends PolygonAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  polyline<T extends PolylineAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  pre<T extends PreAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  progress<T extends ProgressAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  q<T extends QAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  radialGradient<T extends RadialGradientAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  rect<T extends RectAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  rp<T extends RpAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  rt<T extends RtAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  ruby<T extends RubyAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  s<T extends SAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  samp<T extends SampAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  script<T extends ScriptAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  search<T extends SearchAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  section<T extends SectionAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  select<T extends SelectAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   selectedcontent(attributes?: SelectedcontentAttributes): VoidTag;
-  semantics(attributes: SemanticsAttributes, content?: Content): ContentTag;
-  semantics(content?: Content): ContentTag;
-  set(attributes: SetAttributes, content?: Content): ContentTag;
-  set(content?: Content): ContentTag;
-  slot(attributes: SlotAttributes, content?: Content): ContentTag;
-  slot(content?: Content): ContentTag;
-  small(attributes: SmallAttributes, content?: Content): ContentTag;
-  small(content?: Content): ContentTag;
+  semantics<T extends SemanticsAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  set<T extends SetAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  slot<T extends SlotAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  small<T extends SmallAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   source(attributes?: SourceAttributes): VoidTag;
-  span(attributes: SpanAttributes, content?: Content): ContentTag;
-  span(content?: Content): ContentTag;
-  stop(attributes: StopAttributes, content?: Content): ContentTag;
-  stop(content?: Content): ContentTag;
-  strong(attributes: StrongAttributes, content?: Content): ContentTag;
-  strong(content?: Content): ContentTag;
-  style(attributes: StyleAttributes, content?: Content): ContentTag;
-  style(content?: Content): ContentTag;
-  sub(attributes: SubAttributes, content?: Content): ContentTag;
-  sub(content?: Content): ContentTag;
-  summary(attributes: SummaryAttributes, content?: Content): ContentTag;
-  summary(content?: Content): ContentTag;
-  sup(attributes: SupAttributes, content?: Content): ContentTag;
-  sup(content?: Content): ContentTag;
-  svg(attributes: SvgAttributes, content?: Content): ContentTag;
-  svg(content?: Content): ContentTag;
-  switch(attributes: SwitchAttributes, content?: Content): ContentTag;
-  switch(content?: Content): ContentTag;
-  symbol(attributes: SymbolAttributes, content?: Content): ContentTag;
-  symbol(content?: Content): ContentTag;
-  table(attributes: TableAttributes, content?: Content): ContentTag;
-  table(content?: Content): ContentTag;
-  tbody(attributes: TbodyAttributes, content?: Content): ContentTag;
-  tbody(content?: Content): ContentTag;
-  td(attributes: TdAttributes, content?: Content): ContentTag;
-  td(content?: Content): ContentTag;
-  template(attributes: TemplateAttributes, content?: Content): ContentTag;
-  template(content?: Content): ContentTag;
-  text(attributes: TextAttributes, content?: Content): ContentTag;
-  text(content?: Content): ContentTag;
-  textarea(attributes: TextareaAttributes, content?: Content): ContentTag;
-  textarea(content?: Content): ContentTag;
-  textPath(attributes: TextPathAttributes, content?: Content): ContentTag;
-  textPath(content?: Content): ContentTag;
-  tfoot(attributes: TfootAttributes, content?: Content): ContentTag;
-  tfoot(content?: Content): ContentTag;
-  th(attributes: ThAttributes, content?: Content): ContentTag;
-  th(content?: Content): ContentTag;
-  thead(attributes: TheadAttributes, content?: Content): ContentTag;
-  thead(content?: Content): ContentTag;
-  time(attributes: TimeAttributes, content?: Content): ContentTag;
-  time(content?: Content): ContentTag;
-  title(attributes: TitleAttributes, content?: Content): ContentTag;
-  title(content?: Content): ContentTag;
-  tr(attributes: TrAttributes, content?: Content): ContentTag;
-  tr(content?: Content): ContentTag;
+  span<T extends SpanAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  stop<T extends StopAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  strong<T extends StrongAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  style<T extends StyleAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  sub<T extends SubAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  summary<T extends SummaryAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  sup<T extends SupAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  svg<T extends SvgAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  switch<T extends SwitchAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  symbol<T extends SymbolAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  table<T extends TableAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  tbody<T extends TbodyAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  td<T extends TdAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  template<T extends TemplateAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  text<T extends TextAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  textarea<T extends TextareaAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  textPath<T extends TextPathAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  tfoot<T extends TfootAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  th<T extends ThAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  thead<T extends TheadAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  time<T extends TimeAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  title<T extends TitleAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  tr<T extends TrAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   track(attributes?: TrackAttributes): VoidTag;
-  tspan(attributes: TspanAttributes, content?: Content): ContentTag;
-  tspan(content?: Content): ContentTag;
-  u(attributes: UAttributes, content?: Content): ContentTag;
-  u(content?: Content): ContentTag;
-  ul(attributes: UlAttributes, content?: Content): ContentTag;
-  ul(content?: Content): ContentTag;
-  use(attributes: UseAttributes, content?: Content): ContentTag;
-  use(content?: Content): ContentTag;
-  var(attributes: VarAttributes, content?: Content): ContentTag;
-  var(content?: Content): ContentTag;
-  video(attributes: VideoAttributes, content?: Content): ContentTag;
-  video(content?: Content): ContentTag;
-  view(attributes: ViewAttributes, content?: Content): ContentTag;
-  view(content?: Content): ContentTag;
+  tspan<T extends TspanAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  u<T extends UAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  ul<T extends UlAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  use<T extends UseAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  var<T extends VarAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  video<T extends VideoAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  view<T extends ViewAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   wbr(attributes?: WbrAttributes): VoidTag;
 }
 
