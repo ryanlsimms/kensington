@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>To-do</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+  <style>
+    .drag-handle { cursor: grab; user-select: none; }
+    .drag-handle:active { cursor: grabbing; }
+    .drag-over { box-shadow: 0 -2px 0 #0d6efd; }
+  </style>
+  <script type="module">
+    import { t, signal, computed, effect } from '/esm/index.js';
+
+    const stored = JSON.parse(localStorage.getItem('todos') ?? '[]');
+    const todos  = signal(stored);
+    const draft  = signal('');
+
+    effect(() => {
+      localStorage.setItem('todos', JSON.stringify(todos.get()));
+    });
+
+    let nextId = stored.length ? Math.max(...stored.map(item => item.id)) + 1 : 1;
+
+    function addTodo() {
+      const text = draft.get().trim();
+      if (!text) { return; }
+      todos.set(list => [...list, { id: nextId++, text, done: false }]);
+      draft.set('');
+      document.getElementById('todo-input').value = '';
+    }
+
+    function toggleTodo(id) {
+      todos.set(list => list.map(item => item.id === id ? { ...item, done: !item.done } : item));
+    }
+
+    function removeTodo(id) {
+      todos.set(list => list.filter(item => item.id !== id));
+    }
+
+    let dragId = null;
+
+    function todoItem({ id, text, done }) {
+      return t.li({
+        class: 'list-group-item d-flex align-items-center gap-2',
+        dataKey: id,
+        draggable: 'true',
+        ondragstart: e => {
+          dragId = id;
+          e.dataTransfer.effectAllowed = 'move';
+        },
+        ondragend: () => {
+          document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+          dragId = null;
+        },
+        ondragover: e => {
+          e.preventDefault();
+          e.currentTarget.classList.add('drag-over');
+        },
+        ondragleave: e => {
+          e.currentTarget.classList.remove('drag-over');
+        },
+        ondrop: e => {
+          e.preventDefault();
+          e.currentTarget.classList.remove('drag-over');
+          if (dragId === null || dragId === id) { return; }
+          const fromId = dragId;
+          todos.set(list => {
+            const from = list.findIndex(item => item.id === fromId);
+            const to   = list.findIndex(item => item.id === id);
+            const next = [...list];
+            next.splice(to, 0, next.splice(from, 1)[0]);
+            return next;
+          });
+        },
+      }, [
+        t.span({ class: 'drag-handle text-muted' }, '⠿'),
+        t.input({
+          type: 'checkbox',
+          class: 'form-check-input flex-shrink-0',
+          checked: done,
+          onchange: () => toggleTodo(id),
+        }),
+        t.span({ class: done ? 'text-decoration-line-through text-muted' : '' }, text),
+        t.button({
+          type: 'button',
+          class: 'btn-close ms-auto',
+          ariaLabel: 'Remove',
+          onclick: () => removeTodo(id),
+        }),
+      ]);
+    }
+
+    const app = t.div({ class: 'container mt-5' }, [
+      t.div({ class: 'row justify-content-center' }, [
+        t.div({ class: 'col-md-6 col-lg-5' }, [
+          t.h1({ class: 'mb-4' }, 'To-do'),
+          t.div({ class: 'input-group mb-3' }, [
+            t.input({
+              id: 'todo-input',
+              type: 'text',
+              class: 'form-control',
+              placeholder: 'What needs doing?',
+              oninput: e => draft.set(e.target.value),
+              onkeydown: e => { if (e.key === 'Enter') { addTodo(); } },
+            }),
+            t.button({
+              type: 'button',
+              class: 'btn btn-primary',
+              onclick: addTodo,
+            }, 'Add'),
+          ]),
+          todos.transform(items => t.ul({ class: 'list-group mb-3' },
+            items.map(todoItem),
+          )),
+          computed(() => {
+            const left = todos.get().filter(item => !item.done).length;
+            const total = todos.get().length;
+            if (total === 0) { return null; }
+            return left === 0
+              ? t.p({ class: 'text-success small mb-0' }, 'All done!')
+              : t.p({ class: 'text-muted small mb-0' }, `${left} of ${total} remaining`);
+          }),
+        ]),
+      ]),
+    ]);
+
+    document.body.append(app.toElement());
+  </script>
+</head>
+<body>
+</body>
+</html>

@@ -2,7 +2,7 @@ export default function buildKensington({ elements }) {
   return `import * as allAttributes from './attributes.js';
 import getPrototypeMethods from './lib/get-prototype-methods.js';
 import showInvalid from './lib/show-invalid.js';
-import Signal, { computed, effect } from './lib/signal.js';
+import Signal from './lib/signal.js';
 import { camelToKebab } from './lib/text-utils.js';
 import CommentTag from './tag-classes/comment-tag.js';
 import ContentTag from './tag-classes/content-tag.js';
@@ -203,10 +203,11 @@ export default class Kensington {
    * t.ul([t.li('typed'), t.literal('<li>raw html</li>')]);
    */
   literal(str) {
-    if (typeof str !== 'string') {
+    const value = str instanceof Signal ? str.get() : str;
+    if (typeof value !== 'string') {
       throw new Error('literal() only accepts a string');
     }
-    if (/<script/i.test(str)) {
+    if (/<script/i.test(value)) {
       throw new Error(\`<script> tags are not allowed to be passed in literal html.  Use the .unsafeLiteral if you can vouch for the string\`);
     }
     return new LiteralTag(str);
@@ -234,8 +235,11 @@ export default class Kensington {
    * // -->
    */
   inlineComment(str) {
-    if (!['string', 'number'].includes(typeof str)) {
+    if (!['string', 'number'].includes(typeof str) && !(str instanceof Signal)) {
       throw new Error('inlineComment only accepts a string or number');
+    }
+    if (str instanceof Signal) {
+      return new CommentTag(str);
     }
     let text = str.toString();
     if (text.includes('--')) {
@@ -258,36 +262,5 @@ export default class Kensington {
     return `/** @returns {${returnType}} */\n  ${el.methodName} = this.create${el.tagType}Tag('${el.tag}', allAttributes.${el.attributesName});`;
   }).join('\n  ')}
 }
-
-/**
- * Creates a reactive signal. Pass as content or an attribute value — the DOM updates live.
- * @template T
- * @param {T} initial
- * @returns {Signal<T>}
- * @example
- * const count = signal(0);
- * document.body.append(t.div(count).toElement());
- * count.set(n => n + 1);
- */
-export function signal(initial) {
-  return new Signal(initial);
-}
-
-export { computed, effect };
-`;
-}
-
-export function buildAttributes({ elements, globalAttributes, globalEvents }) {
-  return `export const globalAttributes = {
-  ${globalAttributes.map(a => `'${a.name}': ${a.value},`).join('\n  ')}
-};
-
-export const globalEvents = {
-  ${globalEvents.map(a => `'${a}': [String, Function],`).join('\n  ')}
-};
-
-${elements.map(el =>
-  `export const ${el.attributesName} = ${el.attributes.length ? attributesObject(el.attributes) : '{}'};`,
-).join('\n')}
 `;
 }
