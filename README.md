@@ -82,4 +82,27 @@ const page = t.htmlWithDocType({ lang: 'en' }, [
 ]).toString();
 // or .toElement() in the browser to create a dom node
 ```
+## Reactive Data
+
+In the browser, import `signal`, `computed`, and `effect` to build reactive UIs. Pass a signal as content or an attribute value and the DOM updates live.
+
+```javascript
+import { t, signal, computed, effect } from 'kensington';
+
+const count = signal(0);
+const doubled = count.transform(n => n * 2);
+const label = computed(() => count.get() === 1 ? 'click' : 'clicks');
+
+effect(() => {
+  document.title = `${count.get()} ${label.get()}`;
+});
+
+const app = t.div([
+  t.p([count, ' ', label, ' — doubled: ', doubled]),
+  t.button({ type: 'button', onclick: () => count.set(n => n + 1) }, 'Click'),
+]);
+
+document.body.append(app.toElement());
+```
+
 **[Full documentation →](https://ryanlsimms.github.io/kensington)**
