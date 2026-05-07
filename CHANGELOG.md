@@ -16,6 +16,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `isValidNamespaceAttribute` no longer throws a `TypeError` when an attribute name consists entirely of uppercase letters or starts with one (e.g. `{ ABC: 'value' }`); it now reports a normal validation error.
 - `literal().toElement()` now returns a `DocumentFragment` instead of `firstChild`, so multi-root literals (`literal('<li>a</li><li>b</li>')`) append all nodes correctly instead of silently dropping all but the first.
 - `inlineComment` normalises `\r\n` and lone `\r` line endings in the comment text before formatting, so they no longer appear verbatim in the output.
+- `html-to-kensington`: grouped hyphenated attribute keys (e.g. `data-col-1`) are now quoted when they are not valid JS identifiers, preventing invalid output like `{ data: { col-1: "a" } }`.
+- `html-to-kensington`: the `style` attribute converter now handles semicolons inside quoted CSS values (e.g. `content: "a;b"`) without splitting on them.
 
 ## [0.15.1] - 2026-05-07
 

@@ -49,7 +49,7 @@ export function attrsToCode(attrs, maxLen) {
       const { prefix, members } = slot;
       if (members.length >= 2) {
         const innerPairs = members.map(({ name, value }) => {
-          const key = kebabToCamel(name.slice(prefix.length + 1));
+          const key = attrName(kebabToCamel(name.slice(prefix.length + 1)));
           if (BOOLEAN_ATTRS.has(name) && value === '') {
             return `${key}: true`;
           }

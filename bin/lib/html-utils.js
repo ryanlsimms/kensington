@@ -7,9 +7,35 @@ export function attrName(name) {
   return /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(camel) ? camel : JSON.stringify(name);
 }
 
+function splitDeclarations(css) {
+  const result = [];
+  let current = '';
+  let inStr = null;
+  for (const c of css) {
+    if (inStr) {
+      current += c;
+      if (c === inStr) {
+        inStr = null;
+      }
+    } else if (c === '"' || c === "'") {
+      inStr = c;
+      current += c;
+    } else if (c === ';') {
+      result.push(current);
+      current = '';
+    } else {
+      current += c;
+    }
+  }
+  if (current.trim()) {
+    result.push(current);
+  }
+  return result;
+}
+
 export function styleToCode(value) {
   const entries = [];
-  for (const decl of value.split(';')) {
+  for (const decl of splitDeclarations(value)) {
     const i = decl.indexOf(':');
     if (i === -1) {
       continue;

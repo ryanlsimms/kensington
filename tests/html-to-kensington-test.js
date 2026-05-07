@@ -80,6 +80,12 @@ describe('elements', () => {
       't.div({ style: { color: "red", fontSize: "14px" } })',
     );
   });
+  it('style attribute with semicolons inside quoted values', () => {
+    assert.strictEqual(
+      run('<div style="content: &quot;a;b&quot;; color: red"></div>').out,
+      't.div({ style: { content: "\\"a;b\\"", color: "red" } })',
+    );
+  });
 
   it('element with attributes and content', () => {
     assert.strictEqual(
@@ -160,6 +166,12 @@ describe('nested attributes', () => {
     assert.strictEqual(
       run('<div data-bs-toggle="collapse" data-bs-target="#panel"></div>').out,
       't.div({ data: { bsToggle: "collapse", bsTarget: "#panel" } })',
+    );
+  });
+  it('quotes inner keys that are not valid identifiers', () => {
+    assert.strictEqual(
+      run('<div data-col-1="a" data-col-2="b"></div>').out,
+      't.div({ data: { "col-1": "a", "col-2": "b" } })',
     );
   });
 
