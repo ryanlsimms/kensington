@@ -1,3 +1,4 @@
+import Signal from '../lib/signal.js';
 import showInvalid from '../lib/show-invalid.js';
 
 const TYPE_ERROR = 'inlineComment only accepts a string or number';
@@ -24,7 +25,8 @@ export default class CommentTag {
   }
 
   toString() {
-    const text = this._normalize(this.text);
+    const raw = this.text instanceof Signal ? this.text.get() : this.text;
+    const text = this._normalize(raw);
     if (text === null) { return ''; }
     if (/[\r\n]/.test(text)) {
       const normalized = text.replace(/\r\n?/g, '\n');
@@ -38,8 +40,15 @@ export default class CommentTag {
     if (typeof document === 'undefined') {
       throw new Error('toElement only supported in browser');
     }
-    const text = this._normalize(this.text);
-    if (text === null) { return document.createComment(''); }
-    return document.createComment(text);
+    if (!(this.text instanceof Signal)) {
+      const text = this._normalize(this.text);
+      if (text === null) { return document.createComment(''); }
+      return document.createComment(text);
+    }
+    const comment = document.createComment(this._normalize(this.text.get()) ?? '');
+    this.text.subscribe(val => {
+      comment.nodeValue = this._normalize(val) ?? '';
+    });
+    return comment;
   }
 }

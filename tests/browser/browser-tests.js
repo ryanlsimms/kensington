@@ -155,7 +155,40 @@ export function registerTests(bundle) {
     expect(result.middleValue).toBe('separator');
   });
 
+  test('signal as literal updates the DOM element live', async ({ page }) => {
+    await page.evaluate(async src => {
+      const { t, signal } = await import(src);
+      const html = signal('<p id="lit-a">first</p>');
+      document.body.append(t.literal(html).toElement());
+      html.set('<p id="lit-b">second</p>');
+    }, bundle);
+    await expect(page.locator('#lit-b')).toHaveText('second');
+    await expect(page.locator('#lit-a')).toHaveCount(0);
+  });
+
+  test('signal as inlineComment updates the comment node value live', async ({ page }) => {
+    const value = await page.evaluate(async src => {
+      const { t, signal } = await import(src);
+      const text = signal('before');
+      const div = t.div([t.p('x'), t.inlineComment(text), t.p('y')]).toElement();
+      document.body.append(div);
+      text.set('after');
+      return Array.from(div.childNodes)[1].nodeValue;
+    }, bundle);
+    expect(value).toBe('after');
+  });
+
   // ─── signal ────────────────────────────────────────────────────────────────
+
+  test('signal as one item in a mixed content array updates live', async ({ page }) => {
+    await page.evaluate(async src => {
+      const { t, signal } = await import(src);
+      const name = signal('world');
+      document.body.append(t.p({ id: 'mixed-content' }, ['hello ', name, '!']).toElement());
+      name.set('there');
+    }, bundle);
+    await expect(page.locator('#mixed-content')).toHaveText('hello there!');
+  });
 
   test('signal as text content updates the DOM text node live', async ({ page }) => {
     await page.evaluate(async src => {
@@ -256,6 +289,69 @@ export function registerTests(bundle) {
     await expect(page.locator('#keyed-list li').nth(0)).toHaveText('Apple');
     await expect(page.locator('#keyed-list li').nth(1)).toHaveText('Banana');
     await expect(page.locator('#keyed-list li').nth(2)).toHaveText('Cherry');
+  });
+
+  test('keyed list preserves unchanged DOM nodes when one item is replaced', async ({ page }) => {
+    const result = await page.evaluate(async src => {
+      const { t, signal, computed } = await import(src);
+      const items = signal([
+        { id: 1, label: 'one' },
+        { id: 2, label: 'two' },
+        { id: 3, label: 'three' },
+      ]);
+      const rows = computed(() =>
+        items.get().map(item => t.li({ dataKey: item.id }, item.label)),
+      );
+      document.body.append(t.ul({ id: 'partial-update' }, rows).toElement());
+
+      document.querySelectorAll('#partial-update li').forEach(el => {
+        el._sentinel = true;
+      });
+
+      // Replace item 2 with a new item — new id means new key, so a fresh node is created
+      items.set(list => [list[0], { id: 4, label: 'four' }, list[2]]);
+
+      return Array.from(document.querySelectorAll('#partial-update li')).map(el => el._sentinel === true);
+    }, bundle);
+
+    expect(result[0]).toBe(true); // id:1 — unchanged, same DOM node
+    expect(result[1]).toBe(false); // id:4 — new item, fresh DOM node
+    expect(result[2]).toBe(true); // id:3 — unchanged, same DOM node
+    await expect(page.locator('#partial-update li').nth(0)).toHaveText('one');
+    await expect(page.locator('#partial-update li').nth(1)).toHaveText('four');
+    await expect(page.locator('#partial-update li').nth(2)).toHaveText('three');
+  });
+
+  // ─── effect ────────────────────────────────────────────────────────────────
+
+  test('effect runs immediately and reflects initial signal value', async ({ page }) => {
+    await page.evaluate(async src => {
+      const { signal, effect } = await import(src);
+      const label = signal('hello');
+      effect(() => { document.title = label.get(); });
+    }, bundle);
+    await expect(page).toHaveTitle('hello');
+  });
+
+  test('effect re-runs when signal changes', async ({ page }) => {
+    await page.evaluate(async src => {
+      const { signal, effect } = await import(src);
+      const label = signal('hello');
+      effect(() => { document.title = label.get(); });
+      label.set('world');
+    }, bundle);
+    await expect(page).toHaveTitle('world');
+  });
+
+  test('effect tracks multiple signals', async ({ page }) => {
+    await page.evaluate(async src => {
+      const { signal, effect } = await import(src);
+      const first = signal('John');
+      const last = signal('Doe');
+      effect(() => { document.title = `${first.get()} ${last.get()}`; });
+      last.set('Smith');
+    }, bundle);
+    await expect(page).toHaveTitle('John Smith');
   });
 
   // ─── event listeners ───────────────────────────────────────────────────────
