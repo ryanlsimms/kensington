@@ -494,6 +494,36 @@ describe('argument validation', () => {
     const tt = new Kensington({ validationLevel: 'error' });
     assert.throws(() => tt.div(new Date()).toString());
   });
+  it('NaN attribute value triggers validation error', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => tt.div({ tabindex: NaN }), /tabindex/);
+  });
+  it('Infinity attribute value triggers validation error', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => tt.div({ tabindex: Infinity }), /tabindex/);
+  });
+  it('circular nested attribute object does not stack overflow', () => {
+    const circ = { id: 'x' };
+    circ.self = circ;
+    assert.doesNotThrow(() => t.div(circ).toString());
+  });
+  it('null-prototype object as style value renders without crashing', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    const style = Object.create(null);
+    style.color = 'red';
+    assert.strictEqual(tt.div({ id: 'x', style }).toString(), '<div id="x" style="color: red"></div>');
+  });
+  it('empty string attribute key is silently skipped', () => {
+    assert.strictEqual(t.div({ '': 'val', id: 'x' }).toString(), '<div id="x"></div>');
+  });
+  it('whitespace-only attribute key is silently skipped', () => {
+    assert.strictEqual(t.div({ '   ': 'val', id: 'x' }).toString(), '<div id="x"></div>');
+  });
+  it('NaN does not pass Number type validation in createCustomTag', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    const xEl = tt.createCustomTag('x-el', { count: Number });
+    assert.throws(() => xEl({ count: NaN }), /count/);
+  });
 });
 
 // ─── constructor validation ────────────────────────────────────────────────

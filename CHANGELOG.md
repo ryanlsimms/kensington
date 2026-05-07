@@ -37,6 +37,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The `Kensington` constructor now throws immediately for invalid `validationLevel` values (only `'off'`, `'warn'`, `'error'` are accepted), non-integer or negative `indentationLevel`, and non-function `logger`.
 - `createCustomTag` now throws immediately for a non-string or empty `tagName`, and for a non-plain-object `allowedAttributes`.
 - Passing a falsy value (`0`, `false`, `''`) as a second argument when the first is already content now throws, as does passing any defined third argument regardless of truthiness.
+- `NaN`, `Infinity`, and `-Infinity` as attribute values now trigger a validation error when `validationLevel` is `'warn'` or `'error'`. Previously they were silently omitted without any diagnostic.
+- A `Number`-typed attribute in `createCustomTag` (e.g. `{ count: Number }`) now rejects `NaN` and non-finite values. Previously `NaN` passed the `typeof value === 'number'` check and was silently dropped.
+- A null-prototype style object (e.g. `Object.create(null)` with CSS properties) is now accepted as a valid `style` value. Previously the `?.constructor === Object` check missed it, causing it to fail validation and then crash when building the error message.
+- A circular reference in a nested attribute object no longer causes a stack overflow. The circular path is silently skipped.
+- Empty or whitespace-only attribute key strings are now silently skipped in both serialisers, preventing malformed output like `<div ="val">`.
 
 ## [0.15.1] - 2026-05-07
 

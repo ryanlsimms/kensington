@@ -2,10 +2,14 @@ import he from './he.js';
 import { styleObjectToCss } from './style-utils.js';
 import { getAttrName } from './text-utils.js';
 
-export default function attributesArrayFromObject(obj, { attrsSet = new Map(), encode, prefix = '' } = {}) {
+export default function attributesArrayFromObject(obj, options = {}) {
+  const { attrsSet = new Map(), encode, prefix = '', seen = new WeakSet() } = options;
   const result = [];
 
   for (const attr of Object.keys(obj)) {
+    if (!attr.trim()) {
+      continue;
+    }
     const val = obj[attr];
     if ([false, null, undefined].includes(val) || (typeof val === 'number' && !isFinite(val))) {
       continue;
@@ -36,7 +40,11 @@ export default function attributesArrayFromObject(obj, { attrsSet = new Map(), e
       continue;
     }
     if (val !== null && typeof val === 'object') {
-      result.push(...attributesArrayFromObject(val, { attrsSet, encode, prefix: attrName }));
+      if (seen.has(val)) {
+        continue;
+      }
+      seen.add(val);
+      result.push(...attributesArrayFromObject(val, { attrsSet, encode, prefix: attrName, seen }));
       continue;
     }
     if (typeof val === 'function') {

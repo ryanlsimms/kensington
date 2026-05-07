@@ -61,7 +61,7 @@ export default class ContentTag {
     });
     if (invalidAttributeValues.length) {
       const attrString = invalidAttributeValues.map(([attr, value]) => {
-        if (attr === 'style' && value?.constructor === Object) {
+        if (attr === 'style' && value !== null && typeof value === 'object' && !Array.isArray(value)) {
           return `style="${styleObjectToCss(value, ([, v]) => !isValidStyleValue(v))}"`;
         }
         if (Array.isArray(value)) {
@@ -89,13 +89,16 @@ export default class ContentTag {
     if ([undefined, null].includes(value)) {
       return true;
     }
+    if (typeof value === 'number' && !isFinite(value)) {
+      return false;
+    }
     if (this.isValidNamespaceAttribute(attr)) {
       return true;
     }
     if (attr === 'id' && /^\d/.test(value)) {
       return false;
     }
-    if (attr === 'style' && value?.constructor === Object) {
+    if (attr === 'style' && value !== null && typeof value === 'object' && !Array.isArray(value)) {
       return Object.values(value).every(isValidStyleValue);
     }
     const type = this.allowedAttributeMap.get(attr) ?? this.allowedAttributeMap.get(camelToKebab(attr));
@@ -116,7 +119,8 @@ export default class ContentTag {
       return ['number', 'string'].includes(typeof value);
     }
     if (type === Number) {
-      return typeof value === 'number' || Number(value).toString() === value;
+      if (typeof value === 'number') { return isFinite(value); }
+      return Number(value).toString() === value;
     }
     if (typeof type === 'function') {
       return type(value);
