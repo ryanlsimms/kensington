@@ -9,14 +9,29 @@ import { loadFormatter } from './lib/formatter.js';
 import { readHtml } from './lib/read-html.js';
 
 const args = process.argv.slice(2);
-const copy = args.includes('--copy') || args.includes('-c');
-const file = args.find(a => !a.startsWith('-'));
 
 if (args.includes('--help') || args.includes('-h')) {
   const helpFile = join(dirname(fileURLToPath(import.meta.url)), './lib', 'help.txt');
   process.stdout.write(readFileSync(helpFile, 'utf8'));
   process.exit(0);
 }
+
+const KNOWN_FLAGS = new Set(['--copy', '-c', '--help', '-h']);
+const flags = args.filter(a => a.startsWith('-'));
+const positional = args.filter(a => !a.startsWith('-'));
+
+const unknown = flags.filter(f => !KNOWN_FLAGS.has(f));
+if (unknown.length) {
+  process.stderr.write(`Unknown option: ${unknown[0]}\nRun with --help for usage.\n`);
+  process.exit(1);
+}
+if (positional.length > 1) {
+  process.stderr.write(`Too many arguments. Expected at most one file.\nRun with --help for usage.\n`);
+  process.exit(1);
+}
+
+const copy = flags.includes('--copy') || flags.includes('-c');
+const file = positional[0];
 
 let html;
 if (file) {

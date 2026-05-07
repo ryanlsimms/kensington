@@ -66,6 +66,10 @@ describe('content tag', () => {
   it('ignores null, undefined, false, and empty string in content array', () => {
     assert.strictEqual(t.div([null, undefined, false, '', 'real']).toString(), '<div>real</div>');
   });
+  it('filters true from content', () => {
+    assert.strictEqual(t.div(true).toString(), '<div></div>');
+    assert.strictEqual(t.div([true, 'hello']).toString(), '<div>hello</div>');
+  });
   it('ignores false from short-circuit conditional content', () => {
     const show = false;
     assert.strictEqual(t.div([show && t.span('hi'), 'real']).toString(), '<div>real</div>');
@@ -205,6 +209,44 @@ describe('attributes', () => {
     assert.strictEqual(t.div({ class: [] }).toString(), '<div></div>');
     assert.strictEqual(t.div({ class: [false] }).toString(), '<div></div>');
   });
+  it('class array filters out non-string/non-number values', () => {
+    assert.strictEqual(t.div({ class: ['btn', {}, null, undefined] }).toString(), '<div class="btn"></div>');
+  });
+  it('class as plain object is omitted', () => {
+    assert.strictEqual(t.div({ class: { active: true } }).toString(), '<div></div>');
+  });
+  it('class as empty object is omitted', () => {
+    assert.strictEqual(t.div({ class: {} }).toString(), '<div></div>');
+  });
+  it('NaN attribute value is omitted', () => {
+    assert.strictEqual(t.div({ tabindex: NaN }).toString(), '<div></div>');
+  });
+  it('Infinity attribute value is omitted', () => {
+    assert.strictEqual(t.div({ tabindex: Infinity }).toString(), '<div></div>');
+  });
+  it('-Infinity attribute value is omitted', () => {
+    assert.strictEqual(t.div({ tabindex: -Infinity }).toString(), '<div></div>');
+  });
+  it('array as non-class attribute is omitted', () => {
+    assert.strictEqual(t.div({ id: ['a', 'b'] }).toString(), '<div></div>');
+  });
+  it('array as non-class attribute throws with validationLevel error', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.throws(
+      () => tt.div({ id: ['a', 'b'] }),
+      /id=\["a","b"\]/,
+    );
+  });
+  it('style as array is omitted', () => {
+    assert.strictEqual(t.div({ style: ['color:red'] }).toString(), '<div></div>');
+  });
+  it('style as array throws with validationLevel error', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.throws(
+      () => tt.div({ style: ['color:red'] }),
+      /style=\["color:red"\]/,
+    );
+  });
 
   describe('style as object', () => {
     it('converts camelCase keys to css properties', () => {
@@ -258,6 +300,18 @@ describe('attributes', () => {
     it('drops true values', () => {
       assert.strictEqual(
         t.div({ style: { color: true, fontWeight: 'bold' } }).toString(),
+        '<div style="font-weight: bold"></div>',
+      );
+    });
+    it('drops Infinity values', () => {
+      assert.strictEqual(
+        t.div({ style: { zIndex: Infinity, fontWeight: 'bold' } }).toString(),
+        '<div style="font-weight: bold"></div>',
+      );
+    });
+    it('drops -Infinity values', () => {
+      assert.strictEqual(
+        t.div({ style: { zIndex: -Infinity, fontWeight: 'bold' } }).toString(),
         '<div style="font-weight: bold"></div>',
       );
     });
@@ -355,6 +409,19 @@ describe('argument validation', () => {
     assert.strictEqual(t.div('content').toString(), '<div>content</div>');
     assert.strictEqual(t.div(['content']).toString(), '<div>content</div>');
   });
+  it('treats null-prototype object as attributes', () => {
+    const attrs = Object.create(null);
+    attrs.id = 'test';
+    assert.strictEqual(t.div(attrs).toString(), '<div id="test"></div>');
+  });
+  it('treats null-prototype object as attributes with content', () => {
+    const attrs = Object.create(null);
+    attrs.id = 'test';
+    assert.strictEqual(t.div(attrs, 'hello').toString(), '<div id="test">hello</div>');
+  });
+  it('treats object with own constructor property as attributes', () => {
+    assert.strictEqual(t.div({ constructor: 'custom', id: 'x' }).toString(), '<div constructor="custom" id="x"></div>');
+  });
   it('allows attributes only', () => {
     assert.strictEqual(t.div({ id: 'abc' }).toString(), '<div id="abc"></div>');
   });
@@ -368,12 +435,112 @@ describe('argument validation', () => {
   it('throws on two content arguments', () => {
     assert.throws(() => t.div('content', t.div('content')).toString());
   });
+  it('throws when first arg is content and second arg is falsy (0)', () => {
+    assert.throws(() => t.div('content', 0));
+  });
+  it('throws when first arg is content and second arg is false', () => {
+    assert.throws(() => t.div('content', false));
+  });
+  it('throws when first arg is content and second arg is empty string', () => {
+    assert.throws(() => t.div('content', ''));
+  });
   it('throws on three arguments', () => {
-    assert.throws(() => t.div({ id: 'something' }, t.div('content'), t.div('invalid argument')).toString());
+    assert.throws(() => t.div({ id: 'something' }, t.div('content'), t.div('invalid argument')));
+  });
+  it('throws on three arguments when third arg is falsy (0)', () => {
+    assert.throws(() => t.div({ id: 'something' }, 'content', 0));
+  });
+  it('throws on three arguments when third arg is false', () => {
+    assert.throws(() => t.div({ id: 'something' }, 'content', false));
   });
   it('throws on invalid content type', () => {
     const tt = new Kensington({ validationLevel: 'error' });
     assert.throws(() => tt.div(new Date()).toString());
+  });
+});
+
+// ─── constructor validation ────────────────────────────────────────────────
+
+describe('constructor validation', () => {
+  it('throws on invalid validationLevel', () => {
+    assert.throws(
+      () => new Kensington({ validationLevel: 'warning' }),
+      /validationLevel must be/,
+    );
+  });
+  it('throws on non-string validationLevel', () => {
+    assert.throws(
+      () => new Kensington({ validationLevel: 1 }),
+      /validationLevel must be/,
+    );
+  });
+  it('throws on negative indentationLevel', () => {
+    assert.throws(
+      () => new Kensington({ indentationLevel: -1 }),
+      /indentationLevel must be/,
+    );
+  });
+  it('throws on non-integer indentationLevel', () => {
+    assert.throws(
+      () => new Kensington({ indentationLevel: 2.5 }),
+      /indentationLevel must be/,
+    );
+  });
+  it('throws on non-number indentationLevel', () => {
+    assert.throws(
+      () => new Kensington({ indentationLevel: '2' }),
+      /indentationLevel must be/,
+    );
+  });
+  it('throws on non-function logger', () => {
+    assert.throws(
+      () => new Kensington({ logger: 'console.log' }),
+      /logger must be a function/,
+    );
+  });
+  it('throws on null logger', () => {
+    assert.throws(
+      () => new Kensington({ logger: null }),
+      /logger must be a function/,
+    );
+  });
+  it('accepts valid options without throwing', () => {
+    assert.doesNotThrow(() => new Kensington({ validationLevel: 'warn', indentationLevel: 4, logger: () => {} }));
+  });
+});
+
+// ─── createCustomTag validation ────────────────────────────────────────────
+
+describe('createCustomTag validation', () => {
+  it('throws on non-string tagName', () => {
+    assert.throws(
+      () => new Kensington().createCustomTag(42),
+      /tagName must be a non-empty string/,
+    );
+  });
+  it('throws on empty tagName', () => {
+    assert.throws(
+      () => new Kensington().createCustomTag(''),
+      /tagName must be a non-empty string/,
+    );
+  });
+  it('throws on null tagName', () => {
+    assert.throws(
+      () => new Kensington().createCustomTag(null),
+      /tagName must be a non-empty string/,
+    );
+  });
+  it('throws on null allowedAttributes', () => {
+    assert.throws(
+      () => new Kensington().createCustomTag('my-el', null),
+      /allowedAttributes must be a plain object/,
+    );
+  });
+  it('throws on array allowedAttributes', () => {
+    assert.throws(
+      () => new Kensington().createCustomTag('my-el', []),
+      /allowedAttributes must be a plain object/,
+    );
   });
 });
 
@@ -417,6 +584,12 @@ describe('function attributes in toString()', () => {
   it('accepts a string value for element-specific on* attributes with validationLevel error', () => {
     const tt = new Kensington({ validationLevel: 'error' });
     assert.doesNotThrow(() => tt.animate({ onbegin: 'handleBegin()' }).toString());
+  });
+  it('silently omits function for non-event attribute in attributeArray (DOM path)', () => {
+    const result = attributesArrayFromObject({ class: () => 'foo', onclick: () => {} });
+    // class fn is omitted; onclick fn is kept for addEventListener wiring
+    assert.ok(!result.some(([k]) => k === 'class'));
+    assert.ok(result.some(([k]) => k === 'onclick'));
   });
 });
 

@@ -7,7 +7,7 @@ export default function attributesStringFromObject(obj, { attrsSet = new Map(), 
 
   for (const attr of Object.keys(obj)) {
     const val = obj[attr];
-    if ([false, null, undefined].includes(val)) {
+    if ([false, null, undefined].includes(val) || (typeof val === 'number' && !isFinite(val))) {
       continue;
     }
     const attrName = getAttrName(attr, prefix, attrsSet);
@@ -25,19 +25,24 @@ export default function attributesStringFromObject(obj, { attrsSet = new Map(), 
       }
       continue;
     }
+    if (attr === 'class' && Array.isArray(val)) {
+      const classes = val
+        .filter(v => (typeof v === 'string' && v !== '') || (typeof v === 'number' && isFinite(v)))
+        .join(' ');
+      if (classes) {
+        if (result) { result += ' '; }
+        result += `${attrName}="${classes}"`;
+      }
+      continue;
+    }
+    if (Array.isArray(val) || (attr === 'class' && val?.constructor === Object)) {
+      continue;
+    }
     if (val?.constructor === Object) {
       const nested = attributesStringFromObject(val, { attrsSet, encode, prefix: attrName });
       if (nested) {
         if (result) { result += ' '; }
         result += nested;
-      }
-      continue;
-    }
-    if (attr === 'class' && Array.isArray(val)) {
-      const classes = val.filter(Boolean).join(' ');
-      if (classes) {
-        if (result) { result += ' '; }
-        result += `${attrName}="${classes}"`;
       }
       continue;
     }

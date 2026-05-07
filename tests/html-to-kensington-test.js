@@ -270,6 +270,19 @@ describe('error cases', () => {
   it('-h is an alias for --help', () => {
     assert.strictEqual(run('', ['-h']).status, 0);
   });
+
+  it('unknown flag exits with code 1 and descriptive message', () => {
+    const { status, err } = run('', ['--foo']);
+    assert.strictEqual(status, 1);
+    assert.ok(err.includes('Unknown option'));
+    assert.ok(err.includes('--foo'));
+  });
+
+  it('multiple positional arguments exits with code 1', () => {
+    const { status, err } = run('', ['file1.html', 'file2.html']);
+    assert.strictEqual(status, 1);
+    assert.ok(err.includes('Too many arguments'));
+  });
 });
 
 describe('file input', () => {

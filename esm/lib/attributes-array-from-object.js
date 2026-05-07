@@ -7,7 +7,7 @@ export default function attributesArrayFromObject(obj, { attrsSet = new Map(), e
 
   for (const attr of Object.keys(obj)) {
     const val = obj[attr];
-    if ([false, null, undefined].includes(val)) {
+    if ([false, null, undefined].includes(val) || (typeof val === 'number' && !isFinite(val))) {
       continue;
     }
     const attrName = getAttrName(attr, prefix, attrsSet);
@@ -23,20 +23,26 @@ export default function attributesArrayFromObject(obj, { attrsSet = new Map(), e
       }
       continue;
     }
-    if (val?.constructor === Object) {
-      result.push(...attributesArrayFromObject(val, { attrsSet, encode, prefix: attrName }));
-      continue;
-    }
     if (attr === 'class' && Array.isArray(val)) {
-      const classes = val.filter(Boolean).join(' ');
+      const classes = val
+        .filter(v => (typeof v === 'string' && v !== '') || (typeof v === 'number' && isFinite(v)))
+        .join(' ');
       if (classes) {
         result.push([attrName, classes]);
       }
       continue;
     }
-
+    if (Array.isArray(val) || (attr === 'class' && val?.constructor === Object)) {
+      continue;
+    }
+    if (val?.constructor === Object) {
+      result.push(...attributesArrayFromObject(val, { attrsSet, encode, prefix: attrName }));
+      continue;
+    }
     if (typeof val === 'function') {
-      result.push([attrName, val]);
+      if (attrName.startsWith('on')) {
+        result.push([attrName, val]);
+      }
       continue;
     }
     if (encode) {

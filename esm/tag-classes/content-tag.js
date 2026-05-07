@@ -23,7 +23,7 @@ function isValidContentItem(c, contentIsLiteral) {
 function collectContent(items) {
   const out = [];
   for (const c of [].concat(items)) {
-    if ([undefined, null, '', false].includes(c)) {
+    if ([undefined, null, '', false, true].includes(c)) {
       continue;
     }
     if (Array.isArray(c)) {
@@ -63,6 +63,9 @@ export default class ContentTag {
       const attrString = invalidAttributeValues.map(([attr, value]) => {
         if (attr === 'style' && value?.constructor === Object) {
           return `style="${styleObjectToCss(value, ([, v]) => !isValidStyleValue(v))}"`;
+        }
+        if (Array.isArray(value)) {
+          return `${attr}=${JSON.stringify(value)}`;
         }
         return `${attr}="${value}"`;
       }).join(', ');

@@ -18,6 +18,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `inlineComment` normalises `\r\n` and lone `\r` line endings in the comment text before formatting, so they no longer appear verbatim in the output.
 - `html-to-kensington`: grouped hyphenated attribute keys (e.g. `data-col-1`) are now quoted when they are not valid JS identifiers, preventing invalid output like `{ data: { col-1: "a" } }`.
 - `html-to-kensington`: the `style` attribute converter now handles semicolons inside quoted CSS values (e.g. `content: "a;b"`) without splitting on them.
+- `Object.create(null)` (null-prototype object) passed as the first argument to a tag method is now correctly treated as the attributes object. Previously it threw `Cannot convert object to primitive value` because the plain-object check used `?.constructor === Object`, which evaluates to `undefined` on a null-prototype object. The check now uses `Object.getPrototypeOf`.
+- An object with an own `constructor` property (e.g. `{ constructor: 'x', id: 'y' }`) is now correctly treated as attributes. Previously the own `constructor` property shadowed `Object.constructor`, causing the object to be treated as content.
+- `true` passed as content is now silently ignored, consistent with how `false` is handled. Both arise from conditional content patterns.
+- A function value on a non-event attribute (e.g. `{ class: () => 'foo' }`) is now omitted from the DOM attribute array used in `toElement()`, matching the existing `toString()` behaviour. Previously it was passed to `setAttribute`, which coerced it to the function's source code string.
+- `NaN`, `Infinity`, and `-Infinity` as attribute values are now silently omitted, matching the treatment of `null`/`undefined`/`false`. Previously they rendered literally as `"NaN"`/`"Infinity"`.
+- `class` attribute as a plain object (e.g. `{ class: { active: true } }`) is now omitted. Previously it generated a nonsense attribute like `class-active`.
+- Non-string/non-number entries in a `class` array (objects, `Symbol`, etc.) are now filtered out. Previously they produced `[object Object]` in the class string.
+- Arrays passed as a non-`class` attribute value (e.g. `{ id: ['a','b'] }`) are now omitted. With `validationLevel: 'warn'` or `'error'`, a validation message is raised; the message now shows the array (`id=["a","b"]`) rather than its coerced string form.
+- A `style` attribute set to an array is now omitted. Same validation behaviour as above.
+- `Infinity` and `-Infinity` in a `style` object are now omitted, matching how `NaN` was already handled.
+- The `Kensington` constructor now throws immediately for invalid `validationLevel` values (only `'off'`, `'warn'`, `'error'` are accepted), non-integer or negative `indentationLevel`, and non-function `logger`.
+- `createCustomTag` now throws immediately for a non-string or empty `tagName`, and for a non-plain-object `allowedAttributes`.
+- Passing a falsy value (`0`, `false`, `''`) as a second argument when the first is already content now throws, as does passing any defined third argument regardless of truthiness.
 
 ## [0.15.1] - 2026-05-07
 

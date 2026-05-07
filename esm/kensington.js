@@ -33,6 +33,15 @@ export default class Kensington {
     logger = console.log,
     validationLevel = 'off',
   } = {}) {
+    if (!['off', 'warn', 'error'].includes(validationLevel)) {
+      throw new Error(`validationLevel must be 'off', 'warn', or 'error'; got: ${JSON.stringify(validationLevel)}`);
+    }
+    if (typeof indentationLevel !== 'number' || !Number.isInteger(indentationLevel) || indentationLevel < 0) {
+      throw new Error(`indentationLevel must be a non-negative integer; got: ${JSON.stringify(indentationLevel)}`);
+    }
+    if (typeof logger !== 'function') {
+      throw new Error(`logger must be a function; got: ${typeof logger}`);
+    }
     if (allAttributes.__slim__ && validationLevel !== 'off') {
       throw new Error(`The slim build does not include attribute data. Set validationLevel: 'off' or use the full build.`);
     }
@@ -56,6 +65,12 @@ export default class Kensington {
    * }
    */
   createCustomTag(tagName, allowedAttributes = {}) {
+    if (typeof tagName !== 'string' || !tagName) {
+      throw new Error(`createCustomTag: tagName must be a non-empty string; got: ${JSON.stringify(tagName)}`);
+    }
+    if (allowedAttributes === null || typeof allowedAttributes !== 'object' || Array.isArray(allowedAttributes)) {
+      throw new Error(`createCustomTag: allowedAttributes must be a plain object; got: ${typeof allowedAttributes}`);
+    }
     const kebabAttributes = Object.fromEntries(Object.entries(allowedAttributes).map(([k,v]) => [camelToKebab(k), v]));
     return this.createTag(tagName, kebabAttributes, ContentTag, {
       includeGlobalAttributes: true,
@@ -137,12 +152,17 @@ export default class Kensington {
     return (attributesOrContent = null, content, thirdArg) => {
       let attributes = attributesOrContent;
 
-      if (thirdArg) {
+      if (thirdArg !== undefined) {
         throw new Error(`Too many arguments given for ${tagName}`);
       }
 
-      if (attributesOrContent?.constructor !== Object) {
-        if (content) {
+      // Use getPrototypeOf so null-prototype objects and objects with an own
+      // constructor property are still recognised as plain attribute objects.
+      const _proto = attributesOrContent !== null && typeof attributesOrContent === 'object'
+        ? Object.getPrototypeOf(attributesOrContent)
+        : -1;
+      if (_proto !== Object.prototype && _proto !== null) {
+        if (content !== undefined) {
           throw new Error(`Invalid arguments given for ${tagName}`);
         }
         attributes = {};
