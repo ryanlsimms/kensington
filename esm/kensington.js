@@ -1,7 +1,7 @@
 import * as allAttributes from './attributes.js';
 import getPrototypeMethods from './lib/get-prototype-methods.js';
 import showInvalid from './lib/show-invalid.js';
-import Signal, { computed, effect } from './lib/signal.js';
+import Signal from './lib/signal.js';
 import { camelToKebab } from './lib/text-utils.js';
 import CommentTag from './tag-classes/comment-tag.js';
 import ContentTag from './tag-classes/content-tag.js';
@@ -657,19 +657,3 @@ export default class Kensington {
   /** @returns {VoidTag} */
   wbr = this.createVoidTag('wbr', allAttributes.wbrAttributes);
 }
-
-/**
- * Creates a reactive signal. Pass as content or an attribute value — the DOM updates live.
- * @template T
- * @param {T} initial
- * @returns {Signal<T>}
- * @example
- * const count = signal(0);
- * document.body.append(t.div(count).toElement());
- * count.set(n => n + 1);
- */
-export function signal(initial) {
-  return new Signal(initial);
-}
-
-export { computed, effect };

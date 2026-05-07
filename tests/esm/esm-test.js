@@ -1065,6 +1065,24 @@ describe('signal', () => {
     items.set([t.li('a'), t.li('b'), t.li('c')]);
     assert.strictEqual(t.ul(items).toString(), '<ul>\n  <li>a</li>\n  <li>b</li>\n  <li>c</li>\n</ul>');
   });
+  it('signal as one item in a mixed content array snapshots current value in toString()', () => {
+    const s = signal('world');
+    assert.strictEqual(t.p(['hello ', s, '!']).toString(), '<p>\n  hello \n  world\n  !\n</p>');
+    s.set('there');
+    assert.strictEqual(t.p(['hello ', s, '!']).toString(), '<p>\n  hello \n  there\n  !\n</p>');
+  });
+  it('signal as literal content snapshots current value in toString()', () => {
+    const s = signal('<b>bold</b>');
+    assert.strictEqual(t.div(t.literal(s)).toString(), '<div>\n  <b>bold</b>\n</div>');
+    s.set('<i>italic</i>');
+    assert.strictEqual(t.div(t.literal(s)).toString(), '<div>\n  <i>italic</i>\n</div>');
+  });
+  it('signal as inlineComment content snapshots current value in toString()', () => {
+    const s = signal('before');
+    assert.strictEqual(t.inlineComment(s).toString(), '<!-- before -->');
+    s.set('after');
+    assert.strictEqual(t.inlineComment(s).toString(), '<!-- after -->');
+  });
 });
 
 // ─── signal.transform ──────────────────────────────────────────────────────
