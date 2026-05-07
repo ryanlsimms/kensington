@@ -10,7 +10,12 @@ export default function attributesStringFromObject(obj, options = {}) {
     if (!attr.trim()) {
       continue;
     }
-    const val = obj[attr];
+    let val;
+    try {
+      val = obj[attr];
+    } catch {
+      continue;
+    }
     if ([false, null, undefined].includes(val) || (typeof val === 'number' && !isFinite(val))) {
       continue;
     }
@@ -48,6 +53,7 @@ export default function attributesStringFromObject(obj, options = {}) {
       }
       seen.add(val);
       const nested = attributesStringFromObject(val, { attrsSet, encode, prefix: attrName, seen });
+      seen.delete(val);
       if (nested) {
         if (result) { result += ' '; }
         result += nested;

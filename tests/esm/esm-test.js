@@ -547,6 +547,20 @@ describe('argument validation', () => {
     circ.self = circ;
     assert.doesNotThrow(() => t.div(circ).toString());
   });
+  it('same nested object reused in two positions renders both', () => {
+    const shared = { toggle: 'collapse' };
+    assert.strictEqual(
+      t.div({ data: shared, aria: shared }).toString(),
+      '<div data-toggle="collapse" aria-toggle="collapse"></div>',
+    );
+  });
+  it('attribute with throwing getter is silently skipped', () => {
+    const obj = Object.defineProperty({ id: 'x' }, 'bad', {
+      get() { throw new Error('getter exploded'); },
+      enumerable: true,
+    });
+    assert.strictEqual(t.div(obj).toString(), '<div id="x"></div>');
+  });
   it('null-prototype object as style value renders without crashing', () => {
     const tt = new Kensington({ validationLevel: 'error' });
     const style = Object.create(null);
@@ -608,6 +622,12 @@ describe('constructor validation', () => {
       /indentationLevel must be/,
     );
   });
+  it('error message for Infinity indentationLevel shows Infinity not null', () => {
+    assert.throws(
+      () => new Kensington({ indentationLevel: Infinity }),
+      /got: Infinity/,
+    );
+  });
   it('throws on non-function logger', () => {
     assert.throws(
       () => new Kensington({ logger: 'console.log' }),
@@ -662,6 +682,13 @@ describe('createCustomTag validation', () => {
     assert.throws(
       () => new Kensington().createCustomTag('my-el', []),
       /allowedAttributes must be a plain object/,
+    );
+  });
+  it('invalid type spec error message names the attribute not the type value', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.throws(
+      () => tt.createCustomTag('x-el', { size: undefined }),
+      /size/,
     );
   });
 });

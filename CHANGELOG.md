@@ -42,6 +42,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A null-prototype style object (e.g. `Object.create(null)` with CSS properties) is now accepted as a valid `style` value. Previously the `?.constructor === Object` check missed it, causing it to fail validation and then crash when building the error message.
 - A circular reference in a nested attribute object no longer causes a stack overflow. The circular path is silently skipped.
 - Empty or whitespace-only attribute key strings are now silently skipped in both serialisers, preventing malformed output like `<div ="val">`.
+- `createCustomTag` type-spec validation error now names the offending attribute(s) rather than showing their type values (e.g. `undefined`) in the message.
+- The `indentationLevel` constructor error message no longer shows `null` when passed `Infinity` or `NaN`; it now uses `String()` rather than `JSON.stringify()`.
+- A nested attribute object shared across two keys (e.g. `{ data: obj, aria: obj }`) now renders correctly for both keys. Previously the second key was silently skipped because cycle detection permanently marked the object as visited.
+- An enumerable property with a throwing getter in an attribute object is now silently skipped rather than crashing.
 - `new Kensington(null)` no longer crashes with `Cannot read properties of null`; `null` is now treated the same as no options (all defaults).
 - A `Symbol` passed as an attribute value no longer crashes when `validationLevel` is `'warn'` or `'error'`; the validation error message now correctly shows e.g. `id="Symbol(x)"`.
 - `inlineComment` now handles text containing `"--"` (invalid in HTML comments) according to `validationLevel`: with `'error'` it throws, with `'warn'` it warns and strips the `--` sequences, and with `'off'` it strips them silently.

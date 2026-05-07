@@ -39,7 +39,7 @@ export default class Kensington {
       throw new Error(\`validationLevel must be 'off', 'warn', or 'error'; got: \${JSON.stringify(validationLevel)}\`);
     }
     if (typeof indentationLevel !== 'number' || !Number.isInteger(indentationLevel) || indentationLevel < 0) {
-      throw new Error(\`indentationLevel must be a non-negative integer; got: \${JSON.stringify(indentationLevel)}\`);
+      throw new Error(\`indentationLevel must be a non-negative integer; got: \${String(indentationLevel)}\`);
     }
     if (typeof logger !== 'function') {
       throw new Error(\`logger must be a function; got: \${typeof logger}\`);
@@ -128,12 +128,12 @@ export default class Kensington {
       namespace,
     } = options;
     const allowedAttributeMap = new Map(Object.entries(allowedAttributes));
-    const invalidTypes = [...allowedAttributeMap.values()].filter(type => {
+    const invalidTypes = [...allowedAttributeMap.entries()].filter(([, type]) => {
       if ([String, Number, Boolean].includes(type) || Array.isArray(type)) {
         return false;
       }
       return typeof type !== 'function' && typeof type !== 'string' && typeof type !== 'number';
-    });
+    }).map(([attr]) => attr);
     if (invalidTypes.length) {
       showInvalid(\`invalid types for attribute(s): \${invalidTypes.join(', ')} given for \${tagName}\`, this.validationLevel, this.logger);
     }

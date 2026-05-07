@@ -10,7 +10,12 @@ export default function attributesArrayFromObject(obj, options = {}) {
     if (!attr.trim()) {
       continue;
     }
-    const val = obj[attr];
+    let val;
+    try {
+      val = obj[attr];
+    } catch {
+      continue;
+    }
     if ([false, null, undefined].includes(val) || (typeof val === 'number' && !isFinite(val))) {
       continue;
     }
@@ -45,6 +50,7 @@ export default function attributesArrayFromObject(obj, options = {}) {
       }
       seen.add(val);
       result.push(...attributesArrayFromObject(val, { attrsSet, encode, prefix: attrName, seen }));
+      seen.delete(val);
       continue;
     }
     if (typeof val === 'function') {
