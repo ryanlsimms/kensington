@@ -8,6 +8,9 @@ export default class LiteralTag {
   }
 
   toElement() {
+    if (typeof document === 'undefined') {
+      throw new Error('toElement only supported in browser');
+    }
     const template = document.createElement('template');
     template.innerHTML = this.str;
     return template.content;

@@ -145,6 +145,10 @@ describe('literal content', () => {
     assert.strictEqual(t.pre(['line1', 'line2']).toString(), '<pre>line1\nline2</pre>');
     assert.strictEqual(t.script(['var a = 1;', 'var b = 2;']).toString(), '<script>var a = 1;\nvar b = 2;</script>');
   });
+  it('does not crash when Symbol is passed as content with validationLevel off', () => {
+    assert.doesNotThrow(() => t.script(Symbol('x')).toString());
+    assert.doesNotThrow(() => t.style(Symbol('x')).toString());
+  });
 });
 
 // ─── void tag ──────────────────────────────────────────────────────────────
@@ -447,6 +451,14 @@ describe('argument validation', () => {
   it('treats object with own constructor property as attributes', () => {
     assert.strictEqual(t.div({ constructor: 'custom', id: 'x' }).toString(), '<div constructor="custom" id="x"></div>');
   });
+  it('null-prototype object as an attribute value is omitted without crashing', () => {
+    assert.strictEqual(t.div({ id: Object.create(null) }).toString(), '<div></div>');
+  });
+  it('null-prototype object as a nested attribute value is flattened without crashing', () => {
+    const data = Object.create(null);
+    data.toggle = 'collapse';
+    assert.strictEqual(t.div({ data }).toString(), '<div data-toggle="collapse"></div>');
+  });
   it('allows attributes only', () => {
     assert.strictEqual(t.div({ id: 'abc' }).toString(), '<div id="abc"></div>');
   });
@@ -716,6 +728,12 @@ describe('other', () => {
   });
   it('toElement throws with helpful message in non-browser environment', () => {
     assert.throws(() => t.div().toElement(), { message: 'toElement only supported in browser' });
+  });
+  it('literal().toElement() throws with helpful message in non-browser environment', () => {
+    assert.throws(() => t.literal('<p>hi</p>').toElement(), { message: 'toElement only supported in browser' });
+  });
+  it('inlineComment().toElement() throws with helpful message in non-browser environment', () => {
+    assert.throws(() => t.inlineComment('test').toElement(), { message: 'toElement only supported in browser' });
   });
   it('warn validation level calls logger with message and stack', (test, done) => {
     let callCount = 0;

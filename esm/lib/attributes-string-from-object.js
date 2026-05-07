@@ -17,7 +17,7 @@ export default function attributesStringFromObject(obj, { attrsSet = new Map(), 
       result += attrName;
       continue;
     }
-    if (attr === 'style' && val?.constructor === Object) {
+    if (attr === 'style' && val !== null && typeof val === 'object' && !Array.isArray(val)) {
       const css = styleObjectToCss(val);
       if (css) {
         if (result) { result += ' '; }
@@ -35,10 +35,10 @@ export default function attributesStringFromObject(obj, { attrsSet = new Map(), 
       }
       continue;
     }
-    if (Array.isArray(val) || (attr === 'class' && val?.constructor === Object)) {
+    if (Array.isArray(val) || (attr === 'class' && val !== null && typeof val === 'object')) {
       continue;
     }
-    if (val?.constructor === Object) {
+    if (val !== null && typeof val === 'object') {
       const nested = attributesStringFromObject(val, { attrsSet, encode, prefix: attrName });
       if (nested) {
         if (result) { result += ' '; }

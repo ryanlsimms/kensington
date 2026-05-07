@@ -16,7 +16,7 @@ export default function attributesArrayFromObject(obj, { attrsSet = new Map(), e
       result.push([attrName, '']);
       continue;
     }
-    if (attr === 'style' && val?.constructor === Object) {
+    if (attr === 'style' && val !== null && typeof val === 'object' && !Array.isArray(val)) {
       const css = styleObjectToCss(val);
       if (css) {
         result.push([attrName, css]);
@@ -32,10 +32,10 @@ export default function attributesArrayFromObject(obj, { attrsSet = new Map(), e
       }
       continue;
     }
-    if (Array.isArray(val) || (attr === 'class' && val?.constructor === Object)) {
+    if (Array.isArray(val) || (attr === 'class' && val !== null && typeof val === 'object')) {
       continue;
     }
-    if (val?.constructor === Object) {
+    if (val !== null && typeof val === 'object') {
       result.push(...attributesArrayFromObject(val, { attrsSet, encode, prefix: attrName }));
       continue;
     }

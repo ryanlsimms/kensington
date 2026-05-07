@@ -13,6 +13,9 @@ export default class CommentTag {
   }
 
   toElement() {
+    if (typeof document === 'undefined') {
+      throw new Error('toElement only supported in browser');
+    }
     return document.createComment(this.text);
   }
 }

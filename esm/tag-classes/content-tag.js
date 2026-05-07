@@ -193,7 +193,7 @@ export default class ContentTag {
       let literalStr = '';
       for (const c of this.content) {
         if (literalStr) { literalStr += '\n'; }
-        literalStr += typeof c === 'string' && this.encodeContent ? he.encode(c) : c;
+        literalStr += typeof c === 'string' && this.encodeContent ? he.encode(c) : String(c);
       }
       str += literalStr;
     } else if (this.contentIsShort()) {
