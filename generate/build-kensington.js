@@ -28,12 +28,13 @@ export default class Kensington {
    * @param {number} [options.indentationLevel] - Spaces per indent level. Default: 2.
    * @param {function} [options.logger] - Function called with warning messages when \`validationLevel\` is \`'warn'\`. Default: \`console.log\`.
    */
-  constructor({
-    additionalNamespaces = [],
-    indentationLevel = 2,
-    logger = console.log,
-    validationLevel = 'off',
-  } = {}) {
+  constructor(options) {
+    const {
+      additionalNamespaces = [],
+      indentationLevel = 2,
+      logger = console.log,
+      validationLevel = 'off',
+    } = options ?? {};
     if (!['off', 'warn', 'error'].includes(validationLevel)) {
       throw new Error(\`validationLevel must be 'off', 'warn', or 'error'; got: \${JSON.stringify(validationLevel)}\`);
     }
@@ -235,7 +236,12 @@ export default class Kensington {
     if (!['string', 'number'].includes(typeof str)) {
       throw new Error('inlineComment only accepts a string or number');
     }
-    return new CommentTag(str.toString());
+    let text = str.toString();
+    if (text.includes('--')) {
+      showInvalid('inlineComment text must not contain "--"', this.validationLevel, this.logger);
+      text = text.replace(/--/g, '');
+    }
+    return new CommentTag(text);
   }
 
   /** @returns {ContentTag} */

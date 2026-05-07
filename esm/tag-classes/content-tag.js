@@ -23,14 +23,18 @@ function isValidContentItem(c, contentIsLiteral) {
   return !contentIsLiteral && (c instanceof ContentTag || c instanceof LiteralTag || c instanceof CommentTag);
 }
 
-function collectContent(items) {
+function collectContent(items, seen = new Set()) {
   const out = [];
   for (const c of [].concat(items)) {
     if ([undefined, null, '', false, true].includes(c)) {
       continue;
     }
     if (Array.isArray(c)) {
-      out.push(...collectContent(c));
+      if (seen.has(c)) {
+        continue;
+      }
+      seen.add(c);
+      out.push(...collectContent(c, seen));
       continue;
     }
     out.push(c);
@@ -70,7 +74,7 @@ export default class ContentTag {
         if (Array.isArray(value)) {
           return `${attr}=${JSON.stringify(value)}`;
         }
-        return `${attr}="${value}"`;
+        return `${attr}="${String(value)}"`;
       }).join(', ');
       const message = `invalid attribute \`${attrString}\` given for element \`${this.tagName}\``;
       showInvalid(message, this.validationLevel, this.logger);
@@ -98,7 +102,7 @@ export default class ContentTag {
     if (this.isValidNamespaceAttribute(attr)) {
       return true;
     }
-    if (attr === 'id' && /^\d/.test(value)) {
+    if (attr === 'id' && typeof value === 'string' && /^\d/.test(value)) {
       return false;
     }
     if (attr === 'style' && value !== null && typeof value === 'object' && !Array.isArray(value)) {

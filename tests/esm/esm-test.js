@@ -115,6 +115,21 @@ describe('content tag', () => {
   it('inlineComment throws on non-string/number', () => {
     assert.throws(() => t.inlineComment({}));
   });
+  it('inlineComment strips "--" when validationLevel is off', () => {
+    assert.strictEqual(t.inlineComment('a -- b').toString(), '<!-- a  b -->');
+  });
+  it('inlineComment throws when validationLevel is error and text contains "--"', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => tt.inlineComment('a -- b'), /must not contain/);
+  });
+  it('inlineComment warns and strips "--" when validationLevel is warn', (test, done) => {
+    let warned = false;
+    const tt = new Kensington({ validationLevel: 'warn', logger: () => { warned = true; } });
+    const result = tt.inlineComment('close --> tag').toString();
+    assert.strictEqual(result, '<!-- close > tag -->');
+    assert.ok(warned);
+    done();
+  });
   it('inlineComment between nested tags', () => {
     assert.strictEqual(
       t.div([t.p('hello'), t.inlineComment('separator'), t.p('world')]).toString(),
@@ -549,6 +564,15 @@ describe('argument validation', () => {
     const xEl = tt.createCustomTag('x-el', { count: Number });
     assert.throws(() => xEl({ count: NaN }), /count/);
   });
+  it('Symbol as attribute value gives a validation error without crashing', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => tt.div({ id: Symbol('x') }), /id="Symbol\(x\)"/);
+  });
+  it('circular content array does not stack overflow', () => {
+    const arr = ['a'];
+    arr.push(arr);
+    assert.doesNotThrow(() => t.div(arr).toString());
+  });
 });
 
 // ─── constructor validation ────────────────────────────────────────────────
@@ -598,6 +622,12 @@ describe('constructor validation', () => {
   });
   it('accepts valid options without throwing', () => {
     assert.doesNotThrow(() => new Kensington({ validationLevel: 'warn', indentationLevel: 4, logger: () => {} }));
+  });
+  it('accepts undefined options', () => {
+    assert.doesNotThrow(() => new Kensington(undefined).div('hi').toString());
+  });
+  it('treats null options same as no options', () => {
+    assert.strictEqual(new Kensington(null).div('hi').toString(), '<div>hi</div>');
   });
 });
 
