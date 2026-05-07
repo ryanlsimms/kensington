@@ -70,6 +70,19 @@ describe('content tag', () => {
     assert.strictEqual(t.div(true).toString(), '<div></div>');
     assert.strictEqual(t.div([true, 'hello']).toString(), '<div>hello</div>');
   });
+  it('throws on NaN content when validationLevel is error', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => tt.div(NaN).toString(), /Invalid content/);
+  });
+  it('throws on Infinity content when validationLevel is error', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => tt.div(Infinity).toString(), /Invalid content/);
+    assert.throws(() => tt.div(-Infinity).toString(), /Invalid content/);
+  });
+  it('renders NaN and Infinity as strings when validationLevel is off', () => {
+    assert.strictEqual(t.div(NaN).toString(), '<div>NaN</div>');
+    assert.strictEqual(t.div(Infinity).toString(), '<div>Infinity</div>');
+  });
   it('ignores false from short-circuit conditional content', () => {
     const show = false;
     assert.strictEqual(t.div([show && t.span('hi'), 'real']).toString(), '<div>real</div>');
@@ -370,6 +383,18 @@ describe('attributes', () => {
       assert.strictEqual(
         t.div({ style: { color: '', fontWeight: 'bold' } }).toString(),
         '<div style="font-weight: bold"></div>',
+      );
+    });
+    it('drops empty string property names', () => {
+      assert.strictEqual(
+        t.div({ style: { '': 'red', color: 'blue' } }).toString(),
+        '<div style="color: blue"></div>',
+      );
+    });
+    it('drops whitespace-only property names', () => {
+      assert.strictEqual(
+        t.div({ style: { '  ': 'red', color: 'blue' } }).toString(),
+        '<div style="color: blue"></div>',
       );
     });
     it('omits style attribute when all values are invalid', () => {

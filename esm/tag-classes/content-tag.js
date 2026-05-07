@@ -14,8 +14,11 @@ function isValidStyleValue(v) {
 }
 
 function isValidContentItem(c, contentIsLiteral) {
-  if (['string', 'number'].includes(typeof c)) {
+  if (typeof c === 'string') {
     return true;
+  }
+  if (typeof c === 'number') {
+    return isFinite(c);
   }
   return !contentIsLiteral && (c instanceof ContentTag || c instanceof LiteralTag || c instanceof CommentTag);
 }

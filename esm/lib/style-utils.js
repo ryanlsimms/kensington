@@ -1,6 +1,7 @@
 import { camelToKebab } from './text-utils.js';
 
-function isSerializableStyleValue([, v]) {
+function isSerializableStyleValue([k, v]) {
+  if (!k.trim()) { return false; }
   if (typeof v === 'number') { return isFinite(v); }
   return typeof v === 'string' && v !== '';
 }

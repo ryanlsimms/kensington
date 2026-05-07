@@ -42,6 +42,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A null-prototype style object (e.g. `Object.create(null)` with CSS properties) is now accepted as a valid `style` value. Previously the `?.constructor === Object` check missed it, causing it to fail validation and then crash when building the error message.
 - A circular reference in a nested attribute object no longer causes a stack overflow. The circular path is silently skipped.
 - Empty or whitespace-only attribute key strings are now silently skipped in both serialisers, preventing malformed output like `<div ="val">`.
+- `NaN`, `Infinity`, and `-Infinity` passed as content now raise a validation error when `validationLevel` is `'warn'` or `'error'`. With `validationLevel: 'off'` they render literally, consistent with the permissive contract of that mode.
+- Empty or whitespace-only property names in a `style` object (e.g. `{ '': 'red' }`) are now silently skipped, preventing invalid CSS like `": red"` in the output.
 
 ## [0.15.1] - 2026-05-07
 
