@@ -1,21 +1,31 @@
+import Signal from '../lib/signal.js';
+
 export default class CommentTag {
   constructor(text) {
     this.text = text;
   }
 
   toString() {
-    if (/[\r\n]/.test(this.text)) { // any line break → use multi-line format
-      const normalized = this.text.replace(/\r\n?/g, '\n'); // normalize CRLF and lone CR to LF
+    const text = this.text instanceof Signal ? this.text.get() : this.text;
+    if (/[\r\n]/.test(text)) {
+      const normalized = text.replace(/\r\n?/g, '\n');
       const indented = normalized.split('\n').map(line => `  ${line}`).join('\n');
       return `<!--\n${indented}\n-->`;
     }
-    return `<!-- ${this.text} -->`;
+    return `<!-- ${text} -->`;
   }
 
   toElement() {
     if (typeof document === 'undefined') {
       throw new Error('toElement only supported in browser');
     }
-    return document.createComment(this.text);
+    if (!(this.text instanceof Signal)) {
+      return document.createComment(this.text);
+    }
+    const comment = document.createComment(this.text.get());
+    this.text.subscribe(val => {
+      comment.nodeValue = val;
+    });
+    return comment;
   }
 }
