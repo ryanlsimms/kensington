@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [0.15.1] - 2026-05-07
 
 ### Added
 - `style` object attributes are now typed with [`csstype`](https://www.npmjs.com/package/csstype), providing autocomplete for CSS property names and values in TypeScript.
