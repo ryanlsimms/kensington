@@ -175,6 +175,34 @@ const svg = t.svg({ viewBox: '0 0 100 100' }, [
 ]).toElement();
 ```
 
+## Signals (browser)
+
+Import `signal`, `computed`, and `effect` from `'kensington'`. Pass a signal anywhere a static value is accepted -- content, attribute values, `.literal()`, or `.inlineComment()` -- and the DOM updates automatically when the value changes.
+
+```javascript
+import { t, signal, computed, effect } from 'kensington';
+
+const count = signal(0);
+const label = computed(() => count.get() === 1 ? 'item' : 'items');
+
+effect(() => { document.title = `${count.get()} ${label.get()}`; });
+
+const app = t.div([
+  t.p([count, ' ', label]),
+  t.button({ type: 'button', onclick: () => count.set(n => n + 1) }, 'Add'),
+]).toElement();
+```
+
+- `signal(initial)` -- creates a `Signal` with `.get()`, `.set(valueOrFn)`, and `.transform(fn)` methods
+- `signal.transform(fn)` -- shorthand for a single-source derived signal; equivalent to `computed(() => fn(signal.get()))`. Chainable: `count.transform(n => n * 2).transform(n => \`${n}px\`)`
+- `computed(fn)` -- read-only derived signal; re-evaluates when any signal read inside changes
+- `effect(fn)` -- runs immediately and re-runs when any signal read via `.get()` inside changes
+- **As content**: signal updates a text node or replaces a DOM subtree live
+- **As attribute value**: signal updates the attribute; boolean signals toggle attribute presence
+- **Array signals**: when a signal holds an array, add `dataKey` to items for DOM node reuse on reorder, addition, and removal
+- **`.literal(signal)`**: re-parses HTML and replaces the element on change
+- **`.inlineComment(signal)`**: updates the comment node `nodeValue` on change
+
 ## htmlWithDocType
 
 Same as `.html()` but prepends `<!DOCTYPE html>`. Use for full document output:

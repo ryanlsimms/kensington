@@ -29,12 +29,6 @@ Or in a browser without a build step, via CDN:
 </script>
 ```
 
-## TypeScript
-
-Attribute names and values are typed against the HTML/SVG/MathML spec, so you get autocomplete and catch mistakes at compile time.
-
-![Attribute validation error](docs/screenshot-ts-validation.png)
-
 ## Example
 
 ```javascript
@@ -124,3 +118,32 @@ const page = t.htmlWithDocType({ lang: 'en' }, [
   </body>
 </html>
 ```
+
+## Reactive Data
+
+In the browser, import `signal`, `computed`, and `effect` to build reactive UIs. Pass a signal as content or an attribute value and the DOM updates live.
+
+```javascript
+import { t, signal, computed, effect } from 'kensington';
+
+const count = signal(0);
+const doubled = count.transform(n => n * 2);
+const label = computed(() => count.get() === 1 ? 'click' : 'clicks');
+
+effect(() => {
+  document.title = `${count.get()} ${label.get()}`;
+});
+
+const app = t.div([
+  t.p([count, ' ', label, ' — doubled: ', doubled]),
+  t.button({ type: 'button', onclick: () => count.set(n => n + 1) }, 'Click'),
+]);
+
+document.body.append(app.toElement());
+```
+
+## TypeScript
+
+Attribute names and values are typed against the HTML/SVG/MathML spec, so you get autocomplete and catch mistakes at compile time.
+
+![Attribute validation error](docs/screenshot-ts-validation.png)

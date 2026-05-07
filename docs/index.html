@@ -295,6 +295,7 @@
     <li><a href="#validation">Validation</a></li>
     <li><a href="#custom-elements">Custom elements</a></li>
     <li><a href="#dom">Browser / DOM</a></li>
+    <li><a href="#signals">Reactive data</a></li>
     <li><a href="#typescript">TypeScript</a></li>
     <li><a href="#imports">Imports &amp; Types</a></li>
     <li><a href="#cli">HTML &rarr; Kensington</a></li>
@@ -621,6 +622,86 @@ document.body.append(button);
 const svg = t.svg({ viewBox: '0 0 100 100' }, [
   t.circle({ cx: 50, cy: 50, r: 40, fill: 'steelblue' }),
 ]).toElement();</code></pre>
+  </section>
+
+  <!-- ── Signals ──────────────────────────────────────────────────── -->
+
+  <section id="signals">
+    <h2>Signals</h2>
+
+    <p>Import <code>signal</code>, <code>computed</code>, and <code>effect</code> to build reactive UIs without a framework. Pass a signal anywhere a static value is accepted and the DOM updates automatically when the value changes.</p>
+
+    <pre><code class="language-javascript">import { t, signal, computed, effect } from 'kensington';
+
+const count = signal(0);
+const label = computed(() =&gt; count.get() === 1 ? 'item' : 'items');
+
+effect(() =&gt; { document.title = `${count.get()} ${label.get()}`; });
+
+const app = t.div([
+  t.p([count, ' ', label]),
+  t.button({ type: 'button', onclick: () =&gt; count.set(n =&gt; n + 1) }, 'Add'),
+]);
+
+document.body.append(app.toElement());</code></pre>
+
+    <ul>
+      <li><code>signal(initial)</code> &mdash; creates a reactive value
+        <ul>
+          <li><code>.get()</code> &mdash; returns the current value</li>
+          <li><code>.set(valueOrFn)</code> &mdash; sets a new value, or updates via function: <code>count.set(n =&gt; n + 1)</code></li>
+          <li><code>.transform(fn)</code> &mdash; returns a derived signal. Equivalent to <code>computed(() =&gt; fn(signal.get()))</code>. Chainable.</li>
+        </ul>
+      </li>
+      <li><code>computed(fn)</code> &mdash; read-only signal derived from others; re-evaluates automatically</li>
+      <li><code>effect(fn)</code> &mdash; runs immediately and re-runs when any signal read via <code>.get()</code> inside changes. Use for side effects: setting <code>document.title</code>, writing to <code>localStorage</code>, etc.</li>
+    </ul>
+
+    <pre><code class="language-javascript">const count = signal(0);
+const doubled = count.transform(n =&gt; n * 2);
+const label  = count.transform(n =&gt; n === 1 ? '1 item' : `${n} items`);
+
+// chainable
+const display = count.transform(n =&gt; n * 2).transform(n =&gt; `${n}px`);
+
+// convenient for passing a signal directly as a string attribute
+t.td(sortAsc.transform(String));</code></pre>
+
+    <h3>As attribute values</h3>
+
+    <pre><code class="language-javascript">const isLoading = signal(false);
+const cls = computed(() =&gt; isLoading.get() ? 'btn-secondary' : 'btn-primary');
+
+t.button({ class: cls, disabled: isLoading }, 'Save').toElement();
+
+isLoading.set(true);   // disables button and dims it while request is in flight
+isLoading.set(false);  // restores it when done</code></pre>
+
+    <h3>Keyed lists</h3>
+
+    <p>When a signal holds an array, add <code>dataKey</code> to items. The reconciler matches nodes by <code>data-key</code> and reuses DOM elements on reorder, addition, and removal, preserving focus, animations, and event listeners.</p>
+
+    <pre><code class="language-javascript">const items = signal([
+  { id: 1, name: 'Apple' },
+  { id: 2, name: 'Banana' },
+]);
+
+const rows = computed(() =&gt;
+  items.get().map(item =&gt; t.li({ dataKey: item.id }, item.name)),
+);
+
+t.ul(rows).toElement();</code></pre>
+
+    <h3>With .literal() and .inlineComment()</h3>
+
+    <pre><code class="language-javascript">const html = signal('&lt;b&gt;bold&lt;/b&gt;');
+t.div(t.literal(html)).toElement();
+// element is replaced when html changes
+
+const note = signal('draft');
+t.div([t.p('content'), t.inlineComment(note)]).toElement();
+// comment nodeValue updates live</code></pre>
+
   </section>
 
   <!-- ── TypeScript ─────────────────────────────────────────────── -->

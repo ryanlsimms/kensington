@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- `signal(initial)`, `computed(fn)`, and `effect(fn)` reactive primitives for browser use. Pass a signal as content, an attribute value, a `.literal()` argument, or an `.inlineComment()` argument and the DOM updates automatically when the value changes.
+- Keyed list reconciliation: when a signal holds an array, adding `dataKey` to items enables DOM node reuse on reorder, addition, and removal.
 - `additionalGlobalAttributes` constructor option. Accepts a plain object mapping attribute names to validator types (the same format used by `createCustomTag`). Attributes in this map are allowed on every element and validated against the provided type. camelCase keys are normalized to kebab-case.
 - `kensington/attributes` named exports (`buttonAttributes`, `divAttributes`, etc.) are now documented as public API. Import them to extend a built-in element's attribute set via `createCustomTag`.
 - `GlobalAttributes`, `GlobalEvents`, and `UniversalAttributes` are now exported types. Import them to annotate utility functions that accept attribute objects.
