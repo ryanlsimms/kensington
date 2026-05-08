@@ -20,7 +20,9 @@ export default class LiteralTag {
       throw new Error('toElement only supported in browser');
     }
     if (!(this.str instanceof Signal)) {
-      return parse(this.str);
+      const template = document.createElement('template');
+      template.innerHTML = this.str;
+      return template.content;
     }
     let node = parse(this.str.get());
     this.str.subscribe(val => {
