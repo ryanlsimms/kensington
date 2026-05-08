@@ -4,11 +4,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [1.0.0-beta.2] - 2026-05-12
+## [2.0.0-signals.0] - 2026-05-08
 
 ### Added
 - `signal(initial)`, `computed(fn)`, and `effect(fn)` reactive primitives for browser use. Pass a signal as content, an attribute value, a `.literal()` argument, or an `.inlineComment()` argument and the DOM updates automatically when the value changes.
 - Keyed list reconciliation: when a signal holds an array, adding `dataKey` to items enables DOM node reuse on reorder, addition, and removal.
+- `additionalGlobalAttributes` constructor option. Accepts a plain object mapping attribute names to validator types (the same format used by `createCustomTag`). Attributes in this map are allowed on every element and validated against the provided type. camelCase keys are normalized to kebab-case.
+- `kensington/attributes` named exports (`buttonAttributes`, `divAttributes`, etc.) are now documented as public API. Import them to extend a built-in element's attribute set via `createCustomTag`.
+- `GlobalAttributes`, `GlobalEvents`, and `UniversalAttributes` are now exported types. Import them to annotate utility functions that accept attribute objects.
+- Event handler attributes in `GlobalEvents` now use specific DOM event types (`MouseEvent`, `KeyboardEvent`, `FocusEvent`, etc.) instead of the generic `Event`.
+- The `style` attribute type now accepts objects with kebab-case property names (e.g. `{ 'background-color': 'red' }`) in addition to camelCase. Mixed objects are also valid.
+
+### Changed
+- `literal()` and `inlineComment()` validation now respects `validationLevel` instead of always throwing. With the default `'off'` level, invalid input (non-string, `<script>` tags, `--` in comments) is silently ignored. Use `validationLevel: 'error'` to throw on invalid input.
+- `UniversalAttributes` is now a type intersection (`GlobalAttributes & GlobalEvents & NameSpaceAttributes`) rather than a union. This is more correct: attribute objects satisfy all three simultaneously.
+
+## [1.0.0-beta.2] - 2026-05-12
+
+### Added
 - `additionalGlobalAttributes` constructor option. Accepts a plain object mapping attribute names to validator types (the same format used by `createCustomTag`). Attributes in this map are allowed on every element and validated against the provided type. camelCase keys are normalized to kebab-case.
 - `kensington/attributes` named exports (`buttonAttributes`, `divAttributes`, etc.) are now documented as public API. Import them to extend a built-in element's attribute set via `createCustomTag`.
 - `GlobalAttributes`, `GlobalEvents`, and `UniversalAttributes` are now exported types. Import them to annotate utility functions that accept attribute objects.
