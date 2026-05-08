@@ -5,7 +5,8 @@ import Signal from './signal.js';
 export default function attributesStringFromObject(obj, options = {}) {
   const { onFunction, encode } = options;
   let result = '';
-  for (let [name, val] of attributesArrayFromObject(obj, options)) {
+  for (const [name, rawVal] of attributesArrayFromObject(obj, options)) {
+    let val = rawVal;
     if (val instanceof Signal) {
       val = val.get();
       if (val === false || val === null || val === undefined) {

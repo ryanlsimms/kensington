@@ -1158,36 +1158,60 @@ describe('effect', () => {
     effect(() => { result = s.get() * 2; });
     assert.strictEqual(result, 2);
   });
-  it('re-runs when a dependency changes', () => {
+  it('re-runs when a dependency changes', async () => {
     const s = signal('a');
     const log = [];
     effect(() => { log.push(s.get()); });
     s.set('b');
+    await Promise.resolve();
     s.set('c');
+    await Promise.resolve();
     assert.deepStrictEqual(log, ['a', 'b', 'c']);
   });
-  it('tracks multiple signal dependencies', () => {
+  it('batches multiple synchronous set() calls into one effect run', async () => {
+    const s = signal(0);
+    const log = [];
+    effect(() => { log.push(s.get()); });
+    s.set(1);
+    s.set(2);
+    await Promise.resolve();
+    assert.deepStrictEqual(log, [0, 2]);
+  });
+  it('tracks multiple signal dependencies', async () => {
     const a = signal(1);
     const b = signal(10);
     let result = 0;
     effect(() => { result = a.get() + b.get(); });
     assert.strictEqual(result, 11);
     a.set(2);
+    await Promise.resolve();
     assert.strictEqual(result, 12);
     b.set(20);
+    await Promise.resolve();
     assert.strictEqual(result, 22);
   });
-  it('returns a stop function that prevents further runs', () => {
+  it('returns a stop function that prevents further runs', async () => {
     const s = signal(0);
     const log = [];
     const stop = effect(() => { log.push(s.get()); });
     s.set(1);
+    await Promise.resolve();
     stop();
     s.set(2);
     s.set(3);
+    await Promise.resolve();
     assert.deepStrictEqual(log, [0, 1]);
   });
-  it('cleans up stale conditional dependencies', () => {
+  it('stop() before microtask fires cancels the pending run', async () => {
+    const s = signal(0);
+    const log = [];
+    const stop = effect(() => { log.push(s.get()); });
+    s.set(1);
+    stop(); // cancels the deferred run before it fires
+    await Promise.resolve();
+    assert.deepStrictEqual(log, [0]);
+  });
+  it('cleans up stale conditional dependencies', async () => {
     const flag = signal(true);
     const a = signal('a');
     const b = signal('b');
@@ -1195,12 +1219,16 @@ describe('effect', () => {
     effect(() => { log.push(flag.get() ? a.get() : b.get()); });
     assert.deepStrictEqual(log, ['a']);
     flag.set(false);
+    await Promise.resolve();
     assert.deepStrictEqual(log, ['a', 'b']);
     a.set('a2');
+    await Promise.resolve();
     assert.deepStrictEqual(log, ['a', 'b']); // a is no longer tracked
     b.set('b2');
+    await Promise.resolve();
     assert.deepStrictEqual(log, ['a', 'b', 'b2']);
     flag.set(true);
+    await Promise.resolve();
     assert.deepStrictEqual(log, ['a', 'b', 'b2', 'a2']);
   });
 });

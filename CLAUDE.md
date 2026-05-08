@@ -79,7 +79,7 @@ Kensington is an HTML template library that generates HTML strings (or DOM eleme
 - `esm/tag-classes/literal-tag.js` — wraps raw HTML strings passed via `.literal()` / `.unsafeLiteral()`; accepts a `Signal` — `toElement()` re-parses and replaces the element on each change
 - `esm/tag-classes/comment-tag.js` — wraps HTML comments created via `.inlineComment()`; accepts a `Signal` — `toElement()` updates `nodeValue` in place on each change
 - `esm/tag-classes/html-with-doctype-tag.js` — subclass for `.htmlWithDocType()` that prepends `<!DOCTYPE html>`
-- `esm/lib/signal.js` — `Signal` class with `.get()`, `.set()`, `.subscribe()`, `.transform()`; exports `computed(fn)` and `effect(fn)`. `effect` returns a stop function and both `effect` and `computed` clean up stale subscriptions between runs.
+- `esm/lib/signal.js` — `Signal` class with `.get()`, `.set()`, `.subscribe()`, `.transform()`; exports `computed(fn)` and `effect(fn)`. `effect` returns a stop function, both `effect` and `computed` clean up stale subscriptions between runs, and `effect` runs are deferred via `queueMicrotask` so multiple synchronous `set()` calls batch into one re-run. `subscribe()` callbacks and `computed` updates remain synchronous.
 - `esm/lib/reconcile.js` — DOM reconciler for signal arrays; matches nodes by `data-key` attribute for efficient reordering, addition, and removal
 - `esm/lib/` — utilities: attribute string/array builders, indentation, content stringification, `he` encoder wrapper, camelCase↔kebab-case conversion
 
