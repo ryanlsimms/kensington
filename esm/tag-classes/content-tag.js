@@ -69,7 +69,7 @@ export default class ContentTag {
     if (invalidAttributeValues.length) {
       const attrString = invalidAttributeValues.map(([attr, value]) => {
         if (attr === 'style' && value !== null && typeof value === 'object' && !Array.isArray(value)) {
-          return `style="${styleObjectToCss(value, ([, v]) => !isValidStyleValue(v))}"`;
+          return `style="${styleObjectToCss(value, (_, v) => !isValidStyleValue(v))}"`;
         }
         if (Array.isArray(value)) {
           const parts = value.map(v => (typeof v === 'symbol' ? String(v) : JSON.stringify(v)));
@@ -191,20 +191,12 @@ export default class ContentTag {
   }
 
   attributeString() {
-    if (this.validationLevel !== 'off') {
-      for (const [attrName, v] of Object.entries(this.attributes)) {
-        if (typeof v === 'function') {
-          showInvalid(
-            `function value for attribute \`${attrName}\` is not supported in toString()`,
-            this.validationLevel,
-            this.logger,
-          );
-        }
-      }
-    }
+    const onFunction = this.validationLevel === 'off'
+      ? undefined
+      : attrName => showInvalid(`function value for attribute \`${attrName}\` is not supported in toString()`, this.validationLevel, this.logger);
     const attrString = attributesStringFromObject(
       this.attributes,
-      { attrsSet: this.allowedAttributeMap, encode: true },
+      { attrsSet: this.allowedAttributeMap, encode: true, onFunction },
     );
     return attrString ? ` ${attrString}` : '';
   }
@@ -227,7 +219,7 @@ export default class ContentTag {
       let literalStr = '';
       for (const c of this.content) {
         if (literalStr) { literalStr += '\n'; }
-        literalStr += typeof c === 'string' && this.encodeContent ? he.encode(c) : String(c);
+        literalStr += (typeof c === 'string' && this.encodeContent) ? he.encode(c) : String(c);
       }
       str += literalStr;
     } else if (this.contentIsShort()) {

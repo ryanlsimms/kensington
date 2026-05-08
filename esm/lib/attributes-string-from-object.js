@@ -1,78 +1,19 @@
-import he from './he.js';
-import { styleObjectToCss } from './style-utils.js';
-import { getAttrName } from './text-utils.js';
+import attributesArrayFromObject from './attributes-array-from-object.js';
 
 export default function attributesStringFromObject(obj, options = {}) {
-  const { attrsSet = new Map(), encode, prefix = '', seen = new WeakSet() } = options;
+  const { onFunction } = options;
   let result = '';
-
-  for (const attr of Object.keys(obj)) {
-    if (!attr.trim()) {
-      continue;
-    }
-    let val;
-    try {
-      val = obj[attr];
-    } catch {
-      continue;
-    }
-    if ([false, null, undefined].includes(val) || (typeof val === 'number' && !isFinite(val))) {
-      continue;
-    }
-    const attrName = getAttrName(attr, prefix, attrsSet);
-
-    if (val === true) {
-      if (result) { result += ' '; }
-      result += attrName;
-      continue;
-    }
-    if (attr === 'style' && val !== null && typeof val === 'object' && !Array.isArray(val)) {
-      const css = styleObjectToCss(val);
-      if (css) {
-        if (result) { result += ' '; }
-        result += `${attrName}="${css}"`;
-      }
-      continue;
-    }
-    if (attr === 'class' && Array.isArray(val)) {
-      const classes = val
-        .filter(v => (typeof v === 'string' && v !== '') || (typeof v === 'number' && isFinite(v)))
-        .join(' ');
-      if (classes) {
-        if (result) { result += ' '; }
-        result += `${attrName}="${classes}"`;
-      }
-      continue;
-    }
-    if (Array.isArray(val) || (attr === 'class' && val !== null && typeof val === 'object')) {
-      continue;
-    }
-    if (val !== null && typeof val === 'object') {
-      if (seen.has(val)) {
-        continue;
-      }
-      seen.add(val);
-      const nested = attributesStringFromObject(val, { attrsSet, encode, prefix: attrName, seen });
-      seen.delete(val);
-      if (nested) {
-        if (result) { result += ' '; }
-        result += nested;
-      }
-      continue;
-    }
+  for (const [name, val] of attributesArrayFromObject(obj, options)) {
     if (typeof val === 'function') {
+      if (onFunction) {
+        onFunction(name);
+      }
       continue;
     }
-
-    if (result) { result += ' '; }
-    result += attrName;
-    result += '="';
-    if (encode) {
-      result += he.encode(val.toString());
-    } else {
-      result += val.toString();
+    if (result) {
+      result += ' ';
     }
-    result += '"';
+    result += val === '' ? name : `${name}="${val}"`;
   }
   return result;
 }

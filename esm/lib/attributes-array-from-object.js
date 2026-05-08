@@ -41,7 +41,10 @@ export default function attributesArrayFromObject(obj, options = {}) {
       }
       continue;
     }
-    if (Array.isArray(val) || (attr === 'class' && val !== null && typeof val === 'object')) {
+    if (Array.isArray(val)) {
+      continue;
+    }
+    if (attr === 'class' && val !== null && typeof val === 'object') {
       continue;
     }
     if (val !== null && typeof val === 'object') {

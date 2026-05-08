@@ -1,6 +1,6 @@
 import { camelToKebab } from './text-utils.js';
 
-function isSerializableStyleValue([k, v]) {
+function isSerializableStyleValue(k, v) {
   if (!k.trim()) { return false; }
   if (typeof v === 'number') { return isFinite(v); }
   return typeof v === 'string' && v !== '';
@@ -15,7 +15,7 @@ export function styleObjectToCss(obj, filter = isSerializableStyleValue) {
     } catch {
       continue;
     }
-    if (filter([k, v])) {
+    if (filter(k, v)) {
       parts.push(`${camelToKebab(k)}: ${String(v)}`);
     }
   }
