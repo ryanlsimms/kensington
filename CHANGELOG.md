@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [2.0.0-signals.0] - 2026-05-08
 
 ### Added
 - `signal(initial)`, `computed(fn)`, and `effect(fn)` reactive primitives for browser use. Pass a signal as content, an attribute value, a `.literal()` argument, or an `.inlineComment()` argument and the DOM updates automatically when the value changes.

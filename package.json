@@ -1,6 +1,6 @@
 {
   "name": "kensington",
-  "version": "0.15.2",
+  "version": "2.0.0-signals.0",
   "description": "HTML/SVG/MathML template library for Node.js and the browser",
   "type": "module",
   "types": "./types.d.ts",
