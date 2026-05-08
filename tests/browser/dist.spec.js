@@ -1,11 +1,11 @@
-import { expect,test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
-import { registerTests } from './browser-tests.js';
+test.beforeEach(async ({ page }) => {
+  await page.goto('http://localhost:3000/');
+});
 
 for (const bundle of ['/dist/kensington.js', '/dist/kensington.min.js']) {
   test.describe(bundle, () => {
-    registerTests(bundle);
-
     test('validationLevel error throws on invalid attribute', async ({ page }) => {
       const threw = await page.evaluate(async src => {
         const { default: Kensington } = await import(src);
@@ -42,8 +42,6 @@ for (const bundle of ['/dist/kensington.js', '/dist/kensington.min.js']) {
 
 for (const bundle of ['/dist/kensington.slim.js', '/dist/kensington.slim.min.js']) {
   test.describe(bundle, () => {
-    registerTests(bundle);
-
     for (const level of ['error', 'warn']) {
       test(`throws when validationLevel is '${level}'`, async ({ page }) => {
         const threw = await page.evaluate(async ({ level: validationLevel, src }) => {

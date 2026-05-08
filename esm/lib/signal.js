@@ -9,8 +9,10 @@ export default class Signal {
   }
 
   get() {
-    if (currentEffect !== null) {
+    if (currentEffect !== null && !this.#subscribers.has(currentEffect)) {
       this.#subscribers.add(currentEffect);
+      const sub = currentEffect;
+      sub._cleanups.push(() => this.#subscribers.delete(sub));
     }
     return this.#value;
   }
@@ -21,7 +23,7 @@ export default class Signal {
       return;
     }
     this.#value = next;
-    for (const fn of this.#subscribers) {
+    for (const fn of [...this.#subscribers]) {
       fn(this.#value);
     }
   }
@@ -38,24 +40,46 @@ export default class Signal {
   }
 }
 
+function track(run, fn) {
+  for (const cleanup of run._cleanups) {
+    cleanup();
+  }
+  run._cleanups = [];
+  const prev = currentEffect;
+  currentEffect = run;
+  try {
+    return fn();
+  } finally {
+    currentEffect = prev;
+  }
+}
+
 /**
  * Runs `fn` immediately and re-runs it whenever any signal read via `.get()` inside changes.
- * Use for side effects: syncing to localStorage, updating the URL, fetching data, etc.
+ * Returns a stop function that tears down all subscriptions and prevents further runs.
  * @param {function(): void} fn
+ * @returns {function(): void} stop
  * @example
- * effect(() => { localStorage.setItem('sort', sortKey.get()); });
+ * const stop = effect(() => { localStorage.setItem('sort', sortKey.get()); });
+ * stop(); // unsubscribes from all tracked signals
  */
 export function effect(fn) {
+  let stopped = false;
   function run() {
-    const prev = currentEffect;
-    currentEffect = run;
-    try {
-      fn();
-    } finally {
-      currentEffect = prev;
+    if (stopped) {
+      return;
     }
+    track(run, fn);
   }
+  run._cleanups = [];
   run();
+  return () => {
+    stopped = true;
+    for (const cleanup of run._cleanups) {
+      cleanup();
+    }
+    run._cleanups = [];
+  };
 }
 
 /**
@@ -71,14 +95,9 @@ export function effect(fn) {
 export function computed(fn) {
   const s = new Signal(undefined);
   function update() {
-    const prev = currentEffect;
-    currentEffect = update;
-    try {
-      s.set(fn());
-    } finally {
-      currentEffect = prev;
-    }
+    track(update, () => s.set(fn()));
   }
+  update._cleanups = [];
   update();
   return s;
 }

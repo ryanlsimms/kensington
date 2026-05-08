@@ -25,30 +25,32 @@ export default defineConfig({
       use: { ...devices['Desktop Safari'] },
     },
 
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
-
-    /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    // },
+    /* Dist bundle tests — chromium only, one project per bundle */
+    {
+      name: 'dist:kensington.js',
+      testMatch: ['**/browser.spec.js', '**/signals.spec.js'],
+      use: { ...devices['Desktop Chrome'], bundle: '/dist/kensington.js' },
+    },
+    {
+      name: 'dist:kensington.min.js',
+      testMatch: ['**/browser.spec.js', '**/signals.spec.js'],
+      use: { ...devices['Desktop Chrome'], bundle: '/dist/kensington.min.js' },
+    },
+    {
+      name: 'dist:kensington.slim.js',
+      testMatch: ['**/browser.spec.js', '**/signals.spec.js'],
+      use: { ...devices['Desktop Chrome'], bundle: '/dist/kensington.slim.js' },
+    },
+    {
+      name: 'dist:kensington.slim.min.js',
+      testMatch: ['**/browser.spec.js', '**/signals.spec.js'],
+      use: { ...devices['Desktop Chrome'], bundle: '/dist/kensington.slim.min.js' },
+    },
   ],
   reporter: 'list',
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  testDir: './',
+  testDir: '../',
   timeout: 8000,
   use: {
     trace: 'on-first-retry',
@@ -56,7 +58,7 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: 'node ./server/html-server.js',
+    command: 'node ../server/html-server.js',
     reuseExistingServer: !process.env.CI,
     url: 'http://localhost:3000',
   },

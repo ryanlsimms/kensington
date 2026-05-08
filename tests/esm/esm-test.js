@@ -1197,4 +1197,30 @@ describe('effect', () => {
     b.set(20);
     assert.strictEqual(result, 22);
   });
+  it('returns a stop function that prevents further runs', () => {
+    const s = signal(0);
+    const log = [];
+    const stop = effect(() => { log.push(s.get()); });
+    s.set(1);
+    stop();
+    s.set(2);
+    s.set(3);
+    assert.deepStrictEqual(log, [0, 1]);
+  });
+  it('cleans up stale conditional dependencies', () => {
+    const flag = signal(true);
+    const a = signal('a');
+    const b = signal('b');
+    const log = [];
+    effect(() => { log.push(flag.get() ? a.get() : b.get()); });
+    assert.deepStrictEqual(log, ['a']);
+    flag.set(false);
+    assert.deepStrictEqual(log, ['a', 'b']);
+    a.set('a2');
+    assert.deepStrictEqual(log, ['a', 'b']); // a is no longer tracked
+    b.set('b2');
+    assert.deepStrictEqual(log, ['a', 'b', 'b2']);
+    flag.set(true);
+    assert.deepStrictEqual(log, ['a', 'b', 'b2', 'a2']);
+  });
 });
