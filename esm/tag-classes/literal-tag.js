@@ -1,4 +1,4 @@
-import Signal from '../lib/signal.js';
+import Signal, { effect } from '../lib/signal.js';
 import showInvalid from '../lib/show-invalid.js';
 
 const TYPE_ERROR = 'literal() only accepts a string';
@@ -48,10 +48,13 @@ export default class LiteralTag {
       template.innerHTML = this.str;
       return template.content;
     }
-    let node = parse(this.str.get());
-    this.str.subscribe(val => {
-      const newNode = parse(val);
-      node.replaceWith(newNode);
+    let node = null;
+    const sig = this.str;
+    effect(() => {
+      const newNode = parse(sig.get());
+      if (node !== null) {
+        node.replaceWith(newNode);
+      }
       node = newNode;
     });
     return node;
