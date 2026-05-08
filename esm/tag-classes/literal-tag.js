@@ -1,4 +1,4 @@
-import Signal from '../lib/signal.js';
+import Signal, { effect } from '../lib/signal.js';
 
 function parse(str) {
   const template = document.createElement('template');
@@ -19,17 +19,22 @@ export default class LiteralTag {
     if (typeof document === 'undefined') {
       throw new Error('toElement only supported in browser');
     }
-    if (!(this.str instanceof Signal)) {
-      const template = document.createElement('template');
-      template.innerHTML = this.str;
-      return template.content;
+    if (this.str instanceof Signal) {
+      let node = null;
+      const sig = this.str;
+      effect(() => {
+        const newNode = parse(sig.get());
+        if (node !== null) {
+          node.replaceWith(newNode);
+        }
+        node = newNode;
+      });
+      return node;
     }
-    let node = parse(this.str.get());
-    this.str.subscribe(val => {
-      const newNode = parse(val);
-      node.replaceWith(newNode);
-      node = newNode;
-    });
-    return node;
+
+    const template = document.createElement('template');
+    template.innerHTML = this.str;
+
+    return template.content;
   }
 }

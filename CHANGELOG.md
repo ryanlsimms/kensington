@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 - `effect(fn)` returns a stop function. Calling it unsubscribes from all tracked signals and prevents further runs. Useful for teardown in web component `disconnectedCallback`.
+- Multiple `signal.set()` calls in the same synchronous tick are now batched: `effect()` callbacks and DOM updates from signals re-run only once with the final value. `computed` updates remain synchronous.
 
 ### Fixed
 - `effect` and `computed` now unsubscribe from signals that were read in the previous run but not the current one. Previously, conditional dependencies accumulated across runs, causing effects to re-run for signals they no longer depended on.

@@ -22,6 +22,7 @@ test('signal as inlineComment updates the comment node value live', async ({ pag
     const div = t.div([t.p('x'), t.inlineComment(text), t.p('y')]).toElement();
     document.body.append(div);
     text.set('after');
+    await Promise.resolve();
     return Array.from(div.childNodes)[1].nodeValue;
   }, bundle);
   expect(value).toBe('after');
@@ -130,6 +131,7 @@ test('keyed list reuses DOM nodes when sorted', async ({ page, bundle }) => {
     bananaNode._sentinel = true;
 
     items.set(prev => [...prev].sort((a, b) => a.name.localeCompare(b.name)));
+    await Promise.resolve();
 
     const bananaAfter = document.querySelector('[data-key="1"]');
     return bananaAfter._sentinel === true;
@@ -159,6 +161,7 @@ test('keyed list preserves unchanged DOM nodes when one item is replaced', async
 
     // Replace item 2 with a new item — new id means new key, so a fresh node is created
     items.set(list => [list[0], { id: 4, label: 'four' }, list[2]]);
+    await Promise.resolve();
 
     return Array.from(document.querySelectorAll('#partial-update li')).map(el => el._sentinel === true);
   }, bundle);
@@ -169,6 +172,63 @@ test('keyed list preserves unchanged DOM nodes when one item is replaced', async
   await expect(page.locator('#partial-update li').nth(0)).toHaveText('one');
   await expect(page.locator('#partial-update li').nth(1)).toHaveText('four');
   await expect(page.locator('#partial-update li').nth(2)).toHaveText('three');
+});
+
+// ─── dom update batching ───────────────────────────────────────────────────
+
+test('multiple set() calls on one signal produce one attribute write', async ({ page, bundle }) => {
+  const writes = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const cls = signal('initial');
+    const el = t.div({ class: cls }).toElement();
+    document.body.append(el);
+    const log = [];
+    const orig = el.setAttribute.bind(el);
+    el.setAttribute = (name, val) => {
+      if (name === 'class') {
+        log.push(val);
+      }
+      orig(name, val);
+    };
+    cls.set('intermediate');
+    cls.set('final');
+    await Promise.resolve();
+    return log;
+  }, bundle);
+  expect(writes).toEqual(['final']);
+});
+
+test('intermediate content value is never written to the DOM', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const text = signal('initial');
+    const el = t.p(text).toElement();
+    document.body.append(el);
+    text.set('intermediate');
+    text.set('final');
+    const before = el.textContent;
+    await Promise.resolve();
+    return { before, after: el.textContent };
+  }, bundle);
+  expect(result.before).toBe('initial');
+  expect(result.after).toBe('final');
+});
+
+test('two signals on one element are both deferred and update together', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const cls = signal('foo');
+    const title = signal('hello');
+    const el = t.div({ class: cls, title }).toElement();
+    document.body.append(el);
+    cls.set('bar');
+    title.set('world');
+    const before = { cls: el.className, title: el.title };
+    await Promise.resolve();
+    return { before, after: { cls: el.className, title: el.title } };
+  }, bundle);
+  expect(result.before).toEqual({ cls: 'foo', title: 'hello' });
+  expect(result.after).toEqual({ cls: 'bar', title: 'world' });
 });
 
 // ─── effect ────────────────────────────────────────────────────────────────
@@ -210,6 +270,7 @@ test('effect stop function prevents further runs', async ({ page, bundle }) => {
     const calls = [];
     const stop = effect(() => { calls.push(s.get()); });
     s.set('b');
+    await Promise.resolve();
     stop();
     s.set('c');
     s.set('d');
@@ -227,8 +288,11 @@ test('effect cleans up stale conditional dependencies', async ({ page, bundle })
     const calls = [];
     effect(() => { calls.push(flag.get() ? a.get() : b.get()); });
     flag.set(false);
+    await Promise.resolve();
     a.set('a2'); // a is no longer tracked — should not trigger
+    await Promise.resolve();
     b.set('b2');
+    await Promise.resolve();
     return calls;
   }, bundle);
   expect(log).toEqual(['a', 'b', 'b2']);

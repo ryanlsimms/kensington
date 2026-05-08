@@ -1,4 +1,25 @@
 let currentEffect = null;
+const pending = new Set();
+let scheduled = false;
+
+function flush() {
+  scheduled = false;
+  while (pending.size > 0) {
+    const batch = [...pending];
+    pending.clear();
+    for (const fn of batch) {
+      fn();
+    }
+  }
+}
+
+function scheduleRun(fn) {
+  pending.add(fn);
+  if (!scheduled) {
+    scheduled = true;
+    queueMicrotask(flush);
+  }
+}
 
 export default class Signal {
   #value;
@@ -24,7 +45,11 @@ export default class Signal {
     }
     this.#value = next;
     for (const fn of [...this.#subscribers]) {
-      fn(this.#value);
+      if (fn._isEffect) {
+        scheduleRun(fn);
+      } else {
+        fn(this.#value);
+      }
     }
   }
 
@@ -72,9 +97,11 @@ export function effect(fn) {
     track(run, fn);
   }
   run._cleanups = [];
+  run._isEffect = true;
   run();
   return () => {
     stopped = true;
+    pending.delete(run);
     for (const cleanup of run._cleanups) {
       cleanup();
     }
