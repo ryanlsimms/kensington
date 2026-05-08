@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- `effect(fn)` returns a stop function. Calling it unsubscribes from all tracked signals and prevents further runs. Useful for teardown in web component `disconnectedCallback`.
+
+### Fixed
+- `effect` and `computed` now unsubscribe from signals that were read in the previous run but not the current one. Previously, conditional dependencies accumulated across runs, causing effects to re-run for signals they no longer depended on.
+
 ## [1.0.0-beta.4] - 2026-05-15
 
 ### Added
