@@ -29,6 +29,12 @@ Or in a browser without a build step, via CDN:
 </script>
 ```
 
+## TypeScript
+
+Attribute names and values are typed against the HTML/SVG/MathML spec, so you get autocomplete and catch mistakes at compile time.
+
+![Attribute validation error](docs/screenshot-ts-validation.png)
+
 ## Example
 
 ```javascript
