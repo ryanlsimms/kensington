@@ -4,7 +4,7 @@ import he from '../lib/he.js';
 import indent from '../lib/indent.js';
 import { reconcile } from '../lib/reconcile.js';
 import showInvalid from '../lib/show-invalid.js';
-import Signal from '../lib/signal.js';
+import Signal, { effect } from '../lib/signal.js';
 import stringifyContentArray from '../lib/stringify-content-array.js';
 import { styleObjectToCss } from '../lib/style-utils.js';
 import { camelToKebab, LINE_BREAK_TEST_REGEX, preserveSpaces } from '../lib/text-utils.js';
@@ -22,7 +22,9 @@ function isValidContentItem(c, contentIsLiteral) {
   if (typeof c === 'number') {
     return isFinite(c); // NaN/Infinity cannot be rendered as text
   }
-  return !contentIsLiteral && (c instanceof ContentTag || c instanceof LiteralTag || c instanceof CommentTag || c instanceof Signal); // literal tags (script/style) accept only raw strings, not child tag objects
+  // literal tags (script/style) accept only raw strings, not child tag objects
+  return !contentIsLiteral
+    && (c instanceof ContentTag || c instanceof LiteralTag || c instanceof CommentTag || c instanceof Signal);
 }
 
 function resolveSignalNode(val) {
@@ -35,8 +37,9 @@ function resolveSignalNode(val) {
   return document.createTextNode(String(val));
 }
 
-function applySignalAttribute(element, attrName, signal) {
-  function apply(val) {
+function applySignalAttribute(element, attrName, sig) {
+  effect(() => {
+    const val = sig.get();
     if (val === false || val === null || val === undefined) {
       element.removeAttribute(attrName);
     } else if (val === true) {
@@ -44,9 +47,7 @@ function applySignalAttribute(element, attrName, signal) {
     } else {
       element.setAttribute(attrName, String(val));
     }
-  }
-  apply(signal.get());
-  signal.subscribe(apply);
+  });
 }
 
 function collectContent(items, seen = new Set()) {
@@ -316,21 +317,22 @@ export default class ContentTag {
         continue;
       }
       if (node instanceof Signal) {
-        const initialVal = node.get();
-        if (Array.isArray(initialVal)) {
+        if (Array.isArray(node.get())) {
           const startAnchor = document.createComment('');
           const endAnchor = document.createComment('');
           element.append(startAnchor, endAnchor);
-          reconcile(element, startAnchor, endAnchor, initialVal);
-          node.subscribe(newItems => {
-            reconcile(element, startAnchor, endAnchor, newItems);
+          effect(() => {
+            reconcile(element, startAnchor, endAnchor, node.get());
           });
         } else {
-          let currentNode = resolveSignalNode(initialVal);
-          element.append(currentNode);
-          node.subscribe(val => {
-            const newNode = resolveSignalNode(val);
-            currentNode.replaceWith(newNode);
+          let currentNode = null;
+          effect(() => {
+            const newNode = resolveSignalNode(node.get());
+            if (currentNode === null) {
+              element.append(newNode);
+            } else {
+              currentNode.replaceWith(newNode);
+            }
             currentNode = newNode;
           });
         }

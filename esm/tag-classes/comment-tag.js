@@ -1,4 +1,4 @@
-import Signal from '../lib/signal.js';
+import Signal, { effect } from '../lib/signal.js';
 import showInvalid from '../lib/show-invalid.js';
 
 const TYPE_ERROR = 'inlineComment only accepts a string or number';
@@ -45,9 +45,15 @@ export default class CommentTag {
       if (text === null) { return document.createComment(''); }
       return document.createComment(text);
     }
-    const comment = document.createComment(this._normalize(this.text.get()) ?? '');
-    this.text.subscribe(val => {
-      comment.nodeValue = this._normalize(val) ?? '';
+    let comment = null;
+    const sig = this.text;
+    effect(() => {
+      const val = this._normalize(sig.get()) ?? '';
+      if (comment === null) {
+        comment = document.createComment(val);
+      } else {
+        comment.nodeValue = val;
+      }
     });
     return comment;
   }
