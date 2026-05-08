@@ -192,7 +192,7 @@ const app = t.div([
 - `signal(initial)` -- creates a `Signal` with `.get()`, `.set(valueOrFn)`, and `.transform(fn)` methods
 - `signal.transform(fn)` -- shorthand for a single-source derived signal; equivalent to `computed(() => fn(signal.get()))`. Chainable: `count.transform(n => n * 2).transform(n => \`${n}px\`)`
 - `computed(fn)` -- read-only derived signal; re-evaluates when any signal read inside changes
-- `effect(fn)` -- runs immediately and re-runs when any signal read via `.get()` inside changes
+- `effect(fn)` -- runs immediately and re-runs when any signal read via `.get()` inside changes. Returns a stop function: call it to unsubscribe from all tracked signals and prevent further runs (useful in `disconnectedCallback`)
 - **As content**: signal updates a text node or replaces a DOM subtree live
 - **As attribute value**: signal updates the attribute; boolean signals toggle attribute presence
 - **Array signals**: when a signal holds an array, add `dataKey` to items for DOM node reuse on reorder, addition, and removal
