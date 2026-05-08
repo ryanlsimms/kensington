@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
 <head>
   <meta charset="UTF-8">
   <title>To-do</title>
@@ -12,12 +12,18 @@
   <script type="module">
     import { t, signal, computed, effect } from '/esm/index.js';
 
-    const stored = JSON.parse(localStorage.getItem('todos') ?? '[]');
-    const todos  = signal(stored);
-    const draft  = signal('');
+    const stored   = JSON.parse(localStorage.getItem('todos') ?? '[]');
+    const todos    = signal(stored);
+    const draft    = signal('');
+    const darkMode = signal(localStorage.getItem('darkMode') === 'true');
 
     effect(() => {
       localStorage.setItem('todos', JSON.stringify(todos.get()));
+    });
+
+    effect(() => {
+      document.documentElement.setAttribute('data-bs-theme', darkMode.get() ? 'dark' : 'light');
+      localStorage.setItem('darkMode', darkMode.get());
     });
 
     let nextId = stored.length ? Math.max(...stored.map(item => item.id)) + 1 : 1;
@@ -91,10 +97,27 @@
       ]);
     }
 
+    function darkModeToggle() {
+      return t.div({ class: 'form-check form-switch mb-0' }, [
+        t.input({
+          type: 'checkbox',
+          class: 'form-check-input',
+          role: 'switch',
+          id: 'dark-mode-toggle',
+          checked: darkMode,
+          onchange: () => darkMode.set(!darkMode.get()),
+        }),
+        t.label({ for: 'dark-mode-toggle', class: 'form-check-label' }, 'Dark mode'),
+      ]);
+    }
+
     const app = t.div({ class: 'container mt-5' }, [
       t.div({ class: 'row justify-content-center' }, [
         t.div({ class: 'col-md-6 col-lg-5' }, [
-          t.h1({ class: 'mb-4' }, 'To-do'),
+          t.div({ class: 'd-flex align-items-center justify-content-between mb-4' }, [
+            t.h1({ class: 'mb-0' }, 'To-do'),
+            darkModeToggle(),
+          ]),
           t.div({ class: 'input-group mb-3' }, [
             t.input({
               id: 'todo-input',

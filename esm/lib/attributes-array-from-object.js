@@ -33,6 +33,10 @@ export default function attributesArrayFromObject(obj, options = {}) {
       }
       continue;
     }
+    if (val instanceof Signal) {
+      result.push([attrName, val]);
+      continue;
+    }
     if (attr === 'class' && Array.isArray(val)) {
       const classes = val
         .filter(v => (typeof v === 'string' && v !== '') || (typeof v === 'number' && isFinite(v)))
@@ -61,10 +65,6 @@ export default function attributesArrayFromObject(obj, options = {}) {
       if (attrName.startsWith('on')) { // only event handlers. String serialization can't represent functions
         result.push([attrName, val]);
       }
-      continue;
-    }
-    if (val instanceof Signal) {
-      result.push([attrName, val]);
       continue;
     }
     if (encode) {
