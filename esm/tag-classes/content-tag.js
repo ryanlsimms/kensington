@@ -10,7 +10,7 @@ import CommentTag from './comment-tag.js';
 import LiteralTag from './literal-tag.js';
 
 function isValidStyleValue(v) {
-  return [null, undefined, false].includes(v) || ['string', 'number'].includes(typeof v);
+  return [null, undefined, false].includes(v) || ['string', 'number'].includes(typeof v); // null/undefined/false are valid. They're silently omitted at render time, not errors
 }
 
 function isValidContentItem(c, contentIsLiteral) {
@@ -18,16 +18,16 @@ function isValidContentItem(c, contentIsLiteral) {
     return true;
   }
   if (typeof c === 'number') {
-    return isFinite(c);
+    return isFinite(c); // NaN/Infinity cannot be rendered as text
   }
-  return !contentIsLiteral && (c instanceof ContentTag || c instanceof LiteralTag || c instanceof CommentTag);
+  return !contentIsLiteral && (c instanceof ContentTag || c instanceof LiteralTag || c instanceof CommentTag); // literal tags (script/style) accept only raw strings, not child tag objects
 }
 
 function collectContent(items, seen = new Set()) {
   const out = [];
   for (const c of [].concat(items)) {
     if ([undefined, null, '', false, true].includes(c)) {
-      continue;
+      continue; // false/true arise from conditional content patterns: someCondition && t.span(...)
     }
     if (Array.isArray(c)) {
       if (seen.has(c)) {
@@ -35,6 +35,7 @@ function collectContent(items, seen = new Set()) {
       }
       seen.add(c);
       out.push(...collectContent(c, seen));
+      // no seen.delete: a content array appearing twice is always circular, not a legitimate reuse
       continue;
     }
     out.push(c);
@@ -46,7 +47,7 @@ export default class ContentTag {
   constructor(options) {
     this.tagName = options.tagName;
     this.attributes = options.attributes;
-    this.allowedAttributeMap = options.allowedAttributeMap ?? new Map();
+    this.allowedAttributeMap = options.allowedAttributeMap ?? new Map(); // empty Map fallback: all non-namespace attrs fail has(), so custom tags with no spec reject everything except namespaces
     this.contentIsLiteral = options.contentIsLiteral;
     this.indentationLevel = options.indentationLevel ?? 2;
     this.namespaces = options.namespaces;
@@ -64,20 +65,22 @@ export default class ContentTag {
     }
 
     const invalidAttributeValues = Object.entries(this.attributes).filter(([attr, value]) => {
-      return !unallowedAttributes.includes(attr) && !this.attributeValueIsValid(attr, value);
+      return !unallowedAttributes.includes(attr) && !this.attributeValueIsValid(attr, value); // skip value check for already-flagged attrs to avoid double-reporting
     });
     if (invalidAttributeValues.length) {
       const attrString = invalidAttributeValues.map(([attr, value]) => {
-        if (attr === 'style' && value !== null && typeof value === 'object' && !Array.isArray(value)) {
+        if (attr === 'style' && value !== null && typeof value === 'object' && !Array.isArray(value)) { // !Array.isArray: typeof [] === 'object'
           return `style="${styleObjectToCss(value, (_, v) => !isValidStyleValue(v))}"`;
         }
         if (Array.isArray(value)) {
+          // JSON.stringify(Symbol) returns undefined, which JSON array serialization renders as null. String() gives 'Symbol(x)'
           const parts = value.map(v => (typeof v === 'symbol' ? String(v) : JSON.stringify(v)));
           return `${attr}=[${parts.join(',')}]`;
         }
         try {
           return `${attr}="${String(value)}"`;
         } catch {
+          // null-proto objects and others with no toString throw when coerced to string
           return `${attr}=[non-serializable]`;
         }
       }).join(', ');
@@ -88,7 +91,7 @@ export default class ContentTag {
 
   isValidNamespaceAttribute(attr) {
     const match = attr.match(/[^A-Z|-]+/u); // characters before first uppercase or hyphen
-    return match !== null && this.namespaces.includes(match[0]);
+    return match !== null && this.namespaces.includes(match[0]); // null when attr starts with a hyphen or is all-uppercase
   }
 
   attributeIsValid(attr) {
@@ -104,19 +107,19 @@ export default class ContentTag {
     if (typeof value === 'symbol') {
       return false;
     }
-    if (typeof value === 'number' && !isFinite(value)) {
+    if (typeof value === 'number' && !isFinite(value)) { // NaN/Infinity are not valid attribute values
       return false;
     }
     if (this.isValidNamespaceAttribute(attr)) {
-      return true;
+      return true; // namespace attrs (data-*, aria-*) have no type spec in the map. Any value is accepted
     }
     if (attr === 'id' && typeof value === 'string' && /^\d/.test(value)) {
       return false;
     }
     if (attr === 'class' && Array.isArray(value)) {
-      return true;
+      return true; // must return early: the type spec for class is String, so validateAttributeByType would reject arrays
     }
-    if (attr === 'style' && value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    if (attr === 'style' && value !== null && typeof value === 'object' && !Array.isArray(value)) { // !Array.isArray: typeof [] === 'object'
       for (const k of Object.keys(value)) {
         let v;
         try {
@@ -136,7 +139,7 @@ export default class ContentTag {
 
   validateAttributeByType(type, value) {
     if (['number', 'string'].includes(typeof type)) {
-      return value === type;
+      return value === type; // literal enum spec: type: 'submit', type: 'ltr', etc.
     }
     if (type === Function) {
       return typeof value === 'function';
@@ -149,26 +152,27 @@ export default class ContentTag {
     }
     if (type === Number) {
       if (typeof value === 'number') { return isFinite(value); }
-      if (typeof value !== 'string') { return false; }
-      return Number(value).toString() === value;
+      if (typeof value !== 'string') { return false; } // Number(Symbol) throws. Only attempt coercion on strings
+      const n = Number(value);
+      return isFinite(n) && n.toString() === value; // round-trip rejects non-canonical ('042', ' 1') and NaN/Infinity strings
     }
     if (typeof type === 'function') {
-      return type(value);
+      return type(value); // custom validator: type spec can be an arbitrary predicate function
     }
 
     if (Array.isArray(type)) {
       return type.some(typeItem => this.validateAttributeByType(typeItem, value));
     }
-    return false;
+    return false; // type is undefined (attr not in the spec map). Treat as invalid
   }
 
   validateContent() {
     if (!this.content.every(c => isValidContentItem(c, this.contentIsLiteral))) {
-      throw new Error(`Invalid content passed to element \`${this.tagName}\``);
+      throw new Error(`Invalid content passed to element \`${this.tagName}\``); // always throws, regardless of validationLevel: wrong content types can't be gracefully skipped
     }
   }
 
-  contentIsShort() {
+  contentIsShort() { // fast path: avoids the heavier stringifyContentArray+indent pipeline for simple single-string content
     if (!this.content.length) {
       return true;
     }
@@ -183,7 +187,7 @@ export default class ContentTag {
       return false;
     }
 
-    if (content.length > 100) {
+    if (content.length > 100) { // numbers have no .length (undefined). undefined > 100 is false, so a single number always passes
       return false;
     }
 
@@ -202,7 +206,7 @@ export default class ContentTag {
   }
 
   attributeArray() {
-    return attributesArrayFromObject(this.attributes, { attrsSet: this.allowedAttributeMap, encode: false });
+    return attributesArrayFromObject(this.attributes, { attrsSet: this.allowedAttributeMap, encode: false }); // encode: false — setAttribute handles its own encoding. encode: true is only needed for toString()
   }
 
   toString() {
@@ -210,7 +214,7 @@ export default class ContentTag {
       this.validateContent();
     }
 
-    let str = '<';
+    let str = '<'; // chained += instead of a template literal: V8 rope optimization makes many short += faster than one large interpolation
     str += this.tagName;
     str += this.attributeString();
     str += '>';
@@ -219,7 +223,7 @@ export default class ContentTag {
       let literalStr = '';
       for (const c of this.content) {
         if (literalStr) { literalStr += '\n'; }
-        literalStr += (typeof c === 'string' && this.encodeContent) ? he.encode(c) : String(c);
+        literalStr += (typeof c === 'string' && this.encodeContent) ? he.encode(c) : String(c); // String(): he.encode requires a string. Literal content can include numbers
       }
       str += literalStr;
     } else if (this.contentIsShort()) {
@@ -233,7 +237,7 @@ export default class ContentTag {
     } else {
       let content = stringifyContentArray(this.content);
 
-      if (this.indentationLevel) {
+      if (this.indentationLevel) { // falsy (0) means no indentation. Skip the pass entirely rather than calling indent with level 0
         content = indent(content, this.indentationLevel);
       }
       str += '\n';
@@ -268,15 +272,15 @@ export default class ContentTag {
       }
     }
 
-    for (let node of this.content) {
+    for (let node of this.content) { // let, not const: node is reassigned to preserveSpaces(node) below
       if (node instanceof ContentTag || node instanceof LiteralTag || node instanceof CommentTag) {
         element.append(node.toElement());
         continue;
       }
-      if (!this.contentIsLiteral && typeof node === 'string') {
+      if (!this.contentIsLiteral && typeof node === 'string') { // literal tags (script/style) need exact spacing preserved. Only convert for regular tags
         node = preserveSpaces(node);
       }
-      element.append(document.createTextNode(String(node)));
+      element.append(document.createTextNode(String(node))); // String() handles Symbols. + or template literals would throw
     }
 
     return element;

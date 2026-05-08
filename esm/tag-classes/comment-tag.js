@@ -4,8 +4,8 @@ export default class CommentTag {
   }
 
   toString() {
-    if (/[\r\n]/.test(this.text)) {
-      const normalized = this.text.replace(/\r\n?/g, '\n');
+    if (/[\r\n]/.test(this.text)) { // any line break → use multi-line format
+      const normalized = this.text.replace(/\r\n?/g, '\n'); // normalize CRLF and lone CR to LF
       const indented = normalized.split('\n').map(line => `  ${line}`).join('\n');
       return `<!--\n${indented}\n-->`;
     }

@@ -13,6 +13,6 @@ export default class LiteralTag {
     }
     const template = document.createElement('template');
     template.innerHTML = this.str;
-    return template.content;
+    return template.content; // DocumentFragment preserves multi-root HTML
   }
 }

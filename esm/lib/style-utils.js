@@ -11,7 +11,7 @@ export function styleObjectToCss(obj, filter = isSerializableStyleValue) {
   for (const k of Object.keys(obj)) {
     let v;
     try {
-      v = obj[k];
+      v = obj[k]; // property access can throw if the style object has a getter that throws
     } catch {
       continue;
     }

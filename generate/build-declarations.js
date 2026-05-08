@@ -46,7 +46,7 @@ export class VoidTag extends ContentTag {
  */
 export class LiteralTag {
   toString(): string;
-  toElement(): ChildNode | null;
+  toElement(): DocumentFragment;
 }
 
 /**
@@ -85,12 +85,13 @@ ${elements.map(e => `type ${e.attributesTypeName} = ${attributesType(e)};`).join
 
 /**
  * Valid content for any tag method: a string, number, tag instance, or an array of those.
- * Falsy values (\`null\`, \`undefined\`, \`''\`) are silently ignored.
+ * \`null\`, \`undefined\`, \`false\`, \`true\`, and \`''\` are silently ignored, so conditional
+ * patterns like \`condition && t.span('text')\` work without casting.
  *
  * @example
  * t.ul([t.li('one'), t.li(2), t.li(t.span('three'))]);
  */
-export type Content = ContentTag | VoidTag | LiteralTag | CommentTag | string | number | (ContentTag | VoidTag | LiteralTag | CommentTag | string | number)[];
+export type Content = ContentTag | VoidTag | LiteralTag | CommentTag | string | number | boolean | null | undefined | (ContentTag | VoidTag | LiteralTag | CommentTag | string | number | boolean | null | undefined)[];
 
 type UniversalAttributes = NameSpaceAttributes | GlobalAttributes | GlobalEvents;
 
@@ -114,16 +115,17 @@ type PrimitiveConstructor = StringConstructor | NumberConstructor | BooleanConst
 type Primitive = string | number | boolean | Function;
 type AttributeValue = PrimitiveConstructor | Primitive | (PrimitiveConstructor | Primitive)[];
 type CamelCase<S extends string> = S extends \`\${infer Head}-\${infer Rest}\` ? \`\${Head}\${Capitalize<CamelCase<Rest>>}\` : S;
+type KebabCase<S extends string> = S extends \`\${infer H}\${infer T}\` ? H extends Uppercase<H> ? H extends Lowercase<H> ? \`\${H}\${KebabCase<T>}\` : \`-\${Lowercase<H>}\${KebabCase<T>}\` : \`\${H}\${KebabCase<T>}\` : S;
 
 /**
  * HTML/SVG/MathML template engine. Every tag is a method that accepts optional attributes
- * and/or content, returning a tag object that serialises to formatted HTML via \`.toString()\`
+ * and/or content, returning a tag object that serializes to formatted HTML via \`.toString()\`
  * or to a live DOM node via \`.toElement()\`.
  *
  * Attribute rules:
  * - camelCase keys convert to kebab-case: \`{ dataBsToggle: 'x' }\` → \`data-bs-toggle="x"\`
  * - nested objects flatten to kebab-case: \`{ data: { id: '1' } }\` → \`data-id="1"\`
- * - boolean attributes: \`{ checked: true }\` → \`checked\`; \`{ checked: false }\` → omitted
+ * - boolean attributes: \`{ checked: true }\` → \`checked\`. \`{ checked: false }\` → omitted
  * - \`class\` accepts a string or string array: \`{ class: ['a', 'b'] }\` → \`class="a b"\`
  *
  * @example
@@ -170,11 +172,11 @@ export default class Kensington {
   createCustomTag<A extends Record<string, AttributeValue> = Record<string, AttributeValue>>(
     tagName: string,
     allowedAttributes?: A
-  ): ContentMethod<{ [K in keyof A as K | CamelCase<K & string>]?: unknown }>
+  ): ContentMethod<{ [K in keyof A as K | CamelCase<K & string> | KebabCase<K & string>]?: unknown }>
 
   /**
-   * Embeds a raw HTML string verbatim into the output (HTML-encoded when used as text content).
-   * Use inside any tag's content array to mix typed and raw HTML.
+   * Embeds a raw HTML string verbatim into the output.
+   * Throws if the string contains a \`<script>\` tag — use \`.unsafeLiteral()\` for trusted HTML that includes scripts.
    *
    * @example
    * t.ul([t.li('typed'), t.literal('<li>raw html</li>')]).toString();

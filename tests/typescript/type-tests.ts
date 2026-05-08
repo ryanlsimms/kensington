@@ -156,6 +156,13 @@ t.div(t.literal('<hr>'));
 const content: Content = [t.p('a'), 'text', 42];
 t.section(content);
 
+// conditional content patterns — false/null/undefined are silently dropped at runtime
+const show = true;
+t.div(show && t.span('visible'));
+t.div([show && t.span('a'), 'text']);
+t.div(show ? t.span('yes') : null);
+t.div([show ? t.p('yes') : null, 'fallback']);
+
 // ─── method signatures ───────────────────────────────────────────────────────
 
 t.a({ href: '/path' }, 'link text');
@@ -179,6 +186,14 @@ t.myCard();
 
 // @ts-expect-error - 'danger' is not a valid card-type
 t.myCard({ 'card-type': 'danger' });
+
+// camelCase keys also accept their kebab-case equivalent
+class HyphenEngine extends Kensington {
+  el = this.createCustomTag('x-el', { hyphenatedAttribute: String });
+}
+const ht = new HyphenEngine();
+ht.el({ hyphenatedAttribute: 'a' });
+ht.el({ 'hyphenated-attribute': 'a' });
 
 t.simpleWidget();
 t.simpleWidget('content');

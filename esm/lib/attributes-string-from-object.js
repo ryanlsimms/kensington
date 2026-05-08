@@ -13,7 +13,7 @@ export default function attributesStringFromObject(obj, options = {}) {
     if (result) {
       result += ' ';
     }
-    result += val === '' ? name : `${name}="${val}"`;
+    result += val === '' ? name : `${name}="${val}"`; // '' encodes a boolean attribute (true → '' in array builder)
   }
   return result;
 }

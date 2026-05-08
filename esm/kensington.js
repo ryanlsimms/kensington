@@ -158,7 +158,7 @@ export default class Kensington {
       }
 
       // Use getPrototypeOf so null-prototype objects and objects with an own
-      // constructor property are still recognised as plain attribute objects.
+      // constructor property are still recognized as plain attribute objects.
       const _proto = attributesOrContent !== null && typeof attributesOrContent === 'object'
         ? Object.getPrototypeOf(attributesOrContent)
         : -1;
