@@ -61,7 +61,7 @@ See [CLAUDE.md](./CLAUDE.md) for a full description of the codebase. The short v
 
 ## Releasing
 
-Add changes under `## [Unreleased]` in `CHANGELOG.md` as you work, then run the release script. The script requires a clean working tree and an `## [Unreleased]` section in `CHANGELOG.md`. It bumps the version, stamps the changelog, commits, tags, pushes, and creates a GitHub Release. GitHub Actions then publishes to npm automatically.
+Add changes under `## [Unreleased]` in `CHANGELOG.md` as you work, then run the release script. The script requires a clean working tree. If `CHANGELOG.md` has an `## [Unreleased]` section, it is stamped with the new version and date. It bumps the version, commits, tags, pushes, and creates a GitHub Release. GitHub Actions then publishes to npm automatically.
 
 **Stable releases** (from `master`, 0.x line):
 
@@ -79,7 +79,14 @@ scripts/release.sh prerelease        # 1.0.0-beta.0 → 1.0.0-beta.1
 scripts/release.sh premajor rc       # → 1.0.0-rc.0
 ```
 
-Prereleases are published to npm under the `beta` (or specified preid) dist-tag, so `npm install kensington` stays on the latest stable. Users opt in with `npm install kensington@beta`.
+**Named prerelease lines** (e.g. the `signals` branch, 2.x line — pass the preid as a second argument):
+
+```bash
+scripts/release.sh premajor signals  # 1.x.x → 2.0.0-signals.0
+scripts/release.sh prerelease signals # 2.0.0-signals.0 → 2.0.0-signals.1
+```
+
+Prereleases are published to npm under the preid as the dist-tag (`beta`, `signals`, etc.), so `npm install kensington` stays on the latest stable. Users opt in with `npm install kensington@beta` or `npm install kensington@signals`.
 
 ## npm token rotation
 

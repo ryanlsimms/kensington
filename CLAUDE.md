@@ -49,7 +49,7 @@ scripts/release.sh major
 scripts/release.sh major
 ```
 
-`release.sh` requires a clean working tree and an `## [Unreleased]` section in `CHANGELOG.md`. It bumps the version, stamps the changelog, commits, tags, pushes, and creates a GitHub release.
+`release.sh` requires a clean working tree. If `CHANGELOG.md` has an `## [Unreleased]` section, it is stamped with the new version and date. It bumps the version, stamps the changelog, commits, tags, pushes, and creates a GitHub release.
 
 **Branches**: `master` is the 0.x stable line. `next` is the 1.0 line. Cherry-pick fixes from `master` → `next` as needed.
 

@@ -28,11 +28,6 @@ if [[ -n "$(git status --porcelain)" ]]; then
   exit 1
 fi
 
-if ! grep -q "^## \[Unreleased\]" CHANGELOG.md; then
-  echo "Error: no [Unreleased] section found in CHANGELOG.md — add one before releasing"
-  exit 1
-fi
-
 TOKEN_UPDATED=$(gh secret list 2>/dev/null | awk '/^NPM_TOKEN/ { print $2 }')
 if [[ -n "$TOKEN_UPDATED" ]]; then
   TOKEN_EPOCH=$(date -jf "%Y-%m-%dT%H:%M:%SZ" "$TOKEN_UPDATED" +%s 2>/dev/null)
