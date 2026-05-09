@@ -18,6 +18,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `.literal(signal).toElement()` now correctly supports multi-root HTML (e.g. multiple `<li>` elements). Previously only the first root node was inserted.
 - Signal-driven attributes and content no longer retain a strong reference to their host DOM element. Effects self-stop when the element is garbage-collected, preventing memory leaks in long-lived applications.
 - Errors thrown inside `computed(fn)` are now surfaced asynchronously via `queueMicrotask` rather than being silently swallowed, so they appear in the browser console.
+- `signal.transform(fn)` now tracks all signals read inside `fn`, not just the source signal. Previously, additional signals read by the transform function were silently ignored when they changed.
+- A signal used as element content can now freely switch between an array value and a non-array value. Previously the rendering path was locked to the type of the initial value, causing silent failures when the type changed.
 
 ## [2.0.0-signals.0] - 2026-05-08
 

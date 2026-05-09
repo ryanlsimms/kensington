@@ -174,6 +174,38 @@ test('keyed list preserves unchanged DOM nodes when one item is replaced', async
   await expect(page.locator('#partial-update li').nth(2)).toHaveText('three');
 });
 
+test('signal content switches from scalar to array and renders all items', async ({ page, bundle }) => {
+  await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const content = signal('loading');
+    document.body.append(t.ul({ id: 'switch-scalar-to-arr' }, content).toElement());
+    content.set([t.li('a'), t.li('b'), t.li('c')]);
+  }, bundle);
+  await expect(page.locator('#switch-scalar-to-arr li')).toHaveCount(3);
+  await expect(page.locator('#switch-scalar-to-arr li').nth(0)).toHaveText('a');
+});
+
+test('signal content switches from array to scalar and renders the value', async ({ page, bundle }) => {
+  await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const content = signal([t.li('a'), t.li('b')]);
+    document.body.append(t.p({ id: 'switch-arr-to-scalar' }, content).toElement());
+    content.set('done');
+  }, bundle);
+  await expect(page.locator('#switch-arr-to-scalar')).toHaveText('done');
+  await expect(page.locator('#switch-arr-to-scalar li')).toHaveCount(0);
+});
+
+test('signal content switches from array to null and clears the DOM region', async ({ page, bundle }) => {
+  await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const content = signal([t.li('a'), t.li('b')]);
+    document.body.append(t.ul({ id: 'switch-arr-to-null' }, content).toElement());
+    content.set(null);
+  }, bundle);
+  await expect(page.locator('#switch-arr-to-null li')).toHaveCount(0);
+});
+
 // ─── dom update batching ───────────────────────────────────────────────────
 
 test('multiple set() calls on one signal produce one attribute write', async ({ page, bundle }) => {
