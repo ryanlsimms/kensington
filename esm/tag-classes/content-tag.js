@@ -1,5 +1,6 @@
 import attributesArrayFromObject from '../lib/attributes-array-from-object.js';
 import attributesStringFromObject from '../lib/attributes-string-from-object.js';
+import { trackForStop } from '../lib/dom-tracker.js';
 import he from '../lib/he.js';
 import indent from '../lib/indent.js';
 import { reconcile } from '../lib/reconcile.js';
@@ -41,6 +42,7 @@ function applySignalAttribute(element, attrName, sig) {
       el.setAttribute(attrName, String(val));
     }
   });
+  return () => e.stop();
 }
 
 function collectContent(items, seen = new Set()) {
@@ -123,6 +125,7 @@ export default class ContentTag {
   }
 
   attributeValueIsValid(attr, value) {
+    if (value instanceof Signal) { return true; }
     if ([undefined, null].includes(value)) {
       return true;
     }
@@ -192,9 +195,10 @@ export default class ContentTag {
   }
 
   validateContent() {
-    if (!this.content.every(c => isValidContentItem(c, this.contentIsLiteral))) {
-      throw new Error(`Invalid content passed to element \`${this.tagName}\``); // always throws, regardless of validationLevel: wrong content types can't be gracefully skipped
-    }
+    const invalid = this.content.filter(c => !isValidContentItem(c, this.contentIsLiteral));
+    if (!invalid.length) { return; }
+    showInvalid(`Invalid content passed to element \`${this.tagName}\``, this.validationLevel, this.logger);
+    this.content = this.content.filter(c => isValidContentItem(c, this.contentIsLiteral));
   }
 
   contentIsShort() { // fast path: avoids the heavier stringifyContentArray+indent pipeline for simple single-string content
@@ -236,9 +240,7 @@ export default class ContentTag {
   }
 
   toString() {
-    if (this.validationLevel !== 'off') {
-      this.validateContent();
-    }
+    this.validateContent();
 
     let str = '<'; // chained += instead of a template literal: V8 rope optimization makes many short += faster than one large interpolation
     str += this.tagName;
@@ -287,6 +289,7 @@ export default class ContentTag {
     if (typeof document === 'undefined') {
       throw new Error('toElement only supported in browser');
     }
+    this.validateContent();
     let element;
     if (this.namespace) {
       element = document.createElementNS(this.namespace, this.tagName);
@@ -294,11 +297,13 @@ export default class ContentTag {
       element = document.createElement(this.tagName);
     }
 
+    const stops = [];
+
     for (const [attrName, attrValue] of this.attributeArray()) {
       if (attrName.startsWith('on') && typeof attrValue === 'function') {
         element.addEventListener(attrName.replace(/^on/, ''), attrValue);
       } else if (attrValue instanceof Signal) {
-        applySignalAttribute(element, attrName, attrValue);
+        stops.push(applySignalAttribute(element, attrName, attrValue));
       } else {
         element.setAttribute(attrName, attrValue);
       }
@@ -320,12 +325,17 @@ export default class ContentTag {
           const val = node.get();
           reconcile(el, startAnchor, endAnchor, Array.isArray(val) ? val : [val]);
         });
+        stops.push(() => e.stop());
         continue;
       }
       if (!this.contentIsLiteral && typeof node === 'string') { // literal tags (script/style) need exact spacing preserved. Only convert for regular tags
         node = preserveSpaces(node);
       }
       element.append(document.createTextNode(String(node))); // String() handles Symbols. + or template literals would throw
+    }
+
+    if (stops.length > 0) {
+      trackForStop(element, () => { for (const stop of stops) { stop(); } });
     }
 
     return element;
