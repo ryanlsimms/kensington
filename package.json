@@ -89,7 +89,8 @@
     "node": "23.9.0"
   },
   "simple-git-hooks": {
-    "pre-commit": "npm run build && git add esm/kensington.js esm/attributes.js types.d.ts attributes.d.ts && npx lint-staged"
+    "pre-commit": "npm run build && git add esm/kensington.js esm/attributes.js types.d.ts attributes.d.ts && npx lint-staged",
+    "post-checkout": "if [ \"$3\" = \"1\" ]; then node generate/bin/build-cjs.js && node generate/bin/build-browser.js; fi"
   },
   "lint-staged": {
     "*.js": "eslint"
