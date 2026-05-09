@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [2.0.0-signals.1] - 2026-05-09
 
 ### Added
 - `effect(fn)` returns `{ stop() }`. Calling `e.stop()` unsubscribes from all tracked signals and prevents further runs. Useful for teardown in web component `disconnectedCallback`.
