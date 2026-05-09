@@ -84,7 +84,7 @@ const page = t.htmlWithDocType({ lang: 'en' }, [
 ```
 ## Reactive Data
 
-In the browser, import `signal`, `computed`, and `effect` to build reactive UIs. Pass a signal as content or an attribute value and the DOM updates live.
+In the browser, import `signal`, `computed`, and `effect` to build reactive UIs. Pass a signal as content or an attribute value and the DOM updates live.  This is not intended to be a replacement for more fully-featured front-end-frameworks. It is intended to be simple to learn and work for most use-cases.
 
 ```javascript
 import { t, signal, computed, effect } from 'kensington';
