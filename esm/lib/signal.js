@@ -59,12 +59,6 @@ export default class Signal {
     return () => this.#subscribers.delete(fn);
   }
 
-  transform(fn) {
-    const derived = new Signal(fn(this.get()));
-    this.subscribe(v => derived.set(fn(v)));
-    return derived;
-  }
-
   stop() {
     const fn = stopFns.get(this);
     if (fn !== undefined) {
@@ -153,3 +147,10 @@ export function computed(fn) {
   });
   return s;
 }
+
+// Defined here rather than in the class body because transform calls computed, and computed
+// must be defined after Signal (it creates one). Putting this inside the class would reference
+// computed before its definition, triggering no-use-before-define.
+Signal.prototype.transform = function transform(fn) {
+  return computed(() => fn(this.get()));
+};
