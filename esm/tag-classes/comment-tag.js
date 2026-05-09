@@ -40,19 +40,22 @@ export default class CommentTag {
     if (typeof document === 'undefined') {
       throw new Error('toElement only supported in browser');
     }
-    if (!(this.text instanceof Signal)) {
-      const text = this._normalize(this.text);
-      if (text === null) { return document.createComment(''); }
-      return document.createComment(text);
+    if (this.text instanceof Signal) {
+      const sig = this.text;
+      const comment = document.createComment('');
+      const ref = new WeakRef(comment);
+      const e = effect(() => {
+        const c = ref.deref();
+        if (!c) { e.stop(); return; }
+        const text = this._normalize(sig.get());
+        if (text === null) { return; }
+        c.nodeValue = text;
+      });
+      return comment;
     }
-    const sig = this.text;
-    const comment = document.createComment(this._normalize(sig.get()) ?? '');
-    const ref = new WeakRef(comment);
-    const e = effect(() => {
-      const c = ref.deref();
-      if (!c) { e.stop(); return; }
-      c.nodeValue = this._normalize(sig.get()) ?? '';
-    });
-    return comment;
+
+    const text = this._normalize(this.text);
+    if (text === null) { return document.createComment(''); }
+    return document.createComment(text);
   }
 }

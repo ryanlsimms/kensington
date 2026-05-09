@@ -83,7 +83,6 @@ export class UlTag extends ContentTag { private readonly _k: 'ul' }
 export class Signal<T> {
   get(): T;
   set(valueOrFn: T | ((current: T) => T)): void;
-  subscribe(fn: (value: T) => void): () => void;
   transform<U>(fn: (value: T) => U): Signal<U>;
 }
 

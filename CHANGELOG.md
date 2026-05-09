@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- Signal-driven DOM elements now automatically stop their reactive effects when the element is removed from the DOM. A shared `MutationObserver` detects both direct removal (`el.remove()`) and ancestor removal (removing a parent that contains a signal-bound element). Previously effects ran until the element was garbage-collected, which could be indefinitely if any variable held a reference.
+
+### Changed
+- Validation checks for `literal()`, `unsafeLiteral()`, and `inlineComment()` now run at render time (`toString()` / `toElement()`) inside the tag classes, not at construction time. `LiteralTag` and `CommentTag` accept `validationLevel` and `logger` from the Kensington instance and use `showInvalid` for all checks. With `validationLevel: 'off'` invalid input renders nothing silently; `'warn'` logs and renders nothing; `'error'` throws. Signal-driven `inlineComment` values now also have their type and `--` content validated on every update, which was previously unchecked.
+- `validateContent()` in `ContentTag` no longer always throws regardless of `validationLevel`. Invalid content items are now filtered out and reported via `showInvalid`, following the same `'off'` / `'warn'` / `'error'` contract as attribute validation.
+
+### Fixed
+- Passing a `Signal` instance as an attribute value no longer triggers a spurious validation warning or error when `validationLevel` is `'warn'` or `'error'`. The validator now accepts any `Signal` as a valid attribute value, since the actual value is resolved at render or DOM time.
+- An error thrown inside an `effect()` callback no longer silently drops other effects that were batched in the same microtask flush. The error is still surfaced asynchronously (matching the existing behavior for `computed` errors), but the remaining effects in the batch now complete normally.
+- `literal(signal)`: the `<script>` tag check now runs on every signal update in `toElement()`, not just at creation time. Previously a signal that initially held safe HTML could be updated to inject a `<script>` tag without being caught.
+- `Signal.subscribe()` removed. It was undocumented, did not integrate with the effect tracking system (causing subscription leaks if called inside an `effect()`), and was not used internally. Use `effect(() => { s.get(); ... })` instead.
+
 ## [2.0.0-signals.1] - 2026-05-09
 
 ### Added

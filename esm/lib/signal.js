@@ -9,7 +9,11 @@ function flush() {
     const batch = [...pending];
     pending.clear();
     for (const fn of batch) {
-      fn();
+      try {
+        fn();
+      } catch (err) {
+        queueMicrotask(() => { throw err; });
+      }
     }
   }
 }
@@ -52,11 +56,6 @@ export default class Signal {
         fn(this.#value);
       }
     }
-  }
-
-  subscribe(fn) {
-    this.#subscribers.add(fn);
-    return () => this.#subscribers.delete(fn);
   }
 
   stop() {

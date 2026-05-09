@@ -15,6 +15,19 @@ test('signal as literal updates the DOM element live', async ({ page, bundle }) 
   await expect(page.locator('#lit-a')).toHaveCount(0);
 });
 
+test('literal() blocks script tag injection when signal value changes', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const html = signal('<p id="lit-safe">safe</p>');
+    document.body.append(t.literal(html).toElement());
+    html.set('<script>window.__injected = true</script>');
+    await Promise.resolve();
+    return { safe: document.querySelector('#lit-safe') !== null, injected: window.__injected };
+  }, bundle);
+  expect(result.safe).toBe(true);
+  expect(result.injected).toBeUndefined();
+});
+
 test('signal as inlineComment updates the comment node value live', async ({ page, bundle }) => {
   const value = await page.evaluate(async src => {
     const { t, signal } = await import(src);
@@ -328,4 +341,56 @@ test('effect cleans up stale conditional dependencies', async ({ page, bundle })
     return calls;
   }, bundle);
   expect(log).toEqual(['a', 'b', 'b2']);
+});
+
+// ─── DOM removal cleanup ────────────────────────────────────────────────────
+
+test('signal attribute effect stops when element is removed from DOM', async ({ page, bundle }) => {
+  const writes = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const cls = signal('a');
+    const el = t.div({ id: 'rm-attr', class: cls }).toElement();
+    document.body.append(el);
+    await Promise.resolve();
+    el.remove();
+    await Promise.resolve();
+    cls.set('b');
+    await Promise.resolve();
+    return document.getElementById('rm-attr') === null && el.className;
+  }, bundle);
+  expect(writes).toBe('a');
+});
+
+test('signal content effect stops when element is removed from DOM', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const text = signal('hello');
+    const el = t.p({ id: 'rm-content' }, text).toElement();
+    document.body.append(el);
+    await Promise.resolve();
+    el.remove();
+    await Promise.resolve();
+    text.set('world');
+    await Promise.resolve();
+    return el.textContent;
+  }, bundle);
+  expect(result).toBe('hello');
+});
+
+test('signal effects stop when a parent element is removed from DOM', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const cls = signal('x');
+    const child = t.span({ class: cls }).toElement();
+    const parent = document.createElement('div');
+    parent.append(child);
+    document.body.append(parent);
+    await Promise.resolve();
+    parent.remove();
+    await Promise.resolve();
+    cls.set('y');
+    await Promise.resolve();
+    return child.className;
+  }, bundle);
+  expect(result).toBe('x');
 });
