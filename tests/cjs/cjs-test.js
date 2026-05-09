@@ -55,7 +55,7 @@ describe('core output', () => {
     assert.strictEqual(t.literal('<hr>').toString(), '<hr>');
   });
 
-  it('literal throws on script tag', () => {
+  it('literal throws on script tag with validationLevel error', () => {
     const te = new Kensington({ validationLevel: 'error' });
     assert.throws(() => te.literal('<script>alert(1)</script>').toString());
   });

@@ -13,56 +13,66 @@ export default class LiteralTag {
   }
 
   toString() {
-    const str = this.str instanceof Signal ? this.str.get() : this.str;
-    if (typeof str !== 'string') {
+    const value = this.str instanceof Signal ? this.str.get() : this.str;
+    if (typeof value !== 'string') {
       showInvalid(TYPE_ERROR, this.validationLevel, this.logger);
       return '';
     }
-    if (this.safe && /<script/i.test(str)) {
+    if (this.safe && /<script/i.test(value)) {
       showInvalid(SCRIPT_ERROR, this.validationLevel, this.logger);
       return '';
     }
-    return str;
+    return value;
   }
 
   toElement() {
     if (typeof document === 'undefined') {
       throw new Error('toElement only supported in browser');
     }
-    if (!(this.str instanceof Signal)) {
-      if (typeof this.str !== 'string') {
-        showInvalid(TYPE_ERROR, this.validationLevel, this.logger);
-        return document.createDocumentFragment();
-      }
-      if (this.safe && /<script/i.test(this.str)) {
-        showInvalid(SCRIPT_ERROR, this.validationLevel, this.logger);
-        return document.createDocumentFragment();
-      }
-      const template = document.createElement('template');
-      template.innerHTML = this.str;
-      return template.content;
+    if (this.str instanceof Signal) {
+      const startAnchor = document.createComment('');
+      const endAnchor = document.createComment('');
+      const frag = document.createDocumentFragment();
+      frag.append(startAnchor, endAnchor);
+      const sig = this.str;
+      const startRef = new WeakRef(startAnchor);
+      const endRef = new WeakRef(endAnchor);
+      const e = effect(() => {
+        const start = startRef.deref();
+        const end = endRef.deref();
+        if (!start || !end) { e.stop(); return; }
+        const val = sig.get();
+        if (typeof val !== 'string') {
+          showInvalid(TYPE_ERROR, this.validationLevel, this.logger);
+          return;
+        }
+        if (this.safe && /<script/i.test(val)) {
+          showInvalid(SCRIPT_ERROR, this.validationLevel, this.logger);
+          return;
+        }
+        let node = start.nextSibling;
+        while (node !== end) {
+          const next = node.nextSibling;
+          node.remove();
+          node = next;
+        }
+        const template = document.createElement('template');
+        template.innerHTML = val;
+        start.after(...[...template.content.childNodes]);
+      });
+      return frag;
     }
-    const startAnchor = document.createComment('');
-    const endAnchor = document.createComment('');
-    const frag = document.createDocumentFragment();
-    frag.append(startAnchor, endAnchor);
-    const sig = this.str;
-    const startRef = new WeakRef(startAnchor);
-    const endRef = new WeakRef(endAnchor);
-    const e = effect(() => {
-      const start = startRef.deref();
-      const end = endRef.deref();
-      if (!start || !end) { e.stop(); return; }
-      let node = start.nextSibling;
-      while (node !== end) {
-        const next = node.nextSibling;
-        node.remove();
-        node = next;
-      }
-      const template = document.createElement('template');
-      template.innerHTML = sig.get();
-      start.after(...[...template.content.childNodes]);
-    });
-    return frag;
+
+    if (typeof this.str !== 'string') {
+      showInvalid(TYPE_ERROR, this.validationLevel, this.logger);
+      return document.createDocumentFragment();
+    }
+    if (this.safe && /<script/i.test(this.str)) {
+      showInvalid(SCRIPT_ERROR, this.validationLevel, this.logger);
+      return document.createDocumentFragment();
+    }
+    const template = document.createElement('template');
+    template.innerHTML = this.str;
+    return template.content;
   }
 }

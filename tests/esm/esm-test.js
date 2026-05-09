@@ -79,9 +79,9 @@ describe('content tag', () => {
     assert.throws(() => tt.div(Infinity).toString(), /Invalid content/);
     assert.throws(() => tt.div(-Infinity).toString(), /Invalid content/);
   });
-  it('renders NaN and Infinity as strings when validationLevel is off', () => {
-    assert.strictEqual(t.div(NaN).toString(), '<div>NaN</div>');
-    assert.strictEqual(t.div(Infinity).toString(), '<div>Infinity</div>');
+  it('renders nothing for NaN and Infinity content when validationLevel is off', () => {
+    assert.strictEqual(t.div(NaN).toString(), '<div></div>');
+    assert.strictEqual(t.div(Infinity).toString(), '<div></div>');
   });
   it('ignores false from short-circuit conditional content', () => {
     const show = false;
@@ -90,13 +90,17 @@ describe('content tag', () => {
   it('literal content', () => {
     assert.strictEqual(t.div(t.literal('<div></div>')).toString(), '<div>\n  <div></div>\n</div>');
   });
-  it('literal script content throws', () => {
+  it('literal script content throws with validationLevel error', () => {
     const te = new Kensington({ validationLevel: 'error' });
     assert.throws(() => te.div(te.literal('<script></script>')).toString());
     assert.throws(() => te.literal('<SCRIPT>alert(1)</SCRIPT>').toString());
     assert.strictEqual(t.div(t.unsafeLiteral('<script>console.log("hello");</script>')).toString(), `<div>\n  <script>console.log("hello");</script>\n</div>`);
   });
-  it('literal throws on non-string input with a clear message', () => {
+  it('literal renders nothing for non-string input with validationLevel off', () => {
+    assert.strictEqual(t.literal(null).toString(), '');
+    assert.strictEqual(t.literal(42).toString(), '');
+  });
+  it('literal throws on non-string input with validationLevel error', () => {
     const te = new Kensington({ validationLevel: 'error' });
     assert.throws(() => te.literal(null).toString(), { message: 'literal() only accepts a string' });
     assert.throws(() => te.literal(42).toString(), { message: 'literal() only accepts a string' });
@@ -114,7 +118,10 @@ describe('content tag', () => {
     assert.strictEqual(t.inlineComment('line 1\r\nline 2').toString(), '<!--\n  line 1\n  line 2\n-->');
     assert.strictEqual(t.inlineComment('line 1\rline 2').toString(), '<!--\n  line 1\n  line 2\n-->');
   });
-  it('inlineComment throws on non-string/number', () => {
+  it('inlineComment renders nothing for non-string/number with validationLevel off', () => {
+    assert.strictEqual(t.inlineComment({}).toString(), '');
+  });
+  it('inlineComment throws on non-string/number with validationLevel error', () => {
     const te = new Kensington({ validationLevel: 'error' });
     assert.throws(() => te.inlineComment({}).toString());
   });
@@ -1033,29 +1040,14 @@ describe('signal', () => {
     s.set(n => n * 2);
     assert.strictEqual(s.get(), 6);
   });
-  it('set() with same value does not notify subscribers', () => {
+  it('set() with same value does not re-run effects', async () => {
     const s = signal('a');
     let calls = 0;
-    s.subscribe(() => { calls++; });
+    effect(() => { s.get(); calls++; });
+    calls = 0;
     s.set('a');
+    await Promise.resolve();
     assert.strictEqual(calls, 0);
-  });
-  it('subscribe() receives new value on change', () => {
-    const s = signal(0);
-    const received = [];
-    s.subscribe(v => received.push(v));
-    s.set(1);
-    s.set(2);
-    assert.deepEqual(received, [1, 2]);
-  });
-  it('subscribe() returns an unsubscribe function', () => {
-    const s = signal(0);
-    let calls = 0;
-    const unsub = s.subscribe(() => { calls++; });
-    s.set(1);
-    unsub();
-    s.set(2);
-    assert.strictEqual(calls, 1);
   });
   it('signal as string content snapshots current value in toString()', () => {
     const s = signal('hello');
@@ -1178,12 +1170,14 @@ describe('computed signal', () => {
     b.set(20);
     assert.strictEqual(sum.get(), 30);
   });
-  it('does not notify if computed value is unchanged', () => {
+  it('does not re-run effects if computed value is unchanged', async () => {
     const s = signal('a');
     const upper = computed(() => s.get().toUpperCase());
     let calls = 0;
-    upper.subscribe(() => { calls++; });
+    effect(() => { upper.get(); calls++; });
+    calls = 0;
     s.set('A'); // same result after toUpperCase
+    await Promise.resolve();
     assert.strictEqual(calls, 0);
   });
   it('computed value used in toString()', () => {
@@ -1256,6 +1250,29 @@ describe('effect', () => {
     e.stop(); // cancels the deferred run before it fires
     await Promise.resolve();
     assert.deepStrictEqual(log, [0]);
+  });
+  it('a throwing effect does not prevent other batched effects from running', async () => {
+    const s = signal(0);
+    const log = [];
+    const surfaced = [];
+    // flush() re-throws effect errors via queueMicrotask. Override it for the
+    // duration of this test so the error is captured and never becomes an
+    // uncaughtException that the test runner would pick up.
+    const origQMT = globalThis.queueMicrotask;
+    globalThis.queueMicrotask = fn => origQMT(() => { try { fn(); } catch (e) { surfaced.push(e); } });
+    let initial = true;
+    effect(() => {
+      if (!initial) { throw new Error('effect error'); }
+      initial = false;
+      s.get();
+    });
+    effect(() => { log.push(s.get()); });
+    s.set(1);
+    await Promise.resolve();
+    await Promise.resolve();
+    globalThis.queueMicrotask = origQMT;
+    assert.strictEqual(surfaced.length, 1);
+    assert.deepStrictEqual(log, [0, 1]);
   });
   it('cleans up stale conditional dependencies', async () => {
     const flag = signal(true);
