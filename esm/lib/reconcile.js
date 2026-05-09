@@ -14,6 +14,28 @@ function itemToNode(item) {
   return document.createTextNode(String(item));
 }
 
+function syncNode(existing, fresh) {
+  if (existing.nodeType !== fresh.nodeType || existing.nodeName !== fresh.nodeName) {
+    return fresh;
+  }
+  if (existing.nodeType !== 1) {
+    return fresh;
+  }
+  const oldAttrNames = new Set(existing.getAttributeNames());
+  for (const attr of fresh.getAttributeNames()) {
+    const val = fresh.getAttribute(attr);
+    if (existing.getAttribute(attr) !== val) {
+      existing.setAttribute(attr, val);
+    }
+    oldAttrNames.delete(attr);
+  }
+  for (const attr of oldAttrNames) {
+    existing.removeAttribute(attr);
+  }
+  existing.replaceChildren(...[...fresh.childNodes]);
+  return existing;
+}
+
 export function reconcile(parent, startAnchor, endAnchor, newItems) {
   const oldNodes = new Map();
   let node = startAnchor.nextSibling;
@@ -27,12 +49,13 @@ export function reconcile(parent, startAnchor, endAnchor, newItems) {
 
   let cursor = startAnchor.nextSibling;
   for (const item of newItems) {
-    if (item === null || item === undefined) { continue; }
+    if (item === null || item === undefined || item === false) { continue; }
     const key = itemKey(item);
     let targetNode;
     if (key !== null && oldNodes.has(key)) {
-      targetNode = oldNodes.get(key);
+      const old = oldNodes.get(key);
       oldNodes.delete(key);
+      targetNode = syncNode(old, itemToNode(item));
     } else {
       targetNode = itemToNode(item);
     }

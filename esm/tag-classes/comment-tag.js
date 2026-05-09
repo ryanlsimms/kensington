@@ -45,15 +45,13 @@ export default class CommentTag {
       if (text === null) { return document.createComment(''); }
       return document.createComment(text);
     }
-    let comment = null;
     const sig = this.text;
-    effect(() => {
-      const val = this._normalize(sig.get()) ?? '';
-      if (comment === null) {
-        comment = document.createComment(val);
-      } else {
-        comment.nodeValue = val;
-      }
+    const comment = document.createComment(this._normalize(sig.get()) ?? '');
+    const ref = new WeakRef(comment);
+    const e = effect(() => {
+      const c = ref.deref();
+      if (!c) { e.stop(); return; }
+      c.nodeValue = this._normalize(sig.get()) ?? '';
     });
     return comment;
   }

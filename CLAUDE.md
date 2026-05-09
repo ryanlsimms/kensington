@@ -51,7 +51,7 @@ scripts/release.sh major
 
 `release.sh` requires a clean working tree. If `CHANGELOG.md` has an `## [Unreleased]` section, it is stamped with the new version and date. It bumps the version, stamps the changelog, commits, tags, pushes, and creates a GitHub release.
 
-**Branches**: `master` is the 0.x stable line. `next` is the 1.0 line. Cherry-pick fixes from `master` → `next` as needed.
+**Branches**: `master` is the 0.x stable line. `next` is the 1.0 line. `signals` is the 2.0 line, published under the `signals` dist-tag. Cherry-pick fixes from `master` → `next` as needed. Never merge `signals` into `next`.
 
 ## Architecture
 
@@ -79,8 +79,8 @@ Kensington is an HTML template library that generates HTML strings (or DOM eleme
 - `esm/tag-classes/literal-tag.js` — wraps raw HTML strings passed via `.literal()` / `.unsafeLiteral()`; accepts a `Signal` — `toElement()` re-parses and replaces the element on each change
 - `esm/tag-classes/comment-tag.js` — wraps HTML comments created via `.inlineComment()`; accepts a `Signal` — `toElement()` updates `nodeValue` in place on each change
 - `esm/tag-classes/html-with-doctype-tag.js` — subclass for `.htmlWithDocType()` that prepends `<!DOCTYPE html>`
-- `esm/lib/signal.js` — `Signal` class with `.get()`, `.set()`, `.subscribe()`, `.transform()`; exports `computed(fn)` and `effect(fn)`. `effect` returns a stop function, both `effect` and `computed` clean up stale subscriptions between runs, and `effect` runs are deferred via `queueMicrotask` so multiple synchronous `set()` calls batch into one re-run. `subscribe()` callbacks and `computed` updates remain synchronous.
-- `esm/lib/reconcile.js` — DOM reconciler for signal arrays; matches nodes by `data-key` attribute for efficient reordering, addition, and removal
+- `esm/lib/signal.js` — `Signal` class with `.get()`, `.set()`, `.stop()`, `.subscribe()`, `.transform()`; exports `computed(fn)` and `effect(fn)`. `Signal.stop()` clears all subscribers. Computed signals also expose `.stop()` via a `WeakMap` that tears down the derived computation. `effect` returns `{ stop() }` — call `e.stop()` to unsubscribe from all tracked signals and prevent further runs. Both `effect` and `computed` clean up stale subscriptions between runs. `effect` runs are deferred via `queueMicrotask` so multiple synchronous `set()` calls batch into one re-run. `subscribe()` callbacks and `computed` updates remain synchronous.
+- `esm/lib/reconcile.js` — DOM reconciler for signal arrays; matches nodes by `data-key` attribute for efficient reordering, addition, and removal. `syncNode` diffs and updates attributes and children of reused keyed nodes in place rather than replacing them.
 - `esm/lib/` — utilities: attribute string/array builders, indentation, content stringification, `he` encoder wrapper, camelCase↔kebab-case conversion
 
 ### Tag creation flow
