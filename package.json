@@ -102,6 +102,8 @@
     "@rollup/plugin-terser": "^1.0.0",
     "@stylistic/eslint-plugin": "^5.8.0",
     "@types/node": "^25.5.0",
+    "@webref/css": "^8.5.5",
+    "@webref/idl": "^3.77.0",
     "eslint": "^9.39.2",
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "globals": "^17.3.0",

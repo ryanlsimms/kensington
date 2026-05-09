@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Changed
+- SVG elements now accept all CSS properties as presentation attributes. The list is now derived from the `@webref/css` living standard (~744 properties), matching the SVG spec which permits any CSS property as a presentation attribute.
+- TypeScript types for SVG presentation attributes are more specific. Types are derived from `@webref/css` syntax definitions.
+- The `kensington/attributes` module and `types.d.ts` are significantly smaller. Shared SVG presentation attribute types are emitted once and intersected/spread into each SVG element type, rather than duplicated per element.
+
 ## [0.15.2] - 2026-05-07
 
 ### Fixed

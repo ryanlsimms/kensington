@@ -4,17 +4,34 @@ function attributesObject(attributes) {
 }`;
 }
 
-export default function buildAttributes({ elements, globalAttributes, globalEvents }) {
+function svgElementObject(ownAttributes) {
+  if (!ownAttributes.length) {
+    return '{ ...svgPresentationAttributes }';
+  }
+  return `{
+  ...svgPresentationAttributes,
+  ${ownAttributes.map(a => `'${a.name}': ${a.value},`).join('\n  ')}
+}`;
+}
+
+export default function buildAttributes({ elements, globalAttributes, globalEvents, svgPresentationAttrTypes }) {
+  const hasSvgPresentation = svgPresentationAttrTypes?.length > 0;
+
   return `export const globalAttributes = {
   ${globalAttributes.map(a => `'${a.name}': ${a.value},`).join('\n  ')}
 };
-  
+
 export const globalEvents = {
   ${globalEvents.map(a => `'${a}': [String, Function],`).join('\n  ')}
 };
-
-${elements.map(el =>
-  `export const ${el.attributesName} = ${el.attributes.length ? attributesObject(el.attributes) : '{}'};`,
-).join('\n')}
+${hasSvgPresentation ? `
+export const svgPresentationAttributes = ${attributesObject(svgPresentationAttrTypes)};
+` : ''}
+${elements.map(el => {
+  if (hasSvgPresentation && el.tagType === 'SvgContent') {
+    return `export const ${el.attributesName} = ${svgElementObject(el.attributes)};`;
+  }
+  return `export const ${el.attributesName} = ${el.attributes.length ? attributesObject(el.attributes) : '{}'};`;
+}).join('\n')}
 `;
 }

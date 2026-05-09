@@ -1,4 +1,3 @@
-import svgPresentationAttrTypes from './svg-presentation-attr-types.js';
 import { kebabToCamel, kebabToPascal } from './utils/text-utils.js';
 
 const tagsToSkip = [
@@ -8,7 +7,7 @@ const tagsToSkip = [
   'SVG svg',
 ];
 
-export default function parseData(htmlData, svgData, mathElements) {
+export default function parseData(htmlData, svgData, mathData, { cssPropertyTypes, cssPropertyNames, idlTypes } = {}) {
   const { svgAttributes, svgElements } = svgData;
   const { attributes, globalEvents, htmlElements } = htmlData;
 
@@ -31,18 +30,30 @@ export default function parseData(htmlData, svgData, mathElements) {
     }
   });
 
-  const presentationAttrTypes = new Map(svgPresentationAttrTypes.map(a => [a.attribute, a]));
-
-  const presentationAttrNames = new Set(svgData.svgPresentationAttributes ?? []);
-
   svgElements.forEach(svgEl => {
     if (!htmlElements.find(el => el.tag === svgEl.tag)) {
-      const merged = [...new Set([...svgEl.attributes, ...presentationAttrNames])];
-      htmlElements.push({ ...svgEl, attributes: merged, tagType: 'SvgContent' });
+      if (cssPropertyNames) {
+        htmlElements.push({ ...svgEl, tagType: 'SvgContent' });
+      } else {
+        const presentationAttrNames = new Set(svgData.svgPresentationAttributes ?? []);
+        const elAttrSet = new Set(svgEl.attributes);
+        const filteredPresentation = [...presentationAttrNames].filter(n => {
+          return !elAttrSet.has(n) && !elAttrSet.has(kebabToCamel(n));
+        });
+        const merged = [...new Set([...svgEl.attributes, ...filteredPresentation])];
+        htmlElements.push({ ...svgEl, attributes: merged, tagType: 'SvgContent' });
+      }
     }
   });
 
-  mathElements.forEach(mathEl => {
+  const svgPresentationAttrTypes = cssPropertyNames
+    ? [...cssPropertyNames].sort().map(name => {
+      const cssType = cssPropertyTypes?.get(name);
+      return cssType ? { name, ...cssType } : { name, type: 'string', value: 'String' };
+    })
+    : null;
+
+  mathData.forEach(mathEl => {
     if (!htmlElements.find(el => el.tag === mathEl.tag)) {
       htmlElements.push({ ...mathEl, tagType: 'Math' });
       mathEl.attributes.forEach(mathAttr => {
@@ -119,6 +130,10 @@ export default function parseData(htmlData, svgData, mathElements) {
   }
 
   function attrFallback(name) {
+    const idlResult = idlTypes?.get(name);
+    if (idlResult) {
+      return { name, ...idlResult };
+    }
     if (name.startsWith('on')) {
       return { name, type: 'string | ((event: Event) => void)', value: '[String, Function]' };
     }
@@ -151,11 +166,22 @@ export default function parseData(htmlData, svgData, mathElements) {
         const match = attributes.find(a => {
           return a.attribute === attr && a.elements.some(e => e.trim().split(/\s+/).includes(el.tag));
         });
-        const found = match
-          ?? attributes.find(a => a.attribute === attr && a.elements.includes('HTML elements'))
-          ?? presentationAttrTypes.get(attr)
-          ?? attributes.find(a => a.attribute === attr);
-        return found ? mapAttr(found) : attrFallback(attr);
+        if (match) {
+          return mapAttr(match);
+        }
+        const globalMatch = attributes.find(a => a.attribute === attr && a.elements.includes('HTML elements'));
+        if (globalMatch) {
+          return mapAttr(globalMatch);
+        }
+        const cssType = cssPropertyTypes?.get(attr);
+        if (cssType) {
+          return { name: attr, ...cssType };
+        }
+        const anyMatch = attributes.find(a => a.attribute === attr);
+        if (anyMatch) {
+          return mapAttr(anyMatch);
+        }
+        return attrFallback(attr);
       });
     el.methodName = kebabToCamel(el.tag);
     el.pascalTag = kebabToPascal(el.tag);
@@ -170,5 +196,6 @@ export default function parseData(htmlData, svgData, mathElements) {
     elements,
     globalAttributes,
     globalEvents,
+    svgPresentationAttrTypes,
   };
 }

@@ -202,3 +202,10 @@ t.simpleWidget({ class: 'foo' }, 'content');
 // ─── literal and unsafeLiteral ───────────────────────────────────────────────
 
 const _lit2: LiteralTag = t.unsafeLiteral('<script>alert(1)</script>');
+
+// ─── SVG CSS presentation attributes ────────────────────────────────────────
+
+t.circle({ fill: 'red', stroke: 'blue', opacity: '0.5' });
+t.rect({ 'font-size': '14px', fontWeight: '700' });
+t.path({ display: 'none', visibility: 'hidden' });
+t.g({ transform: 'translate(10,20)' });

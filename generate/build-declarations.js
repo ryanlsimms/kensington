@@ -20,7 +20,24 @@ function attributesType({ attributes = [], globalTypes }) {
 }`, ...globalTypes].join(' & ');
 }
 
-export default function buildDeclarations({ elements, globalAttributes, globalEvents }) {
+function svgAttributesType({ attributes = [], globalTypes }) {
+  const styleType = 'string | csstype.Properties<string | number>';
+  const classType = 'string | string[]';
+  const ownTypes = attributes.length
+    ? [`{\n  ${attributes.flatMap(a => {
+      const attrType = a.name === 'style' ? styleType : a.name === 'class' ? classType : a.type;
+      const lines = [`'${a.name}'?: ${attrType};`];
+      const camelName = kebabToCamel(a.name);
+      if (a.name !== camelName) {
+        lines.push(`'${camelName}'?: ${a.name === 'style' ? styleType : a.type};`);
+      }
+      return lines;
+    }).join('\n  ')}\n}`]
+    : [];
+  return [...ownTypes, 'SvgPresentationAttributes', ...globalTypes].join(' & ');
+}
+
+export default function buildDeclarations({ elements, globalAttributes, globalEvents, svgPresentationAttrTypes }) {
   return `import type * as csstype from 'csstype';
 
 /**
@@ -80,8 +97,19 @@ type GlobalAttributes = {
 type GlobalEvents = {
   ${globalEvents.map(e => `${e}?: string | ((event: Event) => void);`).join('\n  ')}
 }
-
-${elements.map(e => `type ${e.attributesTypeName} = ${attributesType(e)};`).join('\n\n')}
+${svgPresentationAttrTypes?.length ? `
+type SvgPresentationAttributes = {
+  ${svgPresentationAttrTypes.flatMap(a => {
+    const lines = [`'${a.name}'?: ${a.type};`];
+    const camelName = kebabToCamel(a.name);
+    if (a.name !== camelName) {
+      lines.push(`'${camelName}'?: ${a.type};`);
+    }
+    return lines;
+  }).join('\n  ')}
+}
+` : ''}
+${elements.map(e => `type ${e.attributesTypeName} = ${e.tagType === 'SvgContent' ? svgAttributesType(e) : attributesType(e)};`).join('\n\n')}
 
 /**
  * Valid content for any tag method: a string, number, tag instance, or an array of those.

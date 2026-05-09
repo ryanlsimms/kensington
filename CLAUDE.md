@@ -65,9 +65,13 @@ Kensington is an HTML template library that generates HTML strings (or DOM eleme
 
 **`esm/kensington.js` and `esm/attributes.js` are generated** — do not edit them directly. They are produced by `generate/bin/write-code-files.js` from:
 - `generate/fetched-data/{html,svg,math}.json` — spec data (fetched from HTML/SVG/MathML living standards)
+- `@webref/css` (npm, runtime) — CSS property and type syntax; used by `generate/parse-css-property-types.js` to derive TypeScript types and attribute validator values for SVG presentation attributes and CSS-sourced HTML element attributes
+- `@webref/idl` (npm, runtime) — WebIDL interface definitions; used by `generate/parse-idl-types.js` as a last-resort type fallback for attributes not typed by the HTML spec or CSS data
 - `generate/build-javascript.js` — template that emits the class body and attribute exports
 - `generate/build-declarations.js` — template that emits `types.d.ts`
 - `generate/parse-data.js` — normalizes spec data into the shape the builders expect
+- `generate/parse-css-property-types.js` — derives `{ value, type }` entries from `@webref/css` property syntax; resolves named type references and property references to extract keyword enums or numeric types
+- `generate/parse-idl-types.js` — derives `{ value, type }` entries from `@webref/idl` interface attribute types (boolean, integer, float IDL types map to Boolean/Number/[Number,String])
 
 **`cjs/` is entirely generated** via Rollup from `esm/`. The `esm/` directory is the authoritative source.
 
@@ -91,6 +95,7 @@ Kensington is an HTML template library that generates HTML strings (or DOM eleme
 - Boolean attributes are included when `true`, omitted when `false`
 - `style` accepts a plain object: `{ style: { backgroundColor: 'red', zIndex: 2 } }` → `style="background-color: red; z-index: 2"`. camelCase keys are converted to kebab-case; `null`/`undefined`/`false` values are silently omitted; other non-string/number values are flagged by validation.
 - `data-*` and `aria-*` namespaces are always allowed; additional namespaces (e.g. `hx` for htmx) are passed via constructor
+- SVG elements accept all CSS properties as presentation attributes (per the SVG spec). In `esm/attributes.js` a single `svgPresentationAttributes` export object is spread into each SVG element's attribute object to avoid duplicating ~744 entries per element. In `types.d.ts` a single `SvgPresentationAttributes` type is intersected into each SVG element's attribute type for the same reason.
 - Event handler attributes (`onclick`, `oninput`, and all `on*`) accept `[String, Function]`. Functions are valid at tag creation and wired via `addEventListener` in `toElement()`. In `toString()`, function values cannot be serialized — they are omitted, with the `handleFunctionValues` callback in `attributesStringFromObject` invoking `showInvalid` at that point rather than at creation time.
 
 ### CLI — html-to-kensington
