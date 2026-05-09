@@ -1,15 +1,6 @@
 import { attrsToCode } from './attrs-to-code.js';
 import { isBlank, reindent } from './html-utils.js';
-
-const { default: { svgAttributes } } = await import('../../generate/fetched-data/svg.json', { with: { type: 'json' } });
-
-// HTML5 tokenization lowercases tag names, including inside SVG foreign content.
-// Map the lowercased form back to the spec-correct camelCase name.
-const SVG_ELEMENT_CASE = new Map(
-  [...new Set(svgAttributes.flatMap(a => a.elements ?? []))]
-    .filter(name => name !== name.toLowerCase())
-    .map(name => [name.toLowerCase(), name]),
-);
+import { SVG_ELEMENT_CASE } from './svg-element-case.js';
 
 export function nodeToCode(node, maxLen, tagOverride = null) {
   if (node.nodeName === '#text') {

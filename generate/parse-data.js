@@ -1,3 +1,4 @@
+import svgPresentationAttrTypes from './svg-presentation-attr-types.js';
 import { kebabToCamel, kebabToPascal } from './utils/text-utils.js';
 
 const tagsToSkip = [
@@ -30,9 +31,14 @@ export default function parseData(htmlData, svgData, mathElements) {
     }
   });
 
+  const presentationAttrTypes = new Map(svgPresentationAttrTypes.map(a => [a.attribute, a]));
+
+  const presentationAttrNames = new Set(svgData.svgPresentationAttributes ?? []);
+
   svgElements.forEach(svgEl => {
     if (!htmlElements.find(el => el.tag === svgEl.tag)) {
-      htmlElements.push({ ...svgEl, tagType: 'SvgContent' });
+      const merged = [...new Set([...svgEl.attributes, ...presentationAttrNames])];
+      htmlElements.push({ ...svgEl, attributes: merged, tagType: 'SvgContent' });
     }
   });
 
@@ -57,7 +63,7 @@ export default function parseData(htmlData, svgData, mathElements) {
   const numberTsType = 'number | `${number}`';
 
   function getAttributeType(attr) {
-    const values = (attr.value ?? []).filter(value => value !== 'the empty string');
+    const values = (attr.value ?? []).filter(value => value !== 'the empty string' && value !== '');
     if (attr.attribute === 'value') {
       return ['[Number,String]', 'number | string'];
     }
@@ -67,6 +73,7 @@ export default function parseData(htmlData, svgData, mathElements) {
     if ([
       'Valid non-negative integer greater than zero',
       'Valid non-negative integer',
+      'Valid non-negative integer between 0 and 8',
       'Valid integer',
     ].includes(values[0])) {
       return ['Number', numberTsType];
@@ -81,6 +88,13 @@ export default function parseData(htmlData, svgData, mathElements) {
       return ['Number', numberTsType];
     }
     if (['<length>', '<coordinate>', '<integer>', '<long>', '<length-percentage>'].includes(values[0])) {
+      return ['[Number,String]', 'number | string'];
+    }
+    if (
+      values[0] === 'Valid floating-point number' ||
+      values[0] === 'Valid floating-point number*' ||
+      values[0] === 'Valid floating-point number greater than zero, or "any"'
+    ) {
       return ['[Number,String]', 'number | string'];
     }
     if (values.length && values.every(value => /^".*"$/.test(value))) {
@@ -137,7 +151,10 @@ export default function parseData(htmlData, svgData, mathElements) {
         const match = attributes.find(a => {
           return a.attribute === attr && a.elements.some(e => e.trim().split(/\s+/).includes(el.tag));
         });
-        const found = match ?? attributes.find(a => a.attribute === attr && a.elements.includes('HTML elements'));
+        const found = match
+          ?? attributes.find(a => a.attribute === attr && a.elements.includes('HTML elements'))
+          ?? presentationAttrTypes.get(attr)
+          ?? attributes.find(a => a.attribute === attr);
         return found ? mapAttr(found) : attrFallback(attr);
       });
     el.methodName = kebabToCamel(el.tag);

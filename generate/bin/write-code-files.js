@@ -5,6 +5,7 @@ import buildAttributes from '../build-attributes.js';
 import buildAttributesDeclarations from '../build-attributes-declarations.js';
 import buildDeclarations from '../build-declarations.js';
 import buildKensington from '../build-kensington.js';
+import buildSvgElementCase from '../build-svg-element-case.js';
 import parseData from '../parse-data.js';
 
 const { default: htmlData } = await import('../fetched-data/html.json', { with: { type: 'json' } });
@@ -35,10 +36,13 @@ const attributesContent = buildAttributes({
   globalEvents,
 });
 
+const svgElementCaseContent = buildSvgElementCase({ svgElements: svgData.svgElements });
+
 fs.writeFileSync(path.resolve(import.meta.dirname, '../../types.d.ts'), declarationsContent, 'utf8');
 fs.writeFileSync(path.resolve(import.meta.dirname, '../../attributes.d.ts'), attributesDeclarationsContent, 'utf8');
 fs.writeFileSync(path.resolve(import.meta.dirname, '../../esm/kensington.js'), kensingtonClassContent, 'utf8');
 fs.writeFileSync(path.resolve(import.meta.dirname, '../../esm/attributes.js'), attributesContent, 'utf8');
+fs.writeFileSync(path.resolve(import.meta.dirname, '../../bin/lib/svg-element-case.js'), svgElementCaseContent, 'utf8');
 
 await import('./build-cjs.js');
 await import('./build-browser.js');
