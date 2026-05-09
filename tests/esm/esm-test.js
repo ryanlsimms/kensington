@@ -1186,6 +1186,32 @@ describe('signal.transform', () => {
     s.set(4);
     assert.strictEqual(result.get(), 13);
   });
+  it('updates when a secondary signal read inside fn changes', () => {
+    const base = signal(10);
+    const multiplier = signal(2);
+    const result = base.transform(v => v * multiplier.get());
+    assert.strictEqual(result.get(), 20);
+    multiplier.set(3);
+    assert.strictEqual(result.get(), 30);
+    base.set(5);
+    assert.strictEqual(result.get(), 15);
+  });
+  it('stop() freezes the derived value and unsubscribes from the source', () => {
+    const s = signal(1);
+    const doubled = s.transform(v => v * 2);
+    doubled.stop();
+    s.set(5);
+    assert.strictEqual(doubled.get(), 2);
+  });
+  it('stop() on a chained transform unsubscribes from the intermediate but leaves it live', () => {
+    const s = signal(2);
+    const intermediate = s.transform(v => v * 3);
+    const final = intermediate.transform(v => v + 1);
+    final.stop();
+    s.set(4);
+    assert.strictEqual(final.get(), 7);
+    assert.strictEqual(intermediate.get(), 12);
+  });
 });
 
 // ─── computed signal ───────────────────────────────────────────────────────

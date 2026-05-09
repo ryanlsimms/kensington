@@ -27,16 +27,6 @@ function isValidContentItem(c, contentIsLiteral) {
     && (c instanceof ContentTag || c instanceof LiteralTag || c instanceof CommentTag || c instanceof Signal);
 }
 
-function resolveSignalNode(val) {
-  if (val instanceof ContentTag || val instanceof LiteralTag || val instanceof CommentTag) {
-    return val.toElement();
-  }
-  if (val === null || val === undefined || val === false) {
-    return document.createTextNode('');
-  }
-  return document.createTextNode(String(val));
-}
-
 function applySignalAttribute(element, attrName, sig) {
   const ref = new WeakRef(element);
   const e = effect(() => {
@@ -364,30 +354,15 @@ export default class ContentTag {
       }
       if (node instanceof Signal) {
         const elementRef = new WeakRef(element);
-        if (Array.isArray(node.get())) {
-          const startAnchor = document.createComment('');
-          const endAnchor = document.createComment('');
-          element.append(startAnchor, endAnchor);
-          const e = effect(() => {
-            const el = elementRef.deref();
-            if (!el) { e.stop(); return; }
-            const val = node.get();
-            reconcile(el, startAnchor, endAnchor, Array.isArray(val) ? val : []);
-          });
-        } else {
-          let currentNode = null;
-          const e = effect(() => {
-            const el = elementRef.deref();
-            if (!el) { e.stop(); return; }
-            const newNode = resolveSignalNode(node.get());
-            if (currentNode === null) {
-              el.append(newNode);
-            } else {
-              currentNode.replaceWith(newNode);
-            }
-            currentNode = newNode;
-          });
-        }
+        const startAnchor = document.createComment('');
+        const endAnchor = document.createComment('');
+        element.append(startAnchor, endAnchor);
+        const e = effect(() => {
+          const el = elementRef.deref();
+          if (!el) { e.stop(); return; }
+          const val = node.get();
+          reconcile(el, startAnchor, endAnchor, Array.isArray(val) ? val : [val]);
+        });
         continue;
       }
       if (!this.contentIsLiteral && typeof node === 'string') { // literal tags (script/style) need exact spacing preserved. Only convert for regular tags
