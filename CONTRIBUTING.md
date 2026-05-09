@@ -61,15 +61,25 @@ See [CLAUDE.md](./CLAUDE.md) for a full description of the codebase. The short v
 
 ## Releasing
 
-Add changes under `## [Unreleased]` in `CHANGELOG.md` as you work, then run:
+Add changes under `## [Unreleased]` in `CHANGELOG.md` as you work, then run the release script. The script requires a clean working tree and an `## [Unreleased]` section in `CHANGELOG.md`. It bumps the version, stamps the changelog, commits, tags, pushes, and creates a GitHub Release. GitHub Actions then publishes to npm automatically.
+
+**Stable releases** (from `master`, 0.x line):
 
 ```bash
-scripts/release.sh patch   # 0.12.0 → 0.12.1
-scripts/release.sh minor   # 0.12.0 → 0.13.0
-scripts/release.sh major   # 0.12.0 → 1.0.0
+scripts/release.sh patch   # 0.15.3 → 0.15.4
+scripts/release.sh minor   # 0.15.3 → 0.16.0
+scripts/release.sh major   # 0.15.3 → 1.0.0
 ```
 
-The script promotes `[Unreleased]` to the new version with today's date, commits, tags, pushes, and creates a GitHub Release. GitHub Actions then publishes to npm automatically with provenance attestation.
+**Prerelease** (from `next`, 1.x line — `preid` defaults to `beta`):
+
+```bash
+scripts/release.sh premajor          # 0.x.x → 1.0.0-beta.0
+scripts/release.sh prerelease        # 1.0.0-beta.0 → 1.0.0-beta.1
+scripts/release.sh premajor rc       # → 1.0.0-rc.0
+```
+
+Prereleases are published to npm under the `beta` (or specified preid) dist-tag, so `npm install kensington` stays on the latest stable. Users opt in with `npm install kensington@beta`.
 
 ## npm token rotation
 
