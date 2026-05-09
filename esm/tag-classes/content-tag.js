@@ -38,14 +38,17 @@ function resolveSignalNode(val) {
 }
 
 function applySignalAttribute(element, attrName, sig) {
-  effect(() => {
+  const ref = new WeakRef(element);
+  const e = effect(() => {
+    const el = ref.deref();
+    if (!el) { e.stop(); return; }
     const val = sig.get();
     if (val === false || val === null || val === undefined) {
-      element.removeAttribute(attrName);
+      el.removeAttribute(attrName);
     } else if (val === true) {
-      element.setAttribute(attrName, '');
+      el.setAttribute(attrName, '');
     } else {
-      element.setAttribute(attrName, String(val));
+      el.setAttribute(attrName, String(val));
     }
   });
 }
@@ -317,19 +320,25 @@ export default class ContentTag {
         continue;
       }
       if (node instanceof Signal) {
+        const elementRef = new WeakRef(element);
         if (Array.isArray(node.get())) {
           const startAnchor = document.createComment('');
           const endAnchor = document.createComment('');
           element.append(startAnchor, endAnchor);
-          effect(() => {
-            reconcile(element, startAnchor, endAnchor, node.get());
+          const e = effect(() => {
+            const el = elementRef.deref();
+            if (!el) { e.stop(); return; }
+            const val = node.get();
+            reconcile(el, startAnchor, endAnchor, Array.isArray(val) ? val : []);
           });
         } else {
           let currentNode = null;
-          effect(() => {
+          const e = effect(() => {
+            const el = elementRef.deref();
+            if (!el) { e.stop(); return; }
             const newNode = resolveSignalNode(node.get());
             if (currentNode === null) {
-              element.append(newNode);
+              el.append(newNode);
             } else {
               currentNode.replaceWith(newNode);
             }

@@ -4,12 +4,6 @@ import showInvalid from '../lib/show-invalid.js';
 const TYPE_ERROR = 'literal() only accepts a string';
 const SCRIPT_ERROR = '<script> tags are not allowed in literal html. Use unsafeLiteral if you can vouch for the string';
 
-function parse(str) {
-  const template = document.createElement('template');
-  template.innerHTML = str;
-  return template.content.firstChild;
-}
-
 export default class LiteralTag {
   constructor(str, safe = false, validationLevel = 'off', logger = undefined) {
     this.str = str;
@@ -48,15 +42,27 @@ export default class LiteralTag {
       template.innerHTML = this.str;
       return template.content;
     }
-    let node = null;
+    const startAnchor = document.createComment('');
+    const endAnchor = document.createComment('');
+    const frag = document.createDocumentFragment();
+    frag.append(startAnchor, endAnchor);
     const sig = this.str;
-    effect(() => {
-      const newNode = parse(sig.get());
-      if (node !== null) {
-        node.replaceWith(newNode);
+    const startRef = new WeakRef(startAnchor);
+    const endRef = new WeakRef(endAnchor);
+    const e = effect(() => {
+      const start = startRef.deref();
+      const end = endRef.deref();
+      if (!start || !end) { e.stop(); return; }
+      let node = start.nextSibling;
+      while (node !== end) {
+        const next = node.nextSibling;
+        node.remove();
+        node = next;
       }
-      node = newNode;
+      const template = document.createElement('template');
+      template.innerHTML = sig.get();
+      start.after(...[...template.content.childNodes]);
     });
-    return node;
+    return frag;
   }
 }

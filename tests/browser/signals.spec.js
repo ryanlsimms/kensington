@@ -263,15 +263,15 @@ test('effect tracks multiple signals', async ({ page, bundle }) => {
   await expect(page).toHaveTitle('John Smith');
 });
 
-test('effect stop function prevents further runs', async ({ page, bundle }) => {
+test('effect stop() prevents further runs', async ({ page, bundle }) => {
   const log = await page.evaluate(async src => {
     const { signal, effect } = await import(src);
     const s = signal('a');
     const calls = [];
-    const stop = effect(() => { calls.push(s.get()); });
+    const e = effect(() => { calls.push(s.get()); });
     s.set('b');
     await Promise.resolve();
-    stop();
+    e.stop();
     s.set('c');
     s.set('d');
     return calls;

@@ -7,11 +7,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- `effect(fn)` returns a stop function. Calling it unsubscribes from all tracked signals and prevents further runs. Useful for teardown in web component `disconnectedCallback`.
+- `effect(fn)` returns `{ stop() }`. Calling `e.stop()` unsubscribes from all tracked signals and prevents further runs. Useful for teardown in web component `disconnectedCallback`.
+- `Signal` and computed signals now have a `.stop()` method. `someSignal.stop()` clears all subscribers. `someComputedSignal.stop()` tears down the derived computation and clears subscribers.
 - Multiple `signal.set()` calls in the same synchronous tick are now batched: `effect()` callbacks and DOM updates from signals re-run only once with the final value. `computed` updates remain synchronous.
 
 ### Fixed
 - `effect` and `computed` now unsubscribe from signals that were read in the previous run but not the current one. Previously, conditional dependencies accumulated across runs, causing effects to re-run for signals they no longer depended on.
+- Keyed list reconciliation now syncs the attributes and children of reused nodes when content changes, not just their position. Previously a keyed node that moved but whose content changed retained stale children.
+- `false` items in a signal array are now skipped during reconciliation, matching how `null` and `undefined` are handled.
+- `.literal(signal).toElement()` now correctly supports multi-root HTML (e.g. multiple `<li>` elements). Previously only the first root node was inserted.
+- Signal-driven attributes and content no longer retain a strong reference to their host DOM element. Effects self-stop when the element is garbage-collected, preventing memory leaks in long-lived applications.
+- Errors thrown inside `computed(fn)` are now surfaced asynchronously via `queueMicrotask` rather than being silently swallowed, so they appear in the browser console.
 
 ## [2.0.0-signals.0] - 2026-05-08
 
