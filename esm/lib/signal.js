@@ -1,6 +1,7 @@
 let currentEffect = null;
 const pending = new Set();
 let scheduled = false;
+const stopFns = new WeakMap();
 
 function flush() {
   scheduled = false;
@@ -63,6 +64,15 @@ export default class Signal {
     this.subscribe(v => derived.set(fn(v)));
     return derived;
   }
+
+  stop() {
+    const fn = stopFns.get(this);
+    if (fn !== undefined) {
+      fn();
+      stopFns.delete(this);
+    }
+    this.#subscribers.clear();
+  }
 }
 
 function track(run, fn) {
@@ -81,12 +91,12 @@ function track(run, fn) {
 
 /**
  * Runs `fn` immediately and re-runs it whenever any signal read via `.get()` inside changes.
- * Returns a stop function that tears down all subscriptions and prevents further runs.
+ * Returns an object with a `stop()` method that tears down all subscriptions and prevents further runs.
  * @param {function(): void} fn
- * @returns {function(): void} stop
+ * @returns {{ stop: function(): void }}
  * @example
- * const stop = effect(() => { localStorage.setItem('sort', sortKey.get()); });
- * stop(); // unsubscribes from all tracked signals
+ * const e = effect(() => { localStorage.setItem('sort', sortKey.get()); });
+ * e.stop(); // unsubscribes from all tracked signals
  */
 export function effect(fn) {
   let stopped = false;
@@ -99,19 +109,22 @@ export function effect(fn) {
   run._cleanups = [];
   run._isEffect = true;
   run();
-  return () => {
-    stopped = true;
-    pending.delete(run);
-    for (const cleanup of run._cleanups) {
-      cleanup();
-    }
-    run._cleanups = [];
+  return {
+    stop() {
+      stopped = true;
+      pending.delete(run);
+      for (const cleanup of run._cleanups) {
+        cleanup();
+      }
+      run._cleanups = [];
+    },
   };
 }
 
 /**
  * Creates a read-only signal derived from other signals. Re-runs automatically whenever
- * any signal read via `.get()` inside the function changes.
+ * any signal read via `.get()` inside the function changes. Call `.stop()` to unsubscribe
+ * from all tracked signals and freeze the value.
  * @template T
  * @param {function(): T} fn
  * @returns {Signal<T>}
@@ -122,9 +135,21 @@ export function effect(fn) {
 export function computed(fn) {
   const s = new Signal(undefined);
   function update() {
-    track(update, () => s.set(fn()));
+    track(update, () => {
+      try {
+        s.set(fn());
+      } catch (err) {
+        queueMicrotask(() => { throw err; });
+      }
+    });
   }
   update._cleanups = [];
   update();
+  stopFns.set(s, () => {
+    for (const cleanup of update._cleanups) {
+      cleanup();
+    }
+    update._cleanups = [];
+  });
   return s;
 }

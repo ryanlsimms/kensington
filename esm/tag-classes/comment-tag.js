@@ -6,7 +6,10 @@ export default class CommentTag {
   }
 
   toString() {
-    const text = this.text instanceof Signal ? this.text.get() : this.text;
+    let text = this.text instanceof Signal ? String(this.text.get()) : this.text;
+    if (text.includes('--')) {
+      text = text.replace(/--/g, '');
+    }
     if (/[\r\n]/.test(text)) {
       const normalized = text.replace(/\r\n?/g, '\n');
       const indented = normalized.split('\n').map(line => `  ${line}`).join('\n');
@@ -20,15 +23,13 @@ export default class CommentTag {
       throw new Error('toElement only supported in browser');
     }
     if (this.text instanceof Signal) {
-      let comment = null;
       const sig = this.text;
-      effect(() => {
-        const val = sig.get();
-        if (comment === null) {
-          comment = document.createComment(val);
-        } else {
-          comment.nodeValue = val;
-        }
+      const comment = document.createComment(String(sig.get()));
+      const ref = new WeakRef(comment);
+      const e = effect(() => {
+        const c = ref.deref();
+        if (!c) { e.stop(); return; }
+        c.nodeValue = String(sig.get());
       });
       return comment;
     }

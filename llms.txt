@@ -189,10 +189,11 @@ const app = t.div([
 ]).toElement();
 ```
 
-- `signal(initial)` -- creates a `Signal` with `.get()`, `.set(valueOrFn)`, and `.transform(fn)` methods
+- `signal(initial)` -- creates a `Signal` with `.get()`, `.set(valueOrFn)`, `.stop()`, and `.transform(fn)` methods
+- `signal.stop()` / `computedSignal.stop()` -- clears all subscribers. For computed signals, also tears down the derived computation. Call when a signal is no longer needed.
 - `signal.transform(fn)` -- shorthand for a single-source derived signal; equivalent to `computed(() => fn(signal.get()))`. Chainable: `count.transform(n => n * 2).transform(n => \`${n}px\`)`
-- `computed(fn)` -- read-only derived signal; re-evaluates when any signal read inside changes
-- `effect(fn)` -- runs immediately and re-runs when any signal read via `.get()` inside changes. Returns a stop function: call it to unsubscribe from all tracked signals and prevent further runs (useful in `disconnectedCallback`). Multiple `set()` calls in the same synchronous tick are batched -- the effect runs once with the final value. `subscribe()` callbacks and `computed` updates remain synchronous and unaffected.
+- `computed(fn)` -- read-only derived signal; re-evaluates when any signal read inside changes. Errors thrown inside `fn` are surfaced asynchronously via `queueMicrotask`.
+- `effect(fn)` -- runs immediately and re-runs when any signal read via `.get()` inside changes. Returns `{ stop() }`: call `e.stop()` to unsubscribe from all tracked signals and prevent further runs (useful in `disconnectedCallback`). Multiple `set()` calls in the same synchronous tick are batched -- the effect runs once with the final value. `subscribe()` callbacks and `computed` updates remain synchronous and unaffected. Effects self-stop when their host DOM element is garbage-collected.
 - **As content**: signal updates a text node or replaces a DOM subtree live
 - **As attribute value**: signal updates the attribute; boolean signals toggle attribute presence
 - **Array signals**: when a signal holds an array, add `dataKey` to items for DOM node reuse on reorder, addition, and removal

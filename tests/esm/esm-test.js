@@ -1153,13 +1153,13 @@ describe('effect', () => {
     await Promise.resolve();
     assert.strictEqual(result, 22);
   });
-  it('returns a stop function that prevents further runs', async () => {
+  it('stop() prevents further runs', async () => {
     const s = signal(0);
     const log = [];
-    const stop = effect(() => { log.push(s.get()); });
+    const e = effect(() => { log.push(s.get()); });
     s.set(1);
     await Promise.resolve();
-    stop();
+    e.stop();
     s.set(2);
     s.set(3);
     await Promise.resolve();
@@ -1168,9 +1168,9 @@ describe('effect', () => {
   it('stop() before microtask fires cancels the pending run', async () => {
     const s = signal(0);
     const log = [];
-    const stop = effect(() => { log.push(s.get()); });
+    const e = effect(() => { log.push(s.get()); });
     s.set(1);
-    stop(); // cancels the deferred run before it fires
+    e.stop(); // cancels the deferred run before it fires
     await Promise.resolve();
     assert.deepStrictEqual(log, [0]);
   });
