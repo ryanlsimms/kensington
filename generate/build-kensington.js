@@ -2,7 +2,6 @@ export default function buildKensington({ elements }) {
   return `import * as allAttributes from './attributes.js';
 import getPrototypeMethods from './lib/get-prototype-methods.js';
 import showInvalid from './lib/show-invalid.js';
-import Signal from './lib/signal.js';
 import { camelToKebab } from './lib/text-utils.js';
 import CommentTag from './tag-classes/comment-tag.js';
 import ContentTag from './tag-classes/content-tag.js';
@@ -203,14 +202,7 @@ export default class Kensington {
    * t.ul([t.li('typed'), t.literal('<li>raw html</li>')]);
    */
   literal(str) {
-    const value = str instanceof Signal ? str.get() : str;
-    if (typeof value !== 'string') {
-      throw new Error('literal() only accepts a string');
-    }
-    if (/<script/i.test(value)) {
-      throw new Error(\`<script> tags are not allowed to be passed in literal html.  Use the .unsafeLiteral if you can vouch for the string\`);
-    }
-    return new LiteralTag(str);
+    return new LiteralTag(str, true, this.validationLevel, this.logger);
   }
 
   /**
@@ -219,7 +211,7 @@ export default class Kensington {
    * @returns {LiteralTag}
    */
   unsafeLiteral(str) {
-    return new LiteralTag(str);
+    return new LiteralTag(str, false, this.validationLevel, this.logger);
   }
 
   /**
@@ -235,18 +227,7 @@ export default class Kensington {
    * // -->
    */
   inlineComment(str) {
-    if (!['string', 'number'].includes(typeof str) && !(str instanceof Signal)) {
-      throw new Error('inlineComment only accepts a string or number');
-    }
-    if (str instanceof Signal) {
-      return new CommentTag(str);
-    }
-    let text = str.toString();
-    if (text.includes('--')) {
-      showInvalid('inlineComment text must not contain "--"', this.validationLevel, this.logger);
-      text = text.replace(/--/g, '');
-    }
-    return new CommentTag(text);
+    return new CommentTag(str, this.validationLevel, this.logger);
   }
 
   /** @returns {ContentTag} */

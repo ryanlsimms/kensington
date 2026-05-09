@@ -1,15 +1,33 @@
+import showInvalid from '../lib/show-invalid.js';
 import Signal, { effect } from '../lib/signal.js';
 
+const TYPE_ERROR = 'inlineComment only accepts a string or number';
+const DOUBLE_DASH_ERROR = 'inlineComment text must not contain "--"';
+
 export default class CommentTag {
-  constructor(text) {
+  constructor(text, validationLevel = 'off', logger = undefined) {
     this.text = text;
+    this.validationLevel = validationLevel;
+    this.logger = logger;
+  }
+
+  _normalize(raw) {
+    if (!['string', 'number'].includes(typeof raw)) {
+      showInvalid(TYPE_ERROR, this.validationLevel, this.logger);
+      return null;
+    }
+    let text = String(raw);
+    if (text.includes('--')) {
+      showInvalid(DOUBLE_DASH_ERROR, this.validationLevel, this.logger);
+      text = text.replace(/--/g, '');
+    }
+    return text;
   }
 
   toString() {
-    let text = this.text instanceof Signal ? String(this.text.get()) : this.text;
-    if (text.includes('--')) {
-      text = text.replace(/--/g, '');
-    }
+    const raw = this.text instanceof Signal ? this.text.get() : this.text;
+    const text = this._normalize(raw);
+    if (text === null) { return ''; }
     if (/[\r\n]/.test(text)) {
       const normalized = text.replace(/\r\n?/g, '\n');
       const indented = normalized.split('\n').map(line => `  ${line}`).join('\n');
@@ -24,16 +42,20 @@ export default class CommentTag {
     }
     if (this.text instanceof Signal) {
       const sig = this.text;
-      const comment = document.createComment(String(sig.get()));
+      const comment = document.createComment('');
       const ref = new WeakRef(comment);
       const e = effect(() => {
         const c = ref.deref();
         if (!c) { e.stop(); return; }
-        c.nodeValue = String(sig.get());
+        const text = this._normalize(sig.get());
+        if (text === null) { return; }
+        c.nodeValue = text;
       });
       return comment;
     }
 
-    return document.createComment(this.text);
+    const text = this._normalize(this.text);
+    if (text === null) { return document.createComment(''); }
+    return document.createComment(text);
   }
 }

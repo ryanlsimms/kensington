@@ -686,7 +686,9 @@ t.div([t.p('content'), t.inlineComment(note)]).toElement();
 
     <h3>Cleanup</h3>
 
-    <p>Call <code>.stop()</code> to tear down a signal, computed, or effect when it is no longer needed. This is most useful in web components, where you can stop effects in <code>disconnectedCallback</code> to avoid running updates after the element is removed from the DOM.</p>
+    <p>Elements created with <code>.toElement()</code> automatically stop their reactive effects when the element is removed from the DOM, whether by <code>el.remove()</code> or by removing an ancestor.</p>
+
+    <p>For standalone <code>effect()</code> calls that run outside a specific element, call <code>.stop()</code> when the effect is no longer needed. Web components are a typical place to do this:</p>
 
     <pre><code class="language-javascript">class MyCounter extends HTMLElement {
   #effect = null;

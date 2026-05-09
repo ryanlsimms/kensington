@@ -1,12 +1,28 @@
+import showInvalid from '../lib/show-invalid.js';
 import Signal, { effect } from '../lib/signal.js';
 
+const TYPE_ERROR = 'literal() only accepts a string';
+const SCRIPT_ERROR = '<script> tags are not allowed in literal html. Use unsafeLiteral if you can vouch for the string';
+
 export default class LiteralTag {
-  constructor(str) {
+  constructor(str, safe = false, validationLevel = 'off', logger = undefined) {
     this.str = str;
+    this.safe = safe;
+    this.validationLevel = validationLevel;
+    this.logger = logger;
   }
 
   toString() {
-    return this.str instanceof Signal ? this.str.get() : this.str;
+    const value = this.str instanceof Signal ? this.str.get() : this.str;
+    if (typeof value !== 'string') {
+      showInvalid(TYPE_ERROR, this.validationLevel, this.logger);
+      return '';
+    }
+    if (this.safe && /<script/i.test(value)) {
+      showInvalid(SCRIPT_ERROR, this.validationLevel, this.logger);
+      return '';
+    }
+    return value;
   }
 
   toElement() {
@@ -25,6 +41,15 @@ export default class LiteralTag {
         const start = startRef.deref();
         const end = endRef.deref();
         if (!start || !end) { e.stop(); return; }
+        const val = sig.get();
+        if (typeof val !== 'string') {
+          showInvalid(TYPE_ERROR, this.validationLevel, this.logger);
+          return;
+        }
+        if (this.safe && /<script/i.test(val)) {
+          showInvalid(SCRIPT_ERROR, this.validationLevel, this.logger);
+          return;
+        }
         let node = start.nextSibling;
         while (node !== end) {
           const next = node.nextSibling;
@@ -32,12 +57,20 @@ export default class LiteralTag {
           node = next;
         }
         const template = document.createElement('template');
-        template.innerHTML = sig.get();
+        template.innerHTML = val;
         start.after(...[...template.content.childNodes]);
       });
       return frag;
     }
 
+    if (typeof this.str !== 'string') {
+      showInvalid(TYPE_ERROR, this.validationLevel, this.logger);
+      return document.createDocumentFragment();
+    }
+    if (this.safe && /<script/i.test(this.str)) {
+      showInvalid(SCRIPT_ERROR, this.validationLevel, this.logger);
+      return document.createDocumentFragment();
+    }
     const template = document.createElement('template');
     template.innerHTML = this.str;
     return template.content;

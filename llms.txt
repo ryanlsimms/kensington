@@ -53,11 +53,11 @@ t.meta({ charset: 'utf-8' });
 - **style as object**: `{ style: { backgroundColor: 'red', zIndex: 2 } }` → `style="background-color: red; z-index: 2"`. camelCase keys are converted to kebab-case. Values of `undefined` or empty string are silently omitted. Other non-string/number values are flagged when validation is enabled. In TypeScript, the style object is typed with `csstype.Properties<string | number>`, providing autocomplete for CSS property names and values.
 - **Always allowed**: `data-*`, `aria-*`, and all [global HTML attributes](https://html.spec.whatwg.org/multipage/dom.html#global-attributes)
 - **SVG presentation attributes**: all CSS properties are valid on SVG elements (per the SVG spec). Types are derived from `@webref/css` syntax — numeric properties yield `number | string`, keyword-only properties yield a union of string literals.
-- **Attribute validation** is checked against the HTML/SVG/MathML spec at `'warn'` or `'error'` level
+- **Attribute validation** is checked against the HTML/SVG/MathML spec at `'warn'` or `'error'` level. At `'off'`, invalid input is silently skipped rather than thrown — no errors reach the caller.
 
 ## Content rules
 
-Valid content: strings, numbers, tag instances (`ContentTag`, `VoidTag`, `LiteralTag`, `CommentTag`), or arrays of those. Falsy values (`null`, `undefined`, `''`) are silently ignored. Multiple consecutive spaces are replaced with non-breaking spaces (` `) so spacing is preserved in the browser — single spaces and preformatted elements (`pre`, `script`, `style`, `textarea`) are unaffected.
+Valid content: strings, numbers, tag instances (`ContentTag`, `VoidTag`, `LiteralTag`, `CommentTag`), or arrays of those. Falsy values (`null`, `undefined`, `''`) are silently ignored. Invalid content items (wrong types, non-finite numbers) are silently filtered at `'off'`, logged at `'warn'`, and throw at `'error'`. Multiple consecutive spaces are replaced with non-breaking spaces (` `) so spacing is preserved in the browser — single spaces and preformatted elements (`pre`, `script`, `style`, `textarea`) are unaffected.
 
 ```javascript
 t.ul([
@@ -87,6 +87,10 @@ t.div([t.p('before'), t.inlineComment('note'), t.p('after')]);
 ```
 
 `.toElement()` returns a DOM `Comment` node via `document.createComment()`.
+
+## Validation and error policy
+
+`validationLevel` controls how invalid input is handled: `'off'` silently renders nothing (no errors, no warnings), `'warn'` logs via `logger` and renders nothing, `'error'` throws. **Never throw when `validationLevel` is `'off'`.** Production deployments use `'off'` for performance, and an unexpected throw can crash a server or break a user-facing page. Invalid input at `'off'` must be silently skipped. This applies to invalid attribute values, invalid content items, bad `literal()` input, bad `inlineComment()` input, and any other runtime validation.
 
 ## Constructor options
 
@@ -193,11 +197,12 @@ const app = t.div([
 - `signal.stop()` / `computedSignal.stop()` -- clears all subscribers. For computed signals, also tears down the derived computation. Call when a signal is no longer needed.
 - `signal.transform(fn)` -- convenience wrapper for `computed(() => fn(signal.get()))`. Tracks all signals read inside `fn`, not just the source. Chainable: `count.transform(n => n * 2).transform(n => \`${n}px\`)`
 - `computed(fn)` -- read-only derived signal; re-evaluates when any signal read inside changes. Errors thrown inside `fn` are surfaced asynchronously via `queueMicrotask`.
-- `effect(fn)` -- runs immediately and re-runs when any signal read via `.get()` inside changes. Returns `{ stop() }`: call `e.stop()` to unsubscribe from all tracked signals and prevent further runs (useful in `disconnectedCallback`). Multiple `set()` calls in the same synchronous tick are batched -- the effect runs once with the final value. `subscribe()` callbacks and `computed` updates remain synchronous and unaffected. Effects self-stop when their host DOM element is garbage-collected.
+- `effect(fn)` -- runs immediately and re-runs when any signal read via `.get()` inside changes. Returns `{ stop() }`: call `e.stop()` to unsubscribe from all tracked signals and prevent further runs. Multiple `set()` calls in the same synchronous tick are batched -- the effect runs once with the final value. `computed` updates remain synchronous and unaffected.
+- **Automatic DOM cleanup**: effects created by `.toElement()` stop automatically when the element is removed from the DOM (via `el.remove()` or removal of an ancestor). No manual cleanup is needed for signal-bound elements. For standalone `effect()` calls outside of a specific element, call `e.stop()` manually when the effect is no longer needed -- for example in a web component's `disconnectedCallback`.
 - **As content**: signal updates a text node or replaces a DOM subtree live. The value can freely switch between a scalar and an array.
-- **As attribute value**: signal updates the attribute; boolean signals toggle attribute presence
+- **As attribute value**: signal updates the attribute; boolean signals toggle attribute presence. Passing a `Signal` as an attribute value is always valid regardless of `validationLevel`.
 - **Array signals**: when a signal holds an array, add `dataKey` to items for DOM node reuse on reorder, addition, and removal
-- **`.literal(signal)`**: re-parses HTML and replaces the element on change
+- **`.literal(signal)`**: re-parses HTML and replaces the element on change. The `<script>` tag check runs on every update, not just at creation time.
 - **`.inlineComment(signal)`**: updates the comment node `nodeValue` on change
 
 ## htmlWithDocType
