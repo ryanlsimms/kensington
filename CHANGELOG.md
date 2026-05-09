@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [0.15.3] - 2026-05-09
 
 ### Changed
 - SVG elements now accept all CSS properties as presentation attributes. The list is now derived from the `@webref/css` living standard (~744 properties), matching the SVG spec which permits any CSS property as a presentation attribute.
