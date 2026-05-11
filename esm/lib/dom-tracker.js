@@ -1,4 +1,5 @@
 const tracked = new Map();
+const contentTracked = new WeakSet();
 let observer = null;
 
 function stopRemoved(node) {
@@ -33,4 +34,24 @@ function buildOberver() {
 export function trackForStop(element, stop) {
   buildOberver();
   tracked.set(element, stop);
+}
+
+export function markContentTracked(element) {
+  contentTracked.add(element);
+}
+
+export function isTracked(element) {
+  return tracked.has(element);
+}
+
+export function isContentTracked(element) {
+  return contentTracked.has(element);
+}
+
+export function stopTracked(element) {
+  const stop = tracked.get(element);
+  if (stop !== undefined) {
+    stop();
+    tracked.delete(element);
+  }
 }

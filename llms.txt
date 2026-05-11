@@ -211,15 +211,17 @@ const app = t.div([
 ]).toElement();
 ```
 
-- `signal(initial)` -- creates a `Signal` with `.get()`, `.set(valueOrFn)`, `.stop()`, and `.transform(fn)` methods
+- `signal(initial)` -- creates a `Signal` with `.get()`, `.set(valueOrFn)`, `.stop()`, `.transform(fn)`, `.toJSON()`, and `.toString()` methods
 - `signal.stop()` / `computedSignal.stop()` -- clears all subscribers. For computed signals, also tears down the derived computation. Call when a signal is no longer needed.
 - `signal.transform(fn)` -- convenience wrapper for `computed(() => fn(signal.get()))`. Tracks all signals read inside `fn`, not just the source. Chainable: `count.transform(n => n * 2).transform(n => \`${n}px\`)`
+- `signal.toJSON()` -- returns the current value. Makes signals transparent to `JSON.stringify`: `JSON.stringify({ done: signal(true) })` → `'{"done":true}'`. Works recursively through nested signal trees.
+- `signal.toString()` -- returns `String(this.get())`. Signals work in template literals and string concatenation. Calls `.get()`, so dependency tracking works correctly inside `computed` and `effect`.
 - `computed(fn)` -- read-only derived signal; re-evaluates when any signal read inside changes. Errors thrown inside `fn` are surfaced asynchronously via `queueMicrotask`.
 - `effect(fn)` -- runs immediately and re-runs when any signal read via `.get()` inside changes. Returns `{ stop() }`: call `e.stop()` to unsubscribe from all tracked signals and prevent further runs. Multiple `set()` calls in the same synchronous tick are batched -- the effect runs once with the final value. `computed` updates remain synchronous and unaffected.
 - **Automatic DOM cleanup**: effects created by `.toElement()` stop automatically when the element is removed from the DOM (via `el.remove()` or removal of an ancestor). No manual cleanup is needed for signal-bound elements. For standalone `effect()` calls outside of a specific element, call `e.stop()` manually when the effect is no longer needed -- for example in a web component's `disconnectedCallback`.
 - **As content**: signal updates a text node or replaces a DOM subtree live. The value can freely switch between a scalar and an array.
 - **As attribute value**: signal updates the attribute; boolean signals toggle attribute presence. Passing a `Signal` as an attribute value is always valid regardless of `validationLevel`.
-- **Array signals**: when a signal holds an array, add `dataKey` to items for DOM node reuse on reorder, addition, and removal
+- **Array signals**: when a signal holds an array, add `dataKey` to items for keyed reconciliation. Reused nodes are diffed recursively -- only changed attributes and text are written; signal-managed attributes on reused nodes are preserved and orphaned effects on discarded nodes are stopped immediately.
 - **`.literal(signal)`**: re-parses HTML and replaces the element on change. The `<script>` tag check runs on every update, not just at creation time.
 - **`.inlineComment(signal)`**: updates the comment node `nodeValue` on change
 
@@ -490,7 +492,7 @@ registerComponents({ dashboard });
 ```
 
 - `renderForHydration(fn, state, name?)` — calls `fn(state)` on the server, serializes state as JSON, returns a `LiteralTag` containing the SSR HTML and a `<script type="application/json">` block. `fn.name` is used as the component name by default; pass an explicit `name` for anonymous functions. Returns an empty `LiteralTag` (renders nothing) if the component returns `null`, `undefined`, or an array of only null/undefined values. Throws if: the name cannot be determined; the component returns a non-element value (string, number, etc.); the component is async; or state contains a BigInt or circular reference. Warns on lossy state values (Date, Map, Set, RegExp, undefined, function, Symbol, non-finite numbers, class instances).
-- `registerComponents(components)` — maps component names to functions and hydrates all matching server-rendered instances in the page. Uses object keys as names; shorthand `{ dashboard }` is safe from minification. Issues a `console.warn` for any component name found in the page with no matching entry in `components`, and for any component whose mount point cannot be found. If the client component returns `null` or `undefined`, warns and leaves the SSR element in place. If the client component throws, logs a `console.error` and leaves the SSR element in place. Defers hydration until `DOMContentLoaded` if called while the document is still loading. Safe to call in non-browser environments (no-op when `document` is undefined).
+- `registerComponents(components)` — maps component names to functions and hydrates all matching server-rendered instances in the page. Uses object keys as names; shorthand `{ dashboard }` is safe from minification. Issues a `console.warn` for any component name found in the page with no matching entry in `components`, and for any component whose mount point cannot be found. If the client component returns `null` or `undefined`, warns and leaves the SSR element in place. If the client component throws, logs a `console.error` and leaves the SSR element in place. Defers hydration until `DOMContentLoaded` if called while the document is still loading. Sets up a `MutationObserver` so components in dynamically fetched HTML fragments are hydrated automatically without re-calling `registerComponents`. Returns `{ stop() }` to disconnect the observer. Safe to call in non-browser environments (no-op when `document` is undefined).
 - `isBrowser` — exported boolean (`typeof window !== 'undefined'`). Use to guard code that cannot go inside `effect()` — module-level expressions, `computed()` values, direct assignments.
 
 ### Component authoring for hydration
@@ -526,8 +528,6 @@ These are deliberate simplicity/overhead tradeoffs. They are not bugs.
 **Signals created during SSR are not stopped.** `renderForHydration` calls `fn(state)`, which creates signal and computed objects that are never explicitly stopped. They are unreachable after the request and will be garbage collected, but they add memory pressure on high-traffic servers. The alternative — a separate static render function per component — was rejected as too much overhead for the user.
 
 **State is plaintext in the page source.** The state passed to `renderForHydration` is embedded as a `<script type="application/json">` tag visible to anyone who views source. Do not pass secrets, tokens, or private data as hydration state.
-
-**Duplicate `<style>` tags.** Each `renderForHydration` call emits its own copy of the SSR transition-suppression style. On a page with multiple hydrated components this tag appears multiple times. Browsers handle duplicate rules correctly; the redundancy is minor.
 
 **`fn.name` is fragile under aggressive minification.** Server code is typically not minified, so `fn.name` is reliable in practice. If server code is bundled and minified, pass an explicit name as the third argument: `renderForHydration(dashboard, state, 'dashboard')`.
 

@@ -187,6 +187,114 @@ test('keyed list preserves unchanged DOM nodes when one item is replaced', async
   await expect(page.locator('#partial-update li').nth(2)).toHaveText('three');
 });
 
+test('signal attribute effect on discarded fresh node is stopped after reconciliation', async ({ page, bundle }) => {
+  const count = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+
+    const sharedClass = signal('a');
+    const items = signal([{ id: 1, label: 'first' }]);
+    const rows = computed(() =>
+      items.get().map(item => t.li({ dataKey: item.id, class: sharedClass }, item.label)),
+    );
+    document.body.append(t.ul({ id: 'attr-effect-cleanup' }, rows).toElement());
+    await Promise.resolve();
+
+    items.set([{ id: 1, label: 'second' }]);
+    await Promise.resolve();
+
+    // Count setAttribute('class') calls on the next signal update.
+    // Without stopTracked: 2 (live + orphaned fresh node). With stopTracked: 1.
+    let writes = 0;
+    const orig = Element.prototype.setAttribute;
+    Element.prototype.setAttribute = function setAttribute(name, val) {
+      if (name === 'class') { writes++; }
+      return orig.call(this, name, val);
+    };
+    sharedClass.set('b');
+    await Promise.resolve();
+    Element.prototype.setAttribute = orig;
+    return writes;
+  }, bundle);
+
+  expect(count).toBe(1);
+});
+
+test('signal-managed attribute is preserved on keyed element after reconciliation', async ({ page, bundle }) => {
+  const cls = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+
+    const sharedClass = signal('active');
+    const items = signal([{ id: 1, label: 'first' }]);
+    const rows = computed(() =>
+      items.get().map(item => t.li({ dataKey: item.id, class: sharedClass }, item.label)),
+    );
+    document.body.append(t.ul({ id: 'attr-preserve' }, rows).toElement());
+    await Promise.resolve();
+
+    items.set([{ id: 1, label: 'second' }]);
+    await Promise.resolve();
+
+    return document.querySelector('#attr-preserve li').getAttribute('class');
+  }, bundle);
+
+  expect(cls).toBe('active');
+});
+
+test('signal content effect on discarded fresh node is stopped after reconciliation', async ({ page, bundle }) => {
+  const count = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+
+    const sharedContent = signal('hello');
+    const items = signal([{ id: 1 }]);
+    const rows = computed(() =>
+      items.get().map(item => t.li({ dataKey: item.id }, [sharedContent])),
+    );
+    document.body.append(t.ul({ id: 'content-effect-cleanup' }, rows).toElement());
+    await Promise.resolve();
+
+    items.set([{ id: 1 }]);
+    await Promise.resolve();
+
+    // Count createTextNode calls on the next signal update.
+    // reconcile() calls createTextNode for each text value it renders.
+    // Without stopTracked: 2 (live + orphaned). With stopTracked: 1.
+    let creates = 0;
+    const orig = Document.prototype.createTextNode;
+    Document.prototype.createTextNode = function createTextNode(...args) {
+      creates++;
+      return orig.apply(this, args);
+    };
+    sharedContent.set('world');
+    await Promise.resolve();
+    Document.prototype.createTextNode = orig;
+    return creates;
+  }, bundle);
+
+  expect(count).toBe(1);
+});
+
+test('signal content in keyed element updates correctly after reconciliation', async ({ page, bundle }) => {
+  await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+
+    const sharedContent = signal('hello');
+    const items = signal([{ id: 1 }]);
+    const rows = computed(() =>
+      items.get().map(item => t.li({ dataKey: item.id }, [sharedContent])),
+    );
+    document.body.append(t.ul({ id: 'content-after-reconcile' }, rows).toElement());
+    await Promise.resolve();
+
+    items.set([{ id: 1 }]);
+    await Promise.resolve();
+
+    sharedContent.set('world');
+    await Promise.resolve();
+  }, bundle);
+
+  await expect(page.locator('#content-after-reconcile li')).toHaveText('world');
+});
+
 test('signal content switches from scalar to array and renders all items', async ({ page, bundle }) => {
   await page.evaluate(async src => {
     const { t, signal } = await import(src);

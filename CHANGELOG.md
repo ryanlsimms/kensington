@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- `Signal.toJSON()` returns the current value, making signals transparent to `JSON.stringify`. Nested signal trees serialize correctly without manual `.get()` calls: `JSON.stringify({ done: signal(true) })` → `'{"done":true}'`.
+- `Signal.toString()` delegates to `String(this.get())`, so signals work in template literals and string concatenation. Because it calls `.get()`, it participates in dependency tracking — `` `${mySignal}` `` inside a `computed` or `effect` correctly subscribes to the signal.
+
+### Changed
+- Keyed list reconciliation now performs a full recursive positional diff on reused nodes rather than replacing their children. Only attributes and text that actually differ are written to the DOM. Signal-managed attributes on reused nodes are preserved correctly and orphaned signal effects on discarded fresh nodes are stopped immediately.
+
+## [2.0.0-signals.3] - 2026-05-11
+
+### Added
+- `registerComponents` now sets up a `MutationObserver` so components embedded in dynamically fetched HTML fragments are hydrated automatically without re-calling `registerComponents`. Any `<script type="application/json" data-k-component>` block inserted into the DOM after the initial scan is picked up and hydrated immediately.
+- `registerComponents` returns `{ stop() }`. Call `stop()` to disconnect the observer when the component registry is no longer needed.
+
+### Changed
+- `registerComponents` injects a single `<style data-k-ssr>` rule into `<head>` that suppresses transitions on `[data-k-mount-target]` elements for the lifetime of the page. Previously each `renderForHydration` call embedded its own copy of the rule inline, producing duplicate style blocks on pages with multiple hydrated components.
+
 ## [2.0.0-signals.2] - 2026-05-11
 
 ### Added
