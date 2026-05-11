@@ -1347,9 +1347,9 @@ describe('renderForHydration', () => {
     );
   });
 
-  it('injects SSR style tag', () => {
+  it('does not embed a style block (style is injected into head by registerComponents)', () => {
     const html = renderForHydration(comp, {}).toString();
-    assert.match(html, /<style>\[data-k-mount-target\]/);
+    assert.doesNotMatch(html, /<style>/);
   });
 
   it('escapes </script> in embedded JSON', () => {
