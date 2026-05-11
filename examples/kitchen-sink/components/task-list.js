@@ -3,14 +3,18 @@ import { computed } from 'kensington';
 import t from '../template-engine.js';
 
 function taskItem(tasks, { id, text, done }) {
-  return t.li({ 'data-key': id, class: done ? 'task-item done' : 'task-item' }, [
+  // done is a Signal<boolean>. Passing it as an attribute value tells Kensington
+  // to set up a live effect: the attribute updates whenever the signal changes,
+  // with no re-render of the surrounding list.
+  const itemClass = done.transform(d => d ? 'task-item done' : 'task-item');
+  return t.li({ 'data-key': id, class: itemClass }, [
     t.label({ class: 'task-label' }, [
       t.input({
         type: 'checkbox',
         checked: done,
-        onclick: () => tasks.set(ts => ts.map(task =>
-          task.id === id ? { ...task, done: !task.done } : task,
-        )),
+        // Toggling only mutates this task's done signal. When filter === 'all'
+        // the tasks array never changes, so the list is never re-reconciled.
+        onclick: () => done.set(d => !d),
       }),
       t.span({ class: 'task-text' }, text),
     ]),
@@ -27,15 +31,18 @@ export function taskList({ tasks, filter }) {
   const filtered = computed(() => {
     const all = tasks.get();
     const f = filter.get();
-    if (f === 'active') {
-      return all.filter(task => !task.done);
-    }
-    if (f === 'done') {
-      return all.filter(task => task.done);
-    }
+    // Reading task.done.get() inside the predicate registers each task's done signal
+    // as a dependency. When filter is 'active' or 'done', toggling a task re-runs
+    // this computed so the item appears or disappears from the filtered view.
+    // When filter is 'all' we return early without reading any done signals,
+    // so a toggle doesn't re-run this computed at all.
+    if (f === 'active') { return all.filter(task => !task.done.get()); }
+    if (f === 'done') { return all.filter(task => task.done.get()); }
     return all;
   });
 
+  // Each update produces new tag objects, but reconcile() matches them to existing
+  // DOM nodes by data-key and patches only what changed rather than replacing elements.
   const listItems = filtered.transform(items => items.map(item => taskItem(tasks, item)));
   const hasItems = filtered.transform(items => items.length > 0);
   const emptyMsg = filter.transform(f => ({
@@ -58,6 +65,7 @@ export function taskList({ tasks, filter }) {
 
   return t.div([
     t.sortableList({ onreorder }, t.ul({ class: 'task-list' }, listItems)),
+    // hidden accepts a signal — the attribute is added/removed live as hasItems changes.
     t.p({ class: 'empty-msg', hidden: hasItems }, emptyMsg),
   ]);
 }

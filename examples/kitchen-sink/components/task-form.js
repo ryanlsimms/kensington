@@ -3,7 +3,10 @@ import { signal } from 'kensington';
 import t from '../template-engine.js';
 
 export function taskForm({ tasks }) {
+  // Local signal for the controlled input — scoped to this component.
   const newTaskText = signal('');
+  // transform() creates a derived signal: disabled is true whenever the trimmed
+  // input is empty, and updates automatically as newTaskText changes.
   const disabled = newTaskText.transform(v => !v.trim());
 
   function submit(e) {
@@ -12,7 +15,9 @@ export function taskForm({ tasks }) {
     if (!text) {
       return;
     }
-    tasks.set(ts => [...ts, { id: Date.now().toString(36), text, done: false }]);
+    // New tasks get done: signal(false) to match the shape liftTasks() produces,
+    // so task-list, task-stats, and progress-bar can all call task.done.get().
+    tasks.set(ts => [...ts, { id: Date.now().toString(36), text, done: signal(false) }]);
     newTaskText.set('');
     e.target.reset();
   }

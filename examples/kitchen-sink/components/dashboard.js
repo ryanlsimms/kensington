@@ -9,25 +9,40 @@ import { taskStats } from './task-stats.js';
 
 const STORAGE_KEY = 'kensington-tasks';
 
+// The server sends tasks as plain objects ({ id, text, done: boolean }).
+// toReactiveTasks wraps each `done` in a signal so toggling a task only fires
+// that one signal rather than replacing the whole tasks array. Components that
+// read task.done.get() inside a computed will react to individual changes.
+function toReactiveTasks(raw) {
+  return raw.map(task => ({ ...task, done: signal(task.done) }));
+}
+
 export function dashboard({ tasks: initialTasks }) {
-  const tasks = signal(initialTasks);
+  // signal() creates a reactive value. Any computed or effect that calls .get()
+  // on this signal will re-run automatically when it changes.
+  const tasks = signal(toReactiveTasks(initialTasks));
   const filter = signal('all');
   const hasSaved = signal(isBrowser && Boolean(localStorage.getItem(STORAGE_KEY)));
 
+  // effect() runs immediately and re-runs whenever any signal read inside changes.
+  // Here it tracks tasks and each task's done signal, so the tab title stays in sync.
   effect(() => {
-    const remaining = tasks.get().filter(task => !task.done).length;
+    const remaining = tasks.get().filter(task => !task.done.get()).length;
     document.title = remaining ? `(${remaining}) Kitchen Sink` : 'Kitchen Sink';
   });
 
   function save() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks.get()));
+    // Signal implements toJSON(), so JSON.stringify resolves every signal in the
+    // tree to its current value automatically — no manual .get() calls needed.
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
     hasSaved.set(true);
   }
 
   function load() {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
-      tasks.set(JSON.parse(saved));
+      // JSON.parse gives back plain objects, so lift them back to reactive shape.
+      tasks.set(toReactiveTasks(JSON.parse(saved)));
     }
   }
 
@@ -46,6 +61,8 @@ export function dashboard({ tasks: initialTasks }) {
       t.button({
         type: 'button',
         class: 'storage-btn',
+        // transform() is shorthand for computed(() => fn(signal.get())).
+        // The button is disabled whenever nothing has been saved yet.
         disabled: hasSaved.transform(v => !v),
         onclick: load,
       }, 'Load'),

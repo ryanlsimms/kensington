@@ -1,6 +1,6 @@
 import attributesArrayFromObject from '../lib/attributes-array-from-object.js';
 import attributesStringFromObject from '../lib/attributes-string-from-object.js';
-import { trackForStop } from '../lib/dom-tracker.js';
+import { markContentTracked, trackForStop } from '../lib/dom-tracker.js';
 import he from '../lib/he.js';
 import indent from '../lib/indent.js';
 import { reconcile } from '../lib/reconcile.js';
@@ -304,6 +304,7 @@ export default class ContentTag {
     }
 
     const stops = [];
+    let hasSignalContent = false;
 
     for (const [attrName, attrValue] of this.attributeArray()) {
       if (attrName.startsWith('on') && typeof attrValue === 'function') {
@@ -321,6 +322,7 @@ export default class ContentTag {
         continue;
       }
       if (node instanceof Signal) {
+        hasSignalContent = true;
         const elementRef = new WeakRef(element);
         const startAnchor = document.createComment('');
         const endAnchor = document.createComment('');
@@ -342,6 +344,9 @@ export default class ContentTag {
 
     if (stops.length > 0) {
       trackForStop(element, () => { for (const stop of stops) { stop(); } });
+    }
+    if (hasSignalContent) {
+      markContentTracked(element);
     }
 
     return element;
