@@ -654,6 +654,8 @@ document.body.append(app.toElement());</code></pre>
           <li><code>.set(valueOrFn)</code> &mdash; sets a new value, or updates via function: <code>count.set(n =&gt; n + 1)</code></li>
           <li><code>.stop()</code> &mdash; clears all subscribers. The signal retains its current value but will no longer notify anyone of changes.</li>
           <li><code>.transform(fn)</code> &mdash; returns a derived signal. Equivalent to <code>computed(() =&gt; fn(signal.get()))</code>. Chainable.</li>
+          <li><code>.toJSON()</code> &mdash; returns the current value. Makes signals transparent to <code>JSON.stringify</code>: <code>JSON.stringify({ done: signal(true) })</code> &rarr; <code>'{"done":true}'</code>. Works recursively through nested signal trees.</li>
+          <li><code>.toString()</code> &mdash; returns <code>String(this.get())</code>. Signals work in template literals and string concatenation. Because it calls <code>.get()</code>, dependency tracking works correctly inside <code>computed</code> and <code>effect</code>.</li>
         </ul>
       </li>
       <li><code>computed(fn)</code> &mdash; read-only signal derived from others; re-evaluates automatically.</li>
@@ -682,7 +684,7 @@ isLoading.set(false);  // restores it when done</code></pre>
 
     <h3>Keyed lists</h3>
 
-    <p>When a signal holds an array, add <code>dataKey</code> to items. The reconciler matches nodes by <code>data-key</code> and reuses DOM elements on reorder, addition, and removal, preserving focus, animations, and event listeners.</p>
+    <p>When a signal holds an array, add <code>dataKey</code> to items. The reconciler matches nodes by <code>data-key</code> and reuses DOM elements on reorder, addition, and removal. Reused nodes are diffed recursively: only changed attributes and text are written to the DOM. Signal-managed attributes on reused nodes are preserved, and orphaned effects on discarded nodes are stopped immediately.</p>
 
     <pre><code class="language-javascript">const items = signal([
   { id: 1, name: 'Apple' },
@@ -779,7 +781,7 @@ export function counter({ count: initial }) {
 
     <ul>
       <li><code>renderForHydration(fn, state, name?)</code> - <u>On Server</u> - renders the component to HTML and embeds state as a JSON script block. Uses <code>fn.name</code> by default or pass an explicit <code>name</code> for anonymous functions. <code>name</code> must match what is used in <code>registerComponents</code> on the client. Throws if the component returns a non-element value or a Promise. Warns on lossy state values (Date, Map, Set, RegExp, undefined, function, Symbol, non-finite numbers, class instances); throws on unserializable ones (BigInt, circular references).</li>
-      <li><code>registerComponents(components)</code> - <u>On Client</u> - scans the page for components rendered by <code>renderForHydration</code> and mounts each one reactively. Object keys are used as component names: <code>{ counter }</code> registers the function under <code>'counter'</code>. Must match what is passed in <code>renderForHydration</code> on the server. Issues a <code>console.warn</code> for unregistered component names and missing mount points. If the client component returns <code>null</code> or throws, warns or logs the error and leaves the SSR element in place. Defers hydration until <code>DOMContentLoaded</code> if called while the page is still loading.</li>
+      <li><code>registerComponents(components)</code> - <u>On Client</u> - scans the page for components rendered by <code>renderForHydration</code> and mounts each one reactively. Object keys are used as component names: <code>{ counter }</code> registers the function under <code>'counter'</code>. Must match what is passed in <code>renderForHydration</code> on the server. Issues a <code>console.warn</code> for unregistered component names and missing mount points. If the client component returns <code>null</code> or throws, warns or logs the error and leaves the SSR element in place. Defers hydration until <code>DOMContentLoaded</code> if called while the page is still loading. Sets up a <code>MutationObserver</code> so components in dynamically fetched HTML fragments are hydrated automatically without re-calling <code>registerComponents</code>. Returns <code>{ stop() }</code> to disconnect the observer.</li>
       <li><code>isBrowser</code> &mdash; <code>true</code> in a browser environment, <code>false</code> in Node.js. Use to guard browser-only code that cannot go inside <code>effect()</code>, such as module-level expressions or <code>computed()</code> values.</li>
     </ul>
 

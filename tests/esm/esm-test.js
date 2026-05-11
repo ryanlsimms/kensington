@@ -1095,6 +1095,29 @@ describe('signal', () => {
     s.set('after');
     assert.strictEqual(t.inlineComment(s).toString(), '<!-- after -->');
   });
+  it('toJSON() returns the current value', () => {
+    const s = signal(true);
+    assert.strictEqual(JSON.stringify(s), 'true');
+    s.set(false);
+    assert.strictEqual(JSON.stringify(s), 'false');
+  });
+  it('toJSON() serializes signals nested in objects', () => {
+    const done = signal(true);
+    assert.strictEqual(JSON.stringify({ id: 1, done }), '{"id":1,"done":true}');
+  });
+  it('toString() returns the string representation of the current value', () => {
+    const s = signal(42);
+    assert.strictEqual(`${s}`, '42');
+    s.set(99);
+    assert.strictEqual(`${s}`, '99');
+  });
+  it('toString() tracks the signal inside a computed', () => {
+    const s = signal('hello');
+    const upper = computed(() => `${s}`.toUpperCase());
+    assert.strictEqual(upper.get(), 'HELLO');
+    s.set('world');
+    assert.strictEqual(upper.get(), 'WORLD');
+  });
 });
 
 // ─── signal.transform ──────────────────────────────────────────────────────
