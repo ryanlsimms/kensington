@@ -20,3 +20,5 @@ export function signal(initial) {
 }
 
 export { computed, effect };
+export const isBrowser = typeof window !== 'undefined';
+export { registerComponents, renderForHydration } from './lib/hydration.js';

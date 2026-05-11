@@ -140,6 +140,20 @@ class MyEngine extends Kensington {
 }
 ```
 
+When custom elements are only needed within a single module, create a local subclass in that file rather than calling `createCustomTag` on the shared `t` instance. This keeps the custom tag scoped to its component and is the correct pattern for AI agents to follow:
+
+```javascript
+// component-scoped custom element
+import Kensington, { computed } from 'kensington';
+
+class MyComponentEngine extends Kensington {
+  myTag = this.createCustomTag('my-tag', { variant: ['primary', 'secondary'] });
+}
+
+const t = new MyComponentEngine();
+// t.myTag(...) is now available alongside all standard tag methods
+```
+
 ## TypeScript — namespace augmentation
 
 Add attribute namespaces (e.g. htmx `hx-*`) globally via module augmentation:
@@ -283,6 +297,239 @@ Conversion rules:
 - `<script>` and `<style>` text content is passed through as a plain string
 
 If ESLint or Prettier is installed in the working directory, the converter reads `max-len` / `printWidth` for line-breaking and runs the formatter over the output.
+
+## Patterns
+
+### Server-side rendering (Node / Express)
+
+```javascript
+import express from 'express';
+import { t } from 'kensington';
+
+function layout(title, body) {
+  return t.htmlWithDocType({ lang: 'en' }, [
+    t.head([
+      t.meta({ charset: 'utf-8' }),
+      t.meta({ name: 'viewport', content: 'width=device-width, initial-scale=1' }),
+      t.title(title),
+      t.link({ rel: 'stylesheet', href: '/style.css' }),
+    ]),
+    t.body(body),
+  ]).toString();
+}
+
+app.get('/users/:id', async (req, res) => {
+  const user = await db.getUser(req.params.id);
+  res.send(layout(`${user.name} - Profile`, [
+    t.h1(user.name),
+    t.p(user.bio),
+  ]));
+});
+```
+
+### Component pattern (subclass with custom elements)
+
+```javascript
+import Kensington from 'kensington';
+
+class UI extends Kensington {
+  // card({ variant: 'primary' | 'muted' }, ...content)
+  card = this.createCustomTag('ui-card', {
+    variant: ['primary', 'muted'],
+  });
+
+  badge = this.createCustomTag('ui-badge', {
+    count: Number,
+  });
+}
+
+const t = new UI();
+
+t.card({ variant: 'primary' }, [
+  t.h2('Title'),
+  t.p('Body text'),
+]).toString();
+```
+
+### Conditional rendering
+
+```javascript
+// falsy values (false, null, undefined) are silently ignored
+function userNav(user) {
+  return t.nav([
+    t.a({ href: '/' }, 'Home'),
+    user.isAdmin && t.a({ href: '/admin' }, 'Admin'),
+    user.unread > 0 && t.span({ class: 'badge' }, user.unread),
+  ]);
+}
+```
+
+### Signal-driven counter
+
+```javascript
+import { t, signal, computed, effect } from 'kensington';
+
+const count = signal(0);
+const doubled = computed(() => count.get() * 2);
+
+effect(() => { document.title = `Count: ${count.get()}`; });
+
+document.body.append(
+  t.div({ class: 'counter' }, [
+    t.p(['Count: ', count, ' (doubled: ', doubled, ')']),
+    t.button({ type: 'button', onclick: () => count.set(n => n + 1) }, 'Increment'),
+    t.button({ type: 'button', onclick: () => count.set(0) }, 'Reset'),
+  ]).toElement()
+);
+```
+
+### Loading state (signal switching between spinner and content)
+
+```javascript
+import { t, signal } from 'kensington';
+
+const view = signal(t.p({ class: 'spinner' }, 'Loading...'));
+
+// view can hold a tag, a string, an array, or null -- switching types is fine
+fetch('/api/data')
+  .then(r => r.json())
+  .then(data => {
+    view.set([
+      t.h2(data.title),
+      t.p(data.body),
+    ]);
+  })
+  .catch(() => {
+    view.set(t.p({ class: 'error' }, 'Failed to load.'));
+  });
+
+document.body.append(t.div({ class: 'content' }, view).toElement());
+```
+
+### Reactive list with keyed reconciliation
+
+```javascript
+import { t, signal, computed } from 'kensington';
+
+const items = signal([
+  { id: 1, label: 'Buy milk' },
+  { id: 2, label: 'Walk dog' },
+]);
+
+// dataKey tells the reconciler to reuse DOM nodes on reorder/add/remove
+const rows = computed(() =>
+  items.get().map(item =>
+    t.li({ dataKey: item.id }, [
+      t.span(item.label),
+      t.button({
+        type: 'button',
+        onclick: () => items.set(list => list.filter(i => i.id !== item.id)),
+      }, 'Remove'),
+    ])
+  )
+);
+
+function addItem(label) {
+  items.set(list => [...list, { id: Date.now(), label }]);
+}
+
+document.body.append(t.ul(rows).toElement());
+```
+
+### Web component with signal cleanup
+
+```javascript
+import { t, signal } from 'kensington';
+
+class CounterWidget extends HTMLElement {
+  #count = signal(0);
+  #effect = null;
+
+  connectedCallback() {
+    this.append(
+      t.div([
+        t.p(this.#count),
+        t.button({ type: 'button', onclick: () => this.#count.set(n => n + 1) }, '+'),
+      ]).toElement()
+    );
+  }
+
+  disconnectedCallback() {
+    // signal effects created by toElement() stop automatically on removal.
+    // stop the signal itself only if nothing else should hold it alive.
+    this.#count.stop();
+  }
+}
+
+customElements.define('counter-widget', CounterWidget);
+```
+
+## Hydration (server-side rendering + client-side reactivity)
+
+`renderForHydration` renders a component to an HTML string on the server and embeds the state as a JSON script block. `registerComponents` picks it up on the client, re-runs the component with the same state, and replaces the SSR elements with live reactive ones.
+
+```javascript
+// server.js
+import { renderForHydration, t } from 'kensington';
+import { dashboard } from './components/dashboard.js';
+
+app.get('/', (req, res) => {
+  res.send(
+    t.htmlWithDocType({ lang: 'en' }, [
+      t.head([...]),
+      t.body(renderForHydration(dashboard, { tasks: [...] })),
+    ]).toString()
+  );
+});
+
+// client.js
+import { registerComponents } from 'kensington';
+import { dashboard } from './components/dashboard.js';
+
+registerComponents({ dashboard });
+```
+
+- `renderForHydration(fn, state, name?)` — calls `fn(state)` on the server, serializes state as JSON, returns a `LiteralTag` containing the SSR HTML and a `<script type="application/json">` block. `fn.name` is used as the component name by default; pass an explicit `name` for anonymous functions. Returns an empty `LiteralTag` (renders nothing) if the component returns `null`, `undefined`, or an array of only null/undefined values. Throws if: the name cannot be determined; the component returns a non-element value (string, number, etc.); the component is async; or state contains a BigInt or circular reference. Warns on lossy state values (Date, Map, Set, RegExp, undefined, function, Symbol, non-finite numbers, class instances).
+- `registerComponents(components)` — maps component names to functions and hydrates all matching server-rendered instances in the page. Uses object keys as names; shorthand `{ dashboard }` is safe from minification. Issues a `console.warn` for any component name found in the page with no matching entry in `components`, and for any component whose mount point cannot be found. If the client component returns `null` or `undefined`, warns and leaves the SSR element in place. If the client component throws, logs a `console.error` and leaves the SSR element in place. Defers hydration until `DOMContentLoaded` if called while the document is still loading. Safe to call in non-browser environments (no-op when `document` is undefined).
+- `isBrowser` — exported boolean (`typeof window !== 'undefined'`). Use to guard code that cannot go inside `effect()` — module-level expressions, `computed()` values, direct assignments.
+
+### Component authoring for hydration
+
+The same component function runs on both server and client. Write components so they work in both environments:
+
+- Create signals inside the component function body, not at module level.
+- Wrap any browser-only side effects in `effect()` — `effect()` is a no-op during `renderForHydration`, so it is safe to reference `document`, `window`, or `localStorage` inside one. Direct references to browser globals in the function body outside an `effect()` will throw on the server.
+- For browser-only code that cannot go inside `effect()` (module-level code, `computed()` values, direct assignments), use the `isBrowser` export: `if (isBrowser) { ... }` or `isBrowser && window.matchMedia(...)`.
+- State passed to `renderForHydration` must be JSON-serializable. `renderForHydration` warns on lossy values (Date, Map, Set, RegExp, undefined, function, Symbol, non-finite numbers, class instances) and throws on unserializable ones (BigInt, circular references).
+
+```javascript
+export function dashboard({ tasks: initialTasks }) {
+  const tasks = signal(initialTasks);  // signal created inside the function
+
+  effect(() => {
+    // safe — effect() is suppressed on the server
+    document.title = `${tasks.get().length} tasks`;
+  });
+
+  return t.div({ class: 'dashboard' }, [...]);
+}
+```
+
+### Known tradeoffs
+
+These are deliberate simplicity/overhead tradeoffs. They are not bugs.
+
+**DOM replacement, not true hydration.** `registerComponents` replaces the entire SSR DOM with a fresh `toElement()` call rather than reusing existing nodes and attaching signals to them. True hydration would require walking both trees in parallel to match virtual nodes to existing DOM nodes — significant complexity for an edge case benefit. In practice the replacement is imperceptible: `replaceWith()` is synchronous and the visual output is identical. An inline `<style>` tag suppressing transitions on `[data-k-mount-target]` is injected automatically so CSS animations do not re-trigger on the replaced elements.
+
+**Non-interactive window.** Between the browser's first paint of the SSR HTML and when the hydration script runs, elements are rendered but not reactive. This is inherent to any SSR-then-hydrate approach and cannot be avoided without blocking rendering on script load.
+
+**Signals created during SSR are not stopped.** `renderForHydration` calls `fn(state)`, which creates signal and computed objects that are never explicitly stopped. They are unreachable after the request and will be garbage collected, but they add memory pressure on high-traffic servers. The alternative — a separate static render function per component — was rejected as too much overhead for the user.
+
+**State is plaintext in the page source.** The state passed to `renderForHydration` is embedded as a `<script type="application/json">` tag visible to anyone who views source. Do not pass secrets, tokens, or private data as hydration state.
+
+**Duplicate `<style>` tags.** Each `renderForHydration` call emits its own copy of the SSR transition-suppression style. On a page with multiple hydrated components this tag appears multiple times. Browsers handle duplicate rules correctly; the redundancy is minor.
+
+**`fn.name` is fragile under aggressive minification.** Server code is typically not minified, so `fn.name` is reliable in practice. If server code is bundled and minified, pass an explicit name as the third argument: `renderForHydration(dashboard, state, 'dashboard')`.
 
 ## Key types
 
