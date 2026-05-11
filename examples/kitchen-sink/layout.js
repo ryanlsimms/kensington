@@ -6,6 +6,7 @@ export function layout(body) {
       t.meta({ charset: 'utf-8' }),
       t.meta({ name: 'viewport', content: 'width=device-width, initial-scale=1' }),
       t.title('Kitchen Sink'),
+      t.link({ rel: 'icon', href: 'data:image/png;base64,iVBORw0KGgo=' }),
       t.link({ rel: 'stylesheet', href: '/styles.css' }),
       t.script({ type: 'importmap' }, JSON.stringify({
         imports: { kensington: '/dist/kensington.js' },

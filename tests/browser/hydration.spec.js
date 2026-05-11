@@ -244,6 +244,52 @@ test('mounts client-only component when server component returns null', async ({
   await expect(pg.locator('#client-only')).toHaveText('hello');
 });
 
+// ─── dynamic hydration ────────────────────────────────────────────────────
+
+test('hydrates component inserted into DOM after registerComponents', async ({ page: pg, bundle }) => {
+  function counter({ count }) {
+    return t.div({ id: 'target' }, String(count));
+  }
+
+  const ssrHtml = renderForHydration(counter, { count: 7 }).toString();
+
+  const text = await pg.evaluate(async ({ src, html }) => {
+    const { registerComponents, signal, t: tg } = await import(src);
+    function counterLive({ count }) {
+      const n = signal(count);
+      return tg.div({ id: 'target' }, n);
+    }
+    registerComponents({ counter: counterLive });
+    document.body.innerHTML = html;
+    await new Promise(resolve => { setTimeout(resolve, 0); });
+    return document.getElementById('target')?.textContent;
+  }, { src: bundle, html: ssrHtml });
+
+  expect(text).toBe('7');
+});
+
+test('stop() prevents hydration of dynamically inserted components', async ({ page: pg, bundle }) => {
+  function widget({ value }) {
+    return t.div({ id: 'widget' }, String(value));
+  }
+
+  const ssrHtml = renderForHydration(widget, { value: 42 }).toString();
+
+  const mountTargetStillPresent = await pg.evaluate(async ({ src, html }) => {
+    const { registerComponents, t: tg } = await import(src);
+    function widgetLive({ value }) {
+      return tg.div({ id: 'widget' }, String(value));
+    }
+    const handle = registerComponents({ widget: widgetLive });
+    handle.stop();
+    document.body.innerHTML = html;
+    await new Promise(resolve => { setTimeout(resolve, 0); });
+    return document.querySelector('[data-k-mount-target]') !== null;
+  }, { src: bundle, html: ssrHtml });
+
+  expect(mountTargetStillPresent).toBe(true);
+});
+
 // ─── error and deferred paths ──────────────────────────────────────────────
 
 test('client component returning null warns and preserves SSR element', async ({ page: pg, bundle }) => {

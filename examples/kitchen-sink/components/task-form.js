@@ -23,7 +23,7 @@ export function taskForm({ tasks }) {
       class: 'task-input',
       placeholder: 'What needs to be done?',
       aria: { label: 'New task text' },
-      oninput: e => newTaskText.set(/** @type {HTMLInputElement} */ (e.target).value),
+      oninput: e => newTaskText.set(e.target.value),
     }),
     t.button({ type: 'submit', disabled, class: 'add-btn' }, 'Add'),
   ]);

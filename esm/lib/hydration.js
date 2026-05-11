@@ -74,10 +74,6 @@ function checkState(name, state) {
   }
 }
 
-const SSR_STYLE = '<style>' +
-  '[data-k-mount-target],[data-k-mount-target] *{transition:none !important;animation:none !important}' +
-  '</style>';
-
 function assertSync(result, name) {
   if (result !== null && typeof result === 'object' && typeof result.then === 'function') {
     throw new Error(`renderForHydration "${name}": component function must be synchronous`);
@@ -119,25 +115,60 @@ function hydrateComponent(script, fn, name) {
   }
 }
 
+function injectSSRStyle() {
+  if (document.head.querySelector('[data-k-ssr]')) { return; }
+  const style = document.createElement('style');
+  style.setAttribute('data-k-ssr', '');
+  style.textContent = '[data-k-mount-target],[data-k-mount-target] *' +
+    '{transition:none !important;animation:none !important}';
+  document.head.appendChild(style);
+}
+
 function hydrateAll(registry) {
-  if (typeof document === 'undefined') { return; }
+  if (typeof document === 'undefined') {
+    return { stop() {} };
+  }
+
+  injectSSRStyle();
+
+  function tryHydrate(script) {
+    const name = script.dataset.kComponent;
+    const fn = registry.get(name);
+    if (!fn) {
+      console.warn(`renderForHydration: no component registered for "${name}". Did you call registerComponents({ ${name} })?`);
+      return;
+    }
+    hydrateComponent(script, fn, name);
+  }
+
   const run = () => {
     document.querySelectorAll('script[type="application/json"][data-k-component]')
-      .forEach(script => {
-        const name = script.dataset.kComponent;
-        const fn = registry.get(name);
-        if (!fn) {
-          console.warn(`renderForHydration: no component registered for "${name}". Did you call registerComponents({ ${name} })?`);
-          return;
-        }
-        hydrateComponent(script, fn, name);
-      });
+      .forEach(tryHydrate);
   };
+
+  const observer = new MutationObserver(mutations => {
+    for (const mutation of mutations) {
+      for (const node of mutation.addedNodes) {
+        if (node.nodeType !== 1) { continue; }
+        if (node.matches('script[type="application/json"][data-k-component]')) {
+          tryHydrate(node);
+        } else {
+          node.querySelectorAll('script[type="application/json"][data-k-component]')
+            .forEach(tryHydrate);
+        }
+      }
+    }
+  });
+
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', run, { once: true });
   } else {
     run();
   }
+
+  return { stop() { observer.disconnect(); } };
 }
 
 /**
@@ -178,19 +209,21 @@ export function renderForHydration(fn, state, name = fn.name) {
     const attrs = `data-k-component="${name}" data-k-mount="${id}" data-k-mount-target="${id}"`;
     return new LiteralTag(`<script type="application/json" ${attrs}>${json}</script>`, false);
   }
-  const html = `${SSR_STYLE}\n${tagHtml}\n` +
+  const html = `${tagHtml}\n` +
     `<script type="application/json" data-k-component="${name}" data-k-mount="${id}">${json}</script>`;
   return new LiteralTag(html, false);
 }
 
 /**
  * Registers component functions and hydrates all server-rendered instances in the page.
+ * A MutationObserver is installed to hydrate components inserted dynamically after this call.
  *
  * @param {Record<string, function>} components - Map of component name to component function.
+ * @returns {{ stop(): void }} Call stop() to disconnect the observer and halt auto-hydration.
  * @example
- * registerComponents({ counter, userCard });
+ * const { stop } = registerComponents({ counter, userCard });
  */
 export function registerComponents(components) {
   const registry = new Map(Object.entries(components));
-  hydrateAll(registry);
+  return hydrateAll(registry);
 }

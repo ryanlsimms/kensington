@@ -39,5 +39,17 @@ k-sortable-list .drag-over { box-shadow: inset 0 2px 0 #555; }
 
 .intro { margin: 0 0 20px; font-size: 1rem; color: #444; }
 
+.spotlight-section { margin-top: 24px; border: 1px solid #ddd; border-radius: 8px; padding: 20px 24px; }
+.spotlight-hint { margin: 0 0 14px; color: #666; font-size: 0.9rem; }
+.load-btn { padding: 7px 16px; background: #222; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; margin-bottom: 14px; display: block; }
+.spotlight-card { border: 1px solid #e0e0e0; border-radius: 6px; padding: 14px 16px; }
+.spotlight-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.spotlight-text { font-size: 1rem; }
+.spotlight-text.done { text-decoration: line-through; color: #999; }
+.star-btn { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #ccc; padding: 0 2px; line-height: 1; }
+.star-btn:hover { color: #f5a623; }
+.spotlight-badge { font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; background: #eee; color: #666; }
+.spotlight-badge.done { background: #e6f4ea; color: #2a6b3a; }
+
 .progress-wrap { margin-bottom: 14px; }
 .progress-label { display: block; font-size: 0.8rem; color: #666; margin-top: 4px; }
