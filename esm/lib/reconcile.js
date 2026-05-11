@@ -1,3 +1,5 @@
+import { isContentTracked, isTracked, stopTracked } from './dom-tracker.js';
+
 function itemKey(item) {
   const attrs = item?.attributes;
   const key = attrs?.dataKey ?? attrs?.['data-key'];
@@ -18,6 +20,12 @@ function syncNode(existing, fresh) {
   if (existing.nodeType !== fresh.nodeType || existing.nodeName !== fresh.nodeName) {
     return fresh;
   }
+  if (existing.nodeType === 3) {
+    if (existing.nodeValue !== fresh.nodeValue) {
+      existing.nodeValue = fresh.nodeValue;
+    }
+    return existing;
+  }
   if (existing.nodeType !== 1) {
     return fresh;
   }
@@ -29,10 +37,34 @@ function syncNode(existing, fresh) {
     }
     oldAttrNames.delete(attr);
   }
-  for (const attr of oldAttrNames) {
-    existing.removeAttribute(attr);
+  // Skip attribute removal for tracked elements — signal-driven attributes are
+  // managed by deferred effects and won't appear on the fresh element yet.
+  if (!isTracked(existing)) {
+    for (const attr of oldAttrNames) {
+      existing.removeAttribute(attr);
+    }
   }
-  existing.replaceChildren(...[...fresh.childNodes]);
+  // Skip child patching for content-tracked elements — their children include
+  // signal anchor comment nodes whose references are held in effect closures.
+  // Replacing those anchors would break the existing element's content effects.
+  if (!isContentTracked(existing)) {
+    const oldChildren = [...existing.childNodes];
+    const newChildren = [...fresh.childNodes];
+    const count = Math.max(oldChildren.length, newChildren.length);
+    for (let i = 0; i < count; i++) {
+      if (i >= newChildren.length) {
+        oldChildren[i].remove();
+      } else if (i >= oldChildren.length) {
+        existing.appendChild(newChildren[i]);
+      } else {
+        const synced = syncNode(oldChildren[i], newChildren[i]);
+        if (synced !== oldChildren[i]) {
+          existing.replaceChild(synced, oldChildren[i]);
+        }
+      }
+    }
+  }
+  stopTracked(fresh);
   return existing;
 }
 

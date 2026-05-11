@@ -92,6 +92,14 @@ export default class Signal {
     }
     this.#subscribers.clear();
   }
+
+  toJSON() {
+    return this.#value;
+  }
+
+  toString() {
+    return String(this.get());
+  }
 }
 
 function track(run, fn) {

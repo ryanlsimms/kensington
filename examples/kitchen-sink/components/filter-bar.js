@@ -4,6 +4,9 @@ export function filterBar({ filter }) {
   function btn(value, label) {
     return t.button({
       type: 'button',
+      // transform() creates a new derived signal per button. Each button's class
+      // updates independently when filter changes — only the affected attributes
+      // are written to the DOM, not the whole bar.
       class: filter.transform(f => f === value ? 'filter-btn active' : 'filter-btn'),
       onclick: () => filter.set(value),
     }, label);
