@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import Kensington, { computed, effect, signal, t } from 'kensington';
+import Kensington, { computed, effect, isBrowser, renderForHydration, signal, t } from 'kensington';
 
 import attributesArrayFromObject from '../../esm/lib/attributes-array-from-object.js';
 
@@ -1204,6 +1204,11 @@ describe('signal.transform', () => {
     assert.strictEqual(final.get(), 7);
     assert.strictEqual(intermediate.get(), 12);
   });
+  it('throws when .set() is called on a transform result', () => {
+    const s = signal(1);
+    const t2 = s.transform(v => v * 2);
+    assert.throws(() => t2.set(99), /Cannot call .set\(\) on a computed or derived signal/);
+  });
 });
 
 // ─── computed signal ───────────────────────────────────────────────────────
@@ -1246,6 +1251,18 @@ describe('computed signal', () => {
     assert.strictEqual(t.div({ class: cls }).toString(), '<div class="on"></div>');
     active.set(false);
     assert.strictEqual(t.div({ class: cls }).toString(), '<div class="off"></div>');
+  });
+  it('throws when .set() is called directly on a computed signal', () => {
+    const s = signal(1);
+    const c = computed(() => s.get() * 2);
+    assert.throws(() => c.set(99), /Cannot call .set\(\) on a computed or derived signal/);
+  });
+  it('still updates after an attempted .set() on the computed signal', () => {
+    const s = signal(1);
+    const c = computed(() => s.get() * 2);
+    assert.throws(() => c.set(99));
+    s.set(5);
+    assert.strictEqual(c.get(), 10);
   });
 });
 
@@ -1353,5 +1370,260 @@ describe('effect', () => {
     flag.set(true);
     await Promise.resolve();
     assert.deepStrictEqual(log, ['a', 'b', 'b2', 'a2']);
+  });
+});
+
+// ─── renderForHydration ────────────────────────────────────────────────────
+
+describe('renderForHydration', () => {
+  function comp() {
+    return t.div({ id: 'root' }, 'hello');
+  }
+
+  it('injects data-k-mount-target on root element', () => {
+    const html = renderForHydration(comp, {}).toString();
+    assert.match(html, /data-k-mount-target="k[a-z0-9]+"/);
+  });
+
+  it('embeds state as application/json script block', () => {
+    const html = renderForHydration(comp, { count: 3 }).toString();
+    assert.match(html, /<script type="application\/json"[^>]*>{"count":3}<\/script>/);
+  });
+
+  it('uses fn.name as component name', () => {
+    const html = renderForHydration(comp, {}).toString();
+    assert.match(html, /data-k-component="comp"/);
+  });
+
+  it('uses explicit name when provided', () => {
+    const html = renderForHydration(comp, {}, 'myComp').toString();
+    assert.match(html, /data-k-component="myComp"/);
+  });
+
+  it('throws for anonymous function with no name', () => {
+    assert.throws(
+      () => renderForHydration(() => t.div(), {}),
+      /component function must be named/,
+    );
+  });
+
+  it('injects SSR style tag', () => {
+    const html = renderForHydration(comp, {}).toString();
+    assert.match(html, /<style>\[data-k-mount-target\]/);
+  });
+
+  it('escapes </script> in embedded JSON', () => {
+    const html = renderForHydration(comp, { s: '</script>' }).toString();
+    assert.doesNotMatch(html, /<\/script>{"s"/);
+    assert.match(html, /<\\\/script>/);
+  });
+
+  it('handles array return — all elements get data-k-mount-target', () => {
+    function multi() {
+      return [t.p('a'), t.p('b')];
+    }
+    const html = renderForHydration(multi, {}).toString();
+    const matches = html.match(/data-k-mount-target=/g);
+    assert.strictEqual(matches?.length, 2);
+  });
+
+  it('all array elements share the same mount id', () => {
+    function multi() {
+      return [t.p('a'), t.p('b')];
+    }
+    const html = renderForHydration(multi, {}).toString();
+    const ids = [...html.matchAll(/data-k-mount-target="([^"]+)"/g)].map(m => m[1]);
+    assert.strictEqual(ids[0], ids[1]);
+  });
+
+  it('throws for async component', () => {
+    function asyncComp() {
+      return Promise.resolve(t.div());
+    }
+    assert.throws(
+      () => renderForHydration(asyncComp, {}),
+      /must be synchronous/,
+    );
+  });
+
+  it('uses script tag as mount point when component returns null', () => {
+    function nullComp() {
+      return null;
+    }
+    const html = renderForHydration(nullComp, {}).toString();
+    assert.match(html, /data-k-component="nullComp"/);
+    assert.match(html, /data-k-mount-target=/);
+    assert.doesNotMatch(html, /<style>/);
+  });
+
+  it('uses script tag as mount point when component returns undefined', () => {
+    function undefComp() {
+      return undefined;
+    }
+    const html = renderForHydration(undefComp, {}).toString();
+    assert.match(html, /data-k-component="undefComp"/);
+    assert.match(html, /data-k-mount-target=/);
+  });
+
+  it('uses script tag as mount point when component returns an array of only nulls', () => {
+    function nullArray() {
+      return [null, null];
+    }
+    const html = renderForHydration(nullArray, {}).toString();
+    assert.match(html, /data-k-component="nullArray"/);
+    assert.match(html, /data-k-mount-target=/);
+  });
+
+  it('throws when component returns a plain string', () => {
+    function strComp() {
+      return 'hello';
+    }
+    assert.throws(
+      () => renderForHydration(strComp, {}),
+      /not an HTML element/,
+    );
+  });
+
+  it('suppresses effect() during SSR', () => {
+    let ran = false;
+    function withEffect() {
+      effect(() => { ran = true; });
+      return t.div();
+    }
+    renderForHydration(withEffect, {});
+    assert.strictEqual(ran, false);
+  });
+
+  it('restores effect() suppression after nested renderForHydration', () => {
+    let outerRan = false;
+    const innerRan = false;
+    function inner() {
+      return t.span('inner');
+    }
+    function outer() {
+      renderForHydration(inner, {});
+      effect(() => { outerRan = true; });
+      return t.div('outer');
+    }
+    renderForHydration(outer, {});
+    assert.strictEqual(innerRan, false);
+    assert.strictEqual(outerRan, false);
+  });
+
+  it('effect() runs normally after renderForHydration completes', () => {
+    function comp2() {
+      return t.div();
+    }
+    renderForHydration(comp2, {});
+    let ran = false;
+    const e = effect(() => { ran = true; });
+    e.stop();
+    assert.strictEqual(ran, true);
+  });
+
+  it('isBrowser is false in Node.js', () => {
+    assert.strictEqual(isBrowser, false);
+  });
+});
+
+// ─── renderForHydration — checkState ──────────────────────────────────────
+
+describe('renderForHydration checkState', () => {
+  function capture(fn) {
+    const warnings = [];
+    const orig = console.warn;
+    console.warn = msg => warnings.push(msg);
+    try {
+      fn();
+    } finally {
+      console.warn = orig;
+    }
+    return warnings;
+  }
+
+  function comp() {
+    return t.div();
+  }
+
+  it('warns for Date', () => {
+    const w = capture(() => renderForHydration(comp, { d: new Date() }));
+    assert.ok(w.some(s => s.includes('Date will round-trip')));
+  });
+
+  it('warns for Map', () => {
+    const w = capture(() => renderForHydration(comp, { m: new Map() }));
+    assert.ok(w.some(s => s.includes('Map will serialize')));
+  });
+
+  it('warns for Set', () => {
+    const w = capture(() => renderForHydration(comp, { s: new Set() }));
+    assert.ok(w.some(s => s.includes('Set will serialize')));
+  });
+
+  it('warns for RegExp', () => {
+    const w = capture(() => renderForHydration(comp, { r: /foo/ }));
+    assert.ok(w.some(s => s.includes('RegExp will serialize')));
+  });
+
+  it('warns for undefined value', () => {
+    const w = capture(() => renderForHydration(comp, { u: undefined }));
+    assert.ok(w.some(s => s.includes('undefined will be dropped')));
+  });
+
+  it('warns for function value', () => {
+    const w = capture(() => renderForHydration(comp, { f: () => {} }));
+    assert.ok(w.some(s => s.includes('function will be dropped')));
+  });
+
+  it('warns for Infinity', () => {
+    const w = capture(() => renderForHydration(comp, { n: Infinity }));
+    assert.ok(w.some(s => s.includes('will become null')));
+  });
+
+  it('warns for NaN', () => {
+    const w = capture(() => renderForHydration(comp, { n: NaN }));
+    assert.ok(w.some(s => s.includes('will become null')));
+  });
+
+  it('warns for class instance', () => {
+    class Foo {}
+    const w = capture(() => renderForHydration(comp, { f: new Foo() }));
+    assert.ok(w.some(s => s.includes('Foo') && s.includes('lose its methods')));
+  });
+
+  it('warns with path for nested lossy value', () => {
+    const w = capture(() => renderForHydration(comp, { a: { b: new Date() } }));
+    assert.ok(w.some(s => s.includes('state.a.b')));
+  });
+
+  it('warns with index for lossy value in array', () => {
+    const w = capture(() => renderForHydration(comp, { items: [new Date()] }));
+    assert.ok(w.some(s => s.includes('state.items[0]')));
+  });
+
+  it('throws for BigInt', () => {
+    assert.throws(
+      () => renderForHydration(comp, { n: 1n }),
+      /BigInt cannot be serialized/,
+    );
+  });
+
+  it('throws for circular reference', () => {
+    const obj = {};
+    obj.self = obj;
+    assert.throws(
+      () => renderForHydration(comp, obj),
+      /circular reference/,
+    );
+  });
+
+  it('produces no warnings for clean plain-object state', () => {
+    const w = capture(() => renderForHydration(comp, { items: [{ id: 1, text: 'hi', done: false }] }));
+    assert.strictEqual(w.length, 0);
+  });
+
+  it('warns for Symbol', () => {
+    const w = capture(() => renderForHydration(comp, { s: Symbol('x') }));
+    assert.ok(w.some(s => s.includes('Symbol will be dropped')));
   });
 });

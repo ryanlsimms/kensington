@@ -37,22 +37,29 @@ const EVENT_TYPES = {
   onprogress: 'ProgressEvent',
 };
 
+
+function attrType(name, type) {
+  if (name === 'style') { return 'Reactive<string | csstype.Properties<string | number>>'; }
+  if (name === 'class') { return 'Reactive<string | string[]>'; }
+  if (name === 'hidden') { return 'Reactive<boolean | "until-found" | "hidden">'; }
+  return `Reactive<${type}>`;
+}
+
+
 function attributesType({ tag, attributes = [], globalTypes }) {
   const propField = `prop?: PropFor<'${tag}'> | null;`;
   if (!attributes.length) {
     return [`{ ${propField} }`, ...globalTypes].join(' & ');
   }
-  const styleType = 'string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)';
-  const classType = 'string | string[]';
+
 
   return [`{
   ${propField}
   ${attributes.flatMap(a => {
-    const attrType = a.name === 'style' ? styleType : a.name === 'class' ? classType : a.type;
-    const lines = [`'${a.name}'?: ${attrType};`];
+    const lines = [`'${a.name}'?: ${attrType(a.name, a.type)};`];
     const camelName = kebabToCamel(a.name);
     if (a.name !== camelName) {
-      lines.push(`'${camelName}'?: ${a.name === 'style' ? styleType : a.type};`);
+      lines.push(`'${camelName}'?: ${attrType(a.name, a.type)};`);
     }
     return lines;
   }).join('\n  ')}
@@ -61,15 +68,12 @@ function attributesType({ tag, attributes = [], globalTypes }) {
 
 function svgAttributesType({ tag, attributes = [], globalTypes }) {
   const propField = `prop?: PropFor<'${tag}'> | null;`;
-  const styleType = 'string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)';
-  const classType = 'string | string[]';
   const ownTypes = attributes.length
     ? [`{\n  ${propField}\n  ${attributes.flatMap(a => {
-      const attrType = a.name === 'style' ? styleType : a.name === 'class' ? classType : a.type;
-      const lines = [`'${a.name}'?: ${attrType};`];
+      const lines = [`'${a.name}'?: ${attrType(a.name, a.type)};`];
       const camelName = kebabToCamel(a.name);
       if (a.name !== camelName) {
-        lines.push(`'${camelName}'?: ${a.name === 'style' ? styleType : a.type};`);
+        lines.push(`'${camelName}'?: ${attrType(a.name, a.type)};`);
       }
       return lines;
     }).join('\n  ')}\n}`]
@@ -101,6 +105,7 @@ export default function buildDeclarations({ elements, globalAttributes, globalEv
 export class ContentTag {
   toString(): string;
   toElement(): Element;
+  mount(target: string | Element): void;
 }
 
 /**
@@ -131,14 +136,29 @@ export class CommentTag {
 ${brandedElements.map(el => `export class ${el.pascalTag}Tag extends ${el.returnTagType === 'Void' ? 'Void' : 'Content'}Tag { private readonly _k: '${el.tag}' }`).join('\n')}
 
 /**
- * Returned by \`.signal()\`. Pass as content or an attribute value — the DOM updates automatically
- * when the signal changes. In \`.toString()\` the current value is used as a snapshot.
+ * Read-only view of a signal. Returned by \`computed()\` and \`.transform()\`.
+ * Pass as content or an attribute value — the DOM updates automatically when the value changes.
  */
-export class Signal<T> {
+export interface ReadonlySignal<T> {
+  get(): T;
+  stop(): void;
+  transform<U>(fn: (value: T) => U): ReadonlySignal<U>;
+}
+
+/**
+ * Returned by \`signal()\`. Pass as content or an attribute value — the DOM updates automatically
+ * when the signal changes. In \`.toString()\` the current value is used as a snapshot.
+ * Use \`signal()\` to create instances; do not construct directly.
+ */
+export class Signal<T> implements ReadonlySignal<T> {
+  private constructor();
   get(): T;
   set(valueOrFn: T | ((current: T) => T)): void;
-  transform<U>(fn: (value: T) => U): Signal<U>;
+  stop(): void;
+  transform<U>(fn: (value: T) => U): ReadonlySignal<U>;
 }
+
+export type Reactive<T> = T | ReadonlySignal<T>;
 
 /**
  * Extend this interface via module augmentation to allow additional attribute namespaces.
@@ -153,7 +173,7 @@ export class Signal<T> {
  * // t.div({ hxBoost: 'true' }) is now valid
  */
 export interface NameSpaceAttributes {
-  [key: \`\${"data" | "aria"}\${string}\`]: string | object
+  [key: \`\${"data" | "aria"}\${string}\`]: Reactive<string | object>
 }
 
 type ElementInterface<Tag extends string> =
@@ -165,7 +185,7 @@ type PropFor<Tag extends string> = {
 } & { [key: string]: unknown };
 
 export type GlobalAttributes = {
-  ${globalAttributes.map(a => `${a.name}?: ${a.name === 'style' ? 'string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)' : a.name === 'class' ? 'string | string[]' : a.type};`).join('\n  ')}
+  ${globalAttributes.map(a => `${a.name}?: ${attrType(a.name, a.type)};`).join('\n  ')}
 }
 
 export type GlobalEvents = {
@@ -175,10 +195,10 @@ export type GlobalEvents = {
 ${svgPresentationAttrTypes?.length ? `
 type SvgPresentationAttributes = {
   ${svgPresentationAttrTypes.flatMap(a => {
-    const lines = [`'${a.name}'?: ${a.type};`];
+    const lines = [`'${a.name}'?: Reactive<${a.type}>;`];
     const camelName = kebabToCamel(a.name);
     if (a.name !== camelName) {
-      lines.push(`'${camelName}'?: ${a.type};`);
+      lines.push(`'${camelName}'?: Reactive<${a.type}>;`);
     }
     return lines;
   }).join('\n  ')}
@@ -200,7 +220,7 @@ ${strictContainers.map(el => {
  * @example
  * t.ul([t.li('one'), t.li(2), t.li(t.span('three'))]);
  */
-export type Content = ContentTag | VoidTag | LiteralTag | CommentTag | Signal<any> | string | number | boolean | null | undefined | (ContentTag | VoidTag | LiteralTag | CommentTag | Signal<any> | string | number | boolean | null | undefined)[];
+export type Content = ContentTag | VoidTag | LiteralTag | CommentTag | ReadonlySignal<any> | string | number | boolean | null | undefined | (ContentTag | VoidTag | LiteralTag | CommentTag | ReadonlySignal<any> | string | number | boolean | null | undefined)[];
 
 export type UniversalAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
@@ -259,7 +279,7 @@ export default class Kensington {
     additionalNamespaces?: string | string[];
     /** Spaces per indentation level. Default: 2. Set to 0 to disable indentation. */
     indentationLevel?: number;
-    /** Attribute validation behavior. Default: \`'warn'\`. */
+    /** Attribute validation behavior. Default: \`'off'\`. */
     validationLevel?: 'off' | 'warn' | 'error';
     /** Called with warning messages when \`validationLevel\` is \`'warn'\`. Default: \`console.log\`. */
     logger?: (message: string) => void;
@@ -280,7 +300,7 @@ export default class Kensington {
    * const t = new MyEngine();
    * t.myCard({ 'card-type': 'primary' }, 'Content here').toString();
    */
-  createCustomTag<A extends Record<string, AttributeValue> = Record<string, AttributeValue>>(
+  createCustomTag<A extends Record<string, AttributeValue> = Record<never, AttributeValue>>(
     tagName: string,
     allowedAttributes?: A
   ): ContentMethod<{ [K in keyof A as K | CamelCase<K & string> | KebabCase<K & string>]?: unknown }>
@@ -292,19 +312,19 @@ export default class Kensington {
    * @example
    * t.ul([t.li('typed'), t.literal('<li>raw html</li>')]).toString();
    */
-  literal(str: string): LiteralTag
+  literal(str: string | ReadonlySignal<string>): LiteralTag
 
   /**
    * Like \`.literal()\` but skips HTML encoding — use only for trusted HTML.
    */
-  unsafeLiteral(str: string): LiteralTag
+  unsafeLiteral(str: string | ReadonlySignal<string>): LiteralTag
 
   /**
    * Creates an HTML comment. Multi-line strings are formatted across multiple lines.
    * @example
    * t.inlineComment('hello world')  // <!-- hello world -->
    */
-  inlineComment(str: string | number): CommentTag
+  inlineComment(str: string | number | ReadonlySignal<string> | ReadonlySignal<number>): CommentTag
 
   /**
    * Renders a full HTML document. Identical to \`.html()\` but prepends \`<!DOCTYPE html>\`.
@@ -313,7 +333,8 @@ export default class Kensington {
    * @example
    * t.htmlWithDocType({ lang: 'en' }, t.body('hello')).toString();
    */
-  htmlWithDocType<T extends HtmlAttributes | ${htmlContentType}>(attributesOrContent?: T, ...rest: T extends ${htmlContentType} ? [] : [content?: ${htmlContentType}]): ContentTag;
+  htmlWithDocType(attributes: HtmlAttributes, content?: ${htmlContentType}): ContentTag;
+  htmlWithDocType(content?: ${htmlContentType}): ContentTag;
 
   ${elements.flatMap(el => {
     if (el.returnTagType === 'Void') {
@@ -322,7 +343,10 @@ export default class Kensington {
     }
     const retType = el.branded ? `${el.pascalTag}Tag` : 'ContentTag';
     const contentType = el.strictChildren ? `${el.pascalTag}Content` : 'Content';
-    return [`${el.methodName}<T extends ${el.attributesTypeName} | ${contentType}>(attributesOrContent?: T, ...rest: T extends ${contentType} ? [] : [content?: ${contentType}]): ${retType};`];
+    return [
+      `${el.methodName}(attributes: ${el.attributesTypeName}, content?: ${contentType}): ${retType};`,
+      `${el.methodName}(content?: ${contentType}): ${retType};`,
+    ];
   }).join('\n  ')}
 }
 
@@ -351,17 +375,48 @@ export function signal<T>(initial: T): Signal<T>;
  * const active = signal(true);
  * const cls = computed(() => active.get() ? 'btn-primary' : 'btn-outline');
  */
-export function computed<T>(fn: () => T): Signal<T>;
+export function computed<T>(fn: () => T): ReadonlySignal<T>;
 
 /**
  * Runs \`fn\` immediately and re-runs it whenever any signal read via \`.get()\` inside changes.
  * Use for side effects: syncing to localStorage, updating the URL, fetching data, etc.
+ * Returns a handle with a \`stop()\` method — call it to unsubscribe and prevent further runs.
  * @example
- * effect(() => {
+ * const e = effect(() => {
  *   localStorage.setItem('sort', sortKey.get());
  * });
+ * e.stop(); // unsubscribe
  */
-export function effect(fn: () => void): void;
+export function effect(fn: () => void): { stop(): void };
+
+/** True in a browser environment, false in Node.js. Use to guard browser-only code that cannot be placed inside effect(). */
+export const isBrowser: boolean;
+
+/**
+ * Registers component functions and hydrates all server-rendered instances in the page.
+ * Call once on the client; Kensington finds every component rendered by \`renderForHydration\`
+ * and mounts it reactively.
+ *
+ * @example
+ * import { registerComponents } from 'kensington';
+ * registerComponents({ counter, userCard });
+ */
+export function registerComponents(components: Record<string, (state: Record<string, unknown>) => ContentTag | ContentTag[] | null>): void;
+
+/**
+ * Renders a component to an HTML string and embeds the state as a JSON script block for
+ * browser-side hydration.
+ *
+ * @example
+ * // server
+ * renderForHydration(counter, { count: 42 })
+ */
+export function renderForHydration<S extends Record<string, unknown>>(
+  fn: (state: S) => ContentTag | ContentTag[] | null,
+  state: S,
+  name?: string
+): LiteralTag;
+
 
 `;
 }

@@ -1,0 +1,43 @@
+*, *::before, *::after { box-sizing: border-box; }
+body { font-family: sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; color: #222; }
+h1 { font-size: 1.6rem; margin: 0 0 4px; }
+h2 { font-size: 1.2rem; margin: 0 0 16px; }
+
+.dashboard { border: 1px solid #ddd; border-radius: 8px; padding: 20px 24px; }
+
+.task-stats { display: flex; gap: 16px; margin-bottom: 14px; font-size: 0.85rem; color: #555; }
+.stat { background: #f4f4f4; border-radius: 4px; padding: 3px 10px; }
+.stat.done-count { background: #e6f4ea; color: #2a6b3a; }
+.stat.remaining { background: #fff8e1; color: #7a5f00; }
+
+.filter-bar { display: flex; gap: 6px; margin-bottom: 14px; }
+.filter-btn { padding: 5px 14px; border: 1px solid #ccc; border-radius: 4px; background: #fff; cursor: pointer; font-size: 0.9rem; }
+.filter-btn.active { background: #222; color: #fff; border-color: #222; }
+
+.task-form { display: flex; gap: 8px; margin-bottom: 16px; }
+.task-input { flex: 1; padding: 7px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
+.add-btn { padding: 7px 16px; background: #222; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; }
+.add-btn:disabled { background: #aaa; cursor: default; }
+
+.task-list { list-style: none; margin: 0; padding: 0; }
+.task-item { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid #f0f0f0; }
+.task-item:last-child { border-bottom: none; }
+.task-label { display: flex; align-items: center; gap: 10px; cursor: pointer; flex: 1; }
+.task-label input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+.task-text { font-size: 1rem; }
+.task-item.done .task-text { text-decoration: line-through; color: #999; }
+k-sortable-list { display: contents; }
+k-sortable-list [draggable="true"] { cursor: grab; }
+k-sortable-list .dragging { opacity: 0.4; }
+k-sortable-list .drag-over { box-shadow: inset 0 2px 0 #555; }
+.remove-btn { background: none; border: none; color: #bbb; font-size: 1.1rem; cursor: pointer; padding: 0 4px; line-height: 1; }
+.remove-btn:hover { color: #d00; }
+.empty-msg { color: #999; font-size: 0.9rem; margin: 12px 0 4px; text-align: center; }
+.storage-actions { display: flex; gap: 8px; margin-top: 16px; padding-top: 14px; border-top: 1px solid #eee; }
+.storage-btn { padding: 6px 14px; border: 1px solid #ccc; border-radius: 4px; background: #fff; cursor: pointer; font-size: 0.85rem; }
+.storage-btn:disabled { color: #aaa; border-color: #e0e0e0; cursor: default; }
+
+.intro { margin: 0 0 20px; font-size: 1rem; color: #444; }
+
+.progress-wrap { margin-bottom: 14px; }
+.progress-label { display: block; font-size: 0.8rem; color: #666; margin-top: 4px; }

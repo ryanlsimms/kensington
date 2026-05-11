@@ -105,4 +105,22 @@ const app = t.div([
 document.body.append(app.toElement());
 ```
 
+## Hydration
+
+Render a component to HTML on the server with `renderForHydration`, then replace it with a live reactive DOM on the client with `registerComponents`. The same component function runs in both environments.
+
+```javascript
+// server
+import { renderForHydration } from 'kensington';
+import { counter } from './components/counter.js';
+
+res.send(layout(renderForHydration(counter, { count: 0 })).toString());
+
+// client
+import { registerComponents } from 'kensington';
+import { counter } from './components/counter.js';
+
+registerComponents({ counter });
+```
+
 **[Full documentation →](https://ryanlsimms.github.io/kensington)**
