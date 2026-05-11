@@ -296,6 +296,7 @@
     <li><a href="#custom-elements">Custom elements</a></li>
     <li><a href="#dom">Browser / DOM</a></li>
     <li><a href="#signals">Reactive data</a></li>
+    <li><a href="#hydration">SSR reactive data</a></li>
     <li><a href="#typescript">TypeScript</a></li>
     <li><a href="#imports">Imports &amp; Types</a></li>
     <li><a href="#cli">HTML &rarr; Kensington</a></li>
@@ -725,6 +726,73 @@ t.div([t.p('content'), t.inlineComment(note)]).toElement();
     this.#effect?.stop();
   }
 }</code></pre>
+
+  </section>
+
+  <!-- ── Hydration ─────────────────────────────────────────────── -->
+
+  <section id="hydration">
+    <h2>Server-rendered reactive data</h2>
+
+    <p>Server-render a component to HTML with <code>renderForHydration</code>, then pick it up on the client with <code>registerComponents</code>. The SSR output is replaced with a live, reactive DOM tree using the same state that was passed on the server.</p>
+
+    <pre><code class="language-javascript">// server.js
+import { renderForHydration, t } from 'kensington';
+import { counter } from './components/counter.js';
+
+app.get('/', (req, res) => {
+  res.send(
+    t.htmlWithDocType({ lang: 'en' }, [
+      t.head([t.meta({ charset: 'utf-8' }), t.title('App')]),
+      t.body(renderForHydration(counter, { count: 0 })),
+    ]).toString()
+  );
+});
+
+// client.js
+import { registerComponents } from 'kensington';
+import { counter } from './components/counter.js';
+
+registerComponents({ counter });</code></pre>
+
+    <p>The component function runs on both server and client. Write it so it works in both environments:</p>
+
+    <pre><code class="language-javascript">// components/counter.js
+import { t, signal, effect, isBrowser } from 'kensington';
+
+export function counter({ count: initial }) {
+  const count = signal(initial);
+
+  // effect() is a no-op on the server — safe to use browser globals inside
+  effect(() => {
+    document.title = `Count: ${count.get()}`;
+  });
+
+  // isBrowser guards code that can't go inside effect()
+  const stored = isBrowser ? localStorage.getItem('count') : null;
+
+  return t.div([
+    t.p(count),
+    t.button({ type: 'button', onclick: () => count.set(n => n + 1) }, '+'),
+  ]);
+}</code></pre>
+
+    <ul>
+      <li><code>renderForHydration(fn, state, name?)</code> - <u>On Server</u> - renders the component to HTML and embeds state as a JSON script block. Uses <code>fn.name</code> by default or pass an explicit <code>name</code> for anonymous functions. <code>name</code> must match what is used in <code>registerComponents</code> on the client. Throws if the component returns a non-element value or a Promise. Warns on lossy state values (Date, Map, Set, RegExp, undefined, function, Symbol, non-finite numbers, class instances); throws on unserializable ones (BigInt, circular references).</li>
+      <li><code>registerComponents(components)</code> - <u>On Client</u> - scans the page for components rendered by <code>renderForHydration</code> and mounts each one reactively. Object keys are used as component names: <code>{ counter }</code> registers the function under <code>'counter'</code>. Must match what is passed in <code>renderForHydration</code> on the server. Issues a <code>console.warn</code> for unregistered component names and missing mount points. If the client component returns <code>null</code> or throws, warns or logs the error and leaves the SSR element in place. Defers hydration until <code>DOMContentLoaded</code> if called while the page is still loading.</li>
+      <li><code>isBrowser</code> &mdash; <code>true</code> in a browser environment, <code>false</code> in Node.js. Use to guard browser-only code that cannot go inside <code>effect()</code>, such as module-level expressions or <code>computed()</code> values.</li>
+    </ul>
+
+    <h3>Known tradeoffs</h3>
+
+    <p>These are deliberate simplicity choices, not bugs. See <code>llms.txt</code> for full details.</p>
+
+    <ul>
+      <li><strong>DOM replacement, not true hydration.</strong> The SSR elements are replaced with a fresh <code>toElement()</code> call rather than reusing them. In practice the swap is imperceptible &mdash; it is synchronous and the visual output is identical. Transitions are suppressed automatically on SSR elements until hydration completes.</li>
+      <li><strong>Non-interactive window.</strong> Elements are non-reactive between the browser's first paint and when the hydration script runs. This is inherent to SSR-then-hydrate.</li>
+      <li><strong>State is plaintext.</strong> State is embedded as a <code>&lt;script type="application/json"&gt;</code> tag visible in page source. Do not pass secrets or tokens as hydration state.</li>
+      <li><strong>Browser globals outside <code>effect()</code> will throw on the server.</strong> <code>effect()</code> is suppressed during server-side rendering. For browser-only code that cannot go inside <code>effect()</code> &mdash; module-level code, <code>computed()</code> values, direct assignments &mdash; use the <code>isBrowser</code> export: <code>isBrowser &amp;&amp; localStorage.getItem('key')</code>.</li>
+    </ul>
 
   </section>
 
