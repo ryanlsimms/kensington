@@ -1,6 +1,5 @@
 class SortableList extends HTMLElement {
   #dragKey = null;
-  /** @type {MutationObserver | null} */
   #observer = null;
 
   connectedCallback() {
@@ -25,7 +24,7 @@ class SortableList extends HTMLElement {
   }
 
   #markDraggable() {
-    for (const el of /** @type {NodeListOf<HTMLElement>} */ (this.querySelectorAll('[data-key]'))) {
+    for (const el of (this.querySelectorAll('[data-key]'))) {
       el.draggable = true;
     }
   }
