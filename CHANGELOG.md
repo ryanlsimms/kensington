@@ -7,11 +7,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- `renderForHydration(fn, state, name?)` renders a component to an HTML string and embeds its state as a JSON script block so the browser can hydrate it reactively. The server component may return a single element, an array of elements, or `null` for client-only components. State is validated at render time with warnings for lossy types (Date, Map, Set, undefined, functions) and errors for non-serializable values (BigInt, circular references).
+- `registerComponents({ name: fn })` scans the document for components serialized by `renderForHydration` and mounts each one reactively. If the server component returned `null`, the client component is mounted in its place. Warns when a component name has no registered function or when a mount point cannot be found. Defers until `DOMContentLoaded` if called while the document is still loading.
+- `isBrowser` exported: `true` in a browser environment, `false` in Node.js. Use to guard `localStorage`, `document`, or other browser-only APIs that cannot be placed inside `effect()`.
 - Signal-driven DOM elements now automatically stop their reactive effects when the element is removed from the DOM. A shared `MutationObserver` detects both direct removal (`el.remove()`) and ancestor removal (removing a parent that contains a signal-bound element). Previously effects ran until the element was garbage-collected, which could be indefinitely if any variable held a reference.
+- `GlobalAttributes`, `GlobalEvents`, and `UniversalAttributes` are now exported types. Useful when typing custom tag attribute objects that should accept all standard global attributes alongside their own.
 
 ### Changed
 - Validation checks for `literal()`, `unsafeLiteral()`, and `inlineComment()` now run at render time (`toString()` / `toElement()`) inside the tag classes, not at construction time. `LiteralTag` and `CommentTag` accept `validationLevel` and `logger` from the Kensington instance and use `showInvalid` for all checks. With `validationLevel: 'off'` invalid input renders nothing silently; `'warn'` logs and renders nothing; `'error'` throws. Signal-driven `inlineComment` values now also have their type and `--` content validated on every update, which was previously unchecked.
 - `validateContent()` in `ContentTag` no longer always throws regardless of `validationLevel`. Invalid content items are now filtered out and reported via `showInvalid`, following the same `'off'` / `'warn'` / `'error'` contract as attribute validation.
+- `computed()` and `signal.transform()` now return `ReadonlySignal<T>` instead of `Signal<T>`. The returned value cannot be passed to `.set()`. Use `signal()` for writable state.
+- `GlobalEvents` handler types are now specific: `onclick` accepts `(event: MouseEvent) => void`, `onkeydown` accepts `(event: KeyboardEvent) => void`, etc. Previously all handlers typed their event parameter as `Event`.
 
 ### Fixed
 - Passing a `Signal` instance as an attribute value no longer triggers a spurious validation warning or error when `validationLevel` is `'warn'` or `'error'`. The validator now accepts any `Signal` as a valid attribute value, since the actual value is resolved at render or DOM time.
@@ -72,7 +78,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `t.literal().toElement()` and `t.inlineComment().toElement()` now throw `"toElement only supported in browser"` in a non-browser environment instead of a bare `ReferenceError: document is not defined`.
 - `t.script(Symbol(...))` and `t.style(Symbol(...))` no longer crash with a `TypeError` in the `contentIsLiteral` rendering path with `validationLevel: 'off'`; the Symbol is coerced to a string via `String()`.
 - A null-prototype object (`Object.create(null)`) passed as an attribute value no longer crashes (`val.toString is not a function`). It is now treated as a nested attribute object (same as a plain `{}`) and flattened, or omitted if empty.
-- A `Symbol`, plain object, or array as a `style` property value no longer crashes or silently produces invalid CSS (e.g. `color: [object Object]`). Such values are now omitted, consistent with how `null`/`false` are handled. The crash also occurred when `validationLevel: 'error'` tried to include the invalid value in its error message — the message now shows `color: Symbol(red)` rather than throwing.
+- A `Symbol`, plain object, or array as a `style` property value no longer crashes or silently produces invalid CSS (e.g. `color: [object Object]`). Such values are now omitted, consistent with how `null`/`false` are handled. The crash also occurred when `validationLevel: 'error'` tried to include the invalid value in its error message; the message now shows `color: Symbol(red)` rather than throwing.
 - `toElement()` now wraps primitive content nodes in `String()` before passing to `document.createTextNode()`, preventing a browser crash when a `Symbol` value reaches the DOM path with `validationLevel: 'off'`.
 - `Object.create(null)` (null-prototype object) passed as the first argument to a tag method is now correctly treated as the attributes object. Previously it threw `Cannot convert object to primitive value` because the plain-object check used `?.constructor === Object`, which evaluates to `undefined` on a null-prototype object. The check now uses `Object.getPrototypeOf`.
 - An object with an own `constructor` property (e.g. `{ constructor: 'x', id: 'y' }`) is now correctly treated as attributes. Previously the own `constructor` property shadowed `Object.constructor`, causing the object to be treated as content.
@@ -149,8 +155,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 - Browser distribution bundles: `dist/kensington.js` / `dist/kensington.min.js` (full, with attribute validation data)
-- Slim browser bundle: `dist/kensington.slim.js` / `dist/kensington.slim.min.js` — omits validation data (~77% smaller minified); requires `validationLevel: 'off'`
-- `logger` constructor option — receives validation warning messages; defaults to `console.log`
+- Slim browser bundle: `dist/kensington.slim.js` / `dist/kensington.slim.min.js` (omits validation data, ~77% smaller minified); requires `validationLevel: 'off'`
+- `logger` constructor option: receives validation warning messages; defaults to `console.log`
 
 ## [0.11.5]
 
@@ -180,7 +186,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [0.11.0]
 
 ### Added
-- `toElement()` — renders a tag tree to a live DOM node via `document.createElement` / `createElementNS`
+- `toElement()`: renders a tag tree to a live DOM node via `document.createElement` / `createElementNS`
 
 ## [0.10.1]
 

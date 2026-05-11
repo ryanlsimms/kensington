@@ -5,7 +5,7 @@ import he from '../lib/he.js';
 import indent from '../lib/indent.js';
 import { reconcile } from '../lib/reconcile.js';
 import showInvalid from '../lib/show-invalid.js';
-import Signal, { effect } from '../lib/signal.js';
+import Signal, { effect, isSSRMode } from '../lib/signal.js';
 import stringifyContentArray from '../lib/stringify-content-array.js';
 import { styleObjectToCss } from '../lib/style-utils.js';
 import { camelToKebab, LINE_BREAK_TEST_REGEX, preserveSpaces } from '../lib/text-utils.js';
@@ -220,7 +220,7 @@ export default class ContentTag {
   }
 
   attributeString() {
-    const onFunction = this.validationLevel === 'off'
+    const onFunction = (this.validationLevel === 'off' || isSSRMode())
       ? undefined
       : attrName => showInvalid(`function value for attribute \`${attrName}\` is not supported in toString()`, this.validationLevel, this.logger);
     const attrString = attributesStringFromObject(
@@ -278,6 +278,17 @@ export default class ContentTag {
     str += '>';
 
     return str;
+  }
+
+  mount(target) {
+    if (typeof document === 'undefined') {
+      throw new Error('mount() only supported in browser');
+    }
+    const el = typeof target === 'string' ? document.querySelector(target) : target;
+    if (!el) {
+      throw new Error(`mount(): no element found for "${target}"`);
+    }
+    el.replaceWith(this.toElement());
   }
 
   toElement() {

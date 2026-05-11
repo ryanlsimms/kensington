@@ -1,7 +1,29 @@
 let currentEffect = null;
+// Tracks whether we are inside a renderForHydration call. On the server we only need a static
+// HTML snapshot, so effects must not run — they would set up subscriptions with no DOM to update
+// and no cleanup path, leaking memory. Counter rather than boolean so nested calls are safe.
+let ssrDepth = 0;
+
+// Called by renderForHydration before invoking the component function.
+export function _enterSSRMode() {
+  ssrDepth++;
+}
+
+// Called in the finally block after the component function returns.
+export function _exitSSRMode() {
+  ssrDepth--;
+}
+
+export function isSSRMode() {
+  return ssrDepth > 0;
+}
 const pending = new Set();
 let scheduled = false;
 const stopFns = new WeakMap();
+// Tracks signals created by computed()/transform() so .set() can be blocked on them.
+const derivedSignals = new WeakSet();
+// Counter rather than boolean so nested computed calls don't prematurely re-enable the guard.
+let derivedWriteDepth = 0;
 
 function flush() {
   scheduled = false;
@@ -44,6 +66,10 @@ export default class Signal {
   }
 
   set(valueOrFn) {
+    // Blocks external writes to computed/transform signals; depth > 0 means we're inside an update().
+    if (derivedSignals.has(this) && derivedWriteDepth === 0) {
+      throw new Error('Cannot call .set() on a computed or derived signal. Use signal() for writable state.');
+    }
     const next = typeof valueOrFn === 'function' ? valueOrFn(this.#value) : valueOrFn;
     if (Object.is(next, this.#value)) {
       return;
@@ -92,6 +118,10 @@ function track(run, fn) {
  * e.stop(); // unsubscribes from all tracked signals
  */
 export function effect(fn) {
+  // During SSR we only need a static snapshot; skip subscriptions entirely.
+  if (ssrDepth > 0) {
+    return { stop() {} };
+  }
   let stopped = false;
   function run() {
     if (stopped) {
@@ -129,10 +159,13 @@ export function computed(fn) {
   const s = new Signal(undefined);
   function update() {
     track(update, () => {
+      derivedWriteDepth++;
       try {
         s.set(fn());
       } catch (err) {
         queueMicrotask(() => { throw err; });
+      } finally {
+        derivedWriteDepth--;
       }
     });
   }
@@ -144,6 +177,7 @@ export function computed(fn) {
     }
     update._cleanups = [];
   });
+  derivedSignals.add(s);
   return s;
 }
 
