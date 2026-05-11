@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [2.0.0-signals.2] - 2026-05-11
 
 ### Added
 - `renderForHydration(fn, state, name?)` renders a component to an HTML string and embeds its state as a JSON script block so the browser can hydrate it reactively. The server component may return a single element, an array of elements, or `null` for client-only components. State is validated at render time with warnings for lossy types (Date, Map, Set, undefined, functions) and errors for non-serializable values (BigInt, circular references).
