@@ -1,10 +1,47 @@
 import { kebabToCamel } from './utils/text-utils.js';
 
+const EVENT_TYPES = {
+  onauxclick: 'MouseEvent',
+  onclick: 'MouseEvent',
+  ondblclick: 'MouseEvent',
+  oncontextmenu: 'MouseEvent',
+  onmousedown: 'MouseEvent',
+  onmouseenter: 'MouseEvent',
+  onmouseleave: 'MouseEvent',
+  onmousemove: 'MouseEvent',
+  onmouseout: 'MouseEvent',
+  onmouseover: 'MouseEvent',
+  onmouseup: 'MouseEvent',
+  onkeydown: 'KeyboardEvent',
+  onkeypress: 'KeyboardEvent',
+  onkeyup: 'KeyboardEvent',
+  onbeforeinput: 'InputEvent',
+  oninput: 'InputEvent',
+  onblur: 'FocusEvent',
+  onfocus: 'FocusEvent',
+  ondrag: 'DragEvent',
+  ondragend: 'DragEvent',
+  ondragenter: 'DragEvent',
+  ondragleave: 'DragEvent',
+  ondragover: 'DragEvent',
+  ondragstart: 'DragEvent',
+  ondrop: 'DragEvent',
+  onwheel: 'WheelEvent',
+  onerror: 'ErrorEvent',
+  onsubmit: 'SubmitEvent',
+  oncopy: 'ClipboardEvent',
+  oncut: 'ClipboardEvent',
+  onpaste: 'ClipboardEvent',
+  onformdata: 'FormDataEvent',
+  onsecuritypolicyviolation: 'SecurityPolicyViolationEvent',
+  onprogress: 'ProgressEvent',
+};
+
 function attributesType({ attributes = [], globalTypes }) {
   if (!attributes.length) {
     return globalTypes.join(' & ');
   }
-  const styleType = 'string | csstype.Properties<string | number>';
+  const styleType = 'string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)';
   const classType = 'string | string[]';
 
   return [`{
@@ -21,7 +58,7 @@ function attributesType({ attributes = [], globalTypes }) {
 }
 
 function svgAttributesType({ attributes = [], globalTypes }) {
-  const styleType = 'string | csstype.Properties<string | number>';
+  const styleType = 'string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)';
   const classType = 'string | string[]';
   const ownTypes = attributes.length
     ? [`{\n  ${attributes.flatMap(a => {
@@ -90,12 +127,12 @@ export interface NameSpaceAttributes {
   [key: \`\${"data" | "aria"}\${string}\`]: string | object
 }
 
-type GlobalAttributes = {
-  ${globalAttributes.map(a => `${a.name}?: ${a.name === 'style' ? 'string | csstype.Properties<string | number>' : a.name === 'class' ? 'string | string[]' : a.type};`).join('\n  ')}
+export type GlobalAttributes = {
+  ${globalAttributes.map(a => `${a.name}?: ${a.name === 'style' ? 'string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)' : a.name === 'class' ? 'string | string[]' : a.type};`).join('\n  ')}
 }
 
-type GlobalEvents = {
-  ${globalEvents.map(e => `${e}?: string | ((event: Event) => void);`).join('\n  ')}
+export type GlobalEvents = {
+  ${globalEvents.map(e => `${e}?: string | ((event: ${EVENT_TYPES[e] ?? 'Event'}) => void);`).join('\n  ')}
 }
 ${svgPresentationAttrTypes?.length ? `
 type SvgPresentationAttributes = {
@@ -121,7 +158,7 @@ ${elements.map(e => `type ${e.attributesTypeName} = ${e.tagType === 'SvgContent'
  */
 export type Content = ContentTag | VoidTag | LiteralTag | CommentTag | string | number | boolean | null | undefined | (ContentTag | VoidTag | LiteralTag | CommentTag | string | number | boolean | null | undefined)[];
 
-type UniversalAttributes = NameSpaceAttributes | GlobalAttributes | GlobalEvents;
+export type UniversalAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 /**
  * The type of a custom element method created with \`createCustomTag\`.
@@ -134,8 +171,8 @@ type UniversalAttributes = NameSpaceAttributes | GlobalAttributes | GlobalEvents
  *     this.createCustomTag('my-card', { 'card-type': ['primary', 'secondary'] });
  * }
  */
-export interface ContentMethod<T = Record<string, unknown>> {
-  (attributes: T | UniversalAttributes, content?: Content): ContentTag;
+export interface ContentMethod<T = {}> {
+  (attributes: T & UniversalAttributes, content?: Content): ContentTag;
   (content?: Content): ContentTag;
 }
 
@@ -206,7 +243,7 @@ export default class Kensington {
 
   /**
    * Embeds a raw HTML string verbatim into the output.
-   * Throws if the string contains a \`<script>\` tag — use \`.unsafeLiteral()\` for trusted HTML that includes scripts.
+   * Use \`.unsafeLiteral()\` for trusted HTML that includes \`<script>\` tags.
    *
    * @example
    * t.ul([t.li('typed'), t.literal('<li>raw html</li>')]).toString();

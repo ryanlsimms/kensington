@@ -214,20 +214,14 @@ export default class Kensington {
   }
 
   /**
-   * Embeds a raw HTML string verbatim in the output. Throws if the string contains a script tag.
+   * Embeds a raw HTML string verbatim in the output. Use \`.unsafeLiteral()\` for HTML that includes script tags.
    * @param {string} str
    * @returns {LiteralTag}
    * @example
    * t.ul([t.li('typed'), t.literal('<li>raw html</li>')]);
    */
   literal(str) {
-    if (typeof str !== 'string') {
-      throw new Error('literal() only accepts a string');
-    }
-    if (/<script/i.test(str)) {
-      throw new Error(\`<script> tags are not allowed to be passed in literal html.  Use the .unsafeLiteral if you can vouch for the string\`);
-    }
-    return new LiteralTag(str);
+    return new LiteralTag(str, true, this.validationLevel, this.logger);
   }
 
   /**
@@ -236,7 +230,7 @@ export default class Kensington {
    * @returns {LiteralTag}
    */
   unsafeLiteral(str) {
-    return new LiteralTag(str);
+    return new LiteralTag(str, false, this.validationLevel, this.logger);
   }
 
   /**
@@ -252,15 +246,7 @@ export default class Kensington {
    * // -->
    */
   inlineComment(str) {
-    if (!['string', 'number'].includes(typeof str)) {
-      throw new Error('inlineComment only accepts a string or number');
-    }
-    let text = str.toString();
-    if (text.includes('--')) {
-      showInvalid('inlineComment text must not contain "--"', this.validationLevel, this.logger);
-      text = text.replace(/--/g, '');
-    }
-    return new CommentTag(text);
+    return new CommentTag(str, this.validationLevel, this.logger);
   }
 
   /** @returns {ContentTag} */

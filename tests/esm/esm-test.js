@@ -91,13 +91,15 @@ describe('content tag', () => {
     assert.strictEqual(t.div(t.literal('<div></div>')).toString(), '<div>\n  <div></div>\n</div>');
   });
   it('literal script content throws', () => {
-    assert.throws(() => t.div(t.literal('<script></script>')).toString());
-    assert.throws(() => t.literal('<SCRIPT>alert(1)</SCRIPT>'));
+    const te = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => te.div(te.literal('<script></script>')).toString());
+    assert.throws(() => te.literal('<SCRIPT>alert(1)</SCRIPT>').toString());
     assert.strictEqual(t.div(t.unsafeLiteral('<script>console.log("hello");</script>')).toString(), `<div>\n  <script>console.log("hello");</script>\n</div>`);
   });
   it('literal throws on non-string input with a clear message', () => {
-    assert.throws(() => t.literal(null), { message: 'literal() only accepts a string' });
-    assert.throws(() => t.literal(42), { message: 'literal() only accepts a string' });
+    const te = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => te.literal(null).toString(), { message: 'literal() only accepts a string' });
+    assert.throws(() => te.literal(42).toString(), { message: 'literal() only accepts a string' });
   });
   it('inlineComment single-line', () => {
     assert.strictEqual(t.inlineComment('hello world').toString(), '<!-- hello world -->');
@@ -113,14 +115,15 @@ describe('content tag', () => {
     assert.strictEqual(t.inlineComment('line 1\rline 2').toString(), '<!--\n  line 1\n  line 2\n-->');
   });
   it('inlineComment throws on non-string/number', () => {
-    assert.throws(() => t.inlineComment({}));
+    const te = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => te.inlineComment({}).toString());
   });
   it('inlineComment strips "--" when validationLevel is off', () => {
     assert.strictEqual(t.inlineComment('a -- b').toString(), '<!-- a  b -->');
   });
   it('inlineComment throws when validationLevel is error and text contains "--"', () => {
     const tt = new Kensington({ validationLevel: 'error' });
-    assert.throws(() => tt.inlineComment('a -- b'), /must not contain/);
+    assert.throws(() => tt.inlineComment('a -- b').toString(), /must not contain/);
   });
   it('inlineComment warns and strips "--" when validationLevel is warn', (test, done) => {
     let warned = false;
