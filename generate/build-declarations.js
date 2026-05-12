@@ -172,6 +172,8 @@ type KebabCase<S extends string> = S extends \`\${infer H}\${infer T}\` ? H exte
  */
 export default class Kensington {
   constructor(options?: {
+    /** Allow extra attributes on all elements, e.g. \`{ enterkeyhint: ['enter', 'done', 'go', 'next', 'previous', 'search', 'send'] }\`. */
+    additionalGlobalAttributes?: Record<string, unknown>;
     /** Allow additional attribute namespaces, e.g. \`'hx'\` for htmx \`hx-*\` attributes. */
     additionalNamespaces?: string | string[];
     /** Spaces per indentation level. Default: 2. Set to 0 to disable indentation. */

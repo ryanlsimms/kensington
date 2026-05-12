@@ -47,6 +47,7 @@ export default class ContentTag {
   constructor(options) {
     this.tagName = options.tagName;
     this.attributes = options.attributes;
+    this.additionalGlobalAttributes = options.additionalGlobalAttributes ?? {};
     this.allowedAttributeMap = options.allowedAttributeMap ?? new Map(); // empty Map fallback: all non-namespace attrs fail has(), so custom tags with no spec reject everything except namespaces
     this.contentIsLiteral = options.contentIsLiteral;
     this.indentationLevel = options.indentationLevel ?? 2;
@@ -97,7 +98,8 @@ export default class ContentTag {
   attributeIsValid(attr) {
     return this.allowedAttributeMap.has(attr) ||
       this.allowedAttributeMap.has(camelToKebab(attr)) ||
-      this.isValidNamespaceAttribute(attr);
+      this.isValidNamespaceAttribute(attr) ||
+      camelToKebab(attr) in this.additionalGlobalAttributes;
   }
 
   attributeValueIsValid(attr, value) {
@@ -133,7 +135,10 @@ export default class ContentTag {
       }
       return true;
     }
-    const type = this.allowedAttributeMap.get(attr) ?? this.allowedAttributeMap.get(camelToKebab(attr));
+    const kebab = camelToKebab(attr);
+    const type = this.allowedAttributeMap.get(attr)
+      ?? this.allowedAttributeMap.get(kebab)
+      ?? this.additionalGlobalAttributes[kebab];
     return this.validateAttributeByType(type, value);
   }
 

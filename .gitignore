@@ -1,10 +1,7 @@
 /.idea/
-/node_modules/
+**/node_modules/
 /cjs/
 /dist/
-/tests/esm/node_modules/
-/tests/typescript/node_modules/
-/tests/cjs/node_modules/
 /local-notes.txt
 /memory/
 /test-results/

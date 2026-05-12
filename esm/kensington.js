@@ -22,6 +22,7 @@ import VoidTag from './tag-classes/void-tag.js';
 export default class Kensington {
   /**
    * @param {object} [options]
+   * @param {Record<string, *>} [options.additionalGlobalAttributes] - Extra attributes allowed on all elements, e.g. `{ enterkeyhint: ['enter', 'done', 'go', 'next', 'previous', 'search', 'send'] }`.
    * @param {string | string[]} [options.additionalNamespaces] - Extra attribute namespaces, e.g. `'hx'` for htmx.
    * @param {'off' | 'warn' | 'error'} [options.validationLevel] - Attribute validation behavior.
    * @param {number} [options.indentationLevel] - Spaces per indent level. Default: 2.
@@ -29,11 +30,19 @@ export default class Kensington {
    */
   constructor(options) {
     const {
+      additionalGlobalAttributes = {},
       additionalNamespaces = [],
       indentationLevel = 2,
       logger = console.log,
       validationLevel = 'off',
     } = options ?? {};
+    if (
+      additionalGlobalAttributes === null ||
+      typeof additionalGlobalAttributes !== 'object' ||
+      Array.isArray(additionalGlobalAttributes)
+    ) {
+      throw new Error(`additionalGlobalAttributes must be a plain object; got: ${typeof additionalGlobalAttributes}`);
+    }
     if (!['off', 'warn', 'error'].includes(validationLevel)) {
       throw new Error(`validationLevel must be 'off', 'warn', or 'error'; got: ${JSON.stringify(validationLevel)}`);
     }
@@ -49,6 +58,10 @@ export default class Kensington {
     getPrototypeMethods(this).forEach(key => {
       this[key] = this[key].bind(this);
     });
+    this.additionalGlobalAttributes = {};
+    for (const [k, v] of Object.entries(additionalGlobalAttributes)) {
+      this.additionalGlobalAttributes[camelToKebab(k)] = v;
+    }
     this.indentationLevel = indentationLevel;
     this.namespaces = ['data', 'aria'].concat(additionalNamespaces);
     this.validationLevel = validationLevel;
@@ -173,6 +186,7 @@ export default class Kensington {
         content = '';
       }
       const instance = new Klass({
+        additionalGlobalAttributes: this.additionalGlobalAttributes,
         allowedAttributeMap,
         attributes,
         content,
