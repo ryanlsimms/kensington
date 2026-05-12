@@ -118,6 +118,7 @@ export default class ContentTag {
   }
 
   attributeIsValid(attr) {
+    if (attr === 'on') { return true; }
     return this.allowedAttributeMap.has(attr) ||
       this.allowedAttributeMap.has(camelToKebab(attr)) ||
       this.isValidNamespaceAttribute(attr) ||
@@ -125,6 +126,10 @@ export default class ContentTag {
   }
 
   attributeValueIsValid(attr, value) {
+    if (attr === 'on') {
+      if (value === null || value === undefined) { return true; }
+      return typeof value === 'object' && !Array.isArray(value) && !(value instanceof Signal);
+    }
     if (value instanceof Signal) { return true; }
     if ([undefined, null].includes(value)) {
       return true;
@@ -312,8 +317,8 @@ export default class ContentTag {
     let hasSignalContent = false;
 
     for (const [attrName, attrValue] of this.attributeArray()) {
-      if (attrName.startsWith('on') && typeof attrValue === 'function') {
-        element.addEventListener(attrName.replace(/^on/, ''), attrValue);
+      if (/^on[a-z]/.test(attrName) && typeof attrValue === 'function') {
+        element.addEventListener(attrName.slice(2), attrValue);
       } else if (attrValue instanceof Signal) {
         stops.push(applySignalAttribute(element, attrName, attrValue));
       } else {
@@ -321,7 +326,16 @@ export default class ContentTag {
       }
     }
 
-    for (let node of this.content) { // let, not const: node is reassigned to preserveSpaces(node) below
+    const events = this.attributes?.on;
+    if (events !== null && typeof events === 'object' && !Array.isArray(events)) {
+      for (const [eventName, handler] of Object.entries(events)) {
+        if (typeof handler === 'function') {
+          element.addEventListener(eventName, handler);
+        }
+      }
+    }
+
+    for (let node of this.content) {
       if (node instanceof ContentTag || node instanceof LiteralTag || node instanceof CommentTag) {
         element.append(node.toElement());
         continue;

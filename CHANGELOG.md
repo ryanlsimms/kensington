@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- `on` attribute key for wiring custom event listeners in `toElement()`. Pass a plain object mapping event names verbatim to handler functions: `t.div({ on: { bricksSelectorChange: handler } })`. Event names are passed directly to `addEventListener` with no case transformation, so both camelCase and kebab-case custom event names work correctly.
+
+### Changed
+- `on*` function attributes now only wire standard all-lowercase DOM event listeners (e.g. `onclick`, `oninput`). A camelCase key like `onbricksSelectorChange` is no longer silently treated as an event listener — it is instead subject to the normal `validationLevel` contract: silently discarded at `'off'`, warned at `'warn'`, throws at `'error'`. Use the new `on` key for custom event names.
+
 ## [2.0.0-signals.4] - 2026-05-11
 
 ### Added

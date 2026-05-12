@@ -37,7 +37,6 @@ const EVENT_TYPES = {
   onprogress: 'ProgressEvent',
 };
 
-
 function attrType(name, type) {
   if (name === 'style') { return 'Reactive<string | csstype.Properties<string | number>>'; }
   if (name === 'class') { return 'Reactive<string | string[]>'; }
@@ -45,12 +44,10 @@ function attrType(name, type) {
   return `Reactive<${type}>`;
 }
 
-
 function attributesType({ attributes = [], globalTypes }) {
   if (!attributes.length) {
     return globalTypes.join(' & ');
   }
-
 
   return [`{
   ${attributes.flatMap(a => {
@@ -163,6 +160,7 @@ export type GlobalAttributes = {
 
 export type GlobalEvents = {
   ${globalEvents.map(e => `${e}?: string | ((event: ${EVENT_TYPES[e] ?? 'Event'}) => void);`).join('\n  ')}
+  on?: Record<string, (event: Event) => void>;
 }
 ${svgPresentationAttrTypes?.length ? `
 type SvgPresentationAttributes = {
