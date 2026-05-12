@@ -796,6 +796,40 @@ describe('namespaces', () => {
   });
 });
 
+// ─── additionalGlobalAttributes ────────────────────────────────────────────
+
+describe('additionalGlobalAttributes', () => {
+  it('allows a new attribute on any element', () => {
+    const tt = new Kensington({ validationLevel: 'error', additionalGlobalAttributes: { popover: String } });
+    assert.strictEqual(tt.div({ popover: 'auto' }).toString(), '<div popover="auto"></div>');
+    assert.strictEqual(tt.button({ popover: 'manual' }).toString(), '<button popover="manual"></button>');
+  });
+  it('validates the attribute value against the provided type', () => {
+    const tt = new Kensington({
+      validationLevel: 'error',
+      additionalGlobalAttributes: { enterkeyhint: ['enter', 'done'] },
+    });
+    assert.doesNotThrow(() => tt.input({ enterkeyhint: 'enter' }));
+    assert.throws(() => tt.input({ enterkeyhint: 'invalid' }), /invalid attribute/);
+  });
+  it('normalizes camelCase keys to kebab-case', () => {
+    const tt = new Kensington({ validationLevel: 'error', additionalGlobalAttributes: { myAttr: String } });
+    assert.strictEqual(tt.div({ myAttr: 'val' }).toString(), '<div my-attr="val"></div>');
+  });
+  it('throws on non-object additionalGlobalAttributes', () => {
+    assert.throws(
+      () => new Kensington({ additionalGlobalAttributes: 'bad' }),
+      /additionalGlobalAttributes must be a plain object/,
+    );
+  });
+  it('throws on array additionalGlobalAttributes', () => {
+    assert.throws(
+      () => new Kensington({ additionalGlobalAttributes: [] }),
+      /additionalGlobalAttributes must be a plain object/,
+    );
+  });
+});
+
 // ─── custom tags ───────────────────────────────────────────────────────────
 
 describe('custom tags', () => {

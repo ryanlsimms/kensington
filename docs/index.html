@@ -517,10 +517,14 @@ t.inlineComment('line 1\nline 2');       // &lt;!--\n  line 1\n  line 2\n--&gt;<
     <pre><code class="language-javascript">import Kensington from 'kensington';
 
 const t = new Kensington({
-  validationLevel: 'warn',       // 'off' | 'warn' | 'error', default 'warn'
-  additionalNamespaces: ['hx'],  // allow hx-* (htmx), x-* (alpine), etc.
-  indentationLevel: 2,           // spaces per indent, default 2, 0 to disable
-  logger: msg =&gt; myLogger(msg),  // receives validation warnings, default console.log
+  validationLevel: 'warn',                    // 'off' | 'warn' | 'error', default 'warn'
+  additionalNamespaces: ['hx'],               // allow hx-* (htmx), x-* (alpine), etc.
+  additionalGlobalAttributes: {               // allow specific attributes on every element
+    popover: ['auto', 'manual'],
+    enterkeyhint: ['enter', 'done', 'go', 'next', 'previous', 'search', 'send'],
+  },
+  indentationLevel: 2,                        // spaces per indent, default 2, 0 to disable
+  logger: msg =&gt; myLogger(msg),              // receives validation warnings, default console.log
 });</code></pre>
   </section>
 
@@ -541,7 +545,7 @@ const t = new Kensington({
     </table>
 
     <ul>
-      <li><strong>Attribute names:</strong> checked against the HTML/SVG/MathML spec. <code>data-*</code>, <code>aria-*</code>, and <code>additionalNamespaces</code> are always allowed.</li>
+      <li><strong>Attribute names:</strong> checked against the HTML/SVG/MathML spec. <code>data-*</code>, <code>aria-*</code>, <code>additionalNamespaces</code>, and <code>additionalGlobalAttributes</code> are always allowed.</li>
       <li><strong>Attribute values:</strong> checked against allowed types/literals (e.g. <code>type</code> on <code>input</code> only accepts known values; <code>id</code> must not start with a digit).</li>
       <li><strong>Style object values:</strong> non-string/number values (other than <code>undefined</code>) are flagged.</li>
       <li><strong>Function values in <code>toString()</code>:</strong> event handler attributes accept functions for <code>.toElement()</code>, but functions cannot be serialized. They are omitted with a warning or error.</li>
@@ -579,6 +583,23 @@ t.myCard({ 'card-type': 'primary' }, t.p('content')).toString();
 // &rarr; &lt;my-card card-type="primary"&gt;
 //     &lt;p&gt;content&lt;/p&gt;
 //   &lt;/my-card&gt;</code></pre>
+
+    <p>To extend a built-in element with extra attributes, import its attribute object from <code>kensington/attributes</code> and spread it into <code>createCustomTag</code>:</p>
+
+    <pre><code class="language-javascript">import Kensington from 'kensington';
+import { buttonAttributes } from 'kensington/attributes';
+
+class MyEngine extends Kensington {
+  button = this.createCustomTag('button', {
+    ...buttonAttributes,
+    popovertarget: String,  // add an attribute not yet in the spec data
+  });
+}
+
+const t = new MyEngine({ validationLevel: 'error' });
+t.button({ type: 'button', popovertarget: 'my-popover' }, 'Open').toString();</code></pre>
+
+    <p>Every element in the spec has a corresponding named export (<code>divAttributes</code>, <code>inputAttributes</code>, &hellip;) available from <code>kensington/attributes</code>.</p>
   </section>
 
   <!-- ── Browser / DOM ─────────────────────────────────────────── -->
