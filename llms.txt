@@ -50,7 +50,7 @@ t.meta({ charset: 'utf-8' });
 - **Nested objects flatten**: `{ data: { bs: { toggle: 'collapse' } } }` → `data-bs-toggle="collapse"`
 - **Boolean attributes**: `{ checked: true }` → `checked`; `{ checked: false }` → attribute omitted entirely
 - **class as array**: `{ class: ['foo', 'bar'] }` → `class="foo bar"`
-- **style as object**: `{ style: { backgroundColor: 'red', zIndex: 2 } }` → `style="background-color: red; z-index: 2"`. camelCase keys are converted to kebab-case. Values of `undefined` or empty string are silently omitted. Other non-string/number values are flagged when validation is enabled. In TypeScript, the style object is typed with `csstype.Properties<string | number>`, providing autocomplete for CSS property names and values.
+- **style as object**: `{ style: { backgroundColor: 'red', zIndex: 2 } }` → `style="background-color: red; z-index: 2"`. camelCase and kebab-case keys are both accepted. Values of `undefined` or empty string are silently omitted. Other non-string/number values are flagged when validation is enabled. In TypeScript, the style object is typed with `csstype.Properties` and `csstype.PropertiesHyphen`, providing autocomplete for both camelCase and kebab-case CSS property names.
 - **Always allowed**: `data-*`, `aria-*`, and all [global HTML attributes](https://html.spec.whatwg.org/multipage/dom.html#global-attributes)
 - **SVG presentation attributes**: all CSS properties are valid on SVG elements (per the SVG spec). Types are derived from `@webref/css` syntax — numeric properties yield `number | string`, keyword-only properties yield a union of string literals.
 - **Attribute validation** is checked against the HTML/SVG/MathML spec at `'warn'` or `'error'` level
@@ -96,6 +96,10 @@ import Kensington from 'kensington';
 const t = new Kensington({
   validationLevel: 'warn',        // 'off' | 'warn' | 'error' — default 'warn'
   additionalNamespaces: ['hx'],   // allow hx-* attributes (htmx), x-* (alpine), etc.
+  additionalGlobalAttributes: {   // allow extra attributes on every element with type validation
+    popover: ['auto', 'manual'],
+    enterkeyhint: ['enter', 'done', 'go', 'next', 'previous', 'search', 'send'],
+  },
   indentationLevel: 2,            // spaces per indent level — default 2, 0 to disable
 });
 ```
@@ -223,7 +227,7 @@ import { formAttributes } from 'kensington/attributes';  // attribute objects fo
 
 ```typescript
 import type { ContentMethod, Content, ContentTag, VoidTag, LiteralTag, CommentTag } from 'kensington';
-import type { NameSpaceAttributes } from 'kensington';  // for module augmentation
+import type { NameSpaceAttributes, GlobalAttributes, GlobalEvents, UniversalAttributes } from 'kensington';
 ```
 
 ## HTML → Kensington CLI
@@ -256,4 +260,7 @@ If ESLint or Prettier is installed in the working directory, the converter reads
 | `CommentTag` | Returned by `.inlineComment()`. |
 | `Content` | `string \| number \| ContentTag \| VoidTag \| LiteralTag \| CommentTag \| Content[]` — valid content for any tag method. |
 | `ContentMethod<T>` | Type of a custom element method. `T` is the element-specific attribute type. |
+| `GlobalAttributes` | Attributes shared by all HTML elements. |
+| `GlobalEvents` | Event handler attributes (`onclick`, `oninput`, …) with specific DOM event types. |
+| `UniversalAttributes` | Intersection of `GlobalAttributes`, `GlobalEvents`, and `NameSpaceAttributes`. |
 | `NameSpaceAttributes` | Interface to extend for custom attribute namespaces. |

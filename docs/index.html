@@ -502,7 +502,7 @@ t.meta({ charset: 'utf-8' });</code></pre>
   <section id="raw-html">
     <h2>Raw HTML &amp; comments</h2>
 
-    <pre><code class="language-javascript">t.literal('&lt;li&gt;verbatim, HTML-encoded&lt;/li&gt;');   // throws if string contains &lt;script&gt;
+    <pre><code class="language-javascript">t.literal('&lt;li&gt;verbatim, HTML-encoded&lt;/li&gt;');   // &lt;script&gt; tags flagged via validationLevel
 t.unsafeLiteral('&lt;li&gt;trusted HTML, no encoding&lt;/li&gt;');
 
 t.inlineComment('hello world');          // &lt;!-- hello world --&gt;
@@ -661,7 +661,7 @@ import { t } from 'kensington';                          // shared default insta
 import { formAttributes } from 'kensington/attributes';  // per-element attribute data</code></pre>
 
     <pre><code class="language-typescript">import type { ContentMethod, Content, ContentTag, VoidTag, LiteralTag, CommentTag } from 'kensington';
-import type { NameSpaceAttributes } from 'kensington';  // for namespace augmentation</code></pre>
+import type { NameSpaceAttributes, GlobalAttributes, GlobalEvents, UniversalAttributes } from 'kensington';  // attribute types</code></pre>
 
     <table>
       <thead>
@@ -674,6 +674,9 @@ import type { NameSpaceAttributes } from 'kensington';  // for namespace augment
         <tr><td><code>CommentTag</code></td><td>Returned by <code>.inlineComment()</code></td></tr>
         <tr><td><code>Content</code></td><td><code>string | number | ContentTag | VoidTag | LiteralTag | CommentTag | Content[]</code></td></tr>
         <tr><td><code>ContentMethod&lt;T&gt;</code></td><td>Type of a custom element method; <code>T</code> is the element-specific attribute shape</td></tr>
+        <tr><td><code>GlobalAttributes</code></td><td>Attributes shared by all HTML elements</td></tr>
+        <tr><td><code>GlobalEvents</code></td><td>Event handler attributes (<code>onclick</code>, <code>oninput</code>, &hellip;) shared by all elements</td></tr>
+        <tr><td><code>UniversalAttributes</code></td><td>Intersection of <code>GlobalAttributes</code>, <code>GlobalEvents</code>, and <code>NameSpaceAttributes</code></td></tr>
         <tr><td><code>NameSpaceAttributes</code></td><td>Interface to extend for custom attribute namespaces</td></tr>
       </tbody>
     </table>

@@ -56,7 +56,8 @@ describe('core output', () => {
   });
 
   it('literal throws on script tag', () => {
-    assert.throws(() => t.literal('<script>alert(1)</script>'));
+    const te = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => te.literal('<script>alert(1)</script>').toString());
   });
 
   it('unsafeLiteral allows script tag', () => {

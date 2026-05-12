@@ -50,7 +50,7 @@ export interface NameSpaceAttributes {
   [key: `${"data" | "aria"}${string}`]: string | object
 }
 
-type GlobalAttributes = {
+export type GlobalAttributes = {
   accesskey?: string;
   autocapitalize?: "on" | "off" | "none" | "sentences" | "words" | "characters";
   autocorrect?: "on" | "off";
@@ -78,85 +78,85 @@ type GlobalAttributes = {
   role?: string;
   slot?: string;
   spellcheck?: "true" | "false";
-  style?: string | csstype.Properties<string | number>;
+  style?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   tabindex?: number | `${number}`;
   title?: string;
   translate?: "yes" | "no";
   writingsuggestions?: "true" | "false";
 }
 
-type GlobalEvents = {
-  onauxclick?: string | ((event: Event) => void);
-  onbeforeinput?: string | ((event: Event) => void);
+export type GlobalEvents = {
+  onauxclick?: string | ((event: MouseEvent) => void);
+  onbeforeinput?: string | ((event: InputEvent) => void);
   onbeforematch?: string | ((event: Event) => void);
   onbeforetoggle?: string | ((event: Event) => void);
-  onblur?: string | ((event: Event) => void);
+  onblur?: string | ((event: FocusEvent) => void);
   oncancel?: string | ((event: Event) => void);
   oncanplay?: string | ((event: Event) => void);
   oncanplaythrough?: string | ((event: Event) => void);
   onchange?: string | ((event: Event) => void);
-  onclick?: string | ((event: Event) => void);
+  onclick?: string | ((event: MouseEvent) => void);
   onclose?: string | ((event: Event) => void);
   oncommand?: string | ((event: Event) => void);
   oncontextlost?: string | ((event: Event) => void);
-  oncontextmenu?: string | ((event: Event) => void);
+  oncontextmenu?: string | ((event: MouseEvent) => void);
   oncontextrestored?: string | ((event: Event) => void);
-  oncopy?: string | ((event: Event) => void);
+  oncopy?: string | ((event: ClipboardEvent) => void);
   oncuechange?: string | ((event: Event) => void);
-  oncut?: string | ((event: Event) => void);
-  ondblclick?: string | ((event: Event) => void);
-  ondrag?: string | ((event: Event) => void);
-  ondragend?: string | ((event: Event) => void);
-  ondragenter?: string | ((event: Event) => void);
-  ondragleave?: string | ((event: Event) => void);
-  ondragover?: string | ((event: Event) => void);
-  ondragstart?: string | ((event: Event) => void);
-  ondrop?: string | ((event: Event) => void);
+  oncut?: string | ((event: ClipboardEvent) => void);
+  ondblclick?: string | ((event: MouseEvent) => void);
+  ondrag?: string | ((event: DragEvent) => void);
+  ondragend?: string | ((event: DragEvent) => void);
+  ondragenter?: string | ((event: DragEvent) => void);
+  ondragleave?: string | ((event: DragEvent) => void);
+  ondragover?: string | ((event: DragEvent) => void);
+  ondragstart?: string | ((event: DragEvent) => void);
+  ondrop?: string | ((event: DragEvent) => void);
   ondurationchange?: string | ((event: Event) => void);
   onemptied?: string | ((event: Event) => void);
   onended?: string | ((event: Event) => void);
-  onerror?: string | ((event: Event) => void);
-  onfocus?: string | ((event: Event) => void);
-  onformdata?: string | ((event: Event) => void);
-  oninput?: string | ((event: Event) => void);
+  onerror?: string | ((event: ErrorEvent) => void);
+  onfocus?: string | ((event: FocusEvent) => void);
+  onformdata?: string | ((event: FormDataEvent) => void);
+  oninput?: string | ((event: InputEvent) => void);
   oninvalid?: string | ((event: Event) => void);
-  onkeydown?: string | ((event: Event) => void);
-  onkeypress?: string | ((event: Event) => void);
-  onkeyup?: string | ((event: Event) => void);
+  onkeydown?: string | ((event: KeyboardEvent) => void);
+  onkeypress?: string | ((event: KeyboardEvent) => void);
+  onkeyup?: string | ((event: KeyboardEvent) => void);
   onload?: string | ((event: Event) => void);
   onloadeddata?: string | ((event: Event) => void);
   onloadedmetadata?: string | ((event: Event) => void);
   onloadstart?: string | ((event: Event) => void);
-  onmousedown?: string | ((event: Event) => void);
-  onmouseenter?: string | ((event: Event) => void);
-  onmouseleave?: string | ((event: Event) => void);
-  onmousemove?: string | ((event: Event) => void);
-  onmouseout?: string | ((event: Event) => void);
-  onmouseover?: string | ((event: Event) => void);
-  onmouseup?: string | ((event: Event) => void);
-  onpaste?: string | ((event: Event) => void);
+  onmousedown?: string | ((event: MouseEvent) => void);
+  onmouseenter?: string | ((event: MouseEvent) => void);
+  onmouseleave?: string | ((event: MouseEvent) => void);
+  onmousemove?: string | ((event: MouseEvent) => void);
+  onmouseout?: string | ((event: MouseEvent) => void);
+  onmouseover?: string | ((event: MouseEvent) => void);
+  onmouseup?: string | ((event: MouseEvent) => void);
+  onpaste?: string | ((event: ClipboardEvent) => void);
   onpause?: string | ((event: Event) => void);
   onplay?: string | ((event: Event) => void);
   onplaying?: string | ((event: Event) => void);
-  onprogress?: string | ((event: Event) => void);
+  onprogress?: string | ((event: ProgressEvent) => void);
   onratechange?: string | ((event: Event) => void);
   onreset?: string | ((event: Event) => void);
   onresize?: string | ((event: Event) => void);
   onscroll?: string | ((event: Event) => void);
   onscrollend?: string | ((event: Event) => void);
-  onsecuritypolicyviolation?: string | ((event: Event) => void);
+  onsecuritypolicyviolation?: string | ((event: SecurityPolicyViolationEvent) => void);
   onseeked?: string | ((event: Event) => void);
   onseeking?: string | ((event: Event) => void);
   onselect?: string | ((event: Event) => void);
   onslotchange?: string | ((event: Event) => void);
   onstalled?: string | ((event: Event) => void);
-  onsubmit?: string | ((event: Event) => void);
+  onsubmit?: string | ((event: SubmitEvent) => void);
   onsuspend?: string | ((event: Event) => void);
   ontimeupdate?: string | ((event: Event) => void);
   ontoggle?: string | ((event: Event) => void);
   onvolumechange?: string | ((event: Event) => void);
   onwaiting?: string | ((event: Event) => void);
-  onwheel?: string | ((event: Event) => void);
+  onwheel?: string | ((event: WheelEvent) => void);
 }
 
 type SvgPresentationAttributes = {
@@ -1679,7 +1679,7 @@ type AnimateAttributes = {
   'repeatDur'?: string;
   'requiredExtensions'?: string;
   'restart'?: "always" | "never" | "whenNotActive";
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'systemLanguage'?: string;
   'tabindex'?: number | `${number}`;
   'to'?: string;
@@ -1777,7 +1777,7 @@ type AnimateMotionAttributes = {
   'requiredExtensions'?: string;
   'restart'?: "always" | "never" | "whenNotActive";
   'rotate'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'systemLanguage'?: string;
   'tabindex'?: number | `${number}`;
   'to'?: string;
@@ -1872,7 +1872,7 @@ type AnimateTransformAttributes = {
   'repeatDur'?: string;
   'requiredExtensions'?: string;
   'restart'?: "always" | "never" | "whenNotActive";
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'systemLanguage'?: string;
   'tabindex'?: number | `${number}`;
   'to'?: string;
@@ -1893,7 +1893,7 @@ type AnnotationAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -1909,7 +1909,7 @@ type AnnotationXmlAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2073,7 +2073,7 @@ type CircleAttributes = {
   'r'?: number | string;
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'systemLanguage'?: string;
   'tabindex'?: number | `${number}`;
   'xml:space'?: "default" | "preserve";
@@ -2087,7 +2087,7 @@ type ClipPathAttributes = {
   'id'?: string;
   'requiredExtensions'?: string;
   'requiredFeatures'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'systemLanguage'?: string;
   'transform'?: string;
   'xml:base'?: string;
@@ -2178,7 +2178,7 @@ type DefsAttributes = {
   'onvolumechange'?: string | ((event: Event) => void);
   'onwaiting'?: string | ((event: Event) => void);
   'onwheel'?: string | ((event: Event) => void);
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
   'xml:space'?: "default" | "preserve";
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -2253,7 +2253,7 @@ type DescAttributes = {
   'onvolumechange'?: string | ((event: Event) => void);
   'onwaiting'?: string | ((event: Event) => void);
   'onwheel'?: string | ((event: Event) => void);
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
   'xml:space'?: "default" | "preserve";
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -2347,7 +2347,7 @@ type EllipseAttributes = {
   'role'?: string;
   'rx'?: number | string;
   'ry'?: number | string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'systemLanguage'?: string;
   'tabindex'?: number | `${number}`;
   'xml:space'?: "default" | "preserve";
@@ -2365,7 +2365,7 @@ type EmbedAttributes = {
 type FeBlendAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: "default" | "preserve";
@@ -2374,7 +2374,7 @@ type FeBlendAttributes = {
 type FeColorMatrixAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: "default" | "preserve";
@@ -2383,7 +2383,7 @@ type FeColorMatrixAttributes = {
 type FeComponentTransferAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: "default" | "preserve";
@@ -2392,7 +2392,7 @@ type FeComponentTransferAttributes = {
 type FeCompositeAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: "default" | "preserve";
@@ -2401,7 +2401,7 @@ type FeCompositeAttributes = {
 type FeConvolveMatrixAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: "default" | "preserve";
@@ -2410,7 +2410,7 @@ type FeConvolveMatrixAttributes = {
 type FeDiffuseLightingAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: "default" | "preserve";
@@ -2419,7 +2419,7 @@ type FeDiffuseLightingAttributes = {
 type FeDisplacementMapAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: "default" | "preserve";
@@ -2435,7 +2435,7 @@ type FeDistantLightAttributes = {
 type FeDropShadowAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: "default" | "preserve";
@@ -2444,7 +2444,7 @@ type FeDropShadowAttributes = {
 type FeFloodAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: "default" | "preserve";
@@ -2481,7 +2481,7 @@ type FeFuncRAttributes = {
 type FeGaussianBlurAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: "default" | "preserve";
@@ -2491,7 +2491,7 @@ type FeImageAttributes = {
   'class'?: string | string[];
   'externalResourcesRequired'?: "true" | "false";
   'id'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: "default" | "preserve";
@@ -2500,7 +2500,7 @@ type FeImageAttributes = {
 type FeMergeAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: "default" | "preserve";
@@ -2516,7 +2516,7 @@ type FeMergeNodeAttributes = {
 type FeMorphologyAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: "default" | "preserve";
@@ -2525,7 +2525,7 @@ type FeMorphologyAttributes = {
 type FeOffsetAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: "default" | "preserve";
@@ -2541,7 +2541,7 @@ type FePointLightAttributes = {
 type FeSpecularLightingAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: "default" | "preserve";
@@ -2557,7 +2557,7 @@ type FeSpotLightAttributes = {
 type FeTileAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: "default" | "preserve";
@@ -2566,7 +2566,7 @@ type FeTileAttributes = {
 type FeTurbulenceAttributes = {
   'class'?: string | string[];
   'id'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: "default" | "preserve";
@@ -2586,7 +2586,7 @@ type FilterAttributes = {
   'class'?: string | string[];
   'externalResourcesRequired'?: "true" | "false";
   'id'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'xml:base'?: string;
   'xml:lang'?: string;
   'xml:space'?: "default" | "preserve";
@@ -2662,7 +2662,7 @@ type ForeignObjectAttributes = {
   'onwheel'?: string | ((event: Event) => void);
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'systemLanguage'?: string;
   'tabindex'?: number | `${number}`;
   'width'?: number | string;
@@ -2751,7 +2751,7 @@ type GAttributes = {
   'onwheel'?: string | ((event: Event) => void);
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'systemLanguage'?: string;
   'tabindex'?: number | `${number}`;
   'xml:space'?: "default" | "preserve";
@@ -2865,7 +2865,7 @@ type ImageAttributes = {
   'preserveAspectRatio'?: string;
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'systemLanguage'?: string;
   'tabindex'?: number | `${number}`;
   'width'?: number | string;
@@ -3015,7 +3015,7 @@ type LineAttributes = {
   'pathLength'?: number | `${number}`;
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'systemLanguage'?: string;
   'tabindex'?: number | `${number}`;
   'x1'?: number | string;
@@ -3094,7 +3094,7 @@ type LinearGradientAttributes = {
   'onwaiting'?: string | ((event: Event) => void);
   'onwheel'?: string | ((event: Event) => void);
   'spreadMethod'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
   'x1'?: number | string;
   'x2'?: number | string;
@@ -3204,7 +3204,7 @@ type MarkerAttributes = {
   'preserveAspectRatio'?: string;
   'refX'?: string;
   'refY'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
   'viewBox'?: string;
   'xml:space'?: "default" | "preserve";
@@ -3215,7 +3215,7 @@ type MaskAttributes = {
   'id'?: string;
   'requiredExtensions'?: string;
   'requiredFeatures'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'systemLanguage'?: string;
   'xml:base'?: string;
   'xml:lang'?: string;
@@ -3235,7 +3235,7 @@ type MathAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
   'xmlns'?: string;
 } & NameSpaceAttributes & GlobalEvents;
@@ -3253,7 +3253,7 @@ type MencloseAttributes = {
   'nonce'?: string;
   'notation'?: string;
   'scriptlevel'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3271,7 +3271,7 @@ type MerrorAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3349,7 +3349,7 @@ type MetadataAttributes = {
   'onvolumechange'?: string | ((event: Event) => void);
   'onwaiting'?: string | ((event: Event) => void);
   'onwheel'?: string | ((event: Event) => void);
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
   'xml:space'?: "default" | "preserve";
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -3376,7 +3376,7 @@ type MfracAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3392,7 +3392,7 @@ type MiAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3408,7 +3408,7 @@ type MmultiscriptsAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3424,7 +3424,7 @@ type MnAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3449,7 +3449,7 @@ type MoAttributes = {
   'scriptlevel'?: string;
   'separator'?: string;
   'stretchy'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'symmetric'?: string;
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
@@ -3467,7 +3467,7 @@ type MoverAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3486,7 +3486,7 @@ type MpaddedAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
   'voffset'?: string;
   'width'?: number | string;
@@ -3558,7 +3558,7 @@ type MpathAttributes = {
   'onvolumechange'?: string | ((event: Event) => void);
   'onwaiting'?: string | ((event: Event) => void);
   'onwheel'?: string | ((event: Event) => void);
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
   'xml:space'?: "default" | "preserve";
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -3575,7 +3575,7 @@ type MphantomAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3591,7 +3591,7 @@ type MprescriptsAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3607,7 +3607,7 @@ type MrootAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3623,7 +3623,7 @@ type MrowAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3639,7 +3639,7 @@ type MsAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3656,7 +3656,7 @@ type MspaceAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
   'width'?: number | string;
 } & NameSpaceAttributes & GlobalEvents;
@@ -3673,7 +3673,7 @@ type MsqrtAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3689,7 +3689,7 @@ type MstyleAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3705,7 +3705,7 @@ type MsubAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3721,7 +3721,7 @@ type MsubsupAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3737,7 +3737,7 @@ type MsupAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3762,7 +3762,7 @@ type MtableAttributes = {
   'rowlines'?: string;
   'rowspacing'?: string;
   'scriptlevel'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
   'width'?: number | string;
 } & NameSpaceAttributes & GlobalEvents;
@@ -3783,7 +3783,7 @@ type MtdAttributes = {
   'rowalign'?: string;
   'rowspan'?: number | `${number}`;
   'scriptlevel'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3799,7 +3799,7 @@ type MtextAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3817,7 +3817,7 @@ type MtrAttributes = {
   'nonce'?: string;
   'rowalign'?: string;
   'scriptlevel'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3834,7 +3834,7 @@ type MunderAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3852,7 +3852,7 @@ type MunderoverAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3964,7 +3964,7 @@ type PathAttributes = {
   'pathLength'?: number | `${number}`;
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'systemLanguage'?: string;
   'tabindex'?: number | `${number}`;
   'xml:space'?: "default" | "preserve";
@@ -4041,7 +4041,7 @@ type PatternAttributes = {
   'patternTransform'?: string;
   'patternUnits'?: string;
   'preserveAspectRatio'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
   'viewBox'?: string;
   'width'?: number | string;
@@ -4123,7 +4123,7 @@ type PolygonAttributes = {
   'points'?: string;
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'systemLanguage'?: string;
   'tabindex'?: number | `${number}`;
   'xml:space'?: "default" | "preserve";
@@ -4198,7 +4198,7 @@ type PolylineAttributes = {
   'points'?: string;
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'systemLanguage'?: string;
   'tabindex'?: number | `${number}`;
   'xml:space'?: "default" | "preserve";
@@ -4290,7 +4290,7 @@ type RadialGradientAttributes = {
   'onwheel'?: string | ((event: Event) => void);
   'r'?: number | string;
   'spreadMethod'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
   'xlink:href'?: string;
   'xlink:title'?: string;
@@ -4368,7 +4368,7 @@ type RectAttributes = {
   'role'?: string;
   'rx'?: number | string;
   'ry'?: number | string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'systemLanguage'?: string;
   'tabindex'?: number | `${number}`;
   'width'?: number | string;
@@ -4428,7 +4428,7 @@ type SemanticsAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -4512,7 +4512,7 @@ type SetAttributes = {
   'repeatDur'?: string;
   'requiredExtensions'?: string;
   'restart'?: "always" | "never" | "whenNotActive";
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'systemLanguage'?: string;
   'tabindex'?: number | `${number}`;
   'to'?: string;
@@ -4603,7 +4603,7 @@ type StopAttributes = {
   'onvolumechange'?: string | ((event: Event) => void);
   'onwaiting'?: string | ((event: Event) => void);
   'onwheel'?: string | ((event: Event) => void);
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
   'xml:space'?: "default" | "preserve";
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -4692,7 +4692,7 @@ type SvgAttributes = {
   'preserveAspectRatio'?: string;
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'systemLanguage'?: string;
   'tabindex'?: number | `${number}`;
   'transform'?: string;
@@ -4770,7 +4770,7 @@ type SwitchAttributes = {
   'onwheel'?: string | ((event: Event) => void);
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'systemLanguage'?: string;
   'tabindex'?: number | `${number}`;
   'xml:space'?: "default" | "preserve";
@@ -4846,7 +4846,7 @@ type SymbolAttributes = {
   'refX'?: string;
   'refY'?: string;
   'role'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
   'viewBox'?: string;
   'width'?: number | string;
@@ -4945,7 +4945,7 @@ type TextAttributes = {
   'requiredExtensions'?: string;
   'role'?: string;
   'rotate'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'systemLanguage'?: string;
   'tabindex'?: number | `${number}`;
   'textLength'?: string;
@@ -5044,7 +5044,7 @@ type TextPathAttributes = {
   'side'?: string;
   'spacing'?: string;
   'startOffset'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'systemLanguage'?: string;
   'tabindex'?: number | `${number}`;
   'textLength'?: string;
@@ -5152,7 +5152,7 @@ type TspanAttributes = {
   'requiredExtensions'?: string;
   'role'?: string;
   'rotate'?: number | string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'systemLanguage'?: string;
   'tabindex'?: number | `${number}`;
   'textLength'?: string;
@@ -5234,7 +5234,7 @@ type UseAttributes = {
   'onwheel'?: string | ((event: Event) => void);
   'requiredExtensions'?: string;
   'role'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'systemLanguage'?: string;
   'tabindex'?: number | `${number}`;
   'width'?: number | string;
@@ -5329,7 +5329,7 @@ type ViewAttributes = {
   'onwheel'?: string | ((event: Event) => void);
   'preserveAspectRatio'?: string;
   'role'?: string;
-  'style'?: string | csstype.Properties<string | number>;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
   'viewBox'?: string;
   'xml:space'?: "default" | "preserve";
@@ -5347,7 +5347,7 @@ type WbrAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
  */
 export type Content = ContentTag | VoidTag | LiteralTag | CommentTag | string | number | boolean | null | undefined | (ContentTag | VoidTag | LiteralTag | CommentTag | string | number | boolean | null | undefined)[];
 
-type UniversalAttributes = NameSpaceAttributes | GlobalAttributes | GlobalEvents;
+export type UniversalAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 /**
  * The type of a custom element method created with `createCustomTag`.
@@ -5360,8 +5360,8 @@ type UniversalAttributes = NameSpaceAttributes | GlobalAttributes | GlobalEvents
  *     this.createCustomTag('my-card', { 'card-type': ['primary', 'secondary'] });
  * }
  */
-export interface ContentMethod<T = Record<string, unknown>> {
-  (attributes: T | UniversalAttributes, content?: Content): ContentTag;
+export interface ContentMethod<T = {}> {
+  (attributes: T & UniversalAttributes, content?: Content): ContentTag;
   (content?: Content): ContentTag;
 }
 
@@ -5432,7 +5432,7 @@ export default class Kensington {
 
   /**
    * Embeds a raw HTML string verbatim into the output.
-   * Throws if the string contains a `<script>` tag — use `.unsafeLiteral()` for trusted HTML that includes scripts.
+   * Use `.unsafeLiteral()` for trusted HTML that includes `<script>` tags.
    *
    * @example
    * t.ul([t.li('typed'), t.literal('<li>raw html</li>')]).toString();
