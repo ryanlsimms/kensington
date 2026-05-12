@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [1.0.0-beta.2] - 2026-05-12
 
 ### Added
 - `additionalGlobalAttributes` constructor option. Accepts a plain object mapping attribute names to validator types (the same format used by `createCustomTag`). Attributes in this map are allowed on every element and validated against the provided type. camelCase keys are normalized to kebab-case.
