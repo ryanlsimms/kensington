@@ -176,6 +176,18 @@ t.button({ type: 'button', hxPost: '/api/submit' });
 t.div({ 'aria-label': 'close' });
 t.div({ 'data-testid': 'header' });
 
+// ─── on key ──────────────────────────────────────────────────────────────────
+
+t.div({ on: { click: (e: Event) => { console.log(e); } } });
+t.div({ on: { 'custom-event': (e: Event) => {} } });
+t.button({ type: 'button', on: { myCustomEvent: (e: Event) => {} } });
+
+// @ts-expect-error - on handler must be a function
+t.div({ on: { click: 42 } });
+
+// @ts-expect-error - on value must be a Record, not a string
+t.div({ on: 'not-an-object' });
+
 // ─── content types ───────────────────────────────────────────────────────────
 
 t.div('text content');

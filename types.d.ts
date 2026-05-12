@@ -183,6 +183,7 @@ export type GlobalEvents = {
   onvolumechange?: string | ((event: Event) => void);
   onwaiting?: string | ((event: Event) => void);
   onwheel?: string | ((event: WheelEvent) => void);
+  on?: Record<string, (event: Event) => void>;
 }
 
 type SvgPresentationAttributes = {
@@ -5424,6 +5425,8 @@ type KebabCase<S extends string> = S extends `${infer H}${infer T}` ? H extends 
  */
 export default class Kensington {
   constructor(options?: {
+    /** Allow extra attributes on all elements, e.g. `{ enterkeyhint: ['enter', 'done', 'go', 'next', 'previous', 'search', 'send'] }`. */
+    additionalGlobalAttributes?: Record<string, unknown>;
     /** Allow additional attribute namespaces, e.g. `'hx'` for htmx `hx-*` attributes. */
     additionalNamespaces?: string | string[];
     /** Spaces per indentation level. Default: 2. Set to 0 to disable indentation. */
@@ -5456,7 +5459,7 @@ export default class Kensington {
 
   /**
    * Embeds a raw HTML string verbatim into the output.
-   * Throws if the string contains a `<script>` tag — use `.unsafeLiteral()` for trusted HTML that includes scripts.
+   * Use `.unsafeLiteral()` for trusted HTML that includes `<script>` tags.
    *
    * @example
    * t.ul([t.li('typed'), t.literal('<li>raw html</li>')]).toString();

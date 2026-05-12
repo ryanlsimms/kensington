@@ -37,7 +37,6 @@ const EVENT_TYPES = {
   onprogress: 'ProgressEvent',
 };
 
-
 function attrType(name, type) {
   if (name === 'style') { return 'Reactive<string | csstype.Properties<string | number>>'; }
   if (name === 'class') { return 'Reactive<string | string[]>'; }
@@ -51,7 +50,6 @@ function attributesType({ tag, attributes = [], globalTypes }) {
   if (!attributes.length) {
     return [`{ ${propField} }`, ...globalTypes].join(' & ');
   }
-
 
   return [`{
   ${propField}

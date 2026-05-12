@@ -303,12 +303,14 @@ div({ class: 'card' }, [
 
     <p>Standard event handler attributes (<code>onclick</code>, <code>oninput</code>, etc.) accept a function (wired via <code>addEventListener</code>) or a string (set via <code>setAttribute</code>). For custom events, use the <code>on</code> key with a plain object mapping event names verbatim to handlers. SVG and MathML elements get the correct namespace automatically.</p>
 
+    <p>SVG and MathML elements get the correct namespace automatically.</p>
+
     <pre><code class="language-javascript">import { t } from 'kensington';
 
 const button = t.button({ type: 'button' }, 'Click me').toElement();
 document.body.append(button);
 
-// custom events: names are passed verbatim to addEventListener
+// custom events — names are passed verbatim to addEventListener
 const el = t.div({
   on: {
     bricksSelectorChange: e =&gt; console.log(e.detail),

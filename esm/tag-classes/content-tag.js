@@ -143,7 +143,7 @@ export default class ContentTag {
   attributeValueIsValid(attr, value) {
     if (attr === 'on') {
       if (value === null || value === undefined) { return true; }
-      return typeof value === 'object' && !Array.isArray(value);
+      return typeof value === 'object' && !Array.isArray(value) && !(value instanceof Signal);
     }
     if (attr === 'prop') {
       if (value === null || value === undefined) { return true; }
