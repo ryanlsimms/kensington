@@ -551,7 +551,7 @@ const t = new Kensington({
       <li><strong>Attribute names:</strong> checked against the HTML/SVG/MathML spec. <code>data-*</code>, <code>aria-*</code>, <code>additionalNamespaces</code>, and <code>additionalGlobalAttributes</code> are always allowed.</li>
       <li><strong>Attribute values:</strong> checked against allowed types/literals (e.g. <code>type</code> on <code>input</code> only accepts known values; <code>id</code> must not start with a digit).</li>
       <li><strong>Style object values:</strong> non-string/number values (other than <code>undefined</code>) are flagged.</li>
-      <li><strong>Function values in <code>toString()</code>:</strong> event handler attributes accept functions for <code>.toElement()</code>, but functions cannot be serialized. They are omitted with a warning or error.</li>
+      <li><strong>Function values in <code>toString()</code>:</strong> standard event handler attributes (<code>onclick</code>, <code>oninput</code>, etc.) accept functions for <code>.toElement()</code>, but functions cannot be serialized. They are omitted with a warning or error. Non-standard <code>on*</code> names (e.g. <code>onbricksSelectorChange</code>) are treated as unknown attributes — use the <code>on</code> key for custom events instead.</li>
     </ul>
 
     <pre><code class="language-javascript">const t = new Kensington({ validationLevel: 'error' });
@@ -610,7 +610,7 @@ t.button({ type: 'button', popovertarget: 'my-popover' }, 'Open').toString();</c
   <section id="dom">
     <h2>Browser / DOM</h2>
 
-    <p>Event handlers accept a function (wired via <code>addEventListener</code>) or a string (set via <code>setAttribute</code>). SVG and MathML elements get the correct namespace automatically.</p>
+    <p>Standard event handler attributes (<code>onclick</code>, <code>oninput</code>, etc.) accept a function (wired via <code>addEventListener</code>) or a string (set via <code>setAttribute</code>). For custom events, use the <code>on</code> key with a plain object mapping event names verbatim to handlers. SVG and MathML elements get the correct namespace automatically.</p>
 
     <pre><code class="language-javascript">import { t } from 'kensington';
 
@@ -620,6 +620,14 @@ const button = t.button({
 }, 'Click Me').toElement();
 
 document.body.append(button);
+
+// custom events — names are passed verbatim to addEventListener
+const el = t.div({
+  on: {
+    bricksSelectorChange: e =&gt; console.log(e.detail),
+    'my-custom-event':    e =&gt; console.log(e.detail),
+  },
+}).toElement();
 
 const svg = t.svg({ viewBox: '0 0 100 100' }, [
   t.circle({ cx: 50, cy: 50, r: 40, fill: 'steelblue' }),

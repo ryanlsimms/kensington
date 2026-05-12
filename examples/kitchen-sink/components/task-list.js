@@ -23,6 +23,7 @@ function taskItem(tasks, { id, text, done }) {
       class: 'remove-btn',
       aria: { label: `Delete task: ${text}` },
       onclick: () => tasks.set(ts => ts.filter(task => task.id !== id)),
+      onnonevent: e => console.log(e),
     }, '×'),
   ]);
 }

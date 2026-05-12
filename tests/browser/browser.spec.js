@@ -212,6 +212,32 @@ test('attaches event listener on SVG element via function attribute', async ({ p
   await expect(page.locator('body')).toHaveAttribute('data-svg-clicked', 'yes');
 });
 
+test('on key wires camelCase custom event listener', async ({ page, bundle }) => {
+  await page.evaluate(async src => {
+    const { t } = await import(src);
+    document.body.append(
+      t.div({
+        on: { bricksSelectorChange: () => { document.body.dataset.customFired = 'yes'; } },
+      }).toElement(),
+    );
+    document.querySelector('div').dispatchEvent(new CustomEvent('bricksSelectorChange'));
+  }, bundle);
+  await expect(page.locator('body')).toHaveAttribute('data-custom-fired', 'yes');
+});
+
+test('on key wires kebab custom event listener', async ({ page, bundle }) => {
+  await page.evaluate(async src => {
+    const { t } = await import(src);
+    document.body.append(
+      t.div({
+        on: { 'bricks-selector-change': () => { document.body.dataset.kebabFired = 'yes'; } },
+      }).toElement(),
+    );
+    document.querySelector('div').dispatchEvent(new CustomEvent('bricks-selector-change'));
+  }, bundle);
+  await expect(page.locator('body')).toHaveAttribute('data-kebab-fired', 'yes');
+});
+
 test('sets aria attributes on element', async ({ page, bundle }) => {
   await page.evaluate(async src => {
     const { t } = await import(src);

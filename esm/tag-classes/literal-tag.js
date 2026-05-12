@@ -1,5 +1,5 @@
-import Signal, { effect } from '../lib/signal.js';
 import showInvalid from '../lib/show-invalid.js';
+import Signal, { effect } from '../lib/signal.js';
 
 const TYPE_ERROR = 'literal() only accepts a string';
 const SCRIPT_ERROR = '<script> tags are not allowed in literal html. Use unsafeLiteral if you can vouch for the string';

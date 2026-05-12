@@ -1,5 +1,5 @@
-import Signal, { effect } from '../lib/signal.js';
 import showInvalid from '../lib/show-invalid.js';
+import Signal, { effect } from '../lib/signal.js';
 
 const TYPE_ERROR = 'inlineComment only accepts a string or number';
 const DOUBLE_DASH_ERROR = 'inlineComment text must not contain "--"';
