@@ -127,6 +127,11 @@ export default class Kensington {
       namespace,
     } = options;
     const allowedAttributeMap = new Map(Object.entries(allowedAttributes));
+    for (const name of (allAttributes.camelCaseNames ?? [])) {
+      if (!allowedAttributeMap.has(name)) {
+        allowedAttributeMap.set(name, null);
+      }
+    }
     const invalidTypes = [...allowedAttributeMap.entries()].filter(([, type]) => {
       if ([String, Number, Boolean].includes(type) || Array.isArray(type)) {
         return false;

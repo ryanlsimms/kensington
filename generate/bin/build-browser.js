@@ -5,9 +5,19 @@ import { rollup } from 'rollup';
 
 const entry = new URL('../../esm/index.js', import.meta.url).pathname;
 const attributesId = new URL('../../esm/attributes.js', import.meta.url).pathname;
+const attributesHref = new URL('../../esm/attributes.js', import.meta.url).href;
+
+const attributesModule = await import(attributesHref);
+const camelCaseNames = JSON.stringify([...new Set(
+  Object.values(attributesModule)
+    .flatMap(v => (v && typeof v === 'object' && !Array.isArray(v)) ? Object.keys(v) : [])
+    .filter(k => /[A-Z]/.test(k)),
+)]);
 
 const slimPlugin = {
-  load: id => id === '\0slim-attributes' ? 'export const __slim__ = true;' : null,
+  load: id => id === '\0slim-attributes'
+    ? `export const __slim__ = true;\nexport const camelCaseNames = new Set(${camelCaseNames});`
+    : null,
   name: 'slim-attributes',
   resolveId: id => id === attributesId ? '\0slim-attributes' : null,
 };

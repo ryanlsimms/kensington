@@ -918,6 +918,26 @@ describe('slim build', () => {
     const { default: SlimKensington } = await import('../../dist/kensington.slim.js');
     assert.doesNotThrow(() => new SlimKensington({ validationLevel: 'off' }));
   });
+  it('preserves camelCase SVG attribute names', async () => {
+    const { default: SlimKensington } = await import('../../dist/kensington.slim.js');
+    const tt = new SlimKensington({ validationLevel: 'off' });
+    assert.strictEqual(
+      tt.svg({ viewBox: '0 0 100 100' }).toString(),
+      '<svg viewBox="0 0 100 100"></svg>',
+    );
+    assert.strictEqual(
+      tt.marker({ markerWidth: 10, markerHeight: 10, preserveAspectRatio: 'none' }).toString(),
+      '<marker markerWidth="10" markerHeight="10" preserveAspectRatio="none"></marker>',
+    );
+  });
+  it('still converts user camelCase keys to kebab-case in slim build', async () => {
+    const { default: SlimKensington } = await import('../../dist/kensington.slim.js');
+    const tt = new SlimKensington({ validationLevel: 'off' });
+    assert.strictEqual(
+      tt.div({ dataBsTarget: '#modal' }).toString(),
+      '<div data-bs-target="#modal"></div>',
+    );
+  });
 });
 
 // ─── htmlWithDocType ───────────────────────────────────────────────────────
