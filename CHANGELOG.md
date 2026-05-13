@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [2.0.0-signals.6] - 2026-05-12
 
 ### Added
 - `.getDomElement()` on `ContentTag`, `VoidTag`, and `CommentTag`. Returns the element if it is currently connected to the DOM, `null` otherwise. Does not create an element and never throws — returns `null` in non-browser environments. Use `.toElement()` to get or create the element; use `.getDomElement()` to check whether it is live.
