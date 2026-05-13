@@ -34,6 +34,48 @@ export class CommentTag {
   toElement(): Comment;
 }
 
+export class BodyTag extends ContentTag { private readonly _k: 'body' }
+export class ButtonTag extends ContentTag { private readonly _k: 'button' }
+export class CaptionTag extends ContentTag { private readonly _k: 'caption' }
+export class ColTag extends VoidTag { private readonly _k: 'col' }
+export class ColgroupTag extends ContentTag { private readonly _k: 'colgroup' }
+export class DdTag extends ContentTag { private readonly _k: 'dd' }
+export class DivTag extends ContentTag { private readonly _k: 'div' }
+export class DlTag extends ContentTag { private readonly _k: 'dl' }
+export class DtTag extends ContentTag { private readonly _k: 'dt' }
+export class H1Tag extends ContentTag { private readonly _k: 'h1' }
+export class H2Tag extends ContentTag { private readonly _k: 'h2' }
+export class H3Tag extends ContentTag { private readonly _k: 'h3' }
+export class H4Tag extends ContentTag { private readonly _k: 'h4' }
+export class H5Tag extends ContentTag { private readonly _k: 'h5' }
+export class H6Tag extends ContentTag { private readonly _k: 'h6' }
+export class HeadTag extends ContentTag { private readonly _k: 'head' }
+export class HgroupTag extends ContentTag { private readonly _k: 'hgroup' }
+export class HrTag extends VoidTag { private readonly _k: 'hr' }
+export class HtmlTag extends ContentTag { private readonly _k: 'html' }
+export class ImgTag extends VoidTag { private readonly _k: 'img' }
+export class LegendTag extends ContentTag { private readonly _k: 'legend' }
+export class LiTag extends ContentTag { private readonly _k: 'li' }
+export class MenuTag extends ContentTag { private readonly _k: 'menu' }
+export class NoscriptTag extends ContentTag { private readonly _k: 'noscript' }
+export class OlTag extends ContentTag { private readonly _k: 'ol' }
+export class OptgroupTag extends ContentTag { private readonly _k: 'optgroup' }
+export class OptionTag extends ContentTag { private readonly _k: 'option' }
+export class PTag extends ContentTag { private readonly _k: 'p' }
+export class PictureTag extends ContentTag { private readonly _k: 'picture' }
+export class ScriptTag extends ContentTag { private readonly _k: 'script' }
+export class SelectTag extends ContentTag { private readonly _k: 'select' }
+export class SourceTag extends VoidTag { private readonly _k: 'source' }
+export class TableTag extends ContentTag { private readonly _k: 'table' }
+export class TbodyTag extends ContentTag { private readonly _k: 'tbody' }
+export class TdTag extends ContentTag { private readonly _k: 'td' }
+export class TemplateTag extends ContentTag { private readonly _k: 'template' }
+export class TfootTag extends ContentTag { private readonly _k: 'tfoot' }
+export class ThTag extends ContentTag { private readonly _k: 'th' }
+export class TheadTag extends ContentTag { private readonly _k: 'thead' }
+export class TrTag extends ContentTag { private readonly _k: 'tr' }
+export class UlTag extends ContentTag { private readonly _k: 'ul' }
+
 /**
  * Extend this interface via module augmentation to allow additional attribute namespaces.
  * `data-*` and `aria-*` are always allowed without augmentation.
@@ -5337,6 +5379,22 @@ type ViewAttributes = {
 
 type WbrAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
+type ColgroupContent = ColTag | TemplateTag | LiteralTag | CommentTag | null | undefined | boolean | (ColTag | TemplateTag | LiteralTag | CommentTag | null | undefined | boolean)[];
+type DlContent = DtTag | DdTag | DivTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | null | undefined | boolean | (DtTag | DdTag | DivTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | null | undefined | boolean)[];
+type HgroupContent = H1Tag | H2Tag | H3Tag | H4Tag | H5Tag | H6Tag | PTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | null | undefined | boolean | (H1Tag | H2Tag | H3Tag | H4Tag | H5Tag | H6Tag | PTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | null | undefined | boolean)[];
+type HtmlContent = HeadTag | BodyTag | LiteralTag | CommentTag | null | undefined | boolean | (HeadTag | BodyTag | LiteralTag | CommentTag | null | undefined | boolean)[];
+type MenuContent = LiTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | null | undefined | boolean | (LiTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | null | undefined | boolean)[];
+type OlContent = LiTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | null | undefined | boolean | (LiTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | null | undefined | boolean)[];
+type OptgroupContent = OptionTag | ScriptTag | TemplateTag | NoscriptTag | DivTag | LegendTag | LiteralTag | CommentTag | null | undefined | boolean | (OptionTag | ScriptTag | TemplateTag | NoscriptTag | DivTag | LegendTag | LiteralTag | CommentTag | null | undefined | boolean)[];
+type PictureContent = SourceTag | ImgTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | null | undefined | boolean | (SourceTag | ImgTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | null | undefined | boolean)[];
+type SelectContent = OptionTag | OptgroupTag | HrTag | ScriptTag | TemplateTag | NoscriptTag | DivTag | ButtonTag | LiteralTag | CommentTag | null | undefined | boolean | (OptionTag | OptgroupTag | HrTag | ScriptTag | TemplateTag | NoscriptTag | DivTag | ButtonTag | LiteralTag | CommentTag | null | undefined | boolean)[];
+type TableContent = CaptionTag | ColgroupTag | TheadTag | TbodyTag | TfootTag | TrTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | null | undefined | boolean | (CaptionTag | ColgroupTag | TheadTag | TbodyTag | TfootTag | TrTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | null | undefined | boolean)[];
+type TbodyContent = TrTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | null | undefined | boolean | (TrTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | null | undefined | boolean)[];
+type TfootContent = TrTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | null | undefined | boolean | (TrTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | null | undefined | boolean)[];
+type TheadContent = TrTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | null | undefined | boolean | (TrTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | null | undefined | boolean)[];
+type TrContent = ThTag | TdTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | null | undefined | boolean | (ThTag | TdTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | null | undefined | boolean)[];
+type UlContent = LiTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | null | undefined | boolean | (LiTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | null | undefined | boolean)[];
+
 /**
  * Valid content for any tag method: a string, number, tag instance, or an array of those.
  * `null`, `undefined`, `false`, `true`, and `''` are silently ignored, so conditional
@@ -5458,7 +5516,7 @@ export default class Kensington {
    * @example
    * t.htmlWithDocType({ lang: 'en' }, t.body('hello')).toString();
    */
-  htmlWithDocType<T extends HtmlAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  htmlWithDocType<T extends HtmlAttributes | HtmlContent>(attributesOrContent?: T, ...rest: T extends HtmlContent ? [] : [content?: HtmlContent]): ContentTag;
 
   a<T extends AAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   abbr<T extends AbbrAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
@@ -5477,29 +5535,29 @@ export default class Kensington {
   bdi<T extends BdiAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   bdo<T extends BdoAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   blockquote<T extends BlockquoteAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  body<T extends BodyAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  body<T extends BodyAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): BodyTag;
   br(attributes?: BrAttributes): VoidTag;
-  button<T extends ButtonAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  button<T extends ButtonAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ButtonTag;
   canvas<T extends CanvasAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  caption<T extends CaptionAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  caption<T extends CaptionAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): CaptionTag;
   circle<T extends CircleAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   cite<T extends CiteAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   clipPath<T extends ClipPathAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   code<T extends CodeAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  col(attributes?: ColAttributes): VoidTag;
-  colgroup<T extends ColgroupAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  col(attributes?: ColAttributes): ColTag;
+  colgroup<T extends ColgroupAttributes | ColgroupContent>(attributesOrContent?: T, ...rest: T extends ColgroupContent ? [] : [content?: ColgroupContent]): ColgroupTag;
   data<T extends DataAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   datalist<T extends DatalistAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  dd<T extends DdAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  dd<T extends DdAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): DdTag;
   defs<T extends DefsAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   del<T extends DelAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   desc<T extends DescAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   details<T extends DetailsAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   dfn<T extends DfnAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   dialog<T extends DialogAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  div<T extends DivAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  dl<T extends DlAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  dt<T extends DtAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  div<T extends DivAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): DivTag;
+  dl<T extends DlAttributes | DlContent>(attributesOrContent?: T, ...rest: T extends DlContent ? [] : [content?: DlContent]): DlTag;
+  dt<T extends DtAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): DtTag;
   ellipse<T extends EllipseAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   em<T extends EmAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   embed(attributes?: EmbedAttributes): VoidTag;
@@ -5536,27 +5594,27 @@ export default class Kensington {
   foreignObject<T extends ForeignObjectAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   form<T extends FormAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   g<T extends GAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  h1<T extends H1Attributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  h2<T extends H2Attributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  h3<T extends H3Attributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  h4<T extends H4Attributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  h5<T extends H5Attributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  h6<T extends H6Attributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  head<T extends HeadAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  h1<T extends H1Attributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): H1Tag;
+  h2<T extends H2Attributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): H2Tag;
+  h3<T extends H3Attributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): H3Tag;
+  h4<T extends H4Attributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): H4Tag;
+  h5<T extends H5Attributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): H5Tag;
+  h6<T extends H6Attributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): H6Tag;
+  head<T extends HeadAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): HeadTag;
   header<T extends HeaderAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  hgroup<T extends HgroupAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  hr(attributes?: HrAttributes): VoidTag;
-  html<T extends HtmlAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  hgroup<T extends HgroupAttributes | HgroupContent>(attributesOrContent?: T, ...rest: T extends HgroupContent ? [] : [content?: HgroupContent]): HgroupTag;
+  hr(attributes?: HrAttributes): HrTag;
+  html<T extends HtmlAttributes | HtmlContent>(attributesOrContent?: T, ...rest: T extends HtmlContent ? [] : [content?: HtmlContent]): HtmlTag;
   i<T extends IAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   iframe<T extends IframeAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   image<T extends ImageAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  img(attributes?: ImgAttributes): VoidTag;
+  img(attributes?: ImgAttributes): ImgTag;
   input(attributes?: InputAttributes): VoidTag;
   ins<T extends InsAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   kbd<T extends KbdAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   label<T extends LabelAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  legend<T extends LegendAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  li<T extends LiAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  legend<T extends LegendAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): LegendTag;
+  li<T extends LiAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): LiTag;
   line<T extends LineAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   linearGradient<T extends LinearGradientAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   link(attributes?: LinkAttributes): VoidTag;
@@ -5567,7 +5625,7 @@ export default class Kensington {
   mask<T extends MaskAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   math<T extends MathAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   menclose<T extends MencloseAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  menu<T extends MenuAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  menu<T extends MenuAttributes | MenuContent>(attributesOrContent?: T, ...rest: T extends MenuContent ? [] : [content?: MenuContent]): MenuTag;
   merror<T extends MerrorAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   meta(attributes?: MetaAttributes): VoidTag;
   metadata<T extends MetadataAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
@@ -5598,16 +5656,16 @@ export default class Kensington {
   munder<T extends MunderAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   munderover<T extends MunderoverAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   nav<T extends NavAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  noscript<T extends NoscriptAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  noscript<T extends NoscriptAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): NoscriptTag;
   object<T extends ObjectAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  ol<T extends OlAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  optgroup<T extends OptgroupAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  option<T extends OptionAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  ol<T extends OlAttributes | OlContent>(attributesOrContent?: T, ...rest: T extends OlContent ? [] : [content?: OlContent]): OlTag;
+  optgroup<T extends OptgroupAttributes | OptgroupContent>(attributesOrContent?: T, ...rest: T extends OptgroupContent ? [] : [content?: OptgroupContent]): OptgroupTag;
+  option<T extends OptionAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): OptionTag;
   output<T extends OutputAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  p<T extends PAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  p<T extends PAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): PTag;
   path<T extends PathAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   pattern<T extends PatternAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  picture<T extends PictureAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  picture<T extends PictureAttributes | PictureContent>(attributesOrContent?: T, ...rest: T extends PictureContent ? [] : [content?: PictureContent]): PictureTag;
   polygon<T extends PolygonAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   polyline<T extends PolylineAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   pre<T extends PreAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
@@ -5620,16 +5678,16 @@ export default class Kensington {
   ruby<T extends RubyAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   s<T extends SAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   samp<T extends SampAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  script<T extends ScriptAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  script<T extends ScriptAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ScriptTag;
   search<T extends SearchAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   section<T extends SectionAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  select<T extends SelectAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  select<T extends SelectAttributes | SelectContent>(attributesOrContent?: T, ...rest: T extends SelectContent ? [] : [content?: SelectContent]): SelectTag;
   selectedcontent(attributes?: SelectedcontentAttributes): VoidTag;
   semantics<T extends SemanticsAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   set<T extends SetAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   slot<T extends SlotAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   small<T extends SmallAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  source(attributes?: SourceAttributes): VoidTag;
+  source(attributes?: SourceAttributes): SourceTag;
   span<T extends SpanAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   stop<T extends StopAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   strong<T extends StrongAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
@@ -5640,23 +5698,23 @@ export default class Kensington {
   svg<T extends SvgAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   switch<T extends SwitchAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   symbol<T extends SymbolAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  table<T extends TableAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  tbody<T extends TbodyAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  td<T extends TdAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  template<T extends TemplateAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  table<T extends TableAttributes | TableContent>(attributesOrContent?: T, ...rest: T extends TableContent ? [] : [content?: TableContent]): TableTag;
+  tbody<T extends TbodyAttributes | TbodyContent>(attributesOrContent?: T, ...rest: T extends TbodyContent ? [] : [content?: TbodyContent]): TbodyTag;
+  td<T extends TdAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): TdTag;
+  template<T extends TemplateAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): TemplateTag;
   text<T extends TextAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   textarea<T extends TextareaAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   textPath<T extends TextPathAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  tfoot<T extends TfootAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  th<T extends ThAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  thead<T extends TheadAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  tfoot<T extends TfootAttributes | TfootContent>(attributesOrContent?: T, ...rest: T extends TfootContent ? [] : [content?: TfootContent]): TfootTag;
+  th<T extends ThAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ThTag;
+  thead<T extends TheadAttributes | TheadContent>(attributesOrContent?: T, ...rest: T extends TheadContent ? [] : [content?: TheadContent]): TheadTag;
   time<T extends TimeAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   title<T extends TitleAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  tr<T extends TrAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  tr<T extends TrAttributes | TrContent>(attributesOrContent?: T, ...rest: T extends TrContent ? [] : [content?: TrContent]): TrTag;
   track(attributes?: TrackAttributes): VoidTag;
   tspan<T extends TspanAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   u<T extends UAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
-  ul<T extends UlAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  ul<T extends UlAttributes | UlContent>(attributesOrContent?: T, ...rest: T extends UlContent ? [] : [content?: UlContent]): UlTag;
   use<T extends UseAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   var<T extends VarAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   video<T extends VideoAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;

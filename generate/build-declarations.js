@@ -75,6 +75,20 @@ function svgAttributesType({ attributes = [], globalTypes }) {
 }
 
 export default function buildDeclarations({ elements, globalAttributes, globalEvents, svgPresentationAttrTypes }) {
+  const tagLookup = new Map(elements.map(el => [el.tag, el]));
+
+  function childTypeRef(tag) {
+    const el = tagLookup.get(tag);
+    return el ? `${el.pascalTag}Tag` : 'ContentTag';
+  }
+
+  const brandedElements = elements.filter(el => el.branded);
+
+  const strictContainers = elements.filter(el => el.strictChildren);
+
+  const htmlEl = elements.find(el => el.tag === 'html');
+  const htmlContentType = htmlEl?.strictChildren ? `${htmlEl.pascalTag}Content` : 'Content';
+
   return `import type * as csstype from 'csstype';
 
 /**
@@ -110,6 +124,8 @@ export class CommentTag {
   toString(): string;
   toElement(): Comment;
 }
+
+${brandedElements.map(el => `export class ${el.pascalTag}Tag extends ${el.returnTagType === 'Void' ? 'Void' : 'Content'}Tag { private readonly _k: '${el.tag}' }`).join('\n')}
 
 /**
  * Extend this interface via module augmentation to allow additional attribute namespaces.
@@ -147,6 +163,12 @@ type SvgPresentationAttributes = {
 }
 ` : ''}
 ${elements.map(e => `type ${e.attributesTypeName} = ${e.tagType === 'SvgContent' ? svgAttributesType(e) : attributesType(e)};`).join('\n\n')}
+
+${strictContainers.map(el => {
+  const extras = ['LiteralTag', 'CommentTag', 'null', 'undefined', 'boolean'];
+  const union = [...el.strictChildren.map(tag => childTypeRef(tag)), ...extras].join(' | ');
+  return `type ${el.pascalTag}Content = ${union} | (${union})[];`;
+}).join('\n')}
 
 /**
  * Valid content for any tag method: a string, number, tag instance, or an array of those.
@@ -269,13 +291,16 @@ export default class Kensington {
    * @example
    * t.htmlWithDocType({ lang: 'en' }, t.body('hello')).toString();
    */
-  htmlWithDocType<T extends HtmlAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  htmlWithDocType<T extends HtmlAttributes | ${htmlContentType}>(attributesOrContent?: T, ...rest: T extends ${htmlContentType} ? [] : [content?: ${htmlContentType}]): ContentTag;
 
   ${elements.flatMap(el => {
     if (el.returnTagType === 'Void') {
-      return [`${el.methodName}(attributes?: ${el.attributesTypeName}): VoidTag;`];
+      const retType = el.branded ? `${el.pascalTag}Tag` : 'VoidTag';
+      return [`${el.methodName}(attributes?: ${el.attributesTypeName}): ${retType};`];
     }
-    return [`${el.methodName}<T extends ${el.attributesTypeName} | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ${el.returnTagType}Tag;`];
+    const retType = el.branded ? `${el.pascalTag}Tag` : 'ContentTag';
+    const contentType = el.strictChildren ? `${el.pascalTag}Content` : 'Content';
+    return [`${el.methodName}<T extends ${el.attributesTypeName} | ${contentType}>(attributesOrContent?: T, ...rest: T extends ${contentType} ? [] : [content?: ${contentType}]): ${retType};`];
   }).join('\n  ')}
 }
 

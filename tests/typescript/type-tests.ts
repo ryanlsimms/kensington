@@ -4,6 +4,13 @@ import Kensington, {
   type ContentTag,
   type VoidTag,
   type LiteralTag,
+  type DivTag,
+  type TdTag,
+  type TrTag,
+  type UlTag,
+  type LiTag,
+  type TableTag,
+  type ImgTag,
 } from 'kensington';
 import type { globalAttributes, formAttributes } from 'kensington/attributes';
 
@@ -43,7 +50,8 @@ new Kensington({ validationLevel: 'invalid' });
 
 // ─── return types ────────────────────────────────────────────────────────────
 
-const _div: ContentTag = t.div('content');
+const _div: DivTag = t.div('content');
+const _divAsContentTag: ContentTag = t.div('content'); // branded subtype is assignable to ContentTag
 const _br: VoidTag = t.br();
 const _lit: LiteralTag = t.literal('<p>raw</p>');
 
@@ -209,3 +217,43 @@ t.circle({ fill: 'red', stroke: 'blue', opacity: '0.5' });
 t.rect({ 'font-size': '14px', fontWeight: '700' });
 t.path({ display: 'none', visibility: 'hidden' });
 t.g({ transform: 'translate(10,20)' });
+
+// ─── content model — strict containers ──────────────────────────────────────
+
+// branded return types are subtypes of ContentTag
+const _tr: ContentTag = t.tr(t.td('cell'));
+const _trBranded: TrTag = t.tr(t.td('cell'));
+const _ul: ContentTag = t.ul(t.li('item'));
+const _ulBranded: UlTag = t.ul(t.li('item'));
+const _table: TableTag = t.table(t.tbody(t.tr(t.td('cell'))));
+const _tdBranded: TdTag = t.td('cell');
+const _img: ImgTag = t.img({ src: 'photo.jpg', alt: '' });
+
+// valid strict container usage
+t.table([t.thead(t.tr(t.th('header'))), t.tbody(t.tr(t.td('cell')))]);
+t.tr([t.td('cell'), t.th('header')]);
+t.ul(t.li('item'));
+t.ol([t.li('first'), t.li('second')]);
+t.dl([t.dt('term'), t.dd('definition')]);
+t.select(t.option('choice'));
+t.optgroup({ label: 'group' }, [t.option('a'), t.option('b')]);
+t.picture([t.source({ srcset: 'img.webp', type: 'image/webp' }), t.img({ src: 'img.jpg', alt: '' })]);
+t.hgroup([t.h2('title'), t.p('subtitle')]);
+
+// conditional patterns and escape hatches still work inside strict containers
+t.tr(show && t.td('maybe'));
+t.ul(show ? t.li('yes') : null);
+t.tr(t.literal('<td>raw</td>'));
+t.ul([t.inlineComment('list comment'), t.li('item')]);
+
+// @ts-expect-error - div is not valid content for tr
+t.tr(t.div('invalid'));
+
+// @ts-expect-error - p is not valid content for ul
+t.ul(t.p('invalid'));
+
+// @ts-expect-error - span is not valid content for select
+t.select(t.span('invalid'));
+
+// @ts-expect-error - td is not valid content for table (must be wrapped in tr/tbody/etc.)
+t.table(t.td('cell'));

@@ -31,7 +31,7 @@ Or in a browser without a build step, via CDN:
 
 ## TypeScript
 
-Attribute names and values are typed against the HTML/SVG/MathML spec, so you get autocomplete and catch mistakes at compile time.
+Tags, attribute names/values, inline style property names, and some nested tags are typed against the HTML/SVG/MathML spec. As far as I can tell, this is the most complete typing written for HTML/SVG/MathML. It's generated straight from the official spec (see [generator files](generate/fetch)) and keeping them up to date is as easy running the fetch script.
 
 ![Attribute validation error](docs/screenshot-ts-validation.png)
 

@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- TypeScript types now enforce HTML content model constraints for structural elements. Strict containers (`table`, `tr`, `ul`, `ol`, `dl`, `select`, `optgroup`, `colgroup`, `picture`, `hgroup`, `html`, and the table section elements) only accept their spec-permitted children. Passing a `div` to `t.tr()` or a `p` to `t.ul()` is now a type error.
+- Branded return types for elements that participate in strict content models. `t.td()` returns `TdTag`, `t.li()` returns `LiTag`, `t.img()` returns `ImgTag`, `t.div()` returns `DivTag`, `t.p()` returns `PTag`, and so on. These are exported and can be used to annotate your own functions. All branded types extend `ContentTag` or `VoidTag`, so existing code that types variables as `ContentTag` continues to work.
+
+### Changed
+- `htmlWithDocType()` now accepts `HtmlContent` (head and body elements) rather than arbitrary content.
+
 ## [1.0.0-beta.2] - 2026-05-12
 
 ### Added
@@ -16,6 +25,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 - `literal()` and `inlineComment()` validation now respects `validationLevel` instead of always throwing. With the default `'off'` level, invalid input (non-string, `<script>` tags, `--` in comments) is silently ignored. Use `validationLevel: 'error'` to throw on invalid input.
 - `UniversalAttributes` is now a type intersection (`GlobalAttributes & GlobalEvents & NameSpaceAttributes`) rather than a union. This is more correct: attribute objects satisfy all three simultaneously.
+
+## [1.0.0-beta.1] - 2026-05-09
+
+### Changed
+- SVG elements now accept all CSS properties as presentation attributes. The list is now derived from the `@webref/css` living standard (~744 properties), matching the SVG spec which permits any CSS property as a presentation attribute.
+- TypeScript types for SVG presentation attributes are more specific. Types are derived from `@webref/css` syntax definitions, so properties like `display`, `visibility`, and `font-size` have proper union or string types rather than falling back to `string`.
+- Attribute types for HTML elements are more complete. A new `@webref/idl`-based fallback fills in types for attributes not covered by the HTML spec data or CSS properties, reducing the number of attributes that fall back to plain `string`.
+- The `kensington/attributes` module and `types.d.ts` are smaller. Shared SVG presentation attribute types are emitted once and intersected into each SVG element type rather than duplicated per element.
+
+### Fixed
+- `html-to-kensington`: SVG elements whose method names differ from their tag names (e.g. `foreignObject`, `linearGradient`) now convert correctly.
 
 ## [1.0.0-beta.0] - 2026-05-08
 

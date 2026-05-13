@@ -7,6 +7,47 @@ const tagsToSkip = [
   'SVG svg',
 ];
 
+// Named content group references in the HTML spec's children column, resolved to concrete tag names.
+// script-supporting elements and the select/optgroup inner content lists are defined as footnotes
+// in the spec table; these are the resolved memberships.
+const CHILDREN_ALIASES = {
+  'script-supporting elements': ['script', 'template'],
+  'select element inner content elements': ['option', 'optgroup', 'hr', 'script', 'template', 'noscript', 'div'],
+  'optgroup element inner content elements': ['option', 'script', 'template', 'noscript', 'div'],
+};
+
+// Category keywords that represent open content models — any element containing one of these
+// cannot have its children narrowed to a finite TypeScript union.
+const OPEN_CATEGORIES = new Set([
+  'flow', 'phrasing', 'heading content', 'metadata content',
+  'transparent', 'text', 'per [MATHML]', 'per [SVG]',
+  'script, data, or script documentation', 'option element inner content elements',
+  'varies', // noscript: content model is context-dependent
+]);
+
+// Returns the set of concrete tag names permitted as children, plus a flag indicating whether
+// the content model is fully enumerable (no open categories). The * and "one " prefixes used
+// in the spec data are stripped; empty/unknown entries are skipped.
+function resolveChildren(children) {
+  const resolved = [];
+  let strict = true;
+  for (const raw of children) {
+    const norm = raw.replace(/\*$/, '').replace(/^one /, '').trim();
+    if (norm === '' || norm === 'empty') { continue; }
+    if (OPEN_CATEGORIES.has(norm)) {
+      strict = false;
+      continue;
+    }
+    const alias = CHILDREN_ALIASES[norm];
+    if (alias) {
+      for (const tag of alias) { resolved.push(tag); }
+    } else {
+      resolved.push(norm);
+    }
+  }
+  return { strict, resolved: [...new Set(resolved)] };
+}
+
 export default function parseData(htmlData, svgData, mathData, { cssPropertyTypes, cssPropertyNames, idlTypes } = {}) {
   const { svgAttributes, svgElements } = svgData;
   const { attributes, globalEvents, htmlElements } = htmlData;
@@ -189,6 +230,19 @@ export default function parseData(htmlData, svgData, mathData, { cssPropertyType
     el.attributesTypeName = `${el.pascalTag}Attributes`;
     el.returnTagType = el.tagType === 'Void' ? el.tagType : 'Content';
     el.globalTypes = getGlobalsByTagType(el.tagType);
+    if (el.children && el.tagType !== 'Void') {
+      const { strict, resolved } = resolveChildren(el.children);
+      if (strict && resolved.length > 0) {
+        el.strictChildren = resolved;
+      }
+    }
+  });
+
+  // Mark elements that need a branded TypeScript return type: either they are a strict container
+  // (their own children are narrowed) or they appear as a named child in one.
+  const brandedTags = new Set(elements.flatMap(el => el.strictChildren ?? []));
+  elements.forEach(el => {
+    el.branded = brandedTags.has(el.tag) || el.strictChildren !== undefined;
   });
 
   return {
