@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [1.0.0-beta.3] - 2026-05-13
 
 ### Added
 - TypeScript types now enforce HTML content model constraints for structural elements. Strict containers (`table`, `tr`, `ul`, `ol`, `dl`, `select`, `optgroup`, `colgroup`, `picture`, `hgroup`, `html`, and the table section elements) only accept their spec-permitted children. Passing a `div` to `t.tr()` or a `p` to `t.ul()` is now a type error.
