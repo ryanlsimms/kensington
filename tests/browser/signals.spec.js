@@ -1,7 +1,7 @@
 import { expect, test } from './config/fixtures.js';
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('http://localhost:3000/');
+  await page.goto('http://localhost:3847/');
 });
 
 test('signal as literal updates the DOM element live', async ({ page, bundle }) => {
@@ -501,4 +501,222 @@ test('signal effects stop when a parent element is removed from DOM', async ({ p
     return child.className;
   }, bundle);
   expect(result).toBe('x');
+});
+
+// ─── getDomElement ─────────────────────────────────────────────────────────
+
+test('toElement() returns the same DOM node on every call', async ({ page, bundle }) => {
+  const same = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const tag = t.div({ id: 'idem' }, 'hello');
+    const el1 = tag.toElement();
+    const el2 = tag.toElement();
+    return el1 === el2;
+  }, bundle);
+  expect(same).toBe(true);
+});
+
+test('toElement() stashed before parent mounts returns the mounted element', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const child = t.span({ id: 'stash-child' }, 'hi');
+    const stashed = child.toElement();
+    document.body.append(t.div({ id: 'stash-parent' }, child).toElement());
+    return document.querySelector('#stash-child') === stashed;
+  }, bundle);
+  expect(result).toBe(true);
+});
+
+test('getDomElement() returns null before the element is mounted', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    return t.div({ id: 'gde-null' }).getDomElement();
+  }, bundle);
+  expect(result).toBeNull();
+});
+
+test('getDomElement() returns the element while it is in the DOM', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const tag = t.div({ id: 'gde-live' });
+    const el = tag.toElement();
+    document.body.append(el);
+    return tag.getDomElement() === el;
+  }, bundle);
+  expect(result).toBe(true);
+});
+
+test('getDomElement() returns null after a non-reactive element is removed from DOM', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const tag = t.div({ id: 'gde-nr-rm' });
+    document.body.append(tag.toElement());
+    tag.getDomElement().remove();
+    return tag.getDomElement();
+  }, bundle);
+  expect(result).toBeNull();
+});
+
+test('toElement() after removal of non-reactive element returns the same element', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const tag = t.div({ id: 'gde-nr-fresh' });
+    const first = tag.toElement();
+    document.body.append(first);
+    first.remove();
+    const second = tag.toElement();
+    return first === second;
+  }, bundle);
+  expect(result).toBe(true);
+});
+
+test('getDomElement() returns null after a comment tag is removed from DOM', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const tag = t.inlineComment('note');
+    document.body.append(tag.toElement());
+    tag.getDomElement().remove();
+    return tag.getDomElement();
+  }, bundle);
+  expect(result).toBeNull();
+});
+
+test('getDomElement() returns null after a signal comment is removed from DOM', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const note = signal('note');
+    const tag = t.inlineComment(note);
+    document.body.append(tag.toElement());
+    tag.getDomElement().remove();
+    await Promise.resolve();
+    return tag.getDomElement();
+  }, bundle);
+  expect(result).toBeNull();
+});
+
+test('toElement() after removal of signal comment creates a fresh live comment', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const note = signal('before');
+    const tag = t.inlineComment(note);
+    const first = tag.toElement();
+    document.body.append(first);
+    first.remove();
+    await Promise.resolve();
+    const second = tag.toElement();
+    document.body.append(second);
+    note.set('after');
+    await Promise.resolve();
+    return { different: first !== second, liveValue: second.nodeValue };
+  }, bundle);
+  expect(result.different).toBe(true);
+  expect(result.liveValue).toBe('after');
+});
+
+test('getDomElement() returns null after a reactive element is removed from DOM', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const cls = signal('a');
+    const tag = t.div({ id: 'gde-rx-rm', class: cls });
+    document.body.append(tag.toElement());
+    tag.getDomElement().remove();
+    await Promise.resolve();
+    return tag.getDomElement();
+  }, bundle);
+  expect(result).toBeNull();
+});
+
+test('signal attributes update live on a toElement() node', async ({ page, bundle }) => {
+  await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const cls = signal('before');
+    document.body.append(t.div({ id: 'gde-sig', class: cls }).toElement());
+    cls.set('after');
+  }, bundle);
+  await expect(page.locator('#gde-sig')).toHaveClass('after');
+});
+
+test('toElement() after removal of reactive element creates a fresh live element', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const cls = signal('a');
+    const tag = t.div({ id: 'gde-rm', class: cls });
+    const first = tag.toElement();
+    document.body.append(first);
+    first.remove();
+    await Promise.resolve();
+    const second = tag.toElement();
+    document.body.append(second);
+    cls.set('b');
+    await Promise.resolve();
+    return { different: first !== second, liveClass: second.getAttribute('class') };
+  }, bundle);
+  expect(result.different).toBe(true);
+  expect(result.liveClass).toBe('b');
+});
+
+test('non-reactive child: getDomElement() null while filtered, live after unfilter', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const tagA = t.li({ id: 'nr-a' }, 'Alpha');
+    const tagB = t.li({ id: 'nr-b' }, 'Beta');
+    const items = signal([tagA, tagB]);
+    document.body.append(t.ul(items).toElement());
+    items.set([tagA]);
+    await Promise.resolve();
+    const nullResult = tagB.getDomElement();
+    items.set([tagA, tagB]);
+    await Promise.resolve();
+    const liveEl = tagB.getDomElement();
+    return {
+      nullWhileOut: nullResult === null,
+      liveAfterIn: liveEl !== null && liveEl.isConnected,
+      sameAsQueried: liveEl === document.querySelector('#nr-b'),
+    };
+  }, bundle);
+  expect(result.nullWhileOut).toBe(true);
+  expect(result.liveAfterIn).toBe(true);
+  expect(result.sameAsQueried).toBe(true);
+});
+
+test('reactive child: getDomElement() null while filtered, live after unfilter', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const cls = signal('on');
+    const tagA = t.li({ id: 're-a' }, 'Alpha');
+    const tagB = t.li({ id: 're-b', class: cls }, 'Beta');
+    const items = signal([tagA, tagB]);
+    document.body.append(t.ul(items).toElement());
+    items.set([tagA]);
+    await Promise.resolve();
+    await Promise.resolve(); // ensure MutationObserver has fired
+    const nullWhileFiltered = tagB.getDomElement();
+    items.set([tagA, tagB]);
+    await Promise.resolve();
+    const freshB = tagB.getDomElement();
+    cls.set('off');
+    await Promise.resolve();
+    return {
+      nullWhileFiltered: nullWhileFiltered === null,
+      freshClass: freshB.getAttribute('class'),
+    };
+  }, bundle);
+  expect(result.nullWhileFiltered).toBe(true);
+  expect(result.freshClass).toBe('off');
+});
+
+test('keyed element that stays in DOM through a reconcile cycle remains reactive', async ({ page, bundle }) => {
+  await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const cls = signal('on');
+    const tagA = t.li({ id: 'keyed-rx-a', dataKey: 'a', class: cls }, 'Alpha');
+    const tagB = t.li({ id: 'keyed-rx-b', dataKey: 'b' }, 'Beta');
+    const items = signal([tagA, tagB]);
+    document.body.append(t.ul(items).toElement());
+    items.set([tagA]); // reconcile: tagA stays (existing === fresh path), tagB removed
+    await Promise.resolve();
+    cls.set('off');
+    await Promise.resolve();
+  }, bundle);
+  await expect(page.locator('#keyed-rx-a')).toHaveClass('off');
 });

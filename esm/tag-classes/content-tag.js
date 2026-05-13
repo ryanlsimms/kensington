@@ -1,6 +1,6 @@
 import attributesArrayFromObject from '../lib/attributes-array-from-object.js';
 import attributesStringFromObject from '../lib/attributes-string-from-object.js';
-import { markContentTracked, trackForStop } from '../lib/dom-tracker.js';
+import { addOnStop, markContentTracked, trackForStop } from '../lib/dom-tracker.js';
 import he from '../lib/he.js';
 import indent from '../lib/indent.js';
 import { reconcile } from '../lib/reconcile.js';
@@ -302,6 +302,7 @@ export default class ContentTag {
   }
 
   toElement() {
+    if (this._domElement) { return this._domElement; }
     if (typeof document === 'undefined') {
       throw new Error('toElement only supported in browser');
     }
@@ -363,11 +364,18 @@ export default class ContentTag {
 
     if (stops.length > 0) {
       trackForStop(element, () => { for (const stop of stops) { stop(); } });
+      addOnStop(element, () => { if (this._domElement === element) { this._domElement = null; } });
     }
     if (hasSignalContent) {
       markContentTracked(element);
     }
 
+    this._domElement = element;
+
     return element;
+  }
+
+  getDomElement() {
+    return this._domElement?.isConnected ? this._domElement : null;
   }
 }

@@ -60,7 +60,7 @@ export default defineConfig({
   webServer: {
     command: 'node ../server/html-server.js',
     reuseExistingServer: !process.env.CI,
-    url: 'http://localhost:3000',
+    url: 'http://localhost:3847',
   },
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,

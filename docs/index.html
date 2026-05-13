@@ -632,6 +632,32 @@ const el = t.div({
 const svg = t.svg({ viewBox: '0 0 100 100' }, [
   t.circle({ cx: 50, cy: 50, r: 40, fill: 'steelblue' }),
 ]).toElement();</code></pre>
+
+    <p>Use <code>.toElement()</code> to get or create the element. It is safe to call before the element is mounted — useful for passing to browser APIs that need a DOM reference up front.</p>
+
+    <pre><code class="language-javascript">const hero = t.section({ id: 'hero' }, t.h1('Welcome'));
+const cards = t.section({ id: 'cards' }, [
+  t.div({ class: 'card' }, 'Card 1'),
+  t.div({ class: 'card' }, 'Card 2'),
+]);
+
+const observer = new IntersectionObserver(entries => {
+  for (const entry of entries) {
+    entry.target.classList.toggle('in-view', entry.isIntersecting);
+  }
+});
+
+observer.observe(hero.toElement());
+observer.observe(cards.toElement());
+
+document.body.append(t.main(hero, cards).toElement());</code></pre>
+
+    <p>Use <code>.getDomElement()</code> to get the dom element if it is currently in the DOM. Returns <code>null</code> otherwise.</p>
+
+    <pre><code class="language-javascript">function scrollToSection(section) {
+  section.getDomElement()?.scrollIntoView({ behavior: 'smooth' });
+}</code></pre>
+
   </section>
 
   <!-- ── Signals ──────────────────────────────────────────────────── -->
@@ -802,6 +828,8 @@ export function counter({ count: initial }) {
       <li><strong>Non-interactive window.</strong> Elements are non-reactive between the browser's first paint and when the hydration script runs. This is inherent to SSR-then-hydrate.</li>
       <li><strong>State is plaintext.</strong> State is embedded as a <code>&lt;script type="application/json"&gt;</code> tag visible in page source. Do not pass secrets or tokens as hydration state.</li>
       <li><strong>Browser globals outside <code>effect()</code> will throw on the server.</strong> <code>effect()</code> is suppressed during server-side rendering. For browser-only code that cannot go inside <code>effect()</code> &mdash; module-level code, <code>computed()</code> values, direct assignments &mdash; use the <code>isBrowser</code> export: <code>isBrowser &amp;&amp; localStorage.getItem('key')</code>.</li>
+      <li><strong>One tag, one element.</strong> Each tag instance maps to exactly one DOM node. Passing the same instance as a child of two different parents moves it rather than cloning it. Create separate tag instances if you need the same structure in two places.</li>
+      <li><strong>Reactive element reset after removal is asynchronous.</strong> When a reactive element is removed from the DOM, its effects are stopped and the internal reference is cleared via MutationObserver. Calling <code>.toElement()</code> immediately after removal in synchronous code still returns the old element. Awaiting a tick (<code>await Promise.resolve()</code>) before the next <code>.toElement()</code> call ensures the reset has completed. Non-reactive elements are not affected: <code>.toElement()</code> returns the same node after removal and it can be re-inserted directly.</li>
     </ul>
 
   </section>
