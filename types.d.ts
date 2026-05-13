@@ -35,6 +35,48 @@ export class CommentTag {
   toElement(): Comment;
 }
 
+export class BodyTag extends ContentTag { private readonly _k: 'body' }
+export class ButtonTag extends ContentTag { private readonly _k: 'button' }
+export class CaptionTag extends ContentTag { private readonly _k: 'caption' }
+export class ColTag extends VoidTag { private readonly _k: 'col' }
+export class ColgroupTag extends ContentTag { private readonly _k: 'colgroup' }
+export class DdTag extends ContentTag { private readonly _k: 'dd' }
+export class DivTag extends ContentTag { private readonly _k: 'div' }
+export class DlTag extends ContentTag { private readonly _k: 'dl' }
+export class DtTag extends ContentTag { private readonly _k: 'dt' }
+export class H1Tag extends ContentTag { private readonly _k: 'h1' }
+export class H2Tag extends ContentTag { private readonly _k: 'h2' }
+export class H3Tag extends ContentTag { private readonly _k: 'h3' }
+export class H4Tag extends ContentTag { private readonly _k: 'h4' }
+export class H5Tag extends ContentTag { private readonly _k: 'h5' }
+export class H6Tag extends ContentTag { private readonly _k: 'h6' }
+export class HeadTag extends ContentTag { private readonly _k: 'head' }
+export class HgroupTag extends ContentTag { private readonly _k: 'hgroup' }
+export class HrTag extends VoidTag { private readonly _k: 'hr' }
+export class HtmlTag extends ContentTag { private readonly _k: 'html' }
+export class ImgTag extends VoidTag { private readonly _k: 'img' }
+export class LegendTag extends ContentTag { private readonly _k: 'legend' }
+export class LiTag extends ContentTag { private readonly _k: 'li' }
+export class MenuTag extends ContentTag { private readonly _k: 'menu' }
+export class NoscriptTag extends ContentTag { private readonly _k: 'noscript' }
+export class OlTag extends ContentTag { private readonly _k: 'ol' }
+export class OptgroupTag extends ContentTag { private readonly _k: 'optgroup' }
+export class OptionTag extends ContentTag { private readonly _k: 'option' }
+export class PTag extends ContentTag { private readonly _k: 'p' }
+export class PictureTag extends ContentTag { private readonly _k: 'picture' }
+export class ScriptTag extends ContentTag { private readonly _k: 'script' }
+export class SelectTag extends ContentTag { private readonly _k: 'select' }
+export class SourceTag extends VoidTag { private readonly _k: 'source' }
+export class TableTag extends ContentTag { private readonly _k: 'table' }
+export class TbodyTag extends ContentTag { private readonly _k: 'tbody' }
+export class TdTag extends ContentTag { private readonly _k: 'td' }
+export class TemplateTag extends ContentTag { private readonly _k: 'template' }
+export class TfootTag extends ContentTag { private readonly _k: 'tfoot' }
+export class ThTag extends ContentTag { private readonly _k: 'th' }
+export class TheadTag extends ContentTag { private readonly _k: 'thead' }
+export class TrTag extends ContentTag { private readonly _k: 'tr' }
+export class UlTag extends ContentTag { private readonly _k: 'ul' }
+
 /**
  * Read-only view of a signal. Returned by `computed()` and `.transform()`.
  * Pass as content or an attribute value — the DOM updates automatically when the value changes.
@@ -104,7 +146,7 @@ export type GlobalAttributes = {
   role?: Reactive<string>;
   slot?: Reactive<string>;
   spellcheck?: Reactive<"true" | "false">;
-  style?: Reactive<string | csstype.Properties<string | number>>;
+  style?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   tabindex?: Reactive<number | `${number}`>;
   title?: Reactive<string>;
   translate?: Reactive<"yes" | "no">;
@@ -1706,7 +1748,7 @@ type AnimateAttributes = {
   'repeatDur'?: Reactive<string>;
   'requiredExtensions'?: Reactive<string>;
   'restart'?: Reactive<"always" | "never" | "whenNotActive">;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'to'?: Reactive<string>;
@@ -1804,7 +1846,7 @@ type AnimateMotionAttributes = {
   'requiredExtensions'?: Reactive<string>;
   'restart'?: Reactive<"always" | "never" | "whenNotActive">;
   'rotate'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'to'?: Reactive<string>;
@@ -1899,7 +1941,7 @@ type AnimateTransformAttributes = {
   'repeatDur'?: Reactive<string>;
   'requiredExtensions'?: Reactive<string>;
   'restart'?: Reactive<"always" | "never" | "whenNotActive">;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'to'?: Reactive<string>;
@@ -1920,7 +1962,7 @@ type AnnotationAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -1936,7 +1978,7 @@ type AnnotationXmlAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2100,7 +2142,7 @@ type CircleAttributes = {
   'r'?: Reactive<number | string>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -2114,7 +2156,7 @@ type ClipPathAttributes = {
   'id'?: Reactive<string>;
   'requiredExtensions'?: Reactive<string>;
   'requiredFeatures'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'systemLanguage'?: Reactive<string>;
   'transform'?: Reactive<string>;
   'xml:base'?: Reactive<string>;
@@ -2205,7 +2247,7 @@ type DefsAttributes = {
   'onvolumechange'?: Reactive<string | ((event: Event) => void)>;
   'onwaiting'?: Reactive<string | ((event: Event) => void)>;
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -2280,7 +2322,7 @@ type DescAttributes = {
   'onvolumechange'?: Reactive<string | ((event: Event) => void)>;
   'onwaiting'?: Reactive<string | ((event: Event) => void)>;
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -2374,7 +2416,7 @@ type EllipseAttributes = {
   'role'?: Reactive<string>;
   'rx'?: Reactive<number | string>;
   'ry'?: Reactive<number | string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -2392,7 +2434,7 @@ type EmbedAttributes = {
 type FeBlendAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -2401,7 +2443,7 @@ type FeBlendAttributes = {
 type FeColorMatrixAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -2410,7 +2452,7 @@ type FeColorMatrixAttributes = {
 type FeComponentTransferAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -2419,7 +2461,7 @@ type FeComponentTransferAttributes = {
 type FeCompositeAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -2428,7 +2470,7 @@ type FeCompositeAttributes = {
 type FeConvolveMatrixAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -2437,7 +2479,7 @@ type FeConvolveMatrixAttributes = {
 type FeDiffuseLightingAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -2446,7 +2488,7 @@ type FeDiffuseLightingAttributes = {
 type FeDisplacementMapAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -2462,7 +2504,7 @@ type FeDistantLightAttributes = {
 type FeDropShadowAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -2471,7 +2513,7 @@ type FeDropShadowAttributes = {
 type FeFloodAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -2508,7 +2550,7 @@ type FeFuncRAttributes = {
 type FeGaussianBlurAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -2518,7 +2560,7 @@ type FeImageAttributes = {
   'class'?: Reactive<string | string[]>;
   'externalResourcesRequired'?: Reactive<"true" | "false">;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -2527,7 +2569,7 @@ type FeImageAttributes = {
 type FeMergeAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -2543,7 +2585,7 @@ type FeMergeNodeAttributes = {
 type FeMorphologyAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -2552,7 +2594,7 @@ type FeMorphologyAttributes = {
 type FeOffsetAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -2568,7 +2610,7 @@ type FePointLightAttributes = {
 type FeSpecularLightingAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -2584,7 +2626,7 @@ type FeSpotLightAttributes = {
 type FeTileAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -2593,7 +2635,7 @@ type FeTileAttributes = {
 type FeTurbulenceAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -2613,7 +2655,7 @@ type FilterAttributes = {
   'class'?: Reactive<string | string[]>;
   'externalResourcesRequired'?: Reactive<"true" | "false">;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -2689,7 +2731,7 @@ type ForeignObjectAttributes = {
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'width'?: Reactive<number | string>;
@@ -2778,7 +2820,7 @@ type GAttributes = {
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -2892,7 +2934,7 @@ type ImageAttributes = {
   'preserveAspectRatio'?: Reactive<string>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'width'?: Reactive<number | string>;
@@ -3042,7 +3084,7 @@ type LineAttributes = {
   'pathLength'?: Reactive<number | `${number}`>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'x1'?: Reactive<number | string>;
@@ -3121,7 +3163,7 @@ type LinearGradientAttributes = {
   'onwaiting'?: Reactive<string | ((event: Event) => void)>;
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
   'spreadMethod'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
   'x1'?: Reactive<number | string>;
   'x2'?: Reactive<number | string>;
@@ -3231,7 +3273,7 @@ type MarkerAttributes = {
   'preserveAspectRatio'?: Reactive<string>;
   'refX'?: Reactive<string>;
   'refY'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
   'viewBox'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -3242,7 +3284,7 @@ type MaskAttributes = {
   'id'?: Reactive<string>;
   'requiredExtensions'?: Reactive<string>;
   'requiredFeatures'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'systemLanguage'?: Reactive<string>;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
@@ -3262,7 +3304,7 @@ type MathAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
   'xmlns'?: Reactive<string>;
 } & NameSpaceAttributes & GlobalEvents;
@@ -3280,7 +3322,7 @@ type MencloseAttributes = {
   'nonce'?: Reactive<string>;
   'notation'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3298,7 +3340,7 @@ type MerrorAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3376,7 +3418,7 @@ type MetadataAttributes = {
   'onvolumechange'?: Reactive<string | ((event: Event) => void)>;
   'onwaiting'?: Reactive<string | ((event: Event) => void)>;
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -3403,7 +3445,7 @@ type MfracAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3419,7 +3461,7 @@ type MiAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3435,7 +3477,7 @@ type MmultiscriptsAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3451,7 +3493,7 @@ type MnAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3476,7 +3518,7 @@ type MoAttributes = {
   'scriptlevel'?: Reactive<string>;
   'separator'?: Reactive<string>;
   'stretchy'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'symmetric'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
 } & NameSpaceAttributes & GlobalEvents;
@@ -3494,7 +3536,7 @@ type MoverAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3513,7 +3555,7 @@ type MpaddedAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
   'voffset'?: Reactive<string>;
   'width'?: Reactive<number | string>;
@@ -3585,7 +3627,7 @@ type MpathAttributes = {
   'onvolumechange'?: Reactive<string | ((event: Event) => void)>;
   'onwaiting'?: Reactive<string | ((event: Event) => void)>;
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -3602,7 +3644,7 @@ type MphantomAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3618,7 +3660,7 @@ type MprescriptsAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3634,7 +3676,7 @@ type MrootAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3650,7 +3692,7 @@ type MrowAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3666,7 +3708,7 @@ type MsAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3683,7 +3725,7 @@ type MspaceAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
   'width'?: Reactive<number | string>;
 } & NameSpaceAttributes & GlobalEvents;
@@ -3700,7 +3742,7 @@ type MsqrtAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3716,7 +3758,7 @@ type MstyleAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3732,7 +3774,7 @@ type MsubAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3748,7 +3790,7 @@ type MsubsupAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3764,7 +3806,7 @@ type MsupAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3789,7 +3831,7 @@ type MtableAttributes = {
   'rowlines'?: Reactive<string>;
   'rowspacing'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
   'width'?: Reactive<number | string>;
 } & NameSpaceAttributes & GlobalEvents;
@@ -3810,7 +3852,7 @@ type MtdAttributes = {
   'rowalign'?: Reactive<string>;
   'rowspan'?: Reactive<number | `${number}`>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3826,7 +3868,7 @@ type MtextAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3844,7 +3886,7 @@ type MtrAttributes = {
   'nonce'?: Reactive<string>;
   'rowalign'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3861,7 +3903,7 @@ type MunderAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3879,7 +3921,7 @@ type MunderoverAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -3991,7 +4033,7 @@ type PathAttributes = {
   'pathLength'?: Reactive<number | `${number}`>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -4068,7 +4110,7 @@ type PatternAttributes = {
   'patternTransform'?: Reactive<string>;
   'patternUnits'?: Reactive<string>;
   'preserveAspectRatio'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
   'viewBox'?: Reactive<string>;
   'width'?: Reactive<number | string>;
@@ -4150,7 +4192,7 @@ type PolygonAttributes = {
   'points'?: Reactive<string>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -4225,7 +4267,7 @@ type PolylineAttributes = {
   'points'?: Reactive<string>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -4317,7 +4359,7 @@ type RadialGradientAttributes = {
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
   'r'?: Reactive<number | string>;
   'spreadMethod'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
   'xlink:href'?: Reactive<string>;
   'xlink:title'?: Reactive<string>;
@@ -4395,7 +4437,7 @@ type RectAttributes = {
   'role'?: Reactive<string>;
   'rx'?: Reactive<number | string>;
   'ry'?: Reactive<number | string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'width'?: Reactive<number | string>;
@@ -4455,7 +4497,7 @@ type SemanticsAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -4539,7 +4581,7 @@ type SetAttributes = {
   'repeatDur'?: Reactive<string>;
   'requiredExtensions'?: Reactive<string>;
   'restart'?: Reactive<"always" | "never" | "whenNotActive">;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'to'?: Reactive<string>;
@@ -4630,7 +4672,7 @@ type StopAttributes = {
   'onvolumechange'?: Reactive<string | ((event: Event) => void)>;
   'onwaiting'?: Reactive<string | ((event: Event) => void)>;
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
@@ -4719,7 +4761,7 @@ type SvgAttributes = {
   'preserveAspectRatio'?: Reactive<string>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'transform'?: Reactive<string>;
@@ -4797,7 +4839,7 @@ type SwitchAttributes = {
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -4873,7 +4915,7 @@ type SymbolAttributes = {
   'refX'?: Reactive<string>;
   'refY'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
   'viewBox'?: Reactive<string>;
   'width'?: Reactive<number | string>;
@@ -4972,7 +5014,7 @@ type TextAttributes = {
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
   'rotate'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'textLength'?: Reactive<string>;
@@ -5071,7 +5113,7 @@ type TextPathAttributes = {
   'side'?: Reactive<string>;
   'spacing'?: Reactive<string>;
   'startOffset'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'textLength'?: Reactive<string>;
@@ -5179,7 +5221,7 @@ type TspanAttributes = {
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
   'rotate'?: Reactive<number | string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'textLength'?: Reactive<string>;
@@ -5261,7 +5303,7 @@ type UseAttributes = {
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'width'?: Reactive<number | string>;
@@ -5356,13 +5398,29 @@ type ViewAttributes = {
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
   'preserveAspectRatio'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | csstype.Properties<string | number>>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
   'tabindex'?: Reactive<number | `${number}`>;
   'viewBox'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type WbrAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+
+type ColgroupContent = ColTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean | (ColTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean)[];
+type DlContent = DtTag | DdTag | DivTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean | (DtTag | DdTag | DivTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean)[];
+type HgroupContent = H1Tag | H2Tag | H3Tag | H4Tag | H5Tag | H6Tag | PTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean | (H1Tag | H2Tag | H3Tag | H4Tag | H5Tag | H6Tag | PTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean)[];
+type HtmlContent = HeadTag | BodyTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean | (HeadTag | BodyTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean)[];
+type MenuContent = LiTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean | (LiTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean)[];
+type OlContent = LiTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean | (LiTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean)[];
+type OptgroupContent = OptionTag | ScriptTag | TemplateTag | NoscriptTag | DivTag | LegendTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean | (OptionTag | ScriptTag | TemplateTag | NoscriptTag | DivTag | LegendTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean)[];
+type PictureContent = SourceTag | ImgTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean | (SourceTag | ImgTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean)[];
+type SelectContent = OptionTag | OptgroupTag | HrTag | ScriptTag | TemplateTag | NoscriptTag | DivTag | ButtonTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean | (OptionTag | OptgroupTag | HrTag | ScriptTag | TemplateTag | NoscriptTag | DivTag | ButtonTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean)[];
+type TableContent = CaptionTag | ColgroupTag | TheadTag | TbodyTag | TfootTag | TrTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean | (CaptionTag | ColgroupTag | TheadTag | TbodyTag | TfootTag | TrTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean)[];
+type TbodyContent = TrTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean | (TrTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean)[];
+type TfootContent = TrTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean | (TrTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean)[];
+type TheadContent = TrTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean | (TrTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean)[];
+type TrContent = ThTag | TdTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean | (ThTag | TdTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean)[];
+type UlContent = LiTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean | (LiTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean)[];
 
 /**
  * Valid content for any tag method: a string, number, tag instance, or an array of those.
@@ -5485,8 +5543,8 @@ export default class Kensington {
    * @example
    * t.htmlWithDocType({ lang: 'en' }, t.body('hello')).toString();
    */
-  htmlWithDocType(attributes: HtmlAttributes, content?: Content): ContentTag;
-  htmlWithDocType(content?: Content): ContentTag;
+  htmlWithDocType(attributes: HtmlAttributes, content?: HtmlContent): ContentTag;
+  htmlWithDocType(content?: HtmlContent): ContentTag;
 
   a(attributes: AAttributes, content?: Content): ContentTag;
   a(content?: Content): ContentTag;
@@ -5520,15 +5578,15 @@ export default class Kensington {
   bdo(content?: Content): ContentTag;
   blockquote(attributes: BlockquoteAttributes, content?: Content): ContentTag;
   blockquote(content?: Content): ContentTag;
-  body(attributes: BodyAttributes, content?: Content): ContentTag;
-  body(content?: Content): ContentTag;
+  body(attributes: BodyAttributes, content?: Content): BodyTag;
+  body(content?: Content): BodyTag;
   br(attributes?: BrAttributes): VoidTag;
-  button(attributes: ButtonAttributes, content?: Content): ContentTag;
-  button(content?: Content): ContentTag;
+  button(attributes: ButtonAttributes, content?: Content): ButtonTag;
+  button(content?: Content): ButtonTag;
   canvas(attributes: CanvasAttributes, content?: Content): ContentTag;
   canvas(content?: Content): ContentTag;
-  caption(attributes: CaptionAttributes, content?: Content): ContentTag;
-  caption(content?: Content): ContentTag;
+  caption(attributes: CaptionAttributes, content?: Content): CaptionTag;
+  caption(content?: Content): CaptionTag;
   circle(attributes: CircleAttributes, content?: Content): ContentTag;
   circle(content?: Content): ContentTag;
   cite(attributes: CiteAttributes, content?: Content): ContentTag;
@@ -5537,15 +5595,15 @@ export default class Kensington {
   clipPath(content?: Content): ContentTag;
   code(attributes: CodeAttributes, content?: Content): ContentTag;
   code(content?: Content): ContentTag;
-  col(attributes?: ColAttributes): VoidTag;
-  colgroup(attributes: ColgroupAttributes, content?: Content): ContentTag;
-  colgroup(content?: Content): ContentTag;
+  col(attributes?: ColAttributes): ColTag;
+  colgroup(attributes: ColgroupAttributes, content?: ColgroupContent): ColgroupTag;
+  colgroup(content?: ColgroupContent): ColgroupTag;
   data(attributes: DataAttributes, content?: Content): ContentTag;
   data(content?: Content): ContentTag;
   datalist(attributes: DatalistAttributes, content?: Content): ContentTag;
   datalist(content?: Content): ContentTag;
-  dd(attributes: DdAttributes, content?: Content): ContentTag;
-  dd(content?: Content): ContentTag;
+  dd(attributes: DdAttributes, content?: Content): DdTag;
+  dd(content?: Content): DdTag;
   defs(attributes: DefsAttributes, content?: Content): ContentTag;
   defs(content?: Content): ContentTag;
   del(attributes: DelAttributes, content?: Content): ContentTag;
@@ -5558,12 +5616,12 @@ export default class Kensington {
   dfn(content?: Content): ContentTag;
   dialog(attributes: DialogAttributes, content?: Content): ContentTag;
   dialog(content?: Content): ContentTag;
-  div(attributes: DivAttributes, content?: Content): ContentTag;
-  div(content?: Content): ContentTag;
-  dl(attributes: DlAttributes, content?: Content): ContentTag;
-  dl(content?: Content): ContentTag;
-  dt(attributes: DtAttributes, content?: Content): ContentTag;
-  dt(content?: Content): ContentTag;
+  div(attributes: DivAttributes, content?: Content): DivTag;
+  div(content?: Content): DivTag;
+  dl(attributes: DlAttributes, content?: DlContent): DlTag;
+  dl(content?: DlContent): DlTag;
+  dt(attributes: DtAttributes, content?: Content): DtTag;
+  dt(content?: Content): DtTag;
   ellipse(attributes: EllipseAttributes, content?: Content): ContentTag;
   ellipse(content?: Content): ContentTag;
   em(attributes: EmAttributes, content?: Content): ContentTag;
@@ -5635,34 +5693,34 @@ export default class Kensington {
   form(content?: Content): ContentTag;
   g(attributes: GAttributes, content?: Content): ContentTag;
   g(content?: Content): ContentTag;
-  h1(attributes: H1Attributes, content?: Content): ContentTag;
-  h1(content?: Content): ContentTag;
-  h2(attributes: H2Attributes, content?: Content): ContentTag;
-  h2(content?: Content): ContentTag;
-  h3(attributes: H3Attributes, content?: Content): ContentTag;
-  h3(content?: Content): ContentTag;
-  h4(attributes: H4Attributes, content?: Content): ContentTag;
-  h4(content?: Content): ContentTag;
-  h5(attributes: H5Attributes, content?: Content): ContentTag;
-  h5(content?: Content): ContentTag;
-  h6(attributes: H6Attributes, content?: Content): ContentTag;
-  h6(content?: Content): ContentTag;
-  head(attributes: HeadAttributes, content?: Content): ContentTag;
-  head(content?: Content): ContentTag;
+  h1(attributes: H1Attributes, content?: Content): H1Tag;
+  h1(content?: Content): H1Tag;
+  h2(attributes: H2Attributes, content?: Content): H2Tag;
+  h2(content?: Content): H2Tag;
+  h3(attributes: H3Attributes, content?: Content): H3Tag;
+  h3(content?: Content): H3Tag;
+  h4(attributes: H4Attributes, content?: Content): H4Tag;
+  h4(content?: Content): H4Tag;
+  h5(attributes: H5Attributes, content?: Content): H5Tag;
+  h5(content?: Content): H5Tag;
+  h6(attributes: H6Attributes, content?: Content): H6Tag;
+  h6(content?: Content): H6Tag;
+  head(attributes: HeadAttributes, content?: Content): HeadTag;
+  head(content?: Content): HeadTag;
   header(attributes: HeaderAttributes, content?: Content): ContentTag;
   header(content?: Content): ContentTag;
-  hgroup(attributes: HgroupAttributes, content?: Content): ContentTag;
-  hgroup(content?: Content): ContentTag;
-  hr(attributes?: HrAttributes): VoidTag;
-  html(attributes: HtmlAttributes, content?: Content): ContentTag;
-  html(content?: Content): ContentTag;
+  hgroup(attributes: HgroupAttributes, content?: HgroupContent): HgroupTag;
+  hgroup(content?: HgroupContent): HgroupTag;
+  hr(attributes?: HrAttributes): HrTag;
+  html(attributes: HtmlAttributes, content?: HtmlContent): HtmlTag;
+  html(content?: HtmlContent): HtmlTag;
   i(attributes: IAttributes, content?: Content): ContentTag;
   i(content?: Content): ContentTag;
   iframe(attributes: IframeAttributes, content?: Content): ContentTag;
   iframe(content?: Content): ContentTag;
   image(attributes: ImageAttributes, content?: Content): ContentTag;
   image(content?: Content): ContentTag;
-  img(attributes?: ImgAttributes): VoidTag;
+  img(attributes?: ImgAttributes): ImgTag;
   input(attributes?: InputAttributes): VoidTag;
   ins(attributes: InsAttributes, content?: Content): ContentTag;
   ins(content?: Content): ContentTag;
@@ -5670,10 +5728,10 @@ export default class Kensington {
   kbd(content?: Content): ContentTag;
   label(attributes: LabelAttributes, content?: Content): ContentTag;
   label(content?: Content): ContentTag;
-  legend(attributes: LegendAttributes, content?: Content): ContentTag;
-  legend(content?: Content): ContentTag;
-  li(attributes: LiAttributes, content?: Content): ContentTag;
-  li(content?: Content): ContentTag;
+  legend(attributes: LegendAttributes, content?: Content): LegendTag;
+  legend(content?: Content): LegendTag;
+  li(attributes: LiAttributes, content?: Content): LiTag;
+  li(content?: Content): LiTag;
   line(attributes: LineAttributes, content?: Content): ContentTag;
   line(content?: Content): ContentTag;
   linearGradient(attributes: LinearGradientAttributes, content?: Content): ContentTag;
@@ -5693,8 +5751,8 @@ export default class Kensington {
   math(content?: Content): ContentTag;
   menclose(attributes: MencloseAttributes, content?: Content): ContentTag;
   menclose(content?: Content): ContentTag;
-  menu(attributes: MenuAttributes, content?: Content): ContentTag;
-  menu(content?: Content): ContentTag;
+  menu(attributes: MenuAttributes, content?: MenuContent): MenuTag;
+  menu(content?: MenuContent): MenuTag;
   merror(attributes: MerrorAttributes, content?: Content): ContentTag;
   merror(content?: Content): ContentTag;
   meta(attributes?: MetaAttributes): VoidTag;
@@ -5754,26 +5812,26 @@ export default class Kensington {
   munderover(content?: Content): ContentTag;
   nav(attributes: NavAttributes, content?: Content): ContentTag;
   nav(content?: Content): ContentTag;
-  noscript(attributes: NoscriptAttributes, content?: Content): ContentTag;
-  noscript(content?: Content): ContentTag;
+  noscript(attributes: NoscriptAttributes, content?: Content): NoscriptTag;
+  noscript(content?: Content): NoscriptTag;
   object(attributes: ObjectAttributes, content?: Content): ContentTag;
   object(content?: Content): ContentTag;
-  ol(attributes: OlAttributes, content?: Content): ContentTag;
-  ol(content?: Content): ContentTag;
-  optgroup(attributes: OptgroupAttributes, content?: Content): ContentTag;
-  optgroup(content?: Content): ContentTag;
-  option(attributes: OptionAttributes, content?: Content): ContentTag;
-  option(content?: Content): ContentTag;
+  ol(attributes: OlAttributes, content?: OlContent): OlTag;
+  ol(content?: OlContent): OlTag;
+  optgroup(attributes: OptgroupAttributes, content?: OptgroupContent): OptgroupTag;
+  optgroup(content?: OptgroupContent): OptgroupTag;
+  option(attributes: OptionAttributes, content?: Content): OptionTag;
+  option(content?: Content): OptionTag;
   output(attributes: OutputAttributes, content?: Content): ContentTag;
   output(content?: Content): ContentTag;
-  p(attributes: PAttributes, content?: Content): ContentTag;
-  p(content?: Content): ContentTag;
+  p(attributes: PAttributes, content?: Content): PTag;
+  p(content?: Content): PTag;
   path(attributes: PathAttributes, content?: Content): ContentTag;
   path(content?: Content): ContentTag;
   pattern(attributes: PatternAttributes, content?: Content): ContentTag;
   pattern(content?: Content): ContentTag;
-  picture(attributes: PictureAttributes, content?: Content): ContentTag;
-  picture(content?: Content): ContentTag;
+  picture(attributes: PictureAttributes, content?: PictureContent): PictureTag;
+  picture(content?: PictureContent): PictureTag;
   polygon(attributes: PolygonAttributes, content?: Content): ContentTag;
   polygon(content?: Content): ContentTag;
   polyline(attributes: PolylineAttributes, content?: Content): ContentTag;
@@ -5798,14 +5856,14 @@ export default class Kensington {
   s(content?: Content): ContentTag;
   samp(attributes: SampAttributes, content?: Content): ContentTag;
   samp(content?: Content): ContentTag;
-  script(attributes: ScriptAttributes, content?: Content): ContentTag;
-  script(content?: Content): ContentTag;
+  script(attributes: ScriptAttributes, content?: Content): ScriptTag;
+  script(content?: Content): ScriptTag;
   search(attributes: SearchAttributes, content?: Content): ContentTag;
   search(content?: Content): ContentTag;
   section(attributes: SectionAttributes, content?: Content): ContentTag;
   section(content?: Content): ContentTag;
-  select(attributes: SelectAttributes, content?: Content): ContentTag;
-  select(content?: Content): ContentTag;
+  select(attributes: SelectAttributes, content?: SelectContent): SelectTag;
+  select(content?: SelectContent): SelectTag;
   selectedcontent(attributes?: SelectedcontentAttributes): VoidTag;
   semantics(attributes: SemanticsAttributes, content?: Content): ContentTag;
   semantics(content?: Content): ContentTag;
@@ -5815,7 +5873,7 @@ export default class Kensington {
   slot(content?: Content): ContentTag;
   small(attributes: SmallAttributes, content?: Content): ContentTag;
   small(content?: Content): ContentTag;
-  source(attributes?: SourceAttributes): VoidTag;
+  source(attributes?: SourceAttributes): SourceTag;
   span(attributes: SpanAttributes, content?: Content): ContentTag;
   span(content?: Content): ContentTag;
   stop(attributes: StopAttributes, content?: Content): ContentTag;
@@ -5836,39 +5894,39 @@ export default class Kensington {
   switch(content?: Content): ContentTag;
   symbol(attributes: SymbolAttributes, content?: Content): ContentTag;
   symbol(content?: Content): ContentTag;
-  table(attributes: TableAttributes, content?: Content): ContentTag;
-  table(content?: Content): ContentTag;
-  tbody(attributes: TbodyAttributes, content?: Content): ContentTag;
-  tbody(content?: Content): ContentTag;
-  td(attributes: TdAttributes, content?: Content): ContentTag;
-  td(content?: Content): ContentTag;
-  template(attributes: TemplateAttributes, content?: Content): ContentTag;
-  template(content?: Content): ContentTag;
+  table(attributes: TableAttributes, content?: TableContent): TableTag;
+  table(content?: TableContent): TableTag;
+  tbody(attributes: TbodyAttributes, content?: TbodyContent): TbodyTag;
+  tbody(content?: TbodyContent): TbodyTag;
+  td(attributes: TdAttributes, content?: Content): TdTag;
+  td(content?: Content): TdTag;
+  template(attributes: TemplateAttributes, content?: Content): TemplateTag;
+  template(content?: Content): TemplateTag;
   text(attributes: TextAttributes, content?: Content): ContentTag;
   text(content?: Content): ContentTag;
   textarea(attributes: TextareaAttributes, content?: Content): ContentTag;
   textarea(content?: Content): ContentTag;
   textPath(attributes: TextPathAttributes, content?: Content): ContentTag;
   textPath(content?: Content): ContentTag;
-  tfoot(attributes: TfootAttributes, content?: Content): ContentTag;
-  tfoot(content?: Content): ContentTag;
-  th(attributes: ThAttributes, content?: Content): ContentTag;
-  th(content?: Content): ContentTag;
-  thead(attributes: TheadAttributes, content?: Content): ContentTag;
-  thead(content?: Content): ContentTag;
+  tfoot(attributes: TfootAttributes, content?: TfootContent): TfootTag;
+  tfoot(content?: TfootContent): TfootTag;
+  th(attributes: ThAttributes, content?: Content): ThTag;
+  th(content?: Content): ThTag;
+  thead(attributes: TheadAttributes, content?: TheadContent): TheadTag;
+  thead(content?: TheadContent): TheadTag;
   time(attributes: TimeAttributes, content?: Content): ContentTag;
   time(content?: Content): ContentTag;
   title(attributes: TitleAttributes, content?: Content): ContentTag;
   title(content?: Content): ContentTag;
-  tr(attributes: TrAttributes, content?: Content): ContentTag;
-  tr(content?: Content): ContentTag;
+  tr(attributes: TrAttributes, content?: TrContent): TrTag;
+  tr(content?: TrContent): TrTag;
   track(attributes?: TrackAttributes): VoidTag;
   tspan(attributes: TspanAttributes, content?: Content): ContentTag;
   tspan(content?: Content): ContentTag;
   u(attributes: UAttributes, content?: Content): ContentTag;
   u(content?: Content): ContentTag;
-  ul(attributes: UlAttributes, content?: Content): ContentTag;
-  ul(content?: Content): ContentTag;
+  ul(attributes: UlAttributes, content?: UlContent): UlTag;
+  ul(content?: UlContent): UlTag;
   use(attributes: UseAttributes, content?: Content): ContentTag;
   use(content?: Content): ContentTag;
   var(attributes: VarAttributes, content?: Content): ContentTag;

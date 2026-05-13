@@ -38,7 +38,9 @@ const EVENT_TYPES = {
 };
 
 function attrType(name, type) {
-  if (name === 'style') { return 'Reactive<string | csstype.Properties<string | number>>'; }
+  if (name === 'style') {
+    return 'Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>';
+  }
   if (name === 'class') { return 'Reactive<string | string[]>'; }
   if (name === 'hidden') { return 'Reactive<boolean | "until-found" | "hidden">'; }
   return `Reactive<${type}>`;
@@ -205,7 +207,7 @@ type SvgPresentationAttributes = {
 ${elements.map(e => `type ${e.attributesTypeName} = ${e.tagType === 'SvgContent' ? svgAttributesType(e) : attributesType(e)};`).join('\n\n')}
 
 ${strictContainers.map(el => {
-  const extras = ['LiteralTag', 'CommentTag', 'null', 'undefined', 'boolean'];
+  const extras = ['LiteralTag', 'CommentTag', 'ReadonlySignal<any>', 'null', 'undefined', 'boolean'];
   const union = [...el.strictChildren.map(tag => childTypeRef(tag)), ...extras].join(' | ');
   return `type ${el.pascalTag}Content = ${union} | (${union})[];`;
 }).join('\n')}
