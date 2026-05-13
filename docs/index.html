@@ -657,7 +657,7 @@ import type { NameSpaceAttributes, GlobalAttributes, GlobalEvents, UniversalAttr
 
     <h3 id="reusable-components">Reusable components</h3>
 
-    <p>Plain functions work as components. They take arguments and return tag objects.</p>
+    <p>Plain functions work as components. They take arguments and return tag objects like any other call.</p>
 
     <div class="panels">
       <div>
@@ -708,7 +708,7 @@ t.div({ class: 'card-grid' }, [
 
     <div class="panels">
       <div>
-        <div class="panel-label">Wrong: one node, moves on reuse</div>
+        <div class="panel-label">Wrong — one node, moves on reuse</div>
         <pre><code class="language-javascript">// icons.js
 export const expandIcon = t.svg({ viewBox: '0 0 24 24' }, [
   t.path({ d: 'M5 12h14M12 5l7 7-7 7' }),
@@ -723,7 +723,7 @@ import { expandIcon } from './icons.js';
 sidebar.append(expandIcon.toElement()); // moved here, vanishes from header</code></pre>
       </div>
       <div>
-        <div class="panel-label">Correct: factory function, one node per call</div>
+        <div class="panel-label">Correct — factory function, one node per call</div>
         <pre><code class="language-javascript">// icons.js
 export function expandIcon() {
   return t.svg({ viewBox: '0 0 24 24' }, [
@@ -905,7 +905,7 @@ t.form({ action: '/login', method: 'post' }, [
 
     <h3 id="preformatted">Preformatted blocks</h3>
 
-    <p><code>script</code>, <code>style</code>, <code>pre</code>, and <code>textarea</code> join content arrays with newlines and skip indentation, so string content is inserted without modification.</p>
+    <p><code>script</code>, <code>style</code>, <code>pre</code>, and <code>textarea</code> join content arrays with newlines and skip indentation, so string content lands exactly as written.</p>
 
     <div class="panels">
       <div>

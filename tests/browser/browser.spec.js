@@ -293,3 +293,120 @@ test('creates MathML elements in the MathML namespace', async ({ page, bundle })
   }, bundle);
   expect(ns).toBe('http://www.w3.org/1998/Math/MathML');
 });
+
+// ─── toElement() reuse guard ───────────────────────────────────────────────
+
+test('toElement() warns when tag is already in the DOM', async ({ page, bundle }) => {
+  test.skip(bundle.includes('slim'), 'slim build requires validationLevel: "off"');
+  const warned = await page.evaluate(async src => {
+    const { default: Kensington } = await import(src);
+    let logged = false;
+    const tt = new Kensington({ validationLevel: 'warn', logger: () => { logged = true; } });
+    const tag = tt.div('icon');
+    document.body.append(tag.toElement());
+    tag.toElement();
+    return logged;
+  }, bundle);
+  expect(warned).toBe(true);
+});
+
+test('toElement() throws when tag is already in the DOM', async ({ page, bundle }) => {
+  test.skip(bundle.includes('slim'), 'slim build requires validationLevel: "off"');
+  const result = await page.evaluate(async src => {
+    const { default: Kensington } = await import(src);
+    const tt = new Kensington({ validationLevel: 'error' });
+    const tag = tt.div('icon');
+    document.body.append(tag.toElement());
+    try {
+      tag.toElement();
+      return { threw: false };
+    } catch (e) {
+      return { threw: true, message: e.message };
+    }
+  }, bundle);
+  expect(result.threw).toBe(true);
+  expect(result.message).toContain('toElement()');
+});
+
+test('toElement() throws when tag is parented in an in-memory tree', async ({ page, bundle }) => {
+  test.skip(bundle.includes('slim'), 'slim build requires validationLevel: "off"');
+  const result = await page.evaluate(async src => {
+    const { default: Kensington } = await import(src);
+    const tt = new Kensington({ validationLevel: 'error' });
+    const icon = tt.div('icon');
+    tt.header(icon).toElement(); // icon parented to header in memory
+    try {
+      tt.footer(icon).toElement(); // icon.toElement() called again, parentNode !== null
+      return { threw: false };
+    } catch (e) {
+      return { threw: true, message: e.message };
+    }
+  }, bundle);
+  expect(result.threw).toBe(true);
+  expect(result.message).toContain('toElement()');
+});
+
+test('toElement() does not warn before the tag has a parent', async ({ page, bundle }) => {
+  test.skip(bundle.includes('slim'), 'slim build requires validationLevel: "off"');
+  const result = await page.evaluate(async src => {
+    const { default: Kensington } = await import(src);
+    const tt = new Kensington({ validationLevel: 'error' });
+    const tag = tt.div('icon');
+    tag.toElement(); // first call — no parent yet
+    document.body.append(tag.toElement()); // second call — still no parent at call time
+    return { ok: true };
+  }, bundle);
+  expect(result.ok).toBe(true);
+});
+
+test('toElement() is silent when validationLevel is off', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { default: Kensington } = await import(src);
+    const tt = new Kensington({ validationLevel: 'off' });
+    const tag = tt.div('icon');
+    document.body.append(tag.toElement());
+    try {
+      tag.toElement();
+      return { ok: true };
+    } catch {
+      return { ok: false };
+    }
+  }, bundle);
+  expect(result.ok).toBe(true);
+});
+
+test('inlineComment toElement() throws when already in the DOM', async ({ page, bundle }) => {
+  test.skip(bundle.includes('slim'), 'slim build requires validationLevel: "off"');
+  const result = await page.evaluate(async src => {
+    const { default: Kensington } = await import(src);
+    const tt = new Kensington({ validationLevel: 'error' });
+    const comment = tt.inlineComment('note');
+    document.body.append(comment.toElement());
+    try {
+      comment.toElement();
+      return { threw: false };
+    } catch (e) {
+      return { threw: true, message: e.message };
+    }
+  }, bundle);
+  expect(result.threw).toBe(true);
+  expect(result.message).toContain('toElement()');
+});
+
+test('inlineComment toElement() throws when parented in an in-memory tree', async ({ page, bundle }) => {
+  test.skip(bundle.includes('slim'), 'slim build requires validationLevel: "off"');
+  const result = await page.evaluate(async src => {
+    const { default: Kensington } = await import(src);
+    const tt = new Kensington({ validationLevel: 'error' });
+    const comment = tt.inlineComment('note');
+    tt.div(comment).toElement(); // comment parented in memory
+    try {
+      tt.div(comment).toElement();
+      return { threw: false };
+    } catch (e) {
+      return { threw: true, message: e.message };
+    }
+  }, bundle);
+  expect(result.threw).toBe(true);
+  expect(result.message).toContain('toElement()');
+});

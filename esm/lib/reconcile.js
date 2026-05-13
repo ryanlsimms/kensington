@@ -8,7 +8,7 @@ function itemKey(item) {
 
 function itemToNode(item) {
   if (item !== null && item !== undefined && typeof item.toElement === 'function') {
-    return item.toElement();
+    return item.getDomElement?.() ?? item.toElement();
   }
   if (item === null || item === undefined || item === false) {
     return document.createTextNode('');

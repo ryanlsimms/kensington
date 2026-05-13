@@ -38,7 +38,12 @@ export default class CommentTag {
   }
 
   toElement() {
-    if (this._domElement) { return this._domElement; }
+    if (this._domElement) {
+      if (this._domElement.parentNode !== null) {
+        showInvalid(`toElement() called on a tag instance already in the DOM — the same node will be moved. Call the tag as a function to create a new independent node.`, this.validationLevel, this.logger);
+      }
+      return this._domElement;
+    }
     if (typeof document === 'undefined') {
       throw new Error('toElement only supported in browser');
     }
