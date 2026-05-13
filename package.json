@@ -78,7 +78,7 @@
     "fetch-and-build": "npm run fetch && npm run build",
     "test": "npm run test-esm && npm run test-cjs && npm run test-ts && npm run test-browser && npm run test-cli && echo 'All tests passed'",
     "test-browser": "npx playwright test --config ./tests/browser/config/playwright.config.js && npm run stop-server",
-    "stop-server": "pkill -f html-server.js || true",
+    "stop-server": "lsof -ti:3847 | xargs kill 2>/dev/null || true",
     "test-esm": "node --test \"./tests/esm/esm-test.js\"",
     "test-cjs": "node --test \"./tests/cjs/cjs-test.js\"",
     "test-ts": "tsc --noEmit -p tests/typescript/tsconfig.json && echo 'TypeScript types OK'",
