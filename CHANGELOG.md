@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- `.getDomElement()` on `ContentTag`, `VoidTag`, and `CommentTag`. Returns the element if it is currently connected to the DOM, `null` otherwise. Does not create an element and never throws — returns `null` in non-browser environments. Use `.toElement()` to get or create the element; use `.getDomElement()` to check whether it is live.
+
+### Changed
+- `.toElement()` is now idempotent. The first call creates the element; subsequent calls return the same cached node. For reactive elements (those with signal attributes or signal content), the cache is cleared after the element is removed from the DOM via MutationObserver, so the next `.toElement()` call produces a fresh element with live effects. For non-reactive elements, `.toElement()` continues to return the same node after removal — the element remains valid and can be re-inserted directly.
+- Signal-based `inlineComment` elements now stop their reactive effect when removed from the DOM, matching the existing behaviour of reactive `ContentTag` elements.
+
 ## [2.0.0-signals.5] - 2026-05-12
 
 ### Added

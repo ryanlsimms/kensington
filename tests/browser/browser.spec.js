@@ -1,7 +1,7 @@
 import { expect, test } from './config/fixtures.js';
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('http://localhost:3000/');
+  await page.goto('http://localhost:3847/');
 });
 
 // ─── element creation ──────────────────────────────────────────────────────

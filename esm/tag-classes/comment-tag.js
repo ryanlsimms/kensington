@@ -1,3 +1,4 @@
+import { addOnStop, trackForStop } from '../lib/dom-tracker.js';
 import showInvalid from '../lib/show-invalid.js';
 import Signal, { effect } from '../lib/signal.js';
 
@@ -37,6 +38,7 @@ export default class CommentTag {
   }
 
   toElement() {
+    if (this._domElement) { return this._domElement; }
     if (typeof document === 'undefined') {
       throw new Error('toElement only supported in browser');
     }
@@ -51,11 +53,20 @@ export default class CommentTag {
         if (text === null) { return; }
         c.nodeValue = text;
       });
+      const clearCache = () => { if (this._domElement === comment) { this._domElement = null; } };
+      trackForStop(comment, () => e.stop());
+      addOnStop(comment, clearCache);
+      this._domElement = comment;
       return comment;
     }
 
     const text = this._normalize(this.text);
-    if (text === null) { return document.createComment(''); }
-    return document.createComment(text);
+    const comment = text === null ? document.createComment('') : document.createComment(text);
+    this._domElement = comment;
+    return comment;
+  }
+
+  getDomElement() {
+    return this._domElement?.isConnected ? this._domElement : null;
   }
 }

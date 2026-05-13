@@ -17,6 +17,7 @@ function itemToNode(item) {
 }
 
 function syncNode(existing, fresh) {
+  if (existing === fresh) { return existing; }
   if (existing.nodeType !== fresh.nodeType || existing.nodeName !== fresh.nodeName) {
     return fresh;
   }

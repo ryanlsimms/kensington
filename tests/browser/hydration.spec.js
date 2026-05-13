@@ -3,7 +3,7 @@ import { renderForHydration, t } from 'kensington';
 import { expect, test } from './config/fixtures.js';
 
 test.beforeEach(async ({ page: pg }) => {
-  await pg.goto('http://localhost:3000/');
+  await pg.goto('http://localhost:3847/');
 });
 
 function inject(pg, html) {

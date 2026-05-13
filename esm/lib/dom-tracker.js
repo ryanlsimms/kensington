@@ -36,6 +36,12 @@ export function trackForStop(element, stop) {
   tracked.set(element, stop);
 }
 
+export function addOnStop(element, fn) {
+  const existing = tracked.get(element);
+  if (existing === undefined) { return; }
+  tracked.set(element, () => { existing(); fn(); });
+}
+
 export function markContentTracked(element) {
   contentTracked.add(element);
 }
