@@ -10,7 +10,7 @@ import LiteralTag from './tag-classes/literal-tag.js';
 import VoidTag from './tag-classes/void-tag.js';
 
 /**
- * HTML/SVG/MathML template engine. Every tag is a method that accepts optional attributes
+ * HTML/SVG/MathML template library. Every tag is a method that accepts optional attributes
  * and/or content, returning a tag object with \`.toString()\` (HTML string) and \`.toElement()\` (DOM node).
  *
  * Attribute rules: camelCase keys convert to kebab-case, nested objects flatten,

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kensington Examples</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div id="menu-backdrop"></div>
+
+<div id="topbar">
+  <button id="menu-toggle" aria-label="Open navigation">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <rect y="2" width="18" height="2" rx="1" fill="currentColor"/>
+      <rect y="8" width="18" height="2" rx="1" fill="currentColor"/>
+      <rect y="14" width="18" height="2" rx="1" fill="currentColor"/>
+    </svg>
+  </button>
+  <span class="topbar-title">Kensington Examples</span>
+</div>
+
+<nav id="sidebar">
+  <div class="sidebar-pages">
+    <a href="index.html">Guide</a>
+    <a href="examples.html" class="active">Examples</a>
+    <a href="api.html">API</a>
+  </div>
+  <ul>
+    <li><a href="#ssr">Server-side rendering</a></li>
+    <li><a href="#framework-integration">Framework integration</a></li>
+    <li><a href="#express-render-helper">Express render helper</a></li>
+    <li><a href="#htmx">htmx</a></li>
+    <li><a href="#form-from-schema">Form from schema</a></li>
+    <li><a href="#preformatted">Preformatted blocks</a></li>
+  </ul>
+  <div class="sidebar-footer">
+    <a href="https://github.com/ryanlsimms/kensington" target="_blank" rel="noopener">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      GitHub
+    </a>
+  </div>
+</nav>
+
+<main>
+
+  <header>
+    <h1>Examples</h1>
+    <p>Worked examples covering common patterns and framework integrations.</p>
+  </header>
+
+  <section id="ssr">
+    <h2>Server-side rendering</h2>
+
+    <p>Tag objects convert to strings automatically in template literals and string concatenation. Call <code>.toString()</code> explicitly when passing to a function like <code>res.send()</code>, which won't coerce the argument otherwise.</p>
+
+    <pre><code class="language-javascript">import express from 'express';
+import { t } from 'kensington';
+
+function layout(title, content) {
+  return t.htmlWithDocType({ lang: 'en' }, [
+    t.head([
+      t.meta({ charset: 'utf-8' }),
+      t.title(title),
+      t.link({ rel: 'stylesheet', href: '/style.css' }),
+    ]),
+    t.body(t.main({ class: 'container' }, content)),
+  ]).toString();
+}
+
+function usersPage(users) {
+  return [
+    t.h1('Users'),
+    t.table([
+      t.thead(t.tr(['Name', 'Role'].map(h => t.th(h)))),
+      t.tbody(users.map(u =>
+        t.tr([t.td(u.name), t.td(u.role)])
+      )),
+    ]),
+  ];
+}
+
+const app = express();
+
+app.get('/users', async (req, res) => {
+  const users = await db.getUsers();
+  res.send(layout('Users', usersPage(users)));
+});</code></pre>
+  </section>
+
+  <section id="framework-integration">
+    <h2>Framework integration</h2>
+
+    <p>Kensington works with any Node.js HTTP framework. The pattern is the same everywhere: build your HTML with Kensington, call <code>.toString()</code>, and pass the string to the framework's response method.</p>
+
+    <div class="panels">
+      <div>
+        <div class="panel-label">Hono</div>
+        <pre><code class="language-javascript">import { Hono } from 'hono';
+import { t } from 'kensington';
+
+const app = new Hono();
+
+app.get('/users', async (c) => {
+  const users = await db.getUsers();
+  return c.html(layout('Users', usersPage(users)));
+});</code></pre>
+      </div>
+      <div>
+        <div class="panel-label">Fastify</div>
+        <pre><code class="language-javascript">import Fastify from 'fastify';
+import { t } from 'kensington';
+
+const app = Fastify();
+
+app.get('/users', async (req, reply) => {
+  const users = await db.getUsers();
+  reply
+    .header('content-type', 'text/html; charset=utf-8')
+    .send(layout('Users', usersPage(users)));
+});</code></pre>
+      </div>
+    </div>
+
+    <p>Hono's <code>c.html()</code> sets the content-type header automatically. For frameworks that don't have a dedicated HTML method, set <code>Content-Type: text/html; charset=utf-8</code> manually as shown in the Fastify example.</p>
+  </section>
+
+  <section id="express-render-helper">
+    <h2>Express render helper</h2>
+
+    <p>Attach a <code>res.renderKensington</code> helper via middleware so routes never call <code>.toString()</code> directly and the layout is applied in one place.</p>
+
+    <div class="panels">
+      <div>
+        <div class="panel-label">middleware/render.js</div>
+        <pre><code class="language-javascript">import { layout } from './layout.js';
+
+export function renderMiddleware(req, res, next) {
+  res.renderKensington = (pageFunc, ...args) => {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(layout(pageFunc(...args)).toString());
+  };
+  next();
+}</code></pre>
+      </div>
+      <div>
+        <div class="panel-label">server.js</div>
+        <pre><code class="language-javascript">import express from 'express';
+import { homePage, usersPage } from './pages.js';
+import { renderMiddleware } from './middleware/render.js';
+
+const app = express();
+app.use(renderMiddleware);
+
+app.get('/', (req, res) => {
+  res.renderKensington(homePage, { title: 'Home' });
+});
+
+app.get('/users', async (req, res) => {
+  const users = await db.getUsers();
+  res.renderKensington(usersPage, { title: 'Users', users });
+});</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <section id="htmx">
+    <h2>htmx</h2>
+
+    <p>Pass <code>'hx'</code> to <code>additionalNamespaces</code> to allow <code>hx-*</code> attributes. Alpine.js uses <code>'x'</code>.</p>
+
+    <pre><code class="language-javascript">import Kensington from 'kensington';
+
+const t = new Kensington({ additionalNamespaces: ['hx'] });
+
+// Live search: htmx swaps in the result fragment
+t.div([
+  t.input({
+    type: 'search',
+    name: 'q',
+    placeholder: 'Search...',
+    hxGet: '/search',
+    hxTrigger: 'input changed delay:300ms',
+    hxTarget: '#results',
+  }),
+  t.ul({ id: 'results' }),
+]);
+
+// The partial route returns just the &lt;li&gt; items (htmx swaps them into the &lt;ul&gt;)
+app.get('/search', async (req, res) => {
+  const rows = await db.search(req.query.q);
+  res.send(rows.map(r => t.li(r.name)).join('\n'));
+});</code></pre>
+  </section>
+
+  <section id="form-from-schema">
+    <h2>Form from schema</h2>
+
+    <p>Build forms from a field definition array using a helper function.</p>
+
+    <div class="panels">
+      <div>
+        <div class="panel-label">JavaScript</div>
+        <pre><code class="language-javascript">const fields = [
+  { name: 'email',    type: 'email',    label: 'Email',    required: true },
+  { name: 'password', type: 'password', label: 'Password', required: true },
+  { name: 'remember', type: 'checkbox', label: 'Remember me' },
+];
+
+function formField({ name, type, label, required }) {
+  return t.div({ class: 'field' }, [
+    t.label({ for: name }, label),
+    t.input({ id: name, name, type, required }),
+  ]);
+}
+
+t.form({ action: '/login', method: 'post' }, [
+  ...fields.map(formField),
+  t.button({ type: 'submit' }, 'Log in'),
+]);</code></pre>
+      </div>
+      <div>
+        <div class="panel-label">HTML output</div>
+        <pre><code class="language-html">&lt;form action="/login" method="post"&gt;
+  &lt;div class="field"&gt;
+    &lt;label for="email"&gt;Email&lt;/label&gt;
+    &lt;input id="email" name="email" type="email" required&gt;
+  &lt;/div&gt;
+  &lt;div class="field"&gt;
+    &lt;label for="password"&gt;Password&lt;/label&gt;
+    &lt;input id="password" name="password" type="password" required&gt;
+  &lt;/div&gt;
+  &lt;div class="field"&gt;
+    &lt;label for="remember"&gt;Remember me&lt;/label&gt;
+    &lt;input id="remember" name="remember" type="checkbox"&gt;
+  &lt;/div&gt;
+  &lt;button type="submit"&gt;Log in&lt;/button&gt;
+&lt;/form&gt;</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <section id="preformatted">
+    <h2>Preformatted blocks</h2>
+
+    <p><code>script</code>, <code>style</code>, <code>pre</code>, and <code>textarea</code> join content arrays with newlines and skip indentation, so string content lands exactly as written.</p>
+
+    <div class="panels">
+      <div>
+        <div class="panel-label">JavaScript</div>
+        <pre><code class="language-javascript">t.style([
+  'body { margin: 0; }',
+  'h1 { color: steelblue; }',
+]);
+
+t.script(`
+  const el = document.getElementById("app");
+  el.textContent = "Hello";
+`);
+</code></pre>
+      </div>
+      <div>
+        <div class="panel-label">HTML output</div>
+        <pre><code class="language-html">&lt;style&gt;
+body { margin: 0; }
+h1 { color: steelblue; }
+&lt;/style&gt;
+
+&lt;script&gt;
+  const el = document.getElementById("app");
+  el.textContent = "Hello";
+&lt;/script&gt;</code></pre>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-core.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1/plugins/autoloader/prism-autoloader.min.js"
+  data-autoloader-path="https://cdn.jsdelivr.net/npm/prismjs@1/components/"></script>
+<script>
+  (function () {
+    const links = document.querySelectorAll('nav#sidebar ul a[href^="#"]');
+    const linkMap = new Map(Array.from(links, l => [l.getAttribute('href').slice(1), l]));
+    const targets = Array.from(document.querySelectorAll('[id]')).filter(el => linkMap.has(el.id));
+
+    function update() {
+      let active = targets[0];
+      for (const el of targets) {
+        if (el.getBoundingClientRect().top <= 80) { active = el; }
+      }
+      links.forEach(l => l.classList.remove('active'));
+      if (active) { linkMap.get(active.id).classList.add('active'); }
+    }
+
+    window.addEventListener('scroll', update, { passive: true });
+    update();
+
+    const toggle = document.getElementById('menu-toggle');
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('menu-backdrop');
+    const closeIcon = '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M2 2L16 16M16 2L2 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+    const openIcon = toggle.innerHTML;
+
+    function openMenu() {
+      sidebar.classList.add('open');
+      backdrop.classList.add('open');
+      toggle.innerHTML = closeIcon;
+      toggle.setAttribute('aria-label', 'Close navigation');
+    }
+
+    function closeMenu() {
+      sidebar.classList.remove('open');
+      backdrop.classList.remove('open');
+      toggle.innerHTML = openIcon;
+      toggle.setAttribute('aria-label', 'Open navigation');
+    }
+
+    toggle.addEventListener('click', () => sidebar.classList.contains('open') ? closeMenu() : openMenu());
+    backdrop.addEventListener('click', closeMenu);
+    links.forEach(l => l.addEventListener('click', closeMenu));
+
+    // copy buttons
+    document.querySelectorAll('pre[class*="language-"]').forEach(pre => {
+      const btn = document.createElement('button');
+      btn.className = 'copy-btn';
+      btn.textContent = 'Copy';
+      btn.addEventListener('click', () => {
+        const code = pre.querySelector('code');
+        navigator.clipboard.writeText((code ?? pre).textContent).then(() => {
+          btn.textContent = 'Copied!';
+          btn.classList.add('copied');
+          setTimeout(() => {
+            btn.textContent = 'Copy';
+            btn.classList.remove('copied');
+          }, 2000);
+        });
+      });
+      pre.appendChild(btn);
+    });
+  }());
+</script>
+</body>
+</html>

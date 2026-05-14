@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kensington API</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div id="menu-backdrop"></div>
+
+<div id="topbar">
+  <button id="menu-toggle" aria-label="Open navigation">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <rect y="2" width="18" height="2" rx="1" fill="currentColor"/>
+      <rect y="8" width="18" height="2" rx="1" fill="currentColor"/>
+      <rect y="14" width="18" height="2" rx="1" fill="currentColor"/>
+    </svg>
+  </button>
+  <span class="topbar-title">Kensington API</span>
+</div>
+
+<nav id="sidebar">
+  <div class="sidebar-pages">
+    <a href="index.html">Guide</a>
+    <a href="examples.html">Examples</a>
+    <a href="api.html" class="active">API</a>
+  </div>
+  <ul>
+    <li><a href="#constructor">Constructor</a></li>
+    <li><a href="#tag-methods">Tag methods</a>
+      <ul>
+        <li><a href="#content-elements">Content elements</a></li>
+        <li><a href="#void-elements">Void elements</a></li>
+      </ul>
+    </li>
+    <li><a href="#special-methods">Special methods</a>
+      <ul>
+        <li><a href="#htmlwithdoctype">htmlWithDocType</a></li>
+        <li><a href="#literal">literal / unsafeLiteral</a></li>
+        <li><a href="#inline-comment">inlineComment</a></li>
+        <li><a href="#create-custom-tag">createCustomTag</a></li>
+      </ul>
+    </li>
+    <li><a href="#exports">Exports</a></li>
+    <li><a href="#types">TypeScript types</a></li>
+  </ul>
+  <div class="sidebar-footer">
+    <a href="https://github.com/ryanlsimms/kensington" target="_blank" rel="noopener">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      GitHub
+    </a>
+  </div>
+</nav>
+
+<main>
+
+  <header>
+    <h1>Kensington API</h1>
+    <p>Method signatures, types, and exports. See the <a href="index.html">guide</a> for usage examples.</p>
+  </header>
+
+  <!-- ── Constructor ──────────────────────────────────────────── -->
+
+  <section id="constructor">
+    <h2>Constructor</h2>
+
+    <pre><code class="language-typescript">new Kensington(options?: {
+  validationLevel?: 'off' | 'warn' | 'error';
+  additionalNamespaces?: string | string[];
+  additionalGlobalAttributes?: Record&lt;string, unknown&gt;;
+  indentationLevel?: number;
+  logger?: (message: string) =&gt; void;
+})</code></pre>
+
+    <table>
+      <thead>
+        <tr><th>Option</th><th>Default</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td data-label="Option"><code>validationLevel</code></td><td data-label="Default"><code>'warn'</code></td><td data-label="Description">Attribute validation behavior. <code>'off'</code> disables validation entirely (required for the slim build). <code>'warn'</code> logs via <code>logger</code>. <code>'error'</code> throws.</td></tr>
+        <tr><td data-label="Option"><code>additionalNamespaces</code></td><td data-label="Default">—</td><td data-label="Description">Allow extra attribute prefixes on all elements, e.g. <code>'hx'</code> for htmx <code>hx-*</code> attributes or <code>'x'</code> for Alpine.js.</td></tr>
+        <tr><td data-label="Option"><code>additionalGlobalAttributes</code></td><td data-label="Default">—</td><td data-label="Description">Allow specific extra attributes on all elements. Same validator format as <code>createCustomTag</code>.</td></tr>
+        <tr><td data-label="Option"><code>indentationLevel</code></td><td data-label="Default"><code>2</code></td><td data-label="Description">Spaces per indentation level in <code>.toString()</code> output. Set to <code>0</code> to disable indentation.</td></tr>
+        <tr><td data-label="Option"><code>logger</code></td><td data-label="Default"><code>console.log</code></td><td data-label="Description">Called with warning messages when <code>validationLevel</code> is <code>'warn'</code>.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── Tag methods ──────────────────────────────────────────── -->
+
+  <section id="tag-methods">
+    <h2>Tag methods</h2>
+
+    <p>Every HTML, SVG, and MathML element is available as a method on the <code>Kensington</code> instance. Attribute types are generated from the official specs; each element's attribute type is named <code>{PascalTag}Attributes</code> (e.g. <code>InputAttributes</code>, <code>AAttributes</code>).</p>
+
+    <h3 id="content-elements">Content elements</h3>
+
+    <p>Most elements — <code>div</code>, <code>p</code>, <code>span</code>, <code>section</code>, <code>a</code>, <code>table</code>, and so on.</p>
+
+    <pre><code class="language-typescript">t.div(attributes: DivAttributes, content?: Content): DivTag
+t.div(content?: Content): DivTag</code></pre>
+
+    <p>A subset of elements have branded return types and enforce a strict content model in TypeScript. Passing the wrong child type is a compile-time error. All strict containers also accept <code>literal()</code>, <code>inlineComment()</code>, <code>null</code>, <code>undefined</code>, and <code>boolean</code> as escape hatches for conditional patterns.</p>
+
+    <table>
+      <thead>
+        <tr><th>Element(s)</th><th>Return type</th><th>Accepts</th></tr>
+      </thead>
+      <tbody>
+        <tr><td data-label="Element(s)"><code>html</code></td><td data-label="Return type"><code>HtmlTag</code></td><td data-label="Accepts"><code>head</code>, <code>body</code></td></tr>
+        <tr><td data-label="Element(s)"><code>table</code></td><td data-label="Return type"><code>TableTag</code></td><td data-label="Accepts"><code>caption</code>, <code>colgroup</code>, <code>thead</code>, <code>tbody</code>, <code>tfoot</code>, <code>tr</code></td></tr>
+        <tr><td data-label="Element(s)"><code>thead</code>, <code>tbody</code>, <code>tfoot</code></td><td data-label="Return type"><code>TheadTag</code>, <code>TbodyTag</code>, <code>TfootTag</code></td><td data-label="Accepts"><code>tr</code></td></tr>
+        <tr><td data-label="Element(s)"><code>tr</code></td><td data-label="Return type"><code>TrTag</code></td><td data-label="Accepts"><code>td</code>, <code>th</code></td></tr>
+        <tr><td data-label="Element(s)"><code>colgroup</code></td><td data-label="Return type"><code>ColgroupTag</code></td><td data-label="Accepts"><code>col</code>, <code>template</code></td></tr>
+        <tr><td data-label="Element(s)"><code>ul</code>, <code>ol</code>, <code>menu</code></td><td data-label="Return type"><code>UlTag</code>, <code>OlTag</code>, <code>MenuTag</code></td><td data-label="Accepts"><code>li</code></td></tr>
+        <tr><td data-label="Element(s)"><code>dl</code></td><td data-label="Return type"><code>DlTag</code></td><td data-label="Accepts"><code>dt</code>, <code>dd</code>, <code>div</code></td></tr>
+        <tr><td data-label="Element(s)"><code>select</code></td><td data-label="Return type"><code>SelectTag</code></td><td data-label="Accepts"><code>option</code>, <code>optgroup</code>, <code>hr</code>, <code>div</code>, <code>button</code></td></tr>
+        <tr><td data-label="Element(s)"><code>optgroup</code></td><td data-label="Return type"><code>OptgroupTag</code></td><td data-label="Accepts"><code>option</code>, <code>div</code>, <code>noscript</code>, <code>legend</code></td></tr>
+        <tr><td data-label="Element(s)"><code>picture</code></td><td data-label="Return type"><code>PictureTag</code></td><td data-label="Accepts"><code>source</code>, <code>img</code></td></tr>
+        <tr><td data-label="Element(s)"><code>hgroup</code></td><td data-label="Return type"><code>HgroupTag</code></td><td data-label="Accepts"><code>h1</code>&ndash;<code>h6</code>, <code>p</code></td></tr>
+      </tbody>
+    </table>
+
+    <p>These elements also have branded return types but accept any <code>Content</code>: <code>td</code>, <code>th</code>, <code>li</code>, <code>dt</code>, <code>dd</code>, <code>caption</code>, <code>option</code>, <code>body</code>, <code>head</code>, and others. Void elements with branded types: <code>img</code> (<code>ImgTag</code>), <code>col</code> (<code>ColTag</code>), <code>source</code> (<code>SourceTag</code>), <code>hr</code> (<code>HrTag</code>).</p>
+
+    <p>All branded types extend <code>ContentTag</code>, so existing code typed as <code>ContentTag</code> continues to work.</p>
+
+    <h3 id="void-elements">Void elements</h3>
+
+    <p>Void elements — <code>br</code>, <code>hr</code>, <code>input</code>, <code>img</code>, <code>link</code>, <code>meta</code>, <code>source</code>, <code>wbr</code>, and others — take no content argument.</p>
+
+    <pre><code class="language-typescript">t.input(attributes?: InputAttributes): VoidTag
+t.img(attributes?: ImgAttributes): ImgTag</code></pre>
+
+    <p><code>img</code> has a branded return type (<code>ImgTag</code>) so it can participate in <code>picture</code>'s strict content model.</p>
+  </section>
+
+  <!-- ── Special methods ──────────────────────────────────────── -->
+
+  <section id="special-methods">
+    <h2>Special methods</h2>
+
+    <h3 id="htmlwithdoctype">htmlWithDocType</h3>
+
+    <p>Identical to <code>t.html()</code> but prepends <code>&lt;!DOCTYPE html&gt;</code> to the output.</p>
+
+    <pre><code class="language-typescript">t.htmlWithDocType(attributes: HtmlAttributes, content?: HtmlContent): ContentTag
+t.htmlWithDocType(content?: HtmlContent): ContentTag</code></pre>
+
+    <h3 id="literal">literal / unsafeLiteral</h3>
+
+    <pre><code class="language-typescript">t.literal(str: string): LiteralTag
+t.unsafeLiteral(str: string): LiteralTag</code></pre>
+
+    <p><code>literal</code> embeds a raw HTML string into the output. <code>&lt;script&gt;</code> tags trigger a validation warning or error. <code>unsafeLiteral</code> skips that check — use only for trusted HTML.</p>
+
+    <h3 id="inline-comment">inlineComment</h3>
+
+    <pre><code class="language-typescript">t.inlineComment(str: string | number): CommentTag</code></pre>
+
+    <p>Single-line strings produce <code>&lt;!-- text --&gt;</code>. Multi-line strings are formatted across multiple lines.</p>
+
+    <h3 id="create-custom-tag">createCustomTag</h3>
+
+    <pre><code class="language-typescript">t.createCustomTag(
+  tagName: string,
+  allowedAttributes?: Record&lt;string, AttributeValidator&gt;
+): ContentMethod&lt;T&gt;</code></pre>
+
+    <p>Returns a method for a custom element. Assign to a class property and annotate with <code>ContentMethod&lt;T&gt;</code> for typed attributes.</p>
+
+    <p>Each value in <code>allowedAttributes</code> is a validator:</p>
+
+    <table>
+      <thead>
+        <tr><th>Validator</th><th>Accepts</th></tr>
+      </thead>
+      <tbody>
+        <tr><td data-label="Validator"><code>String</code></td><td data-label="Accepts">Any string value</td></tr>
+        <tr><td data-label="Validator"><code>Number</code></td><td data-label="Accepts">Any number value</td></tr>
+        <tr><td data-label="Validator"><code>Boolean</code></td><td data-label="Accepts"><code>true</code> or <code>false</code></td></tr>
+        <tr><td data-label="Validator"><code>['a', 'b', ...]</code></td><td data-label="Accepts">One of the listed string literals</td></tr>
+        <tr><td data-label="Validator"><code>v =&gt; boolean</code></td><td data-label="Accepts">Custom predicate function</td></tr>
+      </tbody>
+    </table>
+
+    <pre><code class="language-javascript">class MyEngine extends Kensington {
+  myCard = this.createCustomTag('my-card', {
+    'card-type': ['primary', 'secondary'],
+    'loading': Boolean,
+    'max-items': Number,
+    'score': v =&gt; typeof v === 'number' &amp;&amp; v &lt;= 100,
+  });
+}</code></pre>
+
+    <p>To extend a built-in element, spread its attribute object from <code>kensington/attributes</code>:</p>
+
+    <pre><code class="language-javascript">import { buttonAttributes } from 'kensington/attributes';
+
+class MyEngine extends Kensington {
+  button = this.createCustomTag('button', {
+    ...buttonAttributes,
+    popovertarget: String,
+  });
+}</code></pre>
+  </section>
+
+  <!-- ── Exports ──────────────────────────────────────────────── -->
+
+  <section id="exports">
+    <h2>Exports</h2>
+
+    <h3>kensington</h3>
+
+    <pre><code class="language-javascript">import Kensington from 'kensington';    // the class
+import { t } from 'kensington';          // shared default instance (new Kensington())</code></pre>
+
+    <pre><code class="language-javascript">// browser, via CDN
+import { t } from 'https://cdn.jsdelivr.net/npm/kensington/dist/kensington.min.js';</code></pre>
+
+    <h3>kensington/attributes</h3>
+
+    <p>Every element has a named export containing its allowed-attribute validator object. Useful for extending built-in elements via <code>createCustomTag</code>.</p>
+
+    <pre><code class="language-javascript">import {
+  divAttributes,
+  inputAttributes,
+  formAttributes,
+  buttonAttributes,
+  aAttributes,
+  // ... one export per element
+} from 'kensington/attributes';</code></pre>
+
+    <h3>Slim build</h3>
+
+    <p>Omits all attribute validation data (~77% smaller minified). Requires <code>validationLevel: 'off'</code>.</p>
+
+    <pre><code class="language-javascript">import Kensington from 'kensington/dist/slim';
+
+const t = new Kensington({ validationLevel: 'off' });</code></pre>
+  </section>
+
+  <!-- ── TypeScript types ─────────────────────────────────────── -->
+
+  <section id="types">
+    <h2>TypeScript types</h2>
+
+    <pre><code class="language-typescript">import type {
+  ContentTag, VoidTag, LiteralTag, CommentTag,
+  Content, ContentMethod,
+  GlobalAttributes, GlobalEvents, UniversalAttributes, NameSpaceAttributes,
+  // branded element types:
+  DivTag, TdTag, ThTag, TrTag, TheadTag, TbodyTag, TfootTag,
+  TableTag, UlTag, OlTag, LiTag, DlTag, SelectTag, ImgTag,
+  // ...
+} from 'kensington';</code></pre>
+
+    <table>
+      <thead>
+        <tr><th>Type</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td data-label="Type"><code>ContentTag</code></td><td data-label="Description">Base type returned by all content element methods. All branded element types extend this.</td></tr>
+        <tr><td data-label="Type"><code>VoidTag</code></td><td data-label="Description">Returned by void element methods (<code>br</code>, <code>input</code>, &hellip;). Extends <code>ContentTag</code>.</td></tr>
+        <tr><td data-label="Type"><code>LiteralTag</code></td><td data-label="Description">Returned by <code>.literal()</code> and <code>.unsafeLiteral()</code>.</td></tr>
+        <tr><td data-label="Type"><code>CommentTag</code></td><td data-label="Description">Returned by <code>.inlineComment()</code>.</td></tr>
+        <tr><td data-label="Type"><code>DivTag</code>, <code>TdTag</code>, <code>LiTag</code>, &hellip;</td><td data-label="Description">Branded return types for elements with content model constraints. Extend <code>ContentTag</code>.</td></tr>
+        <tr><td data-label="Type"><code>Content</code></td><td data-label="Description"><code>string | number | boolean | null | undefined | ContentTag | VoidTag | LiteralTag | CommentTag | Content[]</code>. Falsy values are silently dropped.</td></tr>
+        <tr><td data-label="Type"><code>ContentMethod&lt;T&gt;</code></td><td data-label="Description">Type of a custom element method created by <code>createCustomTag</code>. <code>T</code> is the element-specific attribute shape.</td></tr>
+        <tr><td data-label="Type"><code>GlobalAttributes</code></td><td data-label="Description">Attributes shared by all HTML elements (<code>id</code>, <code>class</code>, <code>style</code>, &hellip;).</td></tr>
+        <tr><td data-label="Type"><code>GlobalEvents</code></td><td data-label="Description">Event handler attributes (<code>onclick</code>, <code>oninput</code>, &hellip;) shared by all elements.</td></tr>
+        <tr><td data-label="Type"><code>UniversalAttributes</code></td><td data-label="Description">Intersection of <code>GlobalAttributes</code>, <code>GlobalEvents</code>, and <code>NameSpaceAttributes</code>.</td></tr>
+        <tr><td data-label="Type"><code>NameSpaceAttributes</code></td><td data-label="Description">Interface to extend via module augmentation to allow custom attribute namespaces.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Module augmentation</h3>
+
+    <p>Extend <code>NameSpaceAttributes</code> to allow custom attribute prefixes without a custom subclass:</p>
+
+    <pre><code class="language-typescript">declare module 'kensington' {
+  interface NameSpaceAttributes {
+    [key: `hx${string}`]: string | object; // htmx hx-* attributes
+  }
+}</code></pre>
+  </section>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-core.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1/plugins/autoloader/prism-autoloader.min.js"
+  data-autoloader-path="https://cdn.jsdelivr.net/npm/prismjs@1/components/"></script>
+<script>
+  (function () {
+    // scrollspy
+    const links = document.querySelectorAll('nav#sidebar ul a[href^="#"]');
+    const linkMap = new Map(Array.from(links, l => [l.getAttribute('href').slice(1), l]));
+    const targets = Array.from(document.querySelectorAll('[id]')).filter(el => linkMap.has(el.id));
+
+    function update() {
+      let active = targets[0];
+      for (const el of targets) {
+        if (el.getBoundingClientRect().top <= 80) { active = el; }
+      }
+      links.forEach(l => l.classList.remove('active'));
+      if (active) { linkMap.get(active.id).classList.add('active'); }
+    }
+
+    window.addEventListener('scroll', update, { passive: true });
+    update();
+
+    // mobile menu
+    const toggle = document.getElementById('menu-toggle');
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('menu-backdrop');
+    const closeIcon = '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M2 2L16 16M16 2L2 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+    const openIcon = toggle.innerHTML;
+
+    function openMenu() {
+      sidebar.classList.add('open');
+      backdrop.classList.add('open');
+      toggle.innerHTML = closeIcon;
+      toggle.setAttribute('aria-label', 'Close navigation');
+    }
+
+    function closeMenu() {
+      sidebar.classList.remove('open');
+      backdrop.classList.remove('open');
+      toggle.innerHTML = openIcon;
+      toggle.setAttribute('aria-label', 'Open navigation');
+    }
+
+    toggle.addEventListener('click', () => sidebar.classList.contains('open') ? closeMenu() : openMenu());
+    backdrop.addEventListener('click', closeMenu);
+    links.forEach(l => l.addEventListener('click', closeMenu));
+
+    // copy buttons
+    document.querySelectorAll('pre[class*="language-"]').forEach(pre => {
+      const btn = document.createElement('button');
+      btn.className = 'copy-btn';
+      btn.textContent = 'Copy';
+      btn.addEventListener('click', () => {
+        const code = pre.querySelector('code');
+        navigator.clipboard.writeText((code ?? pre).textContent).then(() => {
+          btn.textContent = 'Copied!';
+          btn.classList.add('copied');
+          setTimeout(() => {
+            btn.textContent = 'Copy';
+            btn.classList.remove('copied');
+          }, 2000);
+        });
+      });
+      pre.appendChild(btn);
+    });
+  }());
+</script>
+</body>
+</html>

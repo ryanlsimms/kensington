@@ -205,7 +205,7 @@ type CamelCase<S extends string> = S extends \`\${infer Head}-\${infer Rest}\` ?
 type KebabCase<S extends string> = S extends \`\${infer H}\${infer T}\` ? H extends Uppercase<H> ? H extends Lowercase<H> ? \`\${H}\${KebabCase<T>}\` : \`-\${Lowercase<H>}\${KebabCase<T>}\` : \`\${H}\${KebabCase<T>}\` : S;
 
 /**
- * HTML/SVG/MathML template engine. Every tag is a method that accepts optional attributes
+ * HTML/SVG/MathML template library. Every tag is a method that accepts optional attributes
  * and/or content, returning a tag object that serializes to formatted HTML via \`.toString()\`
  * or to a live DOM node via \`.toElement()\`.
  *

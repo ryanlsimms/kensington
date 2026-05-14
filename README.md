@@ -12,6 +12,13 @@ The goal is to be simple to learn and let developers code in pure JavaScript or 
 
 **[Full documentation →](https://ryanlsimms.github.io/kensington)**
 
+## AI assistants
+
+An `llms.txt` file is included in the package and published to npm. Point your AI assistant at it for accurate help with Kensington:
+
+- **Claude Code / Cursor / Windsurf**: reference `node_modules/kensington/llms.txt` in your conversation or add it to your project's context file.
+- **Any chat interface**: paste the contents directly into the conversation.
+
 ## Installation
 
 ```bash
@@ -73,54 +80,6 @@ const page = t.htmlWithDocType({ lang: 'en' }, [
     ])
   ),
 ]).toString();
+// or .toElement() in the browser to create a dom node
 ```
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>Users</title>
-    <link rel="stylesheet" href="/style.css">
-  </head>
-  <body>
-    <main class="container padded">
-      <h1 style="color: steelblue">Users</h1>
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Role</th>
-            <th>Active</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Alice</td>
-            <td>Admin</td>
-            <td>
-              <input type="checkbox" checked aria-label="Alice is active">
-              <span class="label">Yes</span>
-            </td>
-          </tr>
-          <tr>
-            <td>Bob</td>
-            <td>Editor</td>
-            <td>
-              <input type="checkbox" checked aria-label="Bob is active">
-              <span class="label">Yes</span>
-            </td>
-          </tr>
-          <tr>
-            <td>Carol</td>
-            <td>Viewer</td>
-            <td>
-              <input type="checkbox" aria-label="Carol is active">
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </main>
-  </body>
-</html>
-```
+**[Full documentation →](https://ryanlsimms.github.io/kensington)**
