@@ -55,7 +55,6 @@ function applySignalProp(element, propName, sig) {
   return () => e.stop();
 }
 
-
 function isPropWritable(element, propName) {
   let obj = element;
   while (obj !== null) {

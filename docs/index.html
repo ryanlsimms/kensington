@@ -43,7 +43,7 @@
     <li><a href="#dom">Browser DOM</a></li>
     <li><a href="#signals">Reactive data</a>
       <ul>
-        <li><a href="#signals-attributes">As option values</a></li>
+        <li><a href="#signals-attributes">Attributes</a></li>
         <li><a href="#signals-dom-props">DOM properties</a></li>
         <li><a href="#signals-keyed-lists">Keyed lists</a></li>
         <li><a href="#signals-literal">.literal() &amp; comments</a></li>
@@ -552,7 +552,7 @@ effect(() =&gt; {
     });
 });</code></pre>
 
-    <h3 id="signals-attributes">As option values</h3>
+    <h3 id="signals-attributes">Attributes</h3>
 
     <pre><code class="language-javascript">const isLoading = signal(false);
 const cls = computed(() =&gt; isLoading.get() ? 'btn-secondary' : 'btn-primary');

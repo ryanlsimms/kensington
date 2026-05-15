@@ -46,8 +46,7 @@ function attrType(name, type) {
   return `Reactive<${type}>`;
 }
 
-
-function attributesType({ tag, attributes = [], globalTypes }) {
+function attributesType({ attributes = [], globalTypes, tag }) {
   const propField = `prop?: PropFor<'${tag}'> | null;`;
   if (!attributes.length) {
     return [`{ ${propField} }`, ...globalTypes].join(' & ');
@@ -66,7 +65,7 @@ function attributesType({ tag, attributes = [], globalTypes }) {
 }`, ...globalTypes].join(' & ');
 }
 
-function svgAttributesType({ tag, attributes = [], globalTypes }) {
+function svgAttributesType({ attributes = [], globalTypes, tag }) {
   const propField = `prop?: PropFor<'${tag}'> | null;`;
   const ownTypes = attributes.length
     ? [`{\n  ${attributes.flatMap(a => {
@@ -185,14 +184,6 @@ type PropFor<Tag extends string> = {
 export interface NameSpaceAttributes {
   [key: \`\${"data" | "aria"}\${string}\`]: Reactive<string | object>
 }
-
-type ElementInterface<Tag extends string> =
-  Tag extends keyof HTMLElementTagNameMap ? HTMLElementTagNameMap[Tag] :
-  Tag extends keyof SVGElementTagNameMap ? SVGElementTagNameMap[Tag] :
-  HTMLElement;
-type PropFor<Tag extends string> = {
-  [K in keyof ElementInterface<Tag>]?: ElementInterface<Tag>[K]
-} & { [key: string]: unknown };
 
 export type GlobalAttributes = {
   ${globalAttributes.map(a => `${a.name}?: ${attrType(a.name, a.type)};`).join('\n  ')}

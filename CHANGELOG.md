@@ -7,7 +7,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- `prop` key in the options object for direct DOM property assignment. Pass `{ prop: { value: mySignal, checked: true } }` to assign properties via `el[name] = value` rather than `setAttribute`. Accepts static values or signals. Reactive props wire a live effect that stops automatically when the element is removed from the DOM. Silently ignored in `.toString()`. Property existence and writability are validated at render time and reported via `validationLevel`. Known writable properties on the element's DOM interface are typed in TypeScript; expando properties are also accepted.
 - `Signal.value` property getter. Returns the current value without registering a subscription. Unlike `.get()`, reading `.value` inside `computed()` or `effect()` does not make the signal a dependency of that computation. Use it when the same signal is written to later in the same async flow and subscribing via `.get()` would cause the effect to re-trigger.
 
 ## [2.0.0-signals.6] - 2026-05-12
