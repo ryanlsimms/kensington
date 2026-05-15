@@ -38,6 +38,18 @@
         <li><a href="#preformatted">Preformatted blocks</a></li>
       </ul>
     </li>
+    <li><a href="#reactive-data">Reactive data</a>
+      <ul>
+        <li><a href="#counter">Counter</a></li>
+        <li><a href="#live-filter">Live filter</a></li>
+        <li><a href="#todo-list">Todo list</a></li>
+        <li><a href="#dark-mode">Dark mode</a></li>
+        <li><a href="#character-counter">Character counter</a></li>
+        <li><a href="#sortable-table">Sortable table</a></li>
+        <li><a href="#hydrated-like-button">Hydrated component</a></li>
+        <li><a href="#hydrated-form-validation">Form validation</a></li>
+      </ul>
+    </li>
     <li><a href="#integrations">Integrations</a>
       <ul>
         <li><a href="#htmx">htmx</a></li>
@@ -59,7 +71,7 @@
 
   <header>
     <h1>Examples</h1>
-    <p>Worked examples covering common patterns and framework integrations.</p>
+    <p>Worked examples covering common patterns, reactive data, and framework integrations.</p>
   </header>
 
   <!-- ── String rendering ───────────────────────────────────── -->
@@ -259,6 +271,395 @@ h1 { color: steelblue; }
   const el = document.getElementById("app");
   el.textContent = "Hello";
 &lt;/script&gt;</code></pre>
+        </div>
+      </div>
+    </section>
+
+  </section>
+
+  <!-- ── Reactive data ──────────────────────────────────────── -->
+
+  <section id="reactive-data">
+    <h2>Reactive data</h2>
+
+    <section id="counter">
+      <h3>Counter</h3>
+
+      <p>A basic counter using <code>signal</code>, <code>computed</code>, and <code>effect</code>. Multiple synchronous <code>set()</code> calls batch into a single DOM update via microtask.</p>
+
+      <pre><code class="language-javascript">import { t, signal, computed, effect } from 'kensington';
+
+const count = signal(0);
+const label = computed(() => count.get() === 1 ? 'click' : 'clicks');
+
+effect(() => {
+  document.title = `${count.get()} ${label.get()}`;
+});
+
+const app = t.div({ class: 'counter' }, [
+  t.p([count, ' ', label]),
+  t.button({ type: 'button', onclick: () => count.set(n => n + 1) }, '+'),
+  t.button({ type: 'button', onclick: () => count.set(n => n - 1) }, '-'),
+  t.button({ type: 'button', onclick: () => count.set(0) }, 'Reset'),
+]);
+
+document.body.append(app.toElement());</code></pre>
+    </section>
+
+    <section id="live-filter">
+      <h3>Live filter</h3>
+
+      <p>A signal holds the search query. A <code>computed</code> signal derives the visible rows. Passing the computed signal as content means the table body updates automatically as the user types, with no manual DOM writes needed.</p>
+
+      <pre><code class="language-javascript">import { t, signal, computed } from 'kensington';
+
+const people = [
+  { name: 'Alice', role: 'Admin'  },
+  { name: 'Bob',   role: 'Editor' },
+  { name: 'Carol', role: 'Viewer' },
+  { name: 'Dave',  role: 'Editor' },
+  { name: 'Eve',   role: 'Admin'  },
+];
+
+const query = signal('');
+
+const rows = computed(() => {
+  const q = query.get().toLowerCase();
+  return people
+    .filter(p => !q || p.name.toLowerCase().includes(q) || p.role.toLowerCase().includes(q))
+    .map(p => t.tr([t.td(p.name), t.td(p.role)]));
+});
+
+document.body.append(
+  t.div([
+    t.input({
+      type: 'search',
+      placeholder: 'Filter by name or role...',
+      oninput: e => query.set(e.target.value),
+    }),
+    t.table([
+      t.thead(t.tr([t.th('Name'), t.th('Role')])),
+      t.tbody(rows),
+    ]),
+  ]).toElement()
+);</code></pre>
+    </section>
+
+    <section id="todo-list">
+      <h3>Todo list</h3>
+
+      <p>A signal holds the todo array. <code>.transform()</code> derives a signal of rendered list items. Adding <code>dataKey</code> to each item lets the reconciler match nodes by key on re-render, so only changed items are written to the DOM.</p>
+
+      <pre><code class="language-javascript">import { t, signal } from 'kensington';
+
+let nextId = 1;
+const todos = signal([
+  { id: nextId++, text: 'Buy groceries', done: false },
+]);
+
+function addTodo(text) {
+  todos.set(list => [...list, { id: nextId++, text, done: false }]);
+}
+
+function toggleTodo(id) {
+  todos.set(list =>
+    list.map(item => item.id === id ? { ...item, done: !item.done } : item)
+  );
+}
+
+function removeTodo(id) {
+  todos.set(list => list.filter(item => item.id !== id));
+}
+
+const rows = todos.transform(list =>
+  list.map(item =>
+    t.li({ dataKey: item.id }, [
+      t.span({ style: { textDecoration: item.done ? 'line-through' : 'none' } }, item.text),
+      t.button({ type: 'button', onclick: () => toggleTodo(item.id) }, 'Done'),
+      t.button({ type: 'button', onclick: () => removeTodo(item.id) }, 'Remove'),
+    ])
+  )
+);
+
+const input = t.input({ type: 'text', placeholder: 'New item...' });
+
+document.body.append(
+  t.div([
+    t.div([
+      input,
+      t.button({
+        type: 'button',
+        onclick: () => {
+          const el = input.getDomElement();
+          if (el?.value.trim()) { addTodo(el.value.trim()); el.value = ''; }
+        },
+      }, 'Add'),
+    ]),
+    t.ul(rows),
+  ]).toElement()
+);</code></pre>
+    </section>
+
+    <section id="dark-mode">
+      <h3>Dark mode</h3>
+
+      <p><code>effect</code> is the right tool when a signal needs to drive something outside the reactive tree. Here it toggles a class on <code>document.documentElement</code>. The button label is a <code>computed</code> that flips with the signal.</p>
+
+      <pre><code class="language-javascript">import { t, signal, computed, effect } from 'kensington';
+
+const dark = signal(matchMedia('(prefers-color-scheme: dark)').matches);
+
+effect(() => {
+  document.documentElement.classList.toggle('dark', dark.get());
+});
+
+const label = computed(() => dark.get() ? 'Light mode' : 'Dark mode');
+
+document.body.append(
+  t.button({ type: 'button', onclick: () => dark.set(v => !v) }, label).toElement()
+);</code></pre>
+    </section>
+
+    <section id="character-counter">
+      <h3>Character counter</h3>
+
+      <p><code>.transform()</code> derives the CSS class directly from the remaining count. Passing the <code>remaining</code> signal as content means the number updates in place without replacing surrounding text nodes.</p>
+
+      <pre><code class="language-javascript">import { t, signal, computed } from 'kensington';
+
+const MAX = 280;
+const text = signal('');
+const remaining = computed(() => MAX - text.get().length);
+
+document.body.append(
+  t.div([
+    t.textarea({
+      rows: 4,
+      placeholder: 'Type something...',
+      oninput: e => text.set(e.target.value),
+    }),
+    t.p({
+      class: remaining.transform(n => n < 0 ? 'counter counter--over' : 'counter'),
+    }, [remaining, ' characters remaining']),
+  ]).toElement()
+);</code></pre>
+    </section>
+
+    <section id="sortable-table">
+      <h3>Sortable table</h3>
+
+      <p>Two signals, sort column and sort direction, drive both the data rows and the column headers. Each header creates its own <code>computed</code> that tracks only the signals it actually reads: the active header tracks both, inactive headers track only <code>sortCol</code>. Stale subscriptions are cleaned up automatically between runs.</p>
+
+      <pre><code class="language-javascript">import { t, signal, computed } from 'kensington';
+
+const people = [
+  { name: 'Alice', age: 32, role: 'Admin'  },
+  { name: 'Bob',   age: 28, role: 'Editor' },
+  { name: 'Carol', age: 41, role: 'Viewer' },
+  { name: 'Dave',  age: 25, role: 'Editor' },
+];
+
+const sortCol = signal('name');
+const sortAsc = signal(true);
+
+const rows = computed(() => {
+  const col = sortCol.get();
+  const asc = sortAsc.get();
+  return [...people]
+    .sort((a, b) => {
+      const cmp = String(a[col]).localeCompare(String(b[col]));
+      return asc ? cmp : -cmp;
+    })
+    .map(p => t.tr([t.td(p.name), t.td(String(p.age)), t.td(p.role)]));
+});
+
+function sortHeader(col, label) {
+  const heading = computed(() =>
+    sortCol.get() === col
+      ? `${label} ${sortAsc.get() ? '↑' : '↓'}`
+      : label
+  );
+  return t.th({
+    style: { cursor: 'pointer' },
+    onclick: () => {
+      if (sortCol.get() === col) {
+        sortAsc.set(v => !v);
+      } else {
+        sortCol.set(col);
+        sortAsc.set(true);
+      }
+    },
+  }, heading);
+}
+
+document.body.append(
+  t.table([
+    t.thead(t.tr([
+      sortHeader('name', 'Name'),
+      sortHeader('age', 'Age'),
+      sortHeader('role', 'Role'),
+    ])),
+    t.tbody(rows),
+  ]).toElement()
+);</code></pre>
+    </section>
+
+    <section id="hydrated-like-button">
+      <h3>Hydrated component</h3>
+
+      <p>A like button rendered on the server with real data, then picked up on the client as a live reactive component. The component function is identical in both environments: <code>renderForHydration</code> embeds the initial state and <code>registerComponents</code> mounts it reactively. The click handler applies an optimistic update and reverts if the request fails.</p>
+
+      <pre><code class="language-javascript">// components/like-button.js
+import { t, signal } from 'kensington';
+
+export function likeButton({ postId, likeCount, userLiked }) {
+  const likes = signal(likeCount);
+  const liked = signal(userLiked);
+
+  function toggle() {
+    const next = !liked.get();
+    liked.set(next);
+    likes.set(n => n + (next ? 1 : -1));
+
+    fetch(`/api/posts/${postId}/like`, { method: next ? 'POST' : 'DELETE' })
+      .catch(() => {
+        liked.set(!next);
+        likes.set(n => n + (next ? -1 : 1));
+      });
+  }
+
+  return t.button({
+    type: 'button',
+    class: liked.transform(v => v ? 'like-btn like-btn--active' : 'like-btn'),
+    ariaPressed: liked.transform(String),
+    onclick: toggle,
+  }, [t.span({ ariaHidden: 'true' }, '♥'), ' ', likes]);
+}</code></pre>
+
+      <div class="panels">
+        <div>
+          <div class="panel-label">server.js</div>
+          <pre><code class="language-javascript">import { renderForHydration, t } from 'kensington';
+import { likeButton } from './components/like-button.js';
+
+app.get('/posts/:id', async (req, res) => {
+  const post = await db.getPost(req.params.id);
+  const userLiked = await db.hasLiked(req.user?.id, post.id);
+
+  res.send(
+    t.htmlWithDocType({ lang: 'en' }, [
+      t.head([
+        t.meta({ charset: 'utf-8' }),
+        t.title(post.title),
+        t.script({ src: '/client.js', type: 'module' }),
+      ]),
+      t.body(
+        t.article([
+          t.h1(post.title),
+          renderForHydration(likeButton, {
+            postId: post.id,
+            likeCount: post.likeCount,
+            userLiked,
+          }),
+        ])
+      ),
+    ]).toString()
+  );
+});</code></pre>
+        </div>
+        <div>
+          <div class="panel-label">client.js</div>
+          <pre><code class="language-javascript">import { registerComponents } from 'kensington';
+import { likeButton } from './components/like-button.js';
+
+registerComponents({ likeButton });</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section id="hydrated-form-validation">
+      <h3>Form with server-side validation</h3>
+
+      <p>The form is rendered on the server with <code>renderForHydration</code> and mounted as a reactive component on the client. Submitting calls <code>fetch</code> with the form data as JSON. On validation failure the server returns <code>{ errors }</code> and the <code>errors</code> signal updates, reactively showing each message and adding an error class to the affected field. Input values are preserved because the form element stays in place. On success the server returns <code>{ success: true }</code> and the client navigates away.</p>
+
+      <pre><code class="language-javascript">// components/registration-form.js
+import { t, signal } from 'kensington';
+
+export function registrationForm() {
+  const errors = signal({});
+
+  async function submit(e) {
+    e.preventDefault();
+    const body = Object.fromEntries(new FormData(e.target));
+    const res = await fetch('/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (data.errors) {
+      errors.set(data.errors);
+    } else {
+      window.location = '/register/success';
+    }
+  }
+
+  return t.form({ class: 'form', onsubmit: submit }, [
+    formField('name',     'Full name', 'text',     errors),
+    formField('email',    'Email',     'email',    errors),
+    formField('password', 'Password',  'password', errors),
+    t.button({ type: 'submit' }, 'Create account'),
+  ]);
+}
+
+function formField(name, label, type, errors) {
+  const error = errors.transform(e => e[name]);
+  return t.div({
+    class: error.transform(e => e ? 'field field--error' : 'field'),
+  }, [
+    t.label({ for: name }, label),
+    t.input({ id: name, name, type }),
+    error.transform(e => e ? t.p({ class: 'field-error' }, e) : null),
+  ]);
+}</code></pre>
+
+      <div class="panels">
+        <div>
+          <div class="panel-label">server.js</div>
+          <pre><code class="language-javascript">import { renderForHydration, t } from 'kensington';
+import { registrationForm } from './components/registration-form.js';
+
+app.use(express.json());
+
+app.get('/register', (req, res) => {
+  res.send(layout('Register', renderForHydration(registrationForm, {})));
+});
+
+app.post('/register', async (req, res) => {
+  const { name, email, password } = req.body;
+  const errors = {};
+
+  if (!name?.trim())
+    errors.name = 'Name is required.';
+  if (!email?.includes('@'))
+    errors.email = 'Enter a valid email address.';
+  if ((password?.length ?? 0) &lt; 8)
+    errors.password = 'Password must be at least 8 characters.';
+
+  if (Object.keys(errors).length) {
+    return res.json({ errors });
+  }
+
+  await db.createUser({ name, email, password });
+  res.json({ success: true });
+});</code></pre>
+        </div>
+        <div>
+          <div class="panel-label">client.js</div>
+          <pre><code class="language-javascript">import { registerComponents } from 'kensington';
+import { registrationForm } from './components/registration-form.js';
+
+registerComponents({ registrationForm });</code></pre>
         </div>
       </div>
     </section>

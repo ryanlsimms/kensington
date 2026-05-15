@@ -16,7 +16,6 @@
     "dist",
     "types.d.ts",
     "attributes.d.ts",
-    "llms.txt",
     "AGENTS.md"
   ],
   "typesVersions": {
@@ -26,10 +25,8 @@
       ]
     }
   },
-  "llms": "./llms.txt",
   "exports": {
     "./package.json": "./package.json",
-    "./llms.txt": "./llms.txt",
     "./dist": "./dist/kensington.js",
     "./dist/min": "./dist/kensington.min.js",
     "./dist/slim": "./dist/kensington.slim.js",

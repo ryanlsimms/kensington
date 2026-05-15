@@ -45,6 +45,15 @@
         <li><a href="#create-custom-tag">createCustomTag</a></li>
       </ul>
     </li>
+    <li><a href="#signals">Signals</a>
+      <ul>
+        <li><a href="#signal">signal()</a></li>
+        <li><a href="#computed">computed()</a></li>
+        <li><a href="#effect">effect()</a></li>
+        <li><a href="#render-for-hydration">renderForHydration()</a></li>
+        <li><a href="#register-components">registerComponents()</a></li>
+      </ul>
+    </li>
     <li><a href="#exports">Exports</a></li>
     <li><a href="#types">TypeScript types</a></li>
   </ul>
@@ -147,8 +156,9 @@ t.img(attributes?: ImgAttributes): ImgTag</code></pre>
         <tr><th>Method</th><th>Returns</th><th>Description</th></tr>
       </thead>
       <tbody>
-        <tr><td data-label="Method"><code>.toString()</code></td><td data-label="Returns"><code>string</code></td><td data-label="Description">Serializes to an indented HTML string. Text content is HTML-encoded.</td></tr>
-        <tr><td data-label="Method"><code>.toElement()</code></td><td data-label="Returns"><code>Element</code></td><td data-label="Description">Creates a live DOM node. Browser only. <code>LiteralTag</code> returns a <code>DocumentFragment</code>; <code>CommentTag</code> returns a <code>Comment</code>.</td></tr>
+        <tr><td data-label="Method"><code>.toString()</code></td><td data-label="Returns"><code>string</code></td><td data-label="Description">Serializes to an indented HTML string. Text content is HTML-encoded. Signal values are read as a snapshot at call time.</td></tr>
+        <tr><td data-label="Method"><code>.toElement()</code></td><td data-label="Returns"><code>Element</code></td><td data-label="Description">Creates a live DOM node. Signal attribute values and signal content update the DOM in place when the signal changes. Signal effects are stopped automatically when the element is removed from the DOM. Browser only. <code>LiteralTag</code> returns a <code>DocumentFragment</code>; <code>CommentTag</code> returns a <code>Comment</code>.</td></tr>
+        <tr><td data-label="Method"><code>.getDomElement()</code></td><td data-label="Returns"><code>Element | null</code></td><td data-label="Description">Returns the live DOM element created by a prior <code>.toElement()</code> call if it is still connected to the document, otherwise <code>null</code>.</td></tr>
       </tbody>
     </table>
   </section>
@@ -223,6 +233,104 @@ class MyEngine extends Kensington {
 }</code></pre>
   </section>
 
+  <!-- ── Signals ───────────────────────────────────────────────── -->
+
+  <section id="signals">
+    <h2>Signals</h2>
+
+    <p>Signals are reactive values. Read them with <code>.get()</code>, write them with <code>.set()</code>, and derive new ones with <code>computed()</code> or <code>.transform()</code>. Pass a signal as a tag's attribute value or content and <code>.toElement()</code> wires up live DOM updates automatically.</p>
+
+    <h3 id="signal">signal()</h3>
+
+    <pre><code class="language-typescript">import { signal } from 'kensington';
+
+signal&lt;T&gt;(initialValue: T): Signal&lt;T&gt;</code></pre>
+
+    <p>Creates a writable signal holding <code>initialValue</code>.</p>
+
+    <h3 id="signal-methods">Signal methods</h3>
+
+    <table>
+      <thead>
+        <tr><th>Method</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td data-label="Method"><code>.get(): T</code></td><td data-label="Description">Returns the current value. When called inside <code>computed()</code> or <code>effect()</code>, registers this signal as a dependency of the running computation.</td></tr>
+        <tr><td data-label="Method"><code>.set(value: T | (prev: T) =&gt; T): void</code></td><td data-label="Description">Updates the value and notifies subscribers. Accepts a new value or an updater function. Throws if called on a signal created by <code>computed()</code> or <code>.transform()</code>.</td></tr>
+        <tr><td data-label="Method"><code>.transform&lt;U&gt;(fn: (value: T) =&gt; U): Signal&lt;U&gt;</code></td><td data-label="Description">Returns a new read-only derived signal equivalent to <code>computed(() =&gt; fn(this.get()))</code>. Tracks all signals read inside <code>fn</code>, not just the source.</td></tr>
+        <tr><td data-label="Method"><code>.stop(): void</code></td><td data-label="Description">Clears all subscribers. For signals created by <code>computed()</code> or <code>.transform()</code>, also tears down the derived computation and freezes the value.</td></tr>
+        <tr><td data-label="Method"><code>.toJSON(): T</code></td><td data-label="Description">Returns the raw value without tracking side effects. Makes signals transparent to <code>JSON.stringify</code>.</td></tr>
+        <tr><td data-label="Method"><code>.toString(): string</code></td><td data-label="Description">Calls <code>.get()</code> and converts to string. Allows signals to be used in template literals inside reactive contexts.</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="computed">computed()</h3>
+
+    <pre><code class="language-typescript">import { computed } from 'kensington';
+
+computed&lt;T&gt;(fn: () =&gt; T): Signal&lt;T&gt;</code></pre>
+
+    <p>Creates a read-only signal whose value is derived from other signals. Re-evaluates <code>fn</code> synchronously whenever any signal read inside it changes. The returned signal exposes <code>.stop()</code> to unsubscribe from all tracked signals and freeze the value.</p>
+
+    <pre><code class="language-javascript">const count = signal(0);
+const label = computed(() =&gt; count.get() === 1 ? 'item' : 'items');
+
+label.stop(); // unsubscribes from tracked signals, value freezes</code></pre>
+
+    <h3 id="effect">effect()</h3>
+
+    <pre><code class="language-typescript">import { effect } from 'kensington';
+
+effect(fn: () =&gt; void): { stop(): void }</code></pre>
+
+    <p>Runs <code>fn</code> immediately and re-runs it whenever any signal read inside it changes. Re-runs are deferred via <code>queueMicrotask</code>, so multiple synchronous <code>.set()</code> calls in the same turn batch into one re-run. Errors thrown inside the callback are re-surfaced asynchronously so they do not abort other pending effects.</p>
+
+    <pre><code class="language-javascript">const e = effect(() =&gt; {
+  document.title = `${count.get()} items`;
+});
+
+e.stop(); // unsubscribes from all tracked signals</code></pre>
+
+    <p>Elements created with <code>.toElement()</code> automatically stop their signal effects when removed from the DOM. During SSR (<code>renderForHydration</code>), <code>effect()</code> is a no-op.</p>
+
+    <h3 id="render-for-hydration">renderForHydration()</h3>
+
+    <pre><code class="language-typescript">import { renderForHydration } from 'kensington';
+
+renderForHydration(
+  fn: (state: Record&lt;string, unknown&gt;) =&gt; ContentTag | ContentTag[] | null | undefined,
+  state: Record&lt;string, unknown&gt;,
+  name?: string
+): LiteralTag</code></pre>
+
+    <p>Renders a component to an HTML string for server-side delivery, then embeds the state as a <code>&lt;script type="application/json"&gt;</code> block so the browser can replace it with a live reactive DOM. Signal effects are suppressed during the component call. The component function must be synchronous.</p>
+
+    <p><code>name</code> defaults to <code>fn.name</code> and must be provided explicitly for anonymous functions. The same name is used by <code>registerComponents</code> to match script blocks to component functions on the client.</p>
+
+    <p>State must be a plain serializable object. Values that cannot survive <code>JSON.stringify</code> (functions, symbols, BigInt, circular references, class instances) cause a warning or throw.</p>
+
+    <pre><code class="language-javascript">// server
+res.send(layout(renderForHydration(counter, { count: 0 })).toString());</code></pre>
+
+    <h3 id="register-components">registerComponents()</h3>
+
+    <pre><code class="language-typescript">import { registerComponents } from 'kensington';
+
+registerComponents(
+  components: Record&lt;string, Function&gt;
+): { stop(): void }</code></pre>
+
+    <p>Registers component functions and hydrates all server-rendered instances already in the page. Each matching <code>&lt;script type="application/json" data-k-component="…"&gt;</code> block is replaced with the live reactive DOM produced by the component function. A <code>MutationObserver</code> is installed to handle components inserted dynamically after this call.</p>
+
+    <p>Returns <code>{ stop() }</code> to disconnect the observer and halt auto-hydration.</p>
+
+    <pre><code class="language-javascript">// client
+const { stop } = registerComponents({ counter, userCard });
+
+// later, if you want to stop watching for new components:
+stop();</code></pre>
+  </section>
+
   <!-- ── Exports ──────────────────────────────────────────────── -->
 
   <section id="exports">
@@ -231,7 +339,10 @@ class MyEngine extends Kensington {
     <h3>kensington</h3>
 
     <pre><code class="language-javascript">import Kensington from 'kensington';                         // the class
-import { t } from 'kensington';                              // shared default instance (new Kensington())</code></pre>
+import { t } from 'kensington';                              // shared default instance (new Kensington())
+import { signal, computed, effect } from 'kensington';
+import { renderForHydration, registerComponents } from 'kensington';
+import { isBrowser } from 'kensington';                      // true when window is defined</code></pre>
 
     <pre><code class="language-javascript">// browser, via CDN
 import { t } from 'https://cdn.jsdelivr.net/npm/kensington/dist/kensington.min.js';</code></pre>
@@ -266,6 +377,7 @@ const t = new Kensington({ validationLevel: 'off' });</code></pre>
     <pre><code class="language-typescript">import type {
   ContentTag, VoidTag, LiteralTag, CommentTag,
   Content, ContentMethod,
+  Signal, ReadonlySignal, Reactive,
   GlobalAttributes, GlobalEvents, UniversalAttributes, NameSpaceAttributes,
   // branded element types:
   DivTag, TdTag, ThTag, TrTag, TheadTag, TbodyTag, TfootTag,
@@ -285,6 +397,9 @@ const t = new Kensington({ validationLevel: 'off' });</code></pre>
         <tr><td data-label="Type"><code>DivTag</code>, <code>TdTag</code>, <code>LiTag</code>, &hellip;</td><td data-label="Description">Branded return types for elements with content model constraints. Extend <code>ContentTag</code>.</td></tr>
         <tr><td data-label="Type"><code>Content</code></td><td data-label="Description"><code>string | number | boolean | null | undefined | ContentTag | VoidTag | LiteralTag | CommentTag | Content[]</code>. Falsy values are silently dropped.</td></tr>
         <tr><td data-label="Type"><code>ContentMethod&lt;T&gt;</code></td><td data-label="Description">Type of a custom element method created by <code>createCustomTag</code>. <code>T</code> is the element-specific attribute shape.</td></tr>
+        <tr><td data-label="Type"><code>Signal&lt;T&gt;</code></td><td data-label="Description">Writable signal returned by <code>signal()</code>. Implements <code>ReadonlySignal&lt;T&gt;</code>.</td></tr>
+        <tr><td data-label="Type"><code>ReadonlySignal&lt;T&gt;</code></td><td data-label="Description">Read-only signal interface returned by <code>computed()</code> and <code>.transform()</code>. Exposes <code>.get()</code>, <code>.stop()</code>, and <code>.transform()</code>.</td></tr>
+        <tr><td data-label="Type"><code>Reactive&lt;T&gt;</code></td><td data-label="Description"><code>T | ReadonlySignal&lt;T&gt;</code>. The type of every attribute value — accepts a plain value or a signal that resolves to that value.</td></tr>
         <tr><td data-label="Type"><code>GlobalAttributes</code></td><td data-label="Description">Attributes shared by all HTML elements (<code>id</code>, <code>class</code>, <code>style</code>, &hellip;).</td></tr>
         <tr><td data-label="Type"><code>GlobalEvents</code></td><td data-label="Description">Event handler attributes (<code>onclick</code>, <code>oninput</code>, &hellip;) shared by all elements.</td></tr>
         <tr><td data-label="Type"><code>NameSpaceAttributes</code></td><td data-label="Description">Interface to extend via module augmentation to allow custom attribute namespaces.</td></tr>

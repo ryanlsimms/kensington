@@ -30,6 +30,7 @@
   </div>
   <ul>
     <li><a href="#quick-start">Quick start</a></li>
+    <li><a href="#why">Why Kensington?</a></li>
     <li><a href="#building-html">Building HTML</a>
       <ul>
         <li><a href="#elements-and-content">Elements &amp; content</a></li>
@@ -40,6 +41,15 @@
       </ul>
     </li>
     <li><a href="#dom">Browser DOM</a></li>
+    <li><a href="#signals">Reactive data</a>
+      <ul>
+        <li><a href="#signals-attributes">Attribute values</a></li>
+        <li><a href="#signals-keyed-lists">Keyed lists</a></li>
+        <li><a href="#signals-literal">.literal() &amp; comments</a></li>
+        <li><a href="#signals-cleanup">Cleanup</a></li>
+      </ul>
+    </li>
+    <li><a href="#hydration">SSR reactive data</a></li>
     <li><a href="#typescript">TypeScript</a>
       <ul>
         <li><a href="#ts-attribute-types">Attribute types</a></li>
@@ -86,6 +96,7 @@
       <a href="https://opensource.org/licenses/ISC"><img src="https://img.shields.io/badge/License-ISC-blue.svg" alt="License: ISC"></a>
     </div>
     <p>HTML/SVG/MathML template library for JavaScript and TypeScript. Tags, attribute names/values, inline style property names, and some nested tags are comprehensively typed against the official HTML/SVG/MathML specs. Components are plain functions with no JSX, no compiler, and very little to learn.</p>
+    <p>Reactive data via built-in signals, no framework required.</p>
     <ul class="feature-list">
       <li>Outputs HTML strings or live DOM nodes from the same code</li>
       <li>Comprehensive TypeScript definitions</li>
@@ -150,7 +161,113 @@ profileCard('Alice', 'Senior Engineer').toString();</code></pre>
       </div>
     </div>
 
-    <p>For live DOM, call <code>.toElement()</code> instead. The same component renders an HTML string on the server or a live DOM node in the browser from the same code.</p>
+    <p>For live DOM, call <code>.toElement()</code> instead. Pass signals as attribute values or content and they wire up reactive updates automatically.</p>
+
+    <div class="panels">
+      <div>
+        <div class="panel-label">JavaScript</div>
+        <pre><code class="language-javascript">import { t, signal } from 'kensington';
+
+const status = signal('online');
+
+const el = t.div({ class: 'user' },
+  t.span({
+    class: status.transform(s => `badge badge-${s}`),
+  }, status),
+).toElement();
+
+document.body.append(el);
+
+status.set('away'); // class and text both update in place</code></pre>
+      </div>
+      <div>
+        <div class="panel-label">Live DOM</div>
+        <pre><code class="language-html">&lt;!-- initial --&gt;
+&lt;div class="user"&gt;
+  &lt;span class="badge badge-online"&gt;online&lt;/span&gt;
+&lt;/div&gt;
+
+&lt;!-- after status.set('away') --&gt;
+&lt;div class="user"&gt;
+  &lt;span class="badge badge-away"&gt;away&lt;/span&gt;
+&lt;/div&gt;</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Why Kensington? ──────────────────────────────────────────── -->
+
+  <section id="why">
+    <h2>Why Kensington?</h2>
+
+    <p>We were promised flying cars, instead we got 140 thousand hours of React tutorials. We find ourselves spending more time trying to parse framework docs, and less time actually writing code.  Kensington hopes to alleviate some of these ails by presenting a simpler alternative to the frameworks.  The basics can be learned in a few minutes, and the entire API can be learned in half an hour. There is no compiler, no build config, no framework to buy into, and no ecosystem lock-in. You write plain JavaScript or TypeScript that runs directly in Node, Deno, Bun, or the browser. Components are functions. Composition is just function calls. In case you let robots write your code, Kensington is very AI-friendly, and produces code that is simple enough to be reviewable by a human.</p>
+
+    <h3 id="why-templates">vs tagged template literals</h3>
+
+    <p>Tagged template literal libraries like <a href="https://github.com/developit/htm">htm</a> are lightweight and familiar, but TypeScript can only see the outer string, so it cannot validate attribute names or values inside the template.</p>
+
+    <div class="panels">
+      <div>
+        <div class="panel-label">Template literal</div>
+        <pre><code class="language-javascript">// TypeScript sees a string, no attribute checking
+const html = htm`&lt;input typ="checkbox"&gt;`;
+//                       ^^^ typo, no error raised</code></pre>
+      </div>
+      <div class="ide-editor">
+        <span class="ide-ln">1</span><span>t</span><span>.</span><span class="ide-t-fn">input</span><span>({</span> <span class="ide-t-prop">type</span><span>:</span> <span class="ide-squiggly"><span class="ide-t-str">'chekbox'</span></span> <span>})</span>
+      </div>
+      <div class="ide-popup">
+        <div class="ide-popup-msg">
+          <span class="ide-error-icon">
+            <svg viewBox="0 0 16 16" width="13" height="13" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6.5" stroke="#f14c4c" stroke-width="1.5"/><path d="M8 4.5v3.5M8 10.5v.5" stroke="#f14c4c" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </span>
+          <span class="ide-ts-code">TS2322</span>
+          <span>Type <span class="ide-t-str">'chekbox'</span> is not assignable to type</span>
+        </div>
+        <div class="ide-popup-type">
+          <span class="ide-ts-str">"button"</span> | <span class="ide-ts-str">"checkbox"</span> | <span class="ide-ts-str">"color"</span> | <span class="ide-ts-str">"date"</span> | <span class="ide-ts-str">"datetime-local"</span><br>| <span class="ide-ts-str">"email"</span> | <span class="ide-ts-str">"file"</span> | <span class="ide-ts-str">"hidden"</span> | <span class="ide-ts-str">"image"</span> | <span class="ide-ts-muted">12 more...</span>
+        </div>
+      </div>
+    </div>
+
+    <p>Because markup is structured data, you also get camelCase-to-kebab conversion, boolean attribute handling, and <code>class</code> as an array. Template-based libraries need runtime string parsing to handle these.</p>
+
+    <h3 id="why-jsx">vs JSX</h3>
+
+    <p>JSX offers similar structure but requires a compiler and a framework pragma. Kensington works anywhere JavaScript runs: Node.js, Deno, Bun, and the browser, with no configuration.</p>
+
+    <h3 id="why-frameworks">vs React / Vue / Angular / SolidJS</h3>
+
+    <p>Full front-end frameworks are designed around a component lifecycle, a virtual DOM or fine-grained reactivity graph, a router, and a build pipeline.</p>
+
+    <p>Kensington is useful when that scope is more than you need. It generates HTML strings on the server with no runtime dependency, produces live DOM nodes in the browser with no virtual DOM overhead, and works inside Web Components or vanilla JS projects without committing to a framework. The 2.0 signals build adds fine-grained reactivity for the cases where you do need live updates, without pulling in the bathwater with the baby.</p>
+
+    <h3 id="why-dom">vs DOM methods</h3>
+
+    <p><code>document.createElement</code> is verbose and browser-only. Kensington's <code>.toElement()</code> produces live DOM nodes, so the same component can render an HTML string on the server and a live DOM node in the browser from the same code.</p>
+
+    <h3 id="why-hyperscript">vs hyperscript / h()</h3>
+
+    <p>Hyperscript-style APIs like <code>h('div', attrs, children)</code> (used in React, Vue render functions, and standalone hyperscript libraries) take the element name as a string, so TypeScript can only type the attribute argument as a generic object. Kensington exposes a dedicated method for each element, so TypeScript knows exactly which attributes are valid for <code>t.input</code> versus <code>t.select</code> versus <code>t.a</code>.</p>
+
+    <div class="panels">
+      <div>
+        <div class="panel-label">Hyperscript</div>
+        <pre><code class="language-javascript">// attrs typed as Record&lt;string, any&gt;, no element-specific checking
+h('input', { typ: 'checkbox' });
+//            ^^^ typo, no error raised</code></pre>
+      </div>
+      <div>
+        <div class="panel-label">Kensington</div>
+        <pre><code class="language-typescript">// t.input knows the InputAttributes interface
+t.input({ typ: 'checkbox' });
+// TypeScript: 'typ' does not exist on InputAttributes</code></pre>
+      </div>
+    </div>
+
+    <h3 id="why-handlebars">vs Handlebars / EJS / Nunjucks</h3>
+
+    <p>String-based server-side renderers use a separate syntax in <code>.hbs</code>, <code>.ejs</code>, or <code>.njk</code> files. That syntax lives outside TypeScript's type system, so attribute names, values, and variable references are all unchecked. Kensington is plain JavaScript, so you get the full language for loops and conditionals, your editor's autocomplete for attributes, and TypeScript errors when something is wrong.</p>
   </section>
 
   <!-- ── Building HTML ─────────────────────────────────────────── -->
@@ -294,6 +411,28 @@ div({ class: 'card' }, [
   ul([li('item one'), li('item two')]),
 ]);</code></pre>
 
+    <h3 id="passing-t">Passing <code>t</code> around</h3>
+
+    <p>If you use a custom Kensington instance (subclassed, or configured with <code>additionalNamespaces</code>), pass <code>t</code> as a parameter instead of importing a shared global. This keeps component modules portable and testable with any instance.</p>
+
+    <pre><code class="language-javascript">// user-card.js, works with any Kensington instance
+export function userCard(t, user) {
+  return t.div({ class: 'card' }, [
+    t.h3(user.name),
+    t.p(user.bio),
+  ]);
+}
+
+// app.js
+import Kensington from 'kensington';
+import { userCard } from './user-card.js';
+
+const t = new Kensington({ additionalNamespaces: ['hx'] });
+
+app.get('/user/:id', async (req, res) =&gt; {
+  const user = await db.getUser(req.params.id);
+  res.send(userCard(t, user).toString());
+});</code></pre>
   </section>
 
   <!-- ── Browser DOM ────────────────────────────────────────────── -->
@@ -303,14 +442,12 @@ div({ class: 'card' }, [
 
     <p>Standard event handler attributes (<code>onclick</code>, <code>oninput</code>, etc.) accept a function (wired via <code>addEventListener</code>) or a string (set via <code>setAttribute</code>). For custom events, use the <code>on</code> key with a plain object mapping event names verbatim to handlers. SVG and MathML elements get the correct namespace automatically.</p>
 
-    <p>SVG and MathML elements get the correct namespace automatically.</p>
-
     <pre><code class="language-javascript">import { t } from 'kensington';
 
 const button = t.button({ type: 'button' }, 'Click me').toElement();
 document.body.append(button);
 
-// custom events — names are passed verbatim to addEventListener
+// custom events: names are passed verbatim to addEventListener
 const el = t.div({
   on: {
     bricksSelectorChange: e =&gt; console.log(e.detail),
@@ -325,7 +462,7 @@ const svg = t.svg({ viewBox: '0 0 100 100' }, [
 
 document.body.append(svg);</code></pre>
 
-    <p>Use <code>.toElement()</code> to get or create the element. It is safe to call before the element is mounted — useful for passing to browser APIs that need a DOM reference up front.</p>
+    <p>Use <code>.toElement()</code> to get or create the element. It is safe to call before the element is mounted, which is useful for passing to browser APIs that need a DOM reference up front.</p>
 
     <pre><code class="language-javascript">const hero = t.section({ id: 'hero' }, t.h1('Welcome'));
 const cards = t.section({ id: 'cards' }, [
@@ -359,7 +496,7 @@ t.div({ prop: { _instance: myWidget } }).toElement();</code></pre>
 
     <p><code>prop</code> is silently ignored in <code>.toString()</code>. Known properties on the element's DOM interface are typed in TypeScript; expando properties are also accepted. Property existence and writability are validated at render time via <code>validationLevel</code>.</p>
 
-    <p>Use <code>.getDomElement()</code> to get the dom element if it is currently in the DOM. Returns <code>null</code> otherwise.</p>
+    <p>Use <code>.getDomElement()</code> to retrieve the DOM element. Returns <code>null</code> if the element is not currently in the DOM.</p>
 
     <pre><code class="language-javascript">function scrollToSection(section) {
   section.getDomElement()?.scrollIntoView({ behavior: 'smooth' });
@@ -367,7 +504,179 @@ t.div({ prop: { _instance: myWidget } }).toElement();</code></pre>
 
   </section>
 
-  <!-- ── TypeScript ─────────────────────────────────────────────── -->
+  <!-- ── Reactive data ─────────────────────────────────────────── -->
+
+  <section id="signals">
+    <h2>Reactive Data</h2>
+
+    <p>Import <code>signal</code>, <code>computed</code>, and <code>effect</code> to build reactive UIs without a framework. Pass a signal anywhere a static value is accepted and the DOM updates automatically when the value changes.</p>
+
+    <pre><code class="language-javascript">import { t, signal, computed, effect } from 'kensington';
+
+const count = signal(0);
+const label = computed(() =&gt; count.get() === 1 ? 'item' : 'items');
+
+effect(() =&gt; { document.title = `${count.get()} ${label.get()}`; });
+
+const app = t.div([
+  t.p([count, ' ', label]),
+  t.button({ type: 'button', onclick: () =&gt; count.set(n =&gt; n + 1) }, 'Add'),
+]);
+
+document.body.append(app.toElement());</code></pre>
+
+    <ul>
+      <li><code>signal(initial)</code>: creates a reactive value
+        <ul>
+          <li><code>.get()</code>: returns the current value</li>
+          <li><code>.set(valueOrFn)</code>: sets a new value, or updates via function: <code>count.set(n =&gt; n + 1)</code></li>
+          <li><code>.stop()</code>: clears all subscribers. The signal retains its current value but will no longer notify anyone of changes.</li>
+          <li><code>.transform(fn)</code>: returns a derived signal. Equivalent to <code>computed(() =&gt; fn(signal.get()))</code>. Chainable.</li>
+          <li><code>.toJSON()</code>: returns the current value. Makes signals transparent to <code>JSON.stringify</code>: <code>JSON.stringify({ done: signal(true) })</code> &rarr; <code>'{"done":true}'</code>. Works recursively through nested signal trees.</li>
+          <li><code>.toString()</code>: returns <code>String(this.get())</code>. Signals work in template literals and string concatenation. Because it calls <code>.get()</code>, dependency tracking works correctly inside <code>computed</code> and <code>effect</code>.</li>
+        </ul>
+      </li>
+      <li><code>computed(fn)</code>: read-only signal derived from others; re-evaluates automatically.</li>
+      <li><code>effect(fn)</code>: runs immediately and re-runs when any signal read via <code>.get()</code> inside changes. Use for side effects: setting <code>document.title</code>, writing to <code>localStorage</code>, etc.</li>
+    </ul>
+
+    <pre><code class="language-javascript">const count = signal(0);
+const doubled = count.transform(n =&gt; n * 2);
+const label  = count.transform(n =&gt; n === 1 ? '1 item' : `${n} items`);
+
+// chainable
+const display = count.transform(n =&gt; n * 2).transform(n =&gt; `${n}px`);
+
+// convenient for passing a signal directly as a string attribute
+t.td(sortAsc.transform(String));</code></pre>
+
+    <h3 id="signals-attributes">As attribute values</h3>
+
+    <pre><code class="language-javascript">const isLoading = signal(false);
+const cls = computed(() =&gt; isLoading.get() ? 'btn-secondary' : 'btn-primary');
+
+t.button({ class: cls, disabled: isLoading }, 'Save').toElement();
+
+isLoading.set(true);   // disables button and dims it while request is in flight
+isLoading.set(false);  // restores it when done</code></pre>
+
+    <h3 id="signals-keyed-lists">Keyed lists</h3>
+
+    <p>When a signal holds an array, add <code>dataKey</code> to items. The reconciler matches nodes by <code>data-key</code> and reuses DOM elements on reorder, addition, and removal. Reused nodes are diffed recursively: only changed attributes and text are written to the DOM. Signal-managed attributes on reused nodes are preserved, and orphaned effects on discarded nodes are stopped immediately.</p>
+
+    <pre><code class="language-javascript">const items = signal([
+  { id: 1, name: 'Apple' },
+  { id: 2, name: 'Banana' },
+]);
+
+const rows = computed(() =&gt;
+  items.get().map(item =&gt; t.li({ dataKey: item.id }, item.name)),
+);
+
+t.ul(rows).toElement();</code></pre>
+
+    <h3 id="signals-literal">With .literal() and .inlineComment()</h3>
+
+    <pre><code class="language-javascript">const html = signal('&lt;b&gt;bold&lt;/b&gt;');
+t.div(t.literal(html)).toElement();
+// element is replaced when html changes
+
+const note = signal('draft');
+t.div([t.p('content'), t.inlineComment(note)]).toElement();
+// comment nodeValue updates live</code></pre>
+
+
+    <h3 id="signals-cleanup">Cleanup</h3>
+
+    <p>Elements created with <code>.toElement()</code> automatically stop their reactive effects when the element is removed from the DOM, whether by <code>el.remove()</code> or by removing an ancestor.</p>
+
+    <p>For effects that run outside of any element, call <code>.stop()</code> when they are no longer needed. Web components are a typical place to do this:</p>
+
+    <pre><code class="language-javascript">class MyCounter extends HTMLElement {
+  #effect = null;
+
+  connectedCallback() {
+    const count = signal(0);
+    this.#effect = effect(() => {
+      this.textContent = String(count.get());
+    });
+  }
+
+  disconnectedCallback() {
+    this.#effect?.stop();
+  }
+}</code></pre>
+
+  </section>
+
+  <!-- ── Hydration ─────────────────────────────────────────────── -->
+
+  <section id="hydration">
+    <h2>Server-rendered reactive data</h2>
+
+    <p>Server-render a component to HTML with <code>renderForHydration</code>, then pick it up on the client with <code>registerComponents</code>. The SSR output is replaced with a live, reactive DOM tree using the same state that was passed on the server.</p>
+
+    <pre><code class="language-javascript">// server.js
+import { renderForHydration, t } from 'kensington';
+import { counter } from './components/counter.js';
+
+app.get('/', (req, res) => {
+  res.send(
+    t.htmlWithDocType({ lang: 'en' }, [
+      t.head([t.meta({ charset: 'utf-8' }), t.title('App')]),
+      t.body(renderForHydration(counter, { count: 0 })),
+    ]).toString()
+  );
+});
+
+// client.js
+import { registerComponents } from 'kensington';
+import { counter } from './components/counter.js';
+
+registerComponents({ counter });</code></pre>
+
+    <p>The component function runs on both server and client. Write it so it works in both environments:</p>
+
+    <pre><code class="language-javascript">// components/counter.js
+import { t, signal, effect, isBrowser } from 'kensington';
+
+export function counter({ count: initial }) {
+  const count = signal(initial);
+
+  // effect() is a no-op on the server: safe to use browser globals inside
+  effect(() => {
+    document.title = `Count: ${count.get()}`;
+  });
+
+  // isBrowser guards code that can't go inside effect()
+  const stored = isBrowser ? localStorage.getItem('count') : null;
+
+  return t.div([
+    t.p(count),
+    t.button({ type: 'button', onclick: () => count.set(n => n + 1) }, '+'),
+  ]);
+}</code></pre>
+
+    <ul>
+      <li><code>renderForHydration(fn, state, name?)</code> - <u>On Server</u> - renders the component to HTML and embeds state as a JSON script block. Uses <code>fn.name</code> by default or pass an explicit <code>name</code> for anonymous functions. <code>name</code> must match what is used in <code>registerComponents</code> on the client. Throws if the component returns a non-element value or a Promise. Warns on lossy state values (Date, Map, Set, RegExp, undefined, function, Symbol, non-finite numbers, class instances); throws on unserializable ones (BigInt, circular references).</li>
+      <li><code>registerComponents(components)</code> - <u>On Client</u> - scans the page for components rendered by <code>renderForHydration</code> and mounts each one reactively. Object keys are used as component names: <code>{ counter }</code> registers the function under <code>'counter'</code>. Must match what is passed in <code>renderForHydration</code> on the server. Issues a <code>console.warn</code> for unregistered component names and missing mount points. If the client component returns <code>null</code> or throws, warns or logs the error and leaves the SSR element in place. Defers hydration until <code>DOMContentLoaded</code> if called while the page is still loading. Sets up a <code>MutationObserver</code> so components in dynamically fetched HTML fragments are hydrated automatically without re-calling <code>registerComponents</code>. Returns <code>{ stop() }</code> to disconnect the observer.</li>
+      <li><code>isBrowser</code>: <code>true</code> in a browser environment, <code>false</code> in Node.js. Use to guard browser-only code that cannot go inside <code>effect()</code>, such as module-level expressions or <code>computed()</code> values.</li>
+    </ul>
+
+    <h3>Known tradeoffs</h3>
+
+    <p>These are deliberate simplicity choices, not bugs.</p>
+
+    <ul>
+      <li><strong>DOM replacement, not true hydration.</strong> The SSR elements are replaced with a fresh <code>toElement()</code> call rather than reusing them. In practice the swap is imperceptible. It is synchronous and the visual output is identical. Transitions are suppressed automatically on SSR elements until hydration completes.</li>
+      <li><strong>Non-interactive window.</strong> Elements are non-reactive between the browser's first paint and when the hydration script runs. This is inherent to SSR-then-hydrate.</li>
+      <li><strong>State is plaintext.</strong> State is embedded as a <code>&lt;script type="application/json"&gt;</code> tag visible in page source. Do not pass secrets or tokens as hydration state.</li>
+      <li><strong>Browser globals outside <code>effect()</code> will throw on the server.</strong> <code>effect()</code> is suppressed during server-side rendering. For browser-only code that cannot go inside <code>effect()</code>: module-level code, <code>computed()</code> values, direct assignments. Use the <code>isBrowser</code> export: <code>isBrowser &amp;&amp; localStorage.getItem('key')</code>.</li>
+      <li><strong>One tag, one element.</strong> Each tag instance maps to exactly one DOM node. Passing the same instance as a child of two different parents moves it rather than cloning it. Create separate tag instances if you need the same structure in two places.</li>
+      <li><strong>Reactive element reset after removal is asynchronous.</strong> When a reactive element is removed from the DOM, its effects are stopped and the internal reference is cleared via MutationObserver. Calling <code>.toElement()</code> immediately after removal in synchronous code still returns the old element. Awaiting a tick (<code>await Promise.resolve()</code>) before the next <code>.toElement()</code> call ensures the reset has completed. Non-reactive elements are not affected: <code>.toElement()</code> returns the same node after removal and it can be re-inserted directly.</li>
+    </ul>
+
+  </section>
 
   <!-- ── TypeScript ─────────────────────────────────────────────── -->
 
@@ -657,7 +966,7 @@ import type { NameSpaceAttributes, GlobalAttributes, GlobalEvents, UniversalAttr
 
     <h3 id="reusable-components">Reusable components</h3>
 
-    <p>Plain functions work as components. They take arguments and return tag objects like any other call.</p>
+    <p>Plain functions work as components. They take arguments and return tag objects.</p>
 
     <div class="panels">
       <div>
@@ -708,7 +1017,7 @@ t.div({ class: 'card-grid' }, [
 
     <div class="panels">
       <div>
-        <div class="panel-label">Wrong — one node, moves on reuse</div>
+        <div class="panel-label">Wrong: one node, moves on reuse</div>
         <pre><code class="language-javascript">// icons.js
 export const expandIcon = t.svg({ viewBox: '0 0 24 24' }, [
   t.path({ d: 'M5 12h14M12 5l7 7-7 7' }),
@@ -723,7 +1032,7 @@ import { expandIcon } from './icons.js';
 sidebar.append(expandIcon.toElement()); // moved here, vanishes from header</code></pre>
       </div>
       <div>
-        <div class="panel-label">Correct — factory function, one node per call</div>
+        <div class="panel-label">Correct: factory function, one node per call</div>
         <pre><code class="language-javascript">// icons.js
 export function expandIcon() {
   return t.svg({ viewBox: '0 0 24 24' }, [
@@ -905,7 +1214,7 @@ t.form({ action: '/login', method: 'post' }, [
 
     <h3 id="preformatted">Preformatted blocks</h3>
 
-    <p><code>script</code>, <code>style</code>, <code>pre</code>, and <code>textarea</code> join content arrays with newlines and skip indentation, so string content lands exactly as written.</p>
+    <p><code>script</code>, <code>style</code>, <code>pre</code>, and <code>textarea</code> join content arrays with newlines and skip indentation, so string content is inserted without modification.</p>
 
     <div class="panels">
       <div>
