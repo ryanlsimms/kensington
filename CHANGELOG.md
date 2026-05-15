@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [1.0.0-beta.4] - 2026-05-15
 
 ### Added
 - `on` key in the options object for custom event listeners. Pass a plain object mapping event names verbatim to handler functions: `t.div({ on: { bricksSelectorChange: handler } })`. Event names are passed directly to `addEventListener` with no case transformation, so both camelCase and kebab-case custom event names work correctly.
