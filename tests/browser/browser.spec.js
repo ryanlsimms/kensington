@@ -410,3 +410,49 @@ test('inlineComment toElement() throws when parented in an in-memory tree', asyn
   expect(result.threw).toBe(true);
   expect(result.message).toContain('toElement()');
 });
+
+// ─── prop key ────────────────────────────────────────────────────────────────
+
+test('static prop assigns DOM property at render time', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const el = t.input({ id: 'prop-static', type: 'text', prop: { value: 'hello' } }).toElement();
+    document.body.append(el);
+    return el.value;
+  }, bundle);
+  expect(result).toBe('hello');
+});
+
+test('static prop does not set an HTML attribute', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const el = t.input({ id: 'prop-no-attr', type: 'text', prop: { value: 'hello' } }).toElement();
+    document.body.append(el);
+    return el.getAttribute('value');
+  }, bundle);
+  expect(result).toBeNull();
+});
+
+test('expando prop assigns arbitrary property', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const el = t.div({ prop: { _custom: 42 } }).toElement();
+    document.body.append(el);
+    return el._custom;
+  }, bundle);
+  expect(result).toBe(42);
+});
+
+test('non-existent prop key is silently skipped', async ({ page, bundle }) => {
+  const threw = await page.evaluate(async src => {
+    const { t } = await import(src);
+    try {
+      const el = t.div({ prop: { definitelyNotReal: 'x' } }).toElement();
+      document.body.append(el);
+      return false;
+    } catch {
+      return true;
+    }
+  }, bundle);
+  expect(threw).toBe(false);
+});

@@ -51,7 +51,7 @@ profileCard('Alice', 'Senior Engineer').toString();
 
 ## Reactive data
 
-In the browser, import `signal`, `computed`, and `effect` to build reactive UIs. Pass a signal as content or an attribute value and the DOM updates in place.
+In the browser, import `signal`, `computed`, and `effect` to build reactive UIs. Pass a signal as content or an option value and the DOM updates in place.
 
 ```javascript
 import { t, signal, computed, effect } from 'kensington';

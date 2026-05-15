@@ -203,7 +203,7 @@ effect(() => {
 });
 ```
 
-### As content and attributes
+### As content and option values
 
 ```javascript
 const count     = signal(0);
@@ -222,6 +222,28 @@ Use `.transform(String)` when an attribute expects a string but the signal holds
 const liked = signal(false);
 t.button({ ariaPressed: liked.transform(String) }, '♥');
 ```
+
+### DOM properties with `prop`
+
+HTML attributes and DOM properties diverge after user interaction. For example, `input.value` reflects what the user typed, while `getAttribute('value')` still returns the original default. Use the `prop` key to assign directly to DOM properties via `el[name] = value`, bypassing `setAttribute`:
+
+```javascript
+const userInput = signal('');
+
+// Assigns el.value = '' — syncs the live property, not the HTML attribute
+t.input({ type: 'text', prop: { value: userInput } }).toElement();
+
+// Resetting a controlled input
+userInput.set('');  // el.value resets immediately via the live effect
+```
+
+`prop` also works for properties with no HTML attribute equivalent:
+
+```javascript
+const vid = t.video({ src: '/intro.mp4', prop: { muted: true, playbackRate: 1.5 } });
+```
+
+`prop` is silently ignored in `.toString()`. Known writable properties on the element's DOM interface are typed in TypeScript. Expando properties (arbitrary string keys) are also accepted as `unknown`. Property existence and writability are validated at render time via `validationLevel`.
 
 ### effect
 
@@ -383,7 +405,7 @@ These are deliberate simplicity tradeoffs, not bugs.
 ## Common mistakes to avoid
 
 - Do not use JSX or tagged template literals — Kensington uses method calls only
-- Do not pass content to void elements (`input`, `br`, `img`, `hr`, `meta`, `link`) — they take attributes only
+- Do not pass content to void elements (`input`, `br`, `img`, `hr`, `meta`, `link`) — they take options only, no content
 - Do not import `t` as a default import — `t` is a named export; the default export is the `Kensington` class
 - Do not skip `.toString()` when passing to HTTP framework response methods
 - Do not use `onclick="string"` for DOM usage — pass a function; string handlers only serialize in `.toString()`

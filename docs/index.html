@@ -43,7 +43,8 @@
     <li><a href="#dom">Browser DOM</a></li>
     <li><a href="#signals">Reactive data</a>
       <ul>
-        <li><a href="#signals-attributes">Attribute values</a></li>
+        <li><a href="#signals-attributes">As option values</a></li>
+        <li><a href="#signals-dom-props">DOM properties</a></li>
         <li><a href="#signals-keyed-lists">Keyed lists</a></li>
         <li><a href="#signals-literal">.literal() &amp; comments</a></li>
         <li><a href="#signals-cleanup">Cleanup</a></li>
@@ -161,7 +162,7 @@ profileCard('Alice', 'Senior Engineer').toString();</code></pre>
       </div>
     </div>
 
-    <p>For live DOM, call <code>.toElement()</code> instead. Pass signals as attribute values or content and they wire up reactive updates automatically.</p>
+    <p>For live DOM, call <code>.toElement()</code> instead. Pass signals as option values or content and they wire up reactive updates automatically.</p>
 
     <div class="panels">
       <div>
@@ -279,13 +280,13 @@ t.input({ typ: 'checkbox' });
 
     <p>Every HTML, SVG, and MathML element is available as a method on <code>t</code>. All call forms work:</p>
 
-    <pre><code class="language-javascript">t.div({ id: 'app' }, 'text');      // attributes + content
-t.div({ id: 'app' });              // attributes only
+    <pre><code class="language-javascript">t.div({ id: 'app' }, 'text');      // options + content
+t.div({ id: 'app' });              // options only
 t.div('text');                     // content only
 t.div([t.p('a'), t.p('b')]);       // content array
 t.div();                           // empty</code></pre>
 
-    <p>Void elements take only attributes (no content):</p>
+    <p>Void elements take only options (no content):</p>
 
     <pre><code class="language-javascript">t.input({ type: 'checkbox', checked: true });
 t.br();
@@ -296,7 +297,7 @@ t.meta({ charset: 'utf-8' });</code></pre>
     <pre><code class="language-javascript">t.p(['Count: ', 42, t.strong(' items')]).toString();
 // &lt;p&gt;Count: 42&lt;strong&gt; items&lt;/strong&gt;&lt;/p&gt;</code></pre>
 
-    <h3 id="options">Options (attributes + props + eventListeners)</h3>
+    <h3 id="options">Options</h3>
 
     <ul>
       <li><strong>camelCase &rarr; kebab-case:</strong> <code>{ dataBsToggle: 'collapse' }</code> &rarr; <code>data-bs-toggle="collapse"</code></li>
@@ -304,6 +305,7 @@ t.meta({ charset: 'utf-8' });</code></pre>
       <li><strong>Boolean attributes:</strong> <code>{ checked: true }</code> &rarr; <code>checked</code>; <code>{ checked: false }</code> &rarr; attribute omitted</li>
       <li><strong>class as array:</strong> <code>{ class: ['foo', 'bar'] }</code> &rarr; <code>class="foo bar"</code></li>
       <li><strong>style as object:</strong> <code>{ style: { backgroundColor: 'red', zIndex: 2 } }</code> &rarr; <code>style="background-color: red; z-index: 2"</code>. camelCase keys convert to kebab-case. <code>null</code>, <code>undefined</code>, and <code>false</code> values are silently omitted. In TypeScript, the style object is typed with <a href="https://www.npmjs.com/package/csstype">csstype</a> for autocomplete on property names and values.</li>
+      <li><strong>prop key:</strong> <code>{ prop: { value: mySignal } }</code> assigns directly to DOM properties (<code>el.value = ...</code>) instead of using <code>setAttribute</code>. Accepts static values or signals. Silently ignored in <code>.toString()</code>. See <a href="#signals-dom-props">reactive DOM properties</a>.</li>
       <li><strong>Always allowed:</strong> <code>data-*</code>, <code>aria-*</code>, and all <a href="https://html.spec.whatwg.org/multipage/dom.html#global-attributes">global HTML attributes</a></li>
       <li><strong>on key:</strong> <code>{ on: { myCustomEvent: handler } }</code> wires event listeners via <code>addEventListener</code> with event names passed verbatim. Use this for custom and camelCase event names that <code>on*</code> attributes cannot express. Silently ignored in <code>.toString()</code>.</li>
       <li><strong>prop key:</strong> <code>{ prop: { value: 'hello' } }</code> assigns directly to DOM properties (<code>el.value = ...</code>) instead of using <code>setAttribute</code>. Silently ignored in <code>.toString()</code>. See <a href="#dom-properties">DOM properties</a>.</li>
@@ -410,29 +412,6 @@ div({ class: 'card' }, [
   p('Methods are bound, so destructuring works anywhere.'),
   ul([li('item one'), li('item two')]),
 ]);</code></pre>
-
-    <h3 id="passing-t">Passing <code>t</code> around</h3>
-
-    <p>If you use a custom Kensington instance (subclassed, or configured with <code>additionalNamespaces</code>), pass <code>t</code> as a parameter instead of importing a shared global. This keeps component modules portable and testable with any instance.</p>
-
-    <pre><code class="language-javascript">// user-card.js, works with any Kensington instance
-export function userCard(t, user) {
-  return t.div({ class: 'card' }, [
-    t.h3(user.name),
-    t.p(user.bio),
-  ]);
-}
-
-// app.js
-import Kensington from 'kensington';
-import { userCard } from './user-card.js';
-
-const t = new Kensington({ additionalNamespaces: ['hx'] });
-
-app.get('/user/:id', async (req, res) =&gt; {
-  const user = await db.getUser(req.params.id);
-  res.send(userCard(t, user).toString());
-});</code></pre>
   </section>
 
   <!-- ── Browser DOM ────────────────────────────────────────────── -->
@@ -573,7 +552,7 @@ effect(() =&gt; {
     });
 });</code></pre>
 
-    <h3 id="signals-attributes">As attribute values</h3>
+    <h3 id="signals-attributes">As option values</h3>
 
     <pre><code class="language-javascript">const isLoading = signal(false);
 const cls = computed(() =&gt; isLoading.get() ? 'btn-secondary' : 'btn-primary');
@@ -582,6 +561,23 @@ t.button({ class: cls, disabled: isLoading }, 'Save').toElement();
 
 isLoading.set(true);   // disables button and dims it while request is in flight
 isLoading.set(false);  // restores it when done</code></pre>
+
+    <h3 id="signals-dom-props">DOM properties</h3>
+
+    <p>HTML attributes and DOM properties diverge after user interaction. <code>input.value</code> reflects what the user typed, while <code>getAttribute('value')</code> still returns the original default. Use the <code>prop</code> key to assign directly to DOM properties via <code>el[name] = value</code>, bypassing <code>setAttribute</code>:</p>
+
+    <pre><code class="language-javascript">const userInput = signal('');
+
+// Assigns el.value = '' reactively, keeping the live property in sync
+t.input({ type: 'text', prop: { value: userInput } }).toElement();
+
+// Resetting
+userInput.set('');  // el.value resets immediately
+
+// Properties with no HTML attribute equivalent
+t.video({ src: '/intro.mp4', prop: { muted: true, playbackRate: 1.5 } }).toElement();</code></pre>
+
+    <p><code>prop</code> is silently ignored in <code>.toString()</code>. Known writable properties on the element's DOM interface are typed in TypeScript. Expando properties are also accepted. Property existence and writability are validated at render time.</p>
 
     <h3 id="signals-keyed-lists">Keyed lists</h3>
 

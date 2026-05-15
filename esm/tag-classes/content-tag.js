@@ -45,6 +45,17 @@ function applySignalAttribute(element, attrName, sig) {
   return () => e.stop();
 }
 
+function applySignalProp(element, propName, sig) {
+  const ref = new WeakRef(element);
+  const e = effect(() => {
+    const el = ref.deref();
+    if (!el) { e.stop(); return; }
+    el[propName] = sig.get();
+  });
+  return () => e.stop();
+}
+
+
 function isPropWritable(element, propName) {
   let obj = element;
   while (obj !== null) {
@@ -147,7 +158,7 @@ export default class ContentTag {
     }
     if (attr === 'prop') {
       if (value === null || value === undefined) { return true; }
-      return typeof value === 'object' && !Array.isArray(value);
+      return typeof value === 'object' && !Array.isArray(value) && !(value instanceof Signal);
     }
     if (value instanceof Signal) { return true; }
     if ([undefined, null].includes(value)) {
@@ -366,7 +377,11 @@ export default class ContentTag {
           showInvalid(`prop key \`${propName}\` is read-only on <${this.tagName}>`, this.validationLevel, this.logger);
           continue;
         }
-        element[propName] = propValue;
+        if (propValue instanceof Signal) {
+          stops.push(applySignalProp(element, propName, propValue));
+        } else {
+          element[propName] = propValue;
+        }
       }
     }
 

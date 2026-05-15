@@ -54,7 +54,6 @@ function attributesType({ tag, attributes = [], globalTypes }) {
   }
 
   return [`{
-  ${propField}
   ${attributes.flatMap(a => {
     const lines = [`'${a.name}'?: ${attrType(a.name, a.type)};`];
     const camelName = kebabToCamel(a.name);
@@ -63,20 +62,21 @@ function attributesType({ tag, attributes = [], globalTypes }) {
     }
     return lines;
   }).join('\n  ')}
+  ${propField}
 }`, ...globalTypes].join(' & ');
 }
 
 function svgAttributesType({ tag, attributes = [], globalTypes }) {
   const propField = `prop?: PropFor<'${tag}'> | null;`;
   const ownTypes = attributes.length
-    ? [`{\n  ${propField}\n  ${attributes.flatMap(a => {
+    ? [`{\n  ${attributes.flatMap(a => {
       const lines = [`'${a.name}'?: ${attrType(a.name, a.type)};`];
       const camelName = kebabToCamel(a.name);
       if (a.name !== camelName) {
         lines.push(`'${camelName}'?: ${attrType(a.name, a.type)};`);
       }
       return lines;
-    }).join('\n  ')}\n}`]
+    }).join('\n  ')}\n  ${propField}\n}`]
     : [`{ ${propField} }`];
   return [...ownTypes, 'SvgPresentationAttributes', ...globalTypes].join(' & ');
 }
@@ -161,6 +161,14 @@ export class Signal<T> implements ReadonlySignal<T> {
 }
 
 export type Reactive<T> = T | ReadonlySignal<T>;
+
+type ElementInterface<Tag extends string> =
+  Tag extends keyof HTMLElementTagNameMap ? HTMLElementTagNameMap[Tag] :
+  Tag extends keyof SVGElementTagNameMap ? SVGElementTagNameMap[Tag] :
+  HTMLElement;
+type PropFor<Tag extends string> = {
+  [K in keyof ElementInterface<Tag>]?: ElementInterface<Tag>[K] | ReadonlySignal<ElementInterface<Tag>[K]>
+} & { [key: string]: unknown };
 
 /**
  * Extend this interface via module augmentation to allow additional attribute namespaces.

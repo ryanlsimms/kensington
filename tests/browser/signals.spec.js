@@ -720,3 +720,35 @@ test('keyed element that stays in DOM through a reconcile cycle remains reactive
   }, bundle);
   await expect(page.locator('#keyed-rx-a')).toHaveClass('off');
 });
+
+// ─── prop key ────────────────────────────────────────────────────────────────
+
+test('signal prop updates DOM property live', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const val = signal('first');
+    const el = t.input({ id: 'prop-sig', type: 'text', prop: { value: val } }).toElement();
+    document.body.append(el);
+    val.set('second');
+    await Promise.resolve();
+    return el.value;
+  }, bundle);
+  expect(result).toBe('second');
+});
+
+test('signal prop effect stops when element is removed from DOM', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const val = signal('before');
+    const el = t.input({ type: 'text', prop: { value: val } }).toElement();
+    document.body.append(el);
+    await Promise.resolve();
+    el.remove();
+    await Promise.resolve();
+    val.set('after');
+    await Promise.resolve();
+    return el.value;
+  }, bundle);
+  expect(result).toBe('before');
+});
+

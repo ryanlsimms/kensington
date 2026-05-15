@@ -392,3 +392,24 @@ _s.value = 99;
 // Signal constructor is private — use signal() or computed() instead
 // @ts-expect-error - cannot construct Signal directly
 new Signal(5);
+
+// ─── prop key ───────────────────────────────────────────────────────────────
+
+// prop accepts writable DOM properties for the element's interface
+const _inputWithProp: VoidTag = t.input({ prop: { value: 'hello' } });
+const _inputCheckedProp: VoidTag = t.input({ prop: { checked: true } });
+
+// prop accepts signal values for each property
+const _inputSigProp: VoidTag = t.input({ prop: { value: signal('reactive') } });
+
+// prop on a div accepts writable HTMLDivElement properties
+const _divWithProp: ContentTag = t.div({ prop: { hidden: false } });
+
+// prop accepts null (opt-out)
+const _nullProp: VoidTag = t.input({ prop: null });
+
+// expando (arbitrary) properties are allowed — unknown keys use the string index signature
+t.input({ prop: { _instance: {}, myCustomFlag: true } });
+
+// read-only and non-existent properties are allowed by TypeScript (via string index);
+// runtime validates existence and writability via validationLevel
