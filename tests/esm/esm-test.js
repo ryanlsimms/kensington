@@ -786,6 +786,66 @@ describe('function attributes in toString()', () => {
   });
 });
 
+// ─── on key ────────────────────────────────────────────────────────────────
+
+describe('on key', () => {
+  it('is silently omitted from toString() output', () => {
+    assert.strictEqual(t.div({ on: { click: () => {} } }).toString(), '<div></div>');
+  });
+  it('accepts a plain object value at all validation levels', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.doesNotThrow(() => tt.div({ on: { click: () => {} } }));
+  });
+  it('accepts null value', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.doesNotThrow(() => tt.div({ on: null }));
+  });
+  it('warns when given a non-object value with validationLevel warn', () => {
+    const messages = [];
+    const tt = new Kensington({ validationLevel: 'warn', logger: m => messages.push(m) });
+    tt.div({ on: 'click' });
+    assert.ok(messages.some(m => m.includes('invalid attribute')));
+  });
+  it('throws when given a non-object value with validationLevel error', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => tt.div({ on: 'click' }), /invalid attribute/);
+  });
+  it('throws when given an array value with validationLevel error', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => tt.div({ on: ['click'] }), /invalid attribute/);
+  });
+});
+
+// ─── prop key ──────────────────────────────────────────────────────────────
+
+describe('prop key', () => {
+  it('is silently omitted from toString() output', () => {
+    assert.strictEqual(t.div({ prop: { id: 'foo' } }).toString(), '<div></div>');
+  });
+  it('accepts a plain object value at all validation levels', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.doesNotThrow(() => tt.div({ prop: { id: 'foo' } }));
+  });
+  it('accepts null value', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.doesNotThrow(() => tt.div({ prop: null }));
+  });
+  it('warns when given a non-object value with validationLevel warn', () => {
+    const messages = [];
+    const tt = new Kensington({ validationLevel: 'warn', logger: m => messages.push(m) });
+    tt.div({ prop: 'foo' });
+    assert.ok(messages.some(m => m.includes('invalid attribute')));
+  });
+  it('throws when given a non-object value with validationLevel error', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => tt.div({ prop: 'foo' }), /invalid attribute/);
+  });
+  it('throws when given an array value with validationLevel error', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => tt.div({ prop: ['id'] }), /invalid attribute/);
+  });
+});
+
 // ─── namespaces ────────────────────────────────────────────────────────────
 
 describe('namespaces', () => {

@@ -37,14 +37,16 @@ const EVENT_TYPES = {
   onprogress: 'ProgressEvent',
 };
 
-function attributesType({ attributes = [], globalTypes }) {
+function attributesType({ tag, attributes = [], globalTypes }) {
+  const propField = `prop?: PropFor<'${tag}'> | null;`;
   if (!attributes.length) {
-    return globalTypes.join(' & ');
+    return [`{ ${propField} }`, ...globalTypes].join(' & ');
   }
   const styleType = 'string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)';
   const classType = 'string | string[]';
 
   return [`{
+  ${propField}
   ${attributes.flatMap(a => {
     const attrType = a.name === 'style' ? styleType : a.name === 'class' ? classType : a.type;
     const lines = [`'${a.name}'?: ${attrType};`];
@@ -57,11 +59,12 @@ function attributesType({ attributes = [], globalTypes }) {
 }`, ...globalTypes].join(' & ');
 }
 
-function svgAttributesType({ attributes = [], globalTypes }) {
+function svgAttributesType({ tag, attributes = [], globalTypes }) {
+  const propField = `prop?: PropFor<'${tag}'> | null;`;
   const styleType = 'string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)';
   const classType = 'string | string[]';
   const ownTypes = attributes.length
-    ? [`{\n  ${attributes.flatMap(a => {
+    ? [`{\n  ${propField}\n  ${attributes.flatMap(a => {
       const attrType = a.name === 'style' ? styleType : a.name === 'class' ? classType : a.type;
       const lines = [`'${a.name}'?: ${attrType};`];
       const camelName = kebabToCamel(a.name);
@@ -70,7 +73,7 @@ function svgAttributesType({ attributes = [], globalTypes }) {
       }
       return lines;
     }).join('\n  ')}\n}`]
-    : [];
+    : [`{ ${propField} }`];
   return [...ownTypes, 'SvgPresentationAttributes', ...globalTypes].join(' & ');
 }
 
@@ -143,12 +146,21 @@ export interface NameSpaceAttributes {
   [key: \`\${"data" | "aria"}\${string}\`]: string | object
 }
 
+type ElementInterface<Tag extends string> =
+  Tag extends keyof HTMLElementTagNameMap ? HTMLElementTagNameMap[Tag] :
+  Tag extends keyof SVGElementTagNameMap ? SVGElementTagNameMap[Tag] :
+  HTMLElement;
+type PropFor<Tag extends string> = {
+  [K in keyof ElementInterface<Tag>]?: ElementInterface<Tag>[K]
+} & { [key: string]: unknown };
+
 export type GlobalAttributes = {
   ${globalAttributes.map(a => `${a.name}?: ${a.name === 'style' ? 'string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)' : a.name === 'class' ? 'string | string[]' : a.type};`).join('\n  ')}
 }
 
 export type GlobalEvents = {
   ${globalEvents.map(e => `${e}?: string | ((event: ${EVENT_TYPES[e] ?? 'Event'}) => void);`).join('\n  ')}
+  on?: Record<string, (event: Event) => void>;
 }
 ${svgPresentationAttrTypes?.length ? `
 type SvgPresentationAttributes = {

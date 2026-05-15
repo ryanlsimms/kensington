@@ -73,7 +73,7 @@ Kensington is an HTML template library that generates HTML strings (or DOM eleme
 
 ### Hand-written source (`esm/`)
 
-- `esm/tag-classes/content-tag.js` — base class for all HTML/SVG/MathML elements; handles attribute validation, content normalization, indentation, string serialization (`toString()`), and DOM creation (`toElement()`)
+- `esm/tag-classes/content-tag.js` — base class for all HTML/SVG/MathML elements; handles attribute validation, content normalization, indentation, string serialization (`toString()`), and DOM creation (`toElement()`). The `prop` key is extracted from `options.attributes` in the constructor and stored in `this.prop`; `attributeIsValid` and `attributeValueIsValid` both accept `prop` so it is not flagged as an unknown attribute when validation runs. `toElement()` processes `this.prop` via direct property assignment (`el[name] = value`), validating existence and writability on the live element before assigning. `attributesArrayFromObject` skips `prop` so it never appears in the HTML attribute pipeline.
 - `esm/tag-classes/void-tag.js` — subclass for void elements (no closing tag, no content)
 - `esm/tag-classes/literal-tag.js` — wraps raw HTML strings passed via `.literal()` / `.unsafeLiteral()`
 - `esm/tag-classes/comment-tag.js` — wraps HTML comments created via `.inlineComment()`; `toString()` formats single/multi-line, `toElement()` uses `document.createComment()`
@@ -84,7 +84,7 @@ Kensington is an HTML template library that generates HTML strings (or DOM eleme
 
 `Kensington.createTag(tagName, allowedAttributes, Klass, options)` returns a closure. When called, that closure validates arguments, instantiates the appropriate tag class (`ContentTag`, `VoidTag`, etc.), runs attribute validation if `validationLevel !== 'off'`, and returns the instance. Tag methods are bound in the constructor so they can be destructured.
 
-### Attribute handling
+### Options handling
 
 - Nested objects flatten to kebab-case: `{ data: { bs: { toggle: 'collapse' } } }` → `data-bs-toggle="collapse"`
 - camelCase keys convert to kebab-case: `{ dataBsToggle: 'collapse' }` → `data-bs-toggle="collapse"`
@@ -93,6 +93,7 @@ Kensington is an HTML template library that generates HTML strings (or DOM eleme
 - `data-*` and `aria-*` namespaces are always allowed; additional namespaces (e.g. `hx` for htmx) are passed via constructor
 - SVG elements accept all CSS properties as presentation attributes (per the SVG spec). In `esm/attributes.js` a single `svgPresentationAttributes` export object is spread into each SVG element's attribute object to avoid duplicating ~744 entries per element. In `types.d.ts` a single `SvgPresentationAttributes` type is intersected into each SVG element's attribute type for the same reason.
 - Event handler attributes (`onclick`, `oninput`, and all `on*`) accept `[String, Function]`. Functions are valid at tag creation and wired via `addEventListener` in `toElement()`. In `toString()`, function values cannot be serialized — they are omitted, with the `handleFunctionValues` callback in `attributesStringFromObject` invoking `showInvalid` at that point rather than at creation time.
+- `prop` key: accepts a plain object mapping DOM property names to static values. Applied in `toElement()` via `el[name] = value` (property assignment, not `setAttribute`). Property existence and writability are checked against the live element at render time via `isPropWritable()`. Silently ignored in `toString()`. TypeScript types are derived from `HTMLElementTagNameMap`/`SVGElementTagNameMap` via the `PropFor<Tag>` utility type in `types.d.ts`. Known properties are typed against the element's DOM interface. Arbitrary string keys (expandos) are also accepted via an index signature (`{ [key: string]: unknown }`).
 
 ### CLI — html-to-kensington
 

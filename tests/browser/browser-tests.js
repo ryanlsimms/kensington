@@ -268,4 +268,78 @@ export function registerTests(bundle) {
     }, bundle);
     expect(ns).toBe('http://www.w3.org/1998/Math/MathML');
   });
+
+  // ─── on key ────────────────────────────────────────────────────────────────
+
+  test('on key wires camelCase custom event listener', async ({ page }) => {
+    await page.evaluate(async src => {
+      const { t } = await import(src);
+      document.body.append(
+        t.div({
+          on: { bricksSelectorChange: () => { document.body.dataset.customFired = 'yes'; } },
+        }).toElement(),
+      );
+      document.querySelector('div').dispatchEvent(new CustomEvent('bricksSelectorChange'));
+    }, bundle);
+    await expect(page.locator('body')).toHaveAttribute('data-custom-fired', 'yes');
+  });
+
+  test('on key wires kebab custom event listener', async ({ page }) => {
+    await page.evaluate(async src => {
+      const { t } = await import(src);
+      document.body.append(
+        t.div({
+          on: { 'bricks-selector-change': () => { document.body.dataset.kebabFired = 'yes'; } },
+        }).toElement(),
+      );
+      document.querySelector('div').dispatchEvent(new CustomEvent('bricks-selector-change'));
+    }, bundle);
+    await expect(page.locator('body')).toHaveAttribute('data-kebab-fired', 'yes');
+  });
+
+  // ─── prop key ──────────────────────────────────────────────────────────────
+
+  test('static prop assigns DOM property at render time', async ({ page }) => {
+    const result = await page.evaluate(async src => {
+      const { t } = await import(src);
+      const el = t.input({ id: 'prop-static', type: 'text', prop: { value: 'hello' } }).toElement();
+      document.body.append(el);
+      return el.value;
+    }, bundle);
+    expect(result).toBe('hello');
+  });
+
+  test('static prop does not set an HTML attribute', async ({ page }) => {
+    const result = await page.evaluate(async src => {
+      const { t } = await import(src);
+      const el = t.input({ id: 'prop-no-attr', type: 'text', prop: { value: 'hello' } }).toElement();
+      document.body.append(el);
+      return el.getAttribute('value');
+    }, bundle);
+    expect(result).toBeNull();
+  });
+
+  test('expando prop assigns arbitrary property', async ({ page }) => {
+    const result = await page.evaluate(async src => {
+      const { t } = await import(src);
+      const el = t.div({ prop: { _custom: 42 } }).toElement();
+      document.body.append(el);
+      return el._custom;
+    }, bundle);
+    expect(result).toBe(42);
+  });
+
+  test('non-existent prop key is silently skipped', async ({ page }) => {
+    const threw = await page.evaluate(async src => {
+      const { t } = await import(src);
+      try {
+        const el = t.div({ prop: { definitelyNotReal: 'x' } }).toElement();
+        document.body.append(el);
+        return false;
+      } catch {
+        return true;
+      }
+    }, bundle);
+    expect(threw).toBe(false);
+  });
 }

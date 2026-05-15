@@ -92,6 +92,14 @@ export interface NameSpaceAttributes {
   [key: `${"data" | "aria"}${string}`]: string | object
 }
 
+type ElementInterface<Tag extends string> =
+  Tag extends keyof HTMLElementTagNameMap ? HTMLElementTagNameMap[Tag] :
+  Tag extends keyof SVGElementTagNameMap ? SVGElementTagNameMap[Tag] :
+  HTMLElement;
+type PropFor<Tag extends string> = {
+  [K in keyof ElementInterface<Tag>]?: ElementInterface<Tag>[K]
+} & { [key: string]: unknown };
+
 export type GlobalAttributes = {
   accesskey?: string;
   autocapitalize?: "on" | "off" | "none" | "sentences" | "words" | "characters";
@@ -199,6 +207,7 @@ export type GlobalEvents = {
   onvolumechange?: string | ((event: Event) => void);
   onwaiting?: string | ((event: Event) => void);
   onwheel?: string | ((event: WheelEvent) => void);
+  on?: Record<string, (event: Event) => void>;
 }
 
 type SvgPresentationAttributes = {
@@ -1620,6 +1629,7 @@ type SvgPresentationAttributes = {
 }
 
 type AAttributes = {
+  prop?: PropFor<'a'> | null;
   'download'?: string;
   'href'?: string;
   'hreflang'?: string;
@@ -1630,11 +1640,12 @@ type AAttributes = {
   'type'?: string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type AbbrAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type AbbrAttributes = { prop?: PropFor<'abbr'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type AddressAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type AddressAttributes = { prop?: PropFor<'address'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type AnimateAttributes = {
+  prop?: PropFor<'animate'> | null;
   'accumulate'?: "none" | "sum";
   'additive'?: "replace" | "sum";
   'attributeName'?: string;
@@ -1730,6 +1741,7 @@ type AnimateAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type AnimateMotionAttributes = {
+  prop?: PropFor<'animateMotion'> | null;
   'accumulate'?: "none" | "sum";
   'additive'?: "replace" | "sum";
   'autofocus'?: boolean;
@@ -1828,6 +1840,7 @@ type AnimateMotionAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type AnimateTransformAttributes = {
+  prop?: PropFor<'animateTransform'> | null;
   'accumulate'?: "none" | "sum";
   'additive'?: "replace" | "sum";
   'attributeName'?: string;
@@ -1924,6 +1937,7 @@ type AnimateTransformAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type AnnotationAttributes = {
+  prop?: PropFor<'annotation'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
@@ -1940,6 +1954,7 @@ type AnnotationAttributes = {
 } & NameSpaceAttributes & GlobalEvents;
 
 type AnnotationXmlAttributes = {
+  prop?: PropFor<'annotation-xml'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
@@ -1956,6 +1971,7 @@ type AnnotationXmlAttributes = {
 } & NameSpaceAttributes & GlobalEvents;
 
 type AreaAttributes = {
+  prop?: PropFor<'area'> | null;
   'alt'?: string;
   'coords'?: string;
   'download'?: string;
@@ -1967,11 +1983,12 @@ type AreaAttributes = {
   'target'?: string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type ArticleAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type ArticleAttributes = { prop?: PropFor<'article'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type AsideAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type AsideAttributes = { prop?: PropFor<'aside'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type AudioAttributes = {
+  prop?: PropFor<'audio'> | null;
   'autoplay'?: boolean;
   'controls'?: boolean;
   'crossorigin'?: "anonymous" | "use-credentials";
@@ -1982,22 +1999,25 @@ type AudioAttributes = {
   'src'?: string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type BAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type BAttributes = { prop?: PropFor<'b'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type BaseAttributes = {
+  prop?: PropFor<'base'> | null;
   'href'?: string;
   'target'?: string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type BdiAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type BdiAttributes = { prop?: PropFor<'bdi'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type BdoAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type BdoAttributes = { prop?: PropFor<'bdo'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type BlockquoteAttributes = {
+  prop?: PropFor<'blockquote'> | null;
   'cite'?: string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type BodyAttributes = {
+  prop?: PropFor<'body'> | null;
   'onafterprint'?: string | ((event: Event) => void);
   'onbeforeprint'?: string | ((event: Event) => void);
   'onbeforeunload'?: string | ((event: Event) => void);
@@ -2018,9 +2038,10 @@ type BodyAttributes = {
   'onunload'?: string | ((event: Event) => void);
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type BrAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type BrAttributes = { prop?: PropFor<'br'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ButtonAttributes = {
+  prop?: PropFor<'button'> | null;
   'command'?: string;
   'commandfor'?: string;
   'disabled'?: boolean;
@@ -2038,13 +2059,15 @@ type ButtonAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type CanvasAttributes = {
+  prop?: PropFor<'canvas'> | null;
   'height'?: number | `${number}`;
   'width'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type CaptionAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type CaptionAttributes = { prop?: PropFor<'caption'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type CircleAttributes = {
+  prop?: PropFor<'circle'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'cx'?: number | string;
@@ -2121,9 +2144,10 @@ type CircleAttributes = {
   'xml:space'?: "default" | "preserve";
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type CiteAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type CiteAttributes = { prop?: PropFor<'cite'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ClipPathAttributes = {
+  prop?: PropFor<'clipPath'> | null;
   'class'?: string | string[];
   'externalResourcesRequired'?: "true" | "false";
   'id'?: string;
@@ -2137,25 +2161,29 @@ type ClipPathAttributes = {
   'xml:space'?: "default" | "preserve";
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type CodeAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type CodeAttributes = { prop?: PropFor<'code'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ColAttributes = {
+  prop?: PropFor<'col'> | null;
   'span'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ColgroupAttributes = {
+  prop?: PropFor<'colgroup'> | null;
   'span'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type DataAttributes = {
+  prop?: PropFor<'data'> | null;
   'value'?: number | string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type DatalistAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type DatalistAttributes = { prop?: PropFor<'datalist'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type DdAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type DdAttributes = { prop?: PropFor<'dd'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type DefsAttributes = {
+  prop?: PropFor<'defs'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'id'?: string;
@@ -2226,11 +2254,13 @@ type DefsAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type DelAttributes = {
+  prop?: PropFor<'del'> | null;
   'cite'?: string;
   'datetime'?: string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type DescAttributes = {
+  prop?: PropFor<'desc'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'id'?: string;
@@ -2301,23 +2331,26 @@ type DescAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type DetailsAttributes = {
+  prop?: PropFor<'details'> | null;
   'name'?: string;
   'open'?: boolean;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type DfnAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type DfnAttributes = { prop?: PropFor<'dfn'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type DialogAttributes = {
+  prop?: PropFor<'dialog'> | null;
   'open'?: boolean;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type DivAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type DivAttributes = { prop?: PropFor<'div'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type DlAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type DlAttributes = { prop?: PropFor<'dl'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type DtAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type DtAttributes = { prop?: PropFor<'dt'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type EllipseAttributes = {
+  prop?: PropFor<'ellipse'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'cx'?: number | string;
@@ -2395,9 +2428,10 @@ type EllipseAttributes = {
   'xml:space'?: "default" | "preserve";
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type EmAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type EmAttributes = { prop?: PropFor<'em'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type EmbedAttributes = {
+  prop?: PropFor<'embed'> | null;
   'height'?: number | `${number}`;
   'src'?: string;
   'type'?: string;
@@ -2405,6 +2439,7 @@ type EmbedAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeBlendAttributes = {
+  prop?: PropFor<'feBlend'> | null;
   'class'?: string | string[];
   'id'?: string;
   'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
@@ -2414,6 +2449,7 @@ type FeBlendAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeColorMatrixAttributes = {
+  prop?: PropFor<'feColorMatrix'> | null;
   'class'?: string | string[];
   'id'?: string;
   'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
@@ -2423,6 +2459,7 @@ type FeColorMatrixAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeComponentTransferAttributes = {
+  prop?: PropFor<'feComponentTransfer'> | null;
   'class'?: string | string[];
   'id'?: string;
   'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
@@ -2432,6 +2469,7 @@ type FeComponentTransferAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeCompositeAttributes = {
+  prop?: PropFor<'feComposite'> | null;
   'class'?: string | string[];
   'id'?: string;
   'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
@@ -2441,6 +2479,7 @@ type FeCompositeAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeConvolveMatrixAttributes = {
+  prop?: PropFor<'feConvolveMatrix'> | null;
   'class'?: string | string[];
   'id'?: string;
   'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
@@ -2450,6 +2489,7 @@ type FeConvolveMatrixAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeDiffuseLightingAttributes = {
+  prop?: PropFor<'feDiffuseLighting'> | null;
   'class'?: string | string[];
   'id'?: string;
   'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
@@ -2459,6 +2499,7 @@ type FeDiffuseLightingAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeDisplacementMapAttributes = {
+  prop?: PropFor<'feDisplacementMap'> | null;
   'class'?: string | string[];
   'id'?: string;
   'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
@@ -2468,6 +2509,7 @@ type FeDisplacementMapAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeDistantLightAttributes = {
+  prop?: PropFor<'feDistantLight'> | null;
   'id'?: string;
   'xml:base'?: string;
   'xml:lang'?: string;
@@ -2475,6 +2517,7 @@ type FeDistantLightAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeDropShadowAttributes = {
+  prop?: PropFor<'feDropShadow'> | null;
   'class'?: string | string[];
   'id'?: string;
   'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
@@ -2484,6 +2527,7 @@ type FeDropShadowAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeFloodAttributes = {
+  prop?: PropFor<'feFlood'> | null;
   'class'?: string | string[];
   'id'?: string;
   'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
@@ -2493,6 +2537,7 @@ type FeFloodAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeFuncAAttributes = {
+  prop?: PropFor<'feFuncA'> | null;
   'id'?: string;
   'xml:base'?: string;
   'xml:lang'?: string;
@@ -2500,6 +2545,7 @@ type FeFuncAAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeFuncBAttributes = {
+  prop?: PropFor<'feFuncB'> | null;
   'id'?: string;
   'xml:base'?: string;
   'xml:lang'?: string;
@@ -2507,6 +2553,7 @@ type FeFuncBAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeFuncGAttributes = {
+  prop?: PropFor<'feFuncG'> | null;
   'id'?: string;
   'xml:base'?: string;
   'xml:lang'?: string;
@@ -2514,6 +2561,7 @@ type FeFuncGAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeFuncRAttributes = {
+  prop?: PropFor<'feFuncR'> | null;
   'id'?: string;
   'xml:base'?: string;
   'xml:lang'?: string;
@@ -2521,6 +2569,7 @@ type FeFuncRAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeGaussianBlurAttributes = {
+  prop?: PropFor<'feGaussianBlur'> | null;
   'class'?: string | string[];
   'id'?: string;
   'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
@@ -2530,6 +2579,7 @@ type FeGaussianBlurAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeImageAttributes = {
+  prop?: PropFor<'feImage'> | null;
   'class'?: string | string[];
   'externalResourcesRequired'?: "true" | "false";
   'id'?: string;
@@ -2540,6 +2590,7 @@ type FeImageAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeMergeAttributes = {
+  prop?: PropFor<'feMerge'> | null;
   'class'?: string | string[];
   'id'?: string;
   'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
@@ -2549,6 +2600,7 @@ type FeMergeAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeMergeNodeAttributes = {
+  prop?: PropFor<'feMergeNode'> | null;
   'id'?: string;
   'xml:base'?: string;
   'xml:lang'?: string;
@@ -2556,6 +2608,7 @@ type FeMergeNodeAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeMorphologyAttributes = {
+  prop?: PropFor<'feMorphology'> | null;
   'class'?: string | string[];
   'id'?: string;
   'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
@@ -2565,6 +2618,7 @@ type FeMorphologyAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeOffsetAttributes = {
+  prop?: PropFor<'feOffset'> | null;
   'class'?: string | string[];
   'id'?: string;
   'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
@@ -2574,6 +2628,7 @@ type FeOffsetAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FePointLightAttributes = {
+  prop?: PropFor<'fePointLight'> | null;
   'id'?: string;
   'xml:base'?: string;
   'xml:lang'?: string;
@@ -2581,6 +2636,7 @@ type FePointLightAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeSpecularLightingAttributes = {
+  prop?: PropFor<'feSpecularLighting'> | null;
   'class'?: string | string[];
   'id'?: string;
   'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
@@ -2590,6 +2646,7 @@ type FeSpecularLightingAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeSpotLightAttributes = {
+  prop?: PropFor<'feSpotLight'> | null;
   'id'?: string;
   'xml:base'?: string;
   'xml:lang'?: string;
@@ -2597,6 +2654,7 @@ type FeSpotLightAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeTileAttributes = {
+  prop?: PropFor<'feTile'> | null;
   'class'?: string | string[];
   'id'?: string;
   'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
@@ -2606,6 +2664,7 @@ type FeTileAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeTurbulenceAttributes = {
+  prop?: PropFor<'feTurbulence'> | null;
   'class'?: string | string[];
   'id'?: string;
   'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
@@ -2615,16 +2674,18 @@ type FeTurbulenceAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FieldsetAttributes = {
+  prop?: PropFor<'fieldset'> | null;
   'disabled'?: boolean;
   'form'?: string;
   'name'?: string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type FigcaptionAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type FigcaptionAttributes = { prop?: PropFor<'figcaption'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type FigureAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type FigureAttributes = { prop?: PropFor<'figure'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FilterAttributes = {
+  prop?: PropFor<'filter'> | null;
   'class'?: string | string[];
   'externalResourcesRequired'?: "true" | "false";
   'id'?: string;
@@ -2634,9 +2695,10 @@ type FilterAttributes = {
   'xml:space'?: "default" | "preserve";
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type FooterAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type FooterAttributes = { prop?: PropFor<'footer'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ForeignObjectAttributes = {
+  prop?: PropFor<'foreignObject'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'height'?: number | string;
@@ -2714,6 +2776,7 @@ type ForeignObjectAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FormAttributes = {
+  prop?: PropFor<'form'> | null;
   'accept-charset'?: string;
   'acceptCharset'?: string;
   'action'?: string;
@@ -2727,6 +2790,7 @@ type FormAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type GAttributes = {
+  prop?: PropFor<'g'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'id'?: string;
@@ -2799,31 +2863,32 @@ type GAttributes = {
   'xml:space'?: "default" | "preserve";
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type H1Attributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type H1Attributes = { prop?: PropFor<'h1'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type H2Attributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type H2Attributes = { prop?: PropFor<'h2'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type H3Attributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type H3Attributes = { prop?: PropFor<'h3'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type H4Attributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type H4Attributes = { prop?: PropFor<'h4'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type H5Attributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type H5Attributes = { prop?: PropFor<'h5'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type H6Attributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type H6Attributes = { prop?: PropFor<'h6'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type HeadAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type HeadAttributes = { prop?: PropFor<'head'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type HeaderAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type HeaderAttributes = { prop?: PropFor<'header'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type HgroupAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type HgroupAttributes = { prop?: PropFor<'hgroup'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type HrAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type HrAttributes = { prop?: PropFor<'hr'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type HtmlAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type HtmlAttributes = { prop?: PropFor<'html'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type IAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type IAttributes = { prop?: PropFor<'i'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type IframeAttributes = {
+  prop?: PropFor<'iframe'> | null;
   'allow'?: string;
   'allowfullscreen'?: boolean;
   'height'?: number | `${number}`;
@@ -2837,6 +2902,7 @@ type IframeAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ImageAttributes = {
+  prop?: PropFor<'image'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'crossorigin'?: "anonymous" | "use-credentials";
@@ -2919,6 +2985,7 @@ type ImageAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ImgAttributes = {
+  prop?: PropFor<'img'> | null;
   'alt'?: string;
   'controls'?: boolean;
   'crossorigin'?: "anonymous" | "use-credentials";
@@ -2936,6 +3003,7 @@ type ImgAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type InputAttributes = {
+  prop?: PropFor<'input'> | null;
   'accept'?: string;
   'alpha'?: boolean;
   'alt'?: string;
@@ -2973,23 +3041,27 @@ type InputAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type InsAttributes = {
+  prop?: PropFor<'ins'> | null;
   'cite'?: string;
   'datetime'?: string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type KbdAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type KbdAttributes = { prop?: PropFor<'kbd'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type LabelAttributes = {
+  prop?: PropFor<'label'> | null;
   'for'?: string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type LegendAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type LegendAttributes = { prop?: PropFor<'legend'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type LiAttributes = {
+  prop?: PropFor<'li'> | null;
   'value'?: number | string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type LineAttributes = {
+  prop?: PropFor<'line'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'id'?: string;
@@ -3068,6 +3140,7 @@ type LineAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type LinearGradientAttributes = {
+  prop?: PropFor<'linearGradient'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'gradientTransform'?: string;
@@ -3148,6 +3221,7 @@ type LinearGradientAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type LinkAttributes = {
+  prop?: PropFor<'link'> | null;
   'as'?: string;
   'blocking'?: string;
   'color'?: string;
@@ -3166,15 +3240,17 @@ type LinkAttributes = {
   'type'?: string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type MainAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type MainAttributes = { prop?: PropFor<'main'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type MapAttributes = {
+  prop?: PropFor<'map'> | null;
   'name'?: string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type MarkAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type MarkAttributes = { prop?: PropFor<'mark'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type MarkerAttributes = {
+  prop?: PropFor<'marker'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'id'?: string;
@@ -3253,6 +3329,7 @@ type MarkerAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type MaskAttributes = {
+  prop?: PropFor<'mask'> | null;
   'class'?: string | string[];
   'id'?: string;
   'requiredExtensions'?: string;
@@ -3265,6 +3342,7 @@ type MaskAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type MathAttributes = {
+  prop?: PropFor<'math'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
@@ -3283,6 +3361,7 @@ type MathAttributes = {
 } & NameSpaceAttributes & GlobalEvents;
 
 type MencloseAttributes = {
+  prop?: PropFor<'menclose'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
@@ -3299,9 +3378,10 @@ type MencloseAttributes = {
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
-type MenuAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type MenuAttributes = { prop?: PropFor<'menu'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type MerrorAttributes = {
+  prop?: PropFor<'merror'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
@@ -3318,6 +3398,7 @@ type MerrorAttributes = {
 } & NameSpaceAttributes & GlobalEvents;
 
 type MetaAttributes = {
+  prop?: PropFor<'meta'> | null;
   'charset'?: "utf-8" | "UTF-8";
   'content'?: string;
   'http-equiv'?: "content-type" | "CONTENT-TYPE" | "default-style" | "DEFAULT-STYLE" | "refresh" | "REFRESH" | "x-ua-compatible" | "X-UA-COMPATIBLE" | "content-security-policy" | "CONTENT-SECURITY-POLICY";
@@ -3327,6 +3408,7 @@ type MetaAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type MetadataAttributes = {
+  prop?: PropFor<'metadata'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'id'?: string;
@@ -3397,6 +3479,7 @@ type MetadataAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type MeterAttributes = {
+  prop?: PropFor<'meter'> | null;
   'high'?: number | string;
   'low'?: number | string;
   'max'?: number | string;
@@ -3406,6 +3489,7 @@ type MeterAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type MfracAttributes = {
+  prop?: PropFor<'mfrac'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
@@ -3423,6 +3507,7 @@ type MfracAttributes = {
 } & NameSpaceAttributes & GlobalEvents;
 
 type MiAttributes = {
+  prop?: PropFor<'mi'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
@@ -3439,6 +3524,7 @@ type MiAttributes = {
 } & NameSpaceAttributes & GlobalEvents;
 
 type MmultiscriptsAttributes = {
+  prop?: PropFor<'mmultiscripts'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
@@ -3455,6 +3541,7 @@ type MmultiscriptsAttributes = {
 } & NameSpaceAttributes & GlobalEvents;
 
 type MnAttributes = {
+  prop?: PropFor<'mn'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
@@ -3471,6 +3558,7 @@ type MnAttributes = {
 } & NameSpaceAttributes & GlobalEvents;
 
 type MoAttributes = {
+  prop?: PropFor<'mo'> | null;
   'accent'?: string;
   'autofocus'?: boolean;
   'class'?: string | string[];
@@ -3497,6 +3585,7 @@ type MoAttributes = {
 } & NameSpaceAttributes & GlobalEvents;
 
 type MoverAttributes = {
+  prop?: PropFor<'mover'> | null;
   'accent'?: string;
   'autofocus'?: boolean;
   'class'?: string | string[];
@@ -3514,6 +3603,7 @@ type MoverAttributes = {
 } & NameSpaceAttributes & GlobalEvents;
 
 type MpaddedAttributes = {
+  prop?: PropFor<'mpadded'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'depth'?: string;
@@ -3535,6 +3625,7 @@ type MpaddedAttributes = {
 } & NameSpaceAttributes & GlobalEvents;
 
 type MpathAttributes = {
+  prop?: PropFor<'mpath'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'href'?: string;
@@ -3606,6 +3697,7 @@ type MpathAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type MphantomAttributes = {
+  prop?: PropFor<'mphantom'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
@@ -3622,6 +3714,7 @@ type MphantomAttributes = {
 } & NameSpaceAttributes & GlobalEvents;
 
 type MprescriptsAttributes = {
+  prop?: PropFor<'mprescripts'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
@@ -3638,6 +3731,7 @@ type MprescriptsAttributes = {
 } & NameSpaceAttributes & GlobalEvents;
 
 type MrootAttributes = {
+  prop?: PropFor<'mroot'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
@@ -3654,6 +3748,7 @@ type MrootAttributes = {
 } & NameSpaceAttributes & GlobalEvents;
 
 type MrowAttributes = {
+  prop?: PropFor<'mrow'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
@@ -3670,6 +3765,7 @@ type MrowAttributes = {
 } & NameSpaceAttributes & GlobalEvents;
 
 type MsAttributes = {
+  prop?: PropFor<'ms'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
@@ -3686,6 +3782,7 @@ type MsAttributes = {
 } & NameSpaceAttributes & GlobalEvents;
 
 type MspaceAttributes = {
+  prop?: PropFor<'mspace'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
@@ -3704,6 +3801,7 @@ type MspaceAttributes = {
 } & NameSpaceAttributes & GlobalEvents;
 
 type MsqrtAttributes = {
+  prop?: PropFor<'msqrt'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
@@ -3720,6 +3818,7 @@ type MsqrtAttributes = {
 } & NameSpaceAttributes & GlobalEvents;
 
 type MstyleAttributes = {
+  prop?: PropFor<'mstyle'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
@@ -3736,6 +3835,7 @@ type MstyleAttributes = {
 } & NameSpaceAttributes & GlobalEvents;
 
 type MsubAttributes = {
+  prop?: PropFor<'msub'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
@@ -3752,6 +3852,7 @@ type MsubAttributes = {
 } & NameSpaceAttributes & GlobalEvents;
 
 type MsubsupAttributes = {
+  prop?: PropFor<'msubsup'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
@@ -3768,6 +3869,7 @@ type MsubsupAttributes = {
 } & NameSpaceAttributes & GlobalEvents;
 
 type MsupAttributes = {
+  prop?: PropFor<'msup'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
@@ -3784,6 +3886,7 @@ type MsupAttributes = {
 } & NameSpaceAttributes & GlobalEvents;
 
 type MtableAttributes = {
+  prop?: PropFor<'mtable'> | null;
   'align'?: string;
   'autofocus'?: boolean;
   'class'?: string | string[];
@@ -3810,6 +3913,7 @@ type MtableAttributes = {
 } & NameSpaceAttributes & GlobalEvents;
 
 type MtdAttributes = {
+  prop?: PropFor<'mtd'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'columnalign'?: string;
@@ -3830,6 +3934,7 @@ type MtdAttributes = {
 } & NameSpaceAttributes & GlobalEvents;
 
 type MtextAttributes = {
+  prop?: PropFor<'mtext'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
@@ -3846,6 +3951,7 @@ type MtextAttributes = {
 } & NameSpaceAttributes & GlobalEvents;
 
 type MtrAttributes = {
+  prop?: PropFor<'mtr'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'columnalign'?: string;
@@ -3864,6 +3970,7 @@ type MtrAttributes = {
 } & NameSpaceAttributes & GlobalEvents;
 
 type MunderAttributes = {
+  prop?: PropFor<'munder'> | null;
   'accentunder'?: string;
   'autofocus'?: boolean;
   'class'?: string | string[];
@@ -3881,6 +3988,7 @@ type MunderAttributes = {
 } & NameSpaceAttributes & GlobalEvents;
 
 type MunderoverAttributes = {
+  prop?: PropFor<'munderover'> | null;
   'accent'?: string;
   'accentunder'?: string;
   'autofocus'?: boolean;
@@ -3898,11 +4006,12 @@ type MunderoverAttributes = {
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
-type NavAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type NavAttributes = { prop?: PropFor<'nav'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type NoscriptAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type NoscriptAttributes = { prop?: PropFor<'noscript'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ObjectAttributes = {
+  prop?: PropFor<'object'> | null;
   'data'?: string;
   'form'?: string;
   'height'?: number | `${number}`;
@@ -3912,17 +4021,20 @@ type ObjectAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type OlAttributes = {
+  prop?: PropFor<'ol'> | null;
   'reversed'?: boolean;
   'start'?: number | `${number}`;
   'type'?: "1" | "a" | "A" | "i" | "I";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type OptgroupAttributes = {
+  prop?: PropFor<'optgroup'> | null;
   'disabled'?: boolean;
   'label'?: string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type OptionAttributes = {
+  prop?: PropFor<'option'> | null;
   'disabled'?: boolean;
   'label'?: string;
   'selected'?: boolean;
@@ -3930,14 +4042,16 @@ type OptionAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type OutputAttributes = {
+  prop?: PropFor<'output'> | null;
   'for'?: string;
   'form'?: string;
   'name'?: string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type PAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type PAttributes = { prop?: PropFor<'p'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type PathAttributes = {
+  prop?: PropFor<'path'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'd'?: string;
@@ -4013,6 +4127,7 @@ type PathAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type PatternAttributes = {
+  prop?: PropFor<'pattern'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'height'?: number | string;
@@ -4094,9 +4209,10 @@ type PatternAttributes = {
   'y'?: number | string;
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type PictureAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type PictureAttributes = { prop?: PropFor<'picture'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type PolygonAttributes = {
+  prop?: PropFor<'polygon'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'id'?: string;
@@ -4172,6 +4288,7 @@ type PolygonAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type PolylineAttributes = {
+  prop?: PropFor<'polyline'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'id'?: string;
@@ -4246,18 +4363,21 @@ type PolylineAttributes = {
   'xml:space'?: "default" | "preserve";
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type PreAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type PreAttributes = { prop?: PropFor<'pre'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ProgressAttributes = {
+  prop?: PropFor<'progress'> | null;
   'max'?: number | string;
   'value'?: number | string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type QAttributes = {
+  prop?: PropFor<'q'> | null;
   'cite'?: string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type RadialGradientAttributes = {
+  prop?: PropFor<'radialGradient'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'cx'?: number | string;
@@ -4340,6 +4460,7 @@ type RadialGradientAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type RectAttributes = {
+  prop?: PropFor<'rect'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'height'?: number | string;
@@ -4419,17 +4540,18 @@ type RectAttributes = {
   'y'?: number | string;
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type RpAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type RpAttributes = { prop?: PropFor<'rp'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type RtAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type RtAttributes = { prop?: PropFor<'rt'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type RubyAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type RubyAttributes = { prop?: PropFor<'ruby'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type SAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type SAttributes = { prop?: PropFor<'s'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type SampAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type SampAttributes = { prop?: PropFor<'samp'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ScriptAttributes = {
+  prop?: PropFor<'script'> | null;
   'async'?: boolean;
   'blocking'?: string;
   'crossorigin'?: "anonymous" | "use-credentials";
@@ -4442,11 +4564,12 @@ type ScriptAttributes = {
   'type'?: string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type SearchAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type SearchAttributes = { prop?: PropFor<'search'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type SectionAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type SectionAttributes = { prop?: PropFor<'section'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type SelectAttributes = {
+  prop?: PropFor<'select'> | null;
   'autocomplete'?: string;
   'disabled'?: boolean;
   'form'?: string;
@@ -4456,9 +4579,10 @@ type SelectAttributes = {
   'size'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type SelectedcontentAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type SelectedcontentAttributes = { prop?: PropFor<'selectedcontent'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type SemanticsAttributes = {
+  prop?: PropFor<'semantics'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
@@ -4475,6 +4599,7 @@ type SemanticsAttributes = {
 } & NameSpaceAttributes & GlobalEvents;
 
 type SetAttributes = {
+  prop?: PropFor<'set'> | null;
   'attributeName'?: string;
   'autofocus'?: boolean;
   'begin'?: string;
@@ -4562,12 +4687,14 @@ type SetAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type SlotAttributes = {
+  prop?: PropFor<'slot'> | null;
   'name'?: string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type SmallAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type SmallAttributes = { prop?: PropFor<'small'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type SourceAttributes = {
+  prop?: PropFor<'source'> | null;
   'height'?: number | `${number}`;
   'media'?: string;
   'sizes'?: string;
@@ -4577,9 +4704,10 @@ type SourceAttributes = {
   'width'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type SpanAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type SpanAttributes = { prop?: PropFor<'span'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type StopAttributes = {
+  prop?: PropFor<'stop'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'id'?: string;
@@ -4650,20 +4778,22 @@ type StopAttributes = {
   'xml:space'?: "default" | "preserve";
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type StrongAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type StrongAttributes = { prop?: PropFor<'strong'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type StyleAttributes = {
+  prop?: PropFor<'style'> | null;
   'blocking'?: string;
   'media'?: string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type SubAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type SubAttributes = { prop?: PropFor<'sub'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type SummaryAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type SummaryAttributes = { prop?: PropFor<'summary'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type SupAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type SupAttributes = { prop?: PropFor<'sup'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type SvgAttributes = {
+  prop?: PropFor<'svg'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'height'?: number | string;
@@ -4746,6 +4876,7 @@ type SvgAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type SwitchAttributes = {
+  prop?: PropFor<'switch'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'id'?: string;
@@ -4819,6 +4950,7 @@ type SwitchAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type SymbolAttributes = {
+  prop?: PropFor<'symbol'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'height'?: number | string;
@@ -4897,17 +5029,19 @@ type SymbolAttributes = {
   'y'?: number | string;
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type TableAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type TableAttributes = { prop?: PropFor<'table'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type TbodyAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type TbodyAttributes = { prop?: PropFor<'tbody'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type TdAttributes = {
+  prop?: PropFor<'td'> | null;
   'colspan'?: number | `${number}`;
   'headers'?: string;
   'rowspan'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type TemplateAttributes = {
+  prop?: PropFor<'template'> | null;
   'shadowrootclonable'?: boolean;
   'shadowrootcustomelementregistry'?: boolean;
   'shadowrootdelegatesfocus'?: boolean;
@@ -4917,6 +5051,7 @@ type TemplateAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type TextAttributes = {
+  prop?: PropFor<'text'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'dx'?: string;
@@ -4997,6 +5132,7 @@ type TextAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type TextareaAttributes = {
+  prop?: PropFor<'textarea'> | null;
   'autocomplete'?: string;
   'cols'?: number | `${number}`;
   'dirname'?: string;
@@ -5013,6 +5149,7 @@ type TextareaAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type TextPathAttributes = {
+  prop?: PropFor<'textPath'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'href'?: string;
@@ -5095,9 +5232,10 @@ type TextPathAttributes = {
   'xml:space'?: "default" | "preserve";
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type TfootAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type TfootAttributes = { prop?: PropFor<'tfoot'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ThAttributes = {
+  prop?: PropFor<'th'> | null;
   'abbr'?: string;
   'colspan'?: number | `${number}`;
   'headers'?: string;
@@ -5105,17 +5243,19 @@ type ThAttributes = {
   'scope'?: "row" | "ROW" | "col" | "COL" | "rowgroup" | "ROWGROUP" | "colgroup" | "COLGROUP";
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type TheadAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type TheadAttributes = { prop?: PropFor<'thead'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type TimeAttributes = {
+  prop?: PropFor<'time'> | null;
   'datetime'?: string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type TitleAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type TitleAttributes = { prop?: PropFor<'title'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type TrAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type TrAttributes = { prop?: PropFor<'tr'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type TrackAttributes = {
+  prop?: PropFor<'track'> | null;
   'default'?: boolean;
   'kind'?: "subtitles" | "captions" | "descriptions" | "chapters" | "metadata";
   'label'?: string;
@@ -5124,6 +5264,7 @@ type TrackAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type TspanAttributes = {
+  prop?: PropFor<'tspan'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'dx'?: string;
@@ -5203,11 +5344,12 @@ type TspanAttributes = {
   'y'?: number | string;
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type UAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type UAttributes = { prop?: PropFor<'u'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type UlAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type UlAttributes = { prop?: PropFor<'ul'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type UseAttributes = {
+  prop?: PropFor<'use'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'height'?: number | string;
@@ -5287,9 +5429,10 @@ type UseAttributes = {
   'y'?: number | string;
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type VarAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type VarAttributes = { prop?: PropFor<'var'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type VideoAttributes = {
+  prop?: PropFor<'video'> | null;
   'autoplay'?: boolean;
   'controls'?: boolean;
   'crossorigin'?: "anonymous" | "use-credentials";
@@ -5305,6 +5448,7 @@ type VideoAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ViewAttributes = {
+  prop?: PropFor<'view'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
   'id'?: string;
@@ -5377,7 +5521,7 @@ type ViewAttributes = {
   'xml:space'?: "default" | "preserve";
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type WbrAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type WbrAttributes = { prop?: PropFor<'wbr'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ColgroupContent = ColTag | TemplateTag | LiteralTag | CommentTag | null | undefined | boolean | (ColTag | TemplateTag | LiteralTag | CommentTag | null | undefined | boolean)[];
 type DlContent = DtTag | DdTag | DivTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | null | undefined | boolean | (DtTag | DdTag | DivTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | null | undefined | boolean)[];

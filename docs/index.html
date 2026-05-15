@@ -33,7 +33,7 @@
     <li><a href="#building-html">Building HTML</a>
       <ul>
         <li><a href="#elements-and-content">Elements &amp; content</a></li>
-        <li><a href="#attributes">Attributes</a></li>
+        <li><a href="#options">Options</a></li>
         <li><a href="#lists">Rendering lists</a></li>
         <li><a href="#conditionals">Conditionals</a></li>
         <li><a href="#components">Components &amp; reuse</a></li>
@@ -168,7 +168,7 @@ t.div('text');                     // content only
 t.div([t.p('a'), t.p('b')]);       // content array
 t.div();                           // empty</code></pre>
 
-    <p>Void elements take only attributes:</p>
+    <p>Void elements take only attributes (no content):</p>
 
     <pre><code class="language-javascript">t.input({ type: 'checkbox', checked: true });
 t.br();
@@ -179,7 +179,7 @@ t.meta({ charset: 'utf-8' });</code></pre>
     <pre><code class="language-javascript">t.p(['Count: ', 42, t.strong(' items')]).toString();
 // &lt;p&gt;Count: 42&lt;strong&gt; items&lt;/strong&gt;&lt;/p&gt;</code></pre>
 
-    <h3 id="attributes">Attributes</h3>
+    <h3 id="options">Options (attributes + props + eventListeners)</h3>
 
     <ul>
       <li><strong>camelCase &rarr; kebab-case:</strong> <code>{ dataBsToggle: 'collapse' }</code> &rarr; <code>data-bs-toggle="collapse"</code></li>
@@ -188,6 +188,8 @@ t.meta({ charset: 'utf-8' });</code></pre>
       <li><strong>class as array:</strong> <code>{ class: ['foo', 'bar'] }</code> &rarr; <code>class="foo bar"</code></li>
       <li><strong>style as object:</strong> <code>{ style: { backgroundColor: 'red', zIndex: 2 } }</code> &rarr; <code>style="background-color: red; z-index: 2"</code>. camelCase keys convert to kebab-case. <code>null</code>, <code>undefined</code>, and <code>false</code> values are silently omitted. In TypeScript, the style object is typed with <a href="https://www.npmjs.com/package/csstype">csstype</a> for autocomplete on property names and values.</li>
       <li><strong>Always allowed:</strong> <code>data-*</code>, <code>aria-*</code>, and all <a href="https://html.spec.whatwg.org/multipage/dom.html#global-attributes">global HTML attributes</a></li>
+      <li><strong>on key:</strong> <code>{ on: { myCustomEvent: handler } }</code> wires event listeners via <code>addEventListener</code> with event names passed verbatim. Use this for custom and camelCase event names that <code>on*</code> attributes cannot express. Silently ignored in <code>.toString()</code>.</li>
+      <li><strong>prop key:</strong> <code>{ prop: { value: 'hello' } }</code> assigns directly to DOM properties (<code>el.value = ...</code>) instead of using <code>setAttribute</code>. Silently ignored in <code>.toString()</code>. See <a href="#dom-properties">DOM properties</a>.</li>
     </ul>
 
     <h3 id="lists">Rendering lists</h3>
@@ -339,6 +341,21 @@ observer.observe(hero.toElement());
 observer.observe(cards.toElement());
 
 document.body.append(t.main(hero, cards).toElement());</code></pre>
+
+    <h3 id="dom-properties">DOM properties</h3>
+
+    <p>HTML attributes and DOM properties diverge after user interaction. <code>input.value</code> reflects what the user typed, while <code>getAttribute('value')</code> still returns the original default. Use the <code>prop</code> key to assign directly to DOM properties via <code>el[name] = value</code>, bypassing <code>setAttribute</code>:</p>
+
+    <pre><code class="language-javascript">// Assigns el.value = 'hello' — sets the live property, not the HTML attribute
+t.input({ type: 'text', prop: { value: 'hello' } }).toElement();
+
+// Properties with no HTML attribute equivalent
+t.video({ src: '/intro.mp4', prop: { muted: true, playbackRate: 1.5 } }).toElement();
+
+// Expando properties are also accepted
+t.div({ prop: { _instance: myWidget } }).toElement();</code></pre>
+
+    <p><code>prop</code> is silently ignored in <code>.toString()</code>. Known properties on the element's DOM interface are typed in TypeScript; expando properties are also accepted. Property existence and writability are validated at render time via <code>validationLevel</code>.</p>
 
   </section>
 

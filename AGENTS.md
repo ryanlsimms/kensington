@@ -18,8 +18,8 @@ import type { ContentTag, VoidTag, LiteralTag, CommentTag, Content, ContentMetho
 ## The basics
 
 ```javascript
-t.div({ class: 'container' }, t.p('Hello'));   // attributes, then content
-t.div(t.p('Hello'));                           // content only — attributes are optional
+t.div({ class: 'container' }, t.p('Hello'));   // options, then content
+t.div(t.p('Hello'));                           // content only — options are optional
 t.input({ type: 'checkbox', checked: true });  // void elements take no content
 t.div([t.p('one'), t.p('two')]);              // array of children
 ```
@@ -33,14 +33,29 @@ res.send(t.div('hello').toString());   // correct
 res.send(t.div('hello'));              // wrong — sends [object Object]
 ```
 
-## Attribute rules
+## Options
+
+The first argument to any tag method is a plain object. It accepts HTML attributes, event handlers, and DOM property assignments.
 
 - camelCase keys convert to kebab-case: `{ dataBsToggle: 'collapse' }` → `data-bs-toggle="collapse"`
 - Nested objects flatten: `{ data: { id: '1' } }` → `data-id="1"`
 - Boolean: `{ checked: true }` → `checked`; `{ checked: false }` → attribute omitted
 - `class` accepts a string or array: `{ class: ['a', 'b'] }` → `class="a b"`
-- `style` accepts an object: `{ style: { backgroundColor: 'red' } }` → `style="background-color: red"`
+- `style` accepts an object: `{ style: { backgroundColor: 'red' } }` → `style="background-color: red"`. Keys can be camelCase or kebab-case. Values of `null`, `undefined`, `false`, or `''` are silently omitted.
 - `data-*` and `aria-*` are always allowed without configuration
+- Standard event handler attributes (`onclick`, `oninput`, etc.) accept a string or function. Functions are wired via `addEventListener` in `toElement()`.
+- `on` key for custom event listeners — pass a plain object mapping event names verbatim to functions: `{ on: { bricksSelectorChange: handler } }`. Names are passed directly to `addEventListener` with no transformation. Silently ignored in `.toString()`.
+
+### DOM properties with `prop`
+
+HTML attributes and DOM properties diverge after user interaction. `input.value` reflects what the user typed, while `getAttribute('value')` still returns the original default. Use the `prop` key to assign directly to DOM properties via `el[name] = value`, bypassing `setAttribute`:
+
+```javascript
+t.input({ type: 'text', prop: { value: '' } }).toElement();  // assigns el.value = ''
+t.video({ src: '/intro.mp4', prop: { muted: true, playbackRate: 1.5 } }).toElement();
+```
+
+`prop` is silently ignored in `.toString()`. Known properties on the element's DOM interface are typed in TypeScript. Expando properties (arbitrary string keys) are also accepted. Property existence and writability are validated at render time via `validationLevel`.
 
 ## Content rules
 

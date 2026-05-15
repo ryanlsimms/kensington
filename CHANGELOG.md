@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- `on` key in the options object for custom event listeners. Pass a plain object mapping event names verbatim to handler functions: `t.div({ on: { bricksSelectorChange: handler } })`. Event names are passed directly to `addEventListener` with no case transformation, so both camelCase and kebab-case custom event names work correctly.
+- `prop` key in the options object for direct DOM property assignment. Pass `{ prop: { value: 'hello', checked: true } }` to assign properties via `el[name] = value` rather than `setAttribute`. Silently ignored in `.toString()`. Property existence and writability are validated at render time and reported via `validationLevel`. Known properties on the element's DOM interface are typed in TypeScript; expando properties are also accepted.
+
+### Changed
+- `on*` function attributes (e.g. `onclick`, `oninput`) now only wire standard all-lowercase DOM event listeners. A camelCase key like `onMyEvent` is no longer silently treated as an event listener. It is instead subject to the normal `validationLevel` contract: silently discarded at `'off'`, warned at `'warn'`, throws at `'error'`. Use the new `on` key for custom event names.
+
 ## [1.0.0-beta.3] - 2026-05-13
 
 ### Added

@@ -257,3 +257,25 @@ t.select(t.span('invalid'));
 
 // @ts-expect-error - td is not valid content for table (must be wrapped in tr/tbody/etc.)
 t.table(t.td('cell'));
+
+// ─── on key ──────────────────────────────────────────────────────────────────
+
+t.div({ on: { click: (e: Event) => { console.log(e); } } });
+t.div({ on: { 'custom-event': (e: Event) => {} } });
+t.button({ type: 'button', on: { myCustomEvent: (e: Event) => {} } });
+
+// @ts-expect-error - on handler must be a function
+t.div({ on: { click: 42 } });
+
+// @ts-expect-error - on value must be a Record, not a string
+t.div({ on: 'not-an-object' });
+
+// ─── prop key ──────────────────────────────────────────────────────────────
+
+t.input({ prop: { value: 'hello' } });
+t.input({ prop: { checked: true } });
+t.input({ prop: null });
+t.input({ prop: { _instance: {}, myCustomFlag: true } }); // expandos accepted via string index
+
+// @ts-expect-error - value must be a string on input
+t.input({ prop: { value: 42 } });

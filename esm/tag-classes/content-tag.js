@@ -23,6 +23,20 @@ function isValidContentItem(c, contentIsLiteral) {
   return !contentIsLiteral && (c instanceof ContentTag || c instanceof LiteralTag || c instanceof CommentTag); // literal tags (script/style) accept only raw strings, not child tag objects
 }
 
+function isPropWritable(element, propName) {
+  let obj = element;
+  while (obj !== null) {
+    const desc = Object.getOwnPropertyDescriptor(obj, propName);
+    if (desc) {
+      if (desc.set !== undefined) { return true; }
+      if ('writable' in desc) { return desc.writable === true; }
+      return false;
+    }
+    obj = Object.getPrototypeOf(obj);
+  }
+  return false;
+}
+
 function collectContent(items, seen = new Set()) {
   const out = [];
   for (const c of [].concat(items)) {
@@ -47,6 +61,7 @@ export default class ContentTag {
   constructor(options) {
     this.tagName = options.tagName;
     this.attributes = options.attributes;
+    this.prop = options.attributes?.prop ?? null;
     this.additionalGlobalAttributes = options.additionalGlobalAttributes ?? {};
     this.allowedAttributeMap = options.allowedAttributeMap ?? new Map(); // empty Map fallback: all non-namespace attrs fail has(), so custom tags with no spec reject everything except namespaces
     this.contentIsLiteral = options.contentIsLiteral;
@@ -96,6 +111,7 @@ export default class ContentTag {
   }
 
   attributeIsValid(attr) {
+    if (attr === 'on' || attr === 'prop') { return true; }
     return this.allowedAttributeMap.has(attr) ||
       this.allowedAttributeMap.has(camelToKebab(attr)) ||
       this.isValidNamespaceAttribute(attr) ||
@@ -103,6 +119,14 @@ export default class ContentTag {
   }
 
   attributeValueIsValid(attr, value) {
+    if (attr === 'on') {
+      if (value === null || value === undefined) { return true; }
+      return typeof value === 'object' && !Array.isArray(value);
+    }
+    if (attr === 'prop') {
+      if (value === null || value === undefined) { return true; }
+      return typeof value === 'object' && !Array.isArray(value);
+    }
     if ([undefined, null].includes(value)) {
       return true;
     }
@@ -269,11 +293,29 @@ export default class ContentTag {
     }
 
     for (const [attrName, attrValue] of this.attributeArray()) {
-      if (attrName.startsWith('on') && typeof attrValue === 'function') {
-        const eventName = attrName.replace(/^on/, '');
-        element.addEventListener(eventName, attrValue);
+      if (/^on[a-z]/.test(attrName) && typeof attrValue === 'function') {
+        element.addEventListener(attrName.slice(2), attrValue);
       } else {
         element.setAttribute(attrName, attrValue);
+      }
+    }
+
+    const events = this.attributes?.on;
+    if (events !== null && typeof events === 'object' && !Array.isArray(events)) {
+      for (const [eventName, handler] of Object.entries(events)) {
+        if (typeof handler === 'function') {
+          element.addEventListener(eventName, handler);
+        }
+      }
+    }
+
+    if (this.prop) {
+      for (const [propName, propValue] of Object.entries(this.prop)) {
+        if (propName in element && !isPropWritable(element, propName)) {
+          showInvalid(`prop key \`${propName}\` is read-only on <${this.tagName}>`, this.validationLevel, this.logger);
+          continue;
+        }
+        element[propName] = propValue;
       }
     }
 

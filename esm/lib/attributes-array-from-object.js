@@ -10,6 +10,9 @@ export default function attributesArrayFromObject(obj, options = {}) {
     if (!attr.trim()) {
       continue;
     }
+    if (attr === 'on' || attr === 'prop') {
+      continue;
+    }
     let val;
     try {
       val = obj[attr]; // property access can throw if the object has a getter that throws
@@ -57,7 +60,7 @@ export default function attributesArrayFromObject(obj, options = {}) {
       continue;
     }
     if (typeof val === 'function') {
-      if (attrName.startsWith('on')) { // only event handlers. String serialization can't represent functions
+      if (/^on[a-z]/.test(attrName)) { // only standard lowercase event handlers. String serialization can't represent functions
         result.push([attrName, val]);
       }
       continue;
