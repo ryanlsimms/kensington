@@ -29,7 +29,6 @@
     <a href="api.html">API</a>
   </div>
   <ul>
-    <li><a href="#why">Why Kensington?</a></li>
     <li><a href="#quick-start">Quick start</a></li>
     <li><a href="#building-html">Building HTML</a>
       <ul>
@@ -38,7 +37,6 @@
         <li><a href="#lists">Rendering lists</a></li>
         <li><a href="#conditionals">Conditionals</a></li>
         <li><a href="#components">Components &amp; reuse</a></li>
-        <li><a href="#passing-t">Passing <code>t</code> around</a></li>
       </ul>
     </li>
     <li><a href="#dom">Browser DOM</a></li>
@@ -62,7 +60,7 @@
     <li><a href="#tooling">Tooling</a>
       <ul>
         <li><a href="#cli">HTML &rarr; Kensington</a></li>
-        <li><a href="#llms">AI assistants</a></li>
+        <li><a href="#ai-assistants">AI assistants</a></li>
       </ul>
     </li>
   </ul>
@@ -87,88 +85,72 @@
       <a href="https://github.com/ryanlsimms/kensington/actions/workflows/ci.yml"><img src="https://github.com/ryanlsimms/kensington/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
       <a href="https://opensource.org/licenses/ISC"><img src="https://img.shields.io/badge/License-ISC-blue.svg" alt="License: ISC"></a>
     </div>
-    <p>HTML/SVG/MathML template library for JavaScript and TypeScript. Tags, attribute names/values, inline style property names, and some nested tags are comprehensively typed against the official HTML/SVG/MathML specs. Components are plain functions — no JSX, no compiler, and very little to learn.</p>
-    <ul style="list-style: none; padding: 0; margin: 0.75rem 0 1rem; display: flex; flex-direction: column; flex-wrap: wrap; gap: 0.5rem;">
-      <li style="background: var(--color-inline-code-bg); border-radius: 4px; padding: 0.25em 0.65em; font-size: 0.875rem;">Outputs HTML strings or live DOM nodes from the same code</li>
-      <li style="background: var(--color-inline-code-bg); border-radius: 4px; padding: 0.25em 0.65em; font-size: 0.875rem;">Comprehensive TypeScript definitions</li>
-      <li style="background: var(--color-inline-code-bg); border-radius: 4px; padding: 0.25em 0.65em; font-size: 0.875rem;">No build step required — works in Node, Deno, and the browser</li>
+    <p>HTML/SVG/MathML template library for JavaScript and TypeScript. Tags, attribute names/values, inline style property names, and some nested tags are comprehensively typed against the official HTML/SVG/MathML specs. Components are plain functions with no JSX, no compiler, and very little to learn.</p>
+    <ul class="feature-list">
+      <li>Outputs HTML strings or live DOM nodes from the same code</li>
+      <li>Comprehensive TypeScript definitions</li>
+      <li>No build step required. Works in Node, Deno, and the browser</li>
+      <li>Easy for AI to implement with an extensive AGENTS.md file</li>
     </ul>
     <pre><code class="language-bash">npm install kensington</code></pre>
-  </header>
-
-  <!-- ── Why Kensington? ──────────────────────────────────────────── -->
-
-  <section id="why">
-    <h2>Why Kensington?</h2>
-
-    <h3 id="why-templates">vs tagged template literals</h3>
-
-    <p>Tagged template literal libraries like <a href="https://github.com/developit/htm">htm</a> are lightweight and familiar, but TypeScript can only see the outer string — it cannot validate attribute names or values inside the template.</p>
-
-    <div class="panels">
-      <div>
-        <div class="panel-label">Template literal</div>
-        <pre><code class="language-javascript">// TypeScript sees a string, no attribute checking
-const html = htm`&lt;input typ="checkbox"&gt;`;
-//                       ^^^ typo, no error raised</code></pre>
+    <div class="ide-mock" aria-hidden="true">
+      <div class="ide-titlebar">
+        <span class="ide-dot ide-dot-red"></span>
+        <span class="ide-dot ide-dot-yellow"></span>
+        <span class="ide-dot ide-dot-green"></span>
+        <span class="ide-filename">index.ts</span>
       </div>
-      <div>
-        <div class="panel-label">Kensington</div>
-        <pre><code class="language-typescript">// Every attribute is a typed key-value pair
-t.input({ typ: 'checkbox' });
-// TypeScript: 'typ' does not exist on InputAttributes</code></pre>
+      <div class="ide-editor">
+        <span class="ide-ln">1</span><span>t</span><span>.</span><span class="ide-t-fn">input</span><span>({</span> <span class="ide-t-prop">type</span><span>:</span> <span class="ide-squiggly"><span class="ide-t-str">'chekbox'</span></span> <span>})</span>
+      </div>
+      <div class="ide-popup">
+        <div class="ide-popup-msg">
+          <span class="ide-error-icon">
+            <svg viewBox="0 0 16 16" width="13" height="13" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6.5" stroke="#f14c4c" stroke-width="1.5"/><path d="M8 4.5v3.5M8 10.5v.5" stroke="#f14c4c" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </span>
+          <span class="ide-ts-code">TS2322</span>
+          <span>Type <span class="ide-t-str">'chekbox'</span> is not assignable to type</span>
+        </div>
+        <div class="ide-popup-type">
+          <span class="ide-ts-str">"button"</span> | <span class="ide-ts-str">"checkbox"</span> | <span class="ide-ts-str">"color"</span> | <span class="ide-ts-str">"date"</span> | <span class="ide-ts-str">"datetime-local"</span><br>| <span class="ide-ts-str">"email"</span> | <span class="ide-ts-str">"file"</span> | <span class="ide-ts-str">"hidden"</span> | <span class="ide-ts-str">"image"</span> | <span class="ide-ts-muted">12 more...</span>
+        </div>
       </div>
     </div>
-
-    <p>Because markup is structured data, you also get camelCase-to-kebab conversion, boolean attribute handling, and <code>class</code> as an array — features that would require runtime string parsing in a template-based approach.</p>
-
-    <h3 id="why-jsx">vs JSX</h3>
-
-    <p>JSX offers similar structure but requires a compiler and a framework pragma. Kensington works anywhere JavaScript runs — Node.js, Deno, Bun, or the browser — with no build step, no transpilation, and no configuration file.</p>
-
-    <h3 id="why-dom">vs DOM methods</h3>
-
-    <p><code>document.createElement</code> is verbose and browser-only. Kensington's <code>.toElement()</code> produces live DOM nodes, so the same component can render an HTML string on the server and a live DOM node in the browser from a single code path — no conditional logic needed.</p>
-  </section>
+  </header>
 
   <!-- ── Quick start ───────────────────────────────────────────── -->
 
   <section id="quick-start">
     <h2>Quick start</h2>
 
-    <p>Import <code>t</code>, call a tag method, call <code>.toString()</code>. Attributes go in the first argument, content in the second.</p>
+    <p>Components are plain functions. Call <code>.toString()</code> to get an HTML string for server rendering or static generation.</p>
 
     <div class="panels">
       <div>
         <div class="panel-label">JavaScript</div>
         <pre><code class="language-javascript">import { t } from 'kensington';
 
-t.a({ href: '/about', class: 'nav-link' }, 'About').toString();</code></pre>
+function profileCard(name, title) {
+  return t.article({ class: 'profile' },
+    t.h2(name),
+    t.p({ class: 'title' }, title),
+    t.a({ href: `/users/${name.toLowerCase()}` }, 'View profile'),
+  );
+}
+
+profileCard('Alice', 'Senior Engineer').toString();</code></pre>
       </div>
       <div>
         <div class="panel-label">Output</div>
-        <pre><code class="language-html">&lt;a href="/about" class="nav-link"&gt;About&lt;/a&gt;</code></pre>
+        <pre><code class="language-html">&lt;article class="profile"&gt;
+  &lt;h2&gt;Alice&lt;/h2&gt;
+  &lt;p class="title"&gt;Senior Engineer&lt;/p&gt;
+  &lt;a href="/users/alice"&gt;View profile&lt;/a&gt;
+&lt;/article&gt;</code></pre>
       </div>
     </div>
 
-    <p>Nest tags by passing them as content. Everything else is more of the same.</p>
-
-    <div class="panels">
-      <div>
-        <div class="panel-label">JavaScript</div>
-        <pre><code class="language-javascript">t.ul([
-  t.li(t.a({ href: '/' }, 'Home')),
-  t.li(t.a({ href: '/about' }, 'About')),
-]).toString();</code></pre>
-      </div>
-      <div>
-        <div class="panel-label">Output</div>
-        <pre><code class="language-html">&lt;ul&gt;
-  &lt;li&gt;&lt;a href="/"&gt;Home&lt;/a&gt;&lt;/li&gt;
-  &lt;li&gt;&lt;a href="/about"&gt;About&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;</code></pre>
-      </div>
-    </div>
+    <p>For live DOM, call <code>.toElement()</code> instead. The same component renders an HTML string on the server or a live DOM node in the browser from the same code.</p>
   </section>
 
   <!-- ── Building HTML ─────────────────────────────────────────── -->
@@ -286,7 +268,7 @@ t.div({ class: 'card-grid' }, [
 
     <p>Because <code>.toString()</code> and <code>.toElement()</code> are just methods on the result, the same component works server-side and in the browser with no changes:</p>
 
-    <pre><code class="language-javascript">// shared component file — runs anywhere
+    <pre><code class="language-javascript">// shared component file, runs anywhere
 function productCard({ name, price, image }) {
   return t.div({ class: 'product-card' }, [
     t.img({ src: image, alt: name }),
@@ -310,28 +292,6 @@ div({ class: 'card' }, [
   ul([li('item one'), li('item two')]),
 ]);</code></pre>
 
-    <h3 id="passing-t">Passing <code>t</code> around</h3>
-
-    <p>If you use a custom Kensington instance (subclassed, or configured with <code>additionalNamespaces</code>), pass <code>t</code> as a parameter instead of importing a shared global. This keeps component modules portable and testable with any instance.</p>
-
-    <pre><code class="language-javascript">// user-card.js — works with any Kensington instance
-export function userCard(t, user) {
-  return t.div({ class: 'card' }, [
-    t.h3(user.name),
-    t.p(user.bio),
-  ]);
-}
-
-// app.js
-import Kensington from 'kensington';
-import { userCard } from './user-card.js';
-
-const t = new Kensington({ additionalNamespaces: ['hx'] });
-
-app.get('/user/:id', async (req, res) =&gt; {
-  const user = await db.getUser(req.params.id);
-  res.send(userCard(t, user).toString());
-});</code></pre>
   </section>
 
   <!-- ── Browser DOM ────────────────────────────────────────────── -->
@@ -339,14 +299,20 @@ app.get('/user/:id', async (req, res) =&gt; {
   <section id="dom">
     <h2>Browser DOM</h2>
 
-    <p>Call <code>.toElement()</code> instead of <code>.toString()</code> to get a live DOM node. The same tag object works in both environments.</p>
-
-    <p>SVG and MathML elements get the correct namespace automatically.</p>
+    <p>Standard event handler attributes (<code>onclick</code>, <code>oninput</code>, etc.) accept a function (wired via <code>addEventListener</code>) or a string (set via <code>setAttribute</code>). For custom events, use the <code>on</code> key with a plain object mapping event names verbatim to handlers. SVG and MathML elements get the correct namespace automatically.</p>
 
     <pre><code class="language-javascript">import { t } from 'kensington';
 
 const button = t.button({ type: 'button' }, 'Click me').toElement();
 document.body.append(button);
+
+// custom events: names are passed verbatim to addEventListener
+const el = t.div({
+  on: {
+    bricksSelectorChange: e =&gt; console.log(e.detail),
+    'my-custom-event':    e =&gt; console.log(e.detail),
+  },
+}).toElement();
 
 // SVG gets the correct SVGElement namespace
 const svg = t.svg({ viewBox: '0 0 100 100' }, [
@@ -355,12 +321,25 @@ const svg = t.svg({ viewBox: '0 0 100 100' }, [
 
 document.body.append(svg);</code></pre>
 
-    <p>Browser via CDN (no install):</p>
+    <p>Use <code>.toElement()</code> to get or create the element. It is safe to call before the element is mounted, which is useful for passing to browser APIs that need a DOM reference up front.</p>
 
-    <pre><code class="language-html">&lt;script type="module"&gt;
-  import { t } from 'https://cdn.jsdelivr.net/npm/kensington/dist/kensington.min.js';
-  document.body.append(t.p('Hello, world!').toElement());
-&lt;/script&gt;</code></pre>
+    <pre><code class="language-javascript">const hero = t.section({ id: 'hero' }, t.h1('Welcome'));
+const cards = t.section({ id: 'cards' }, [
+  t.div({ class: 'card' }, 'Card 1'),
+  t.div({ class: 'card' }, 'Card 2'),
+]);
+
+const observer = new IntersectionObserver(entries => {
+  for (const entry of entries) {
+    entry.target.classList.toggle('in-view', entry.isIntersecting);
+  }
+});
+
+observer.observe(hero.toElement());
+observer.observe(cards.toElement());
+
+document.body.append(t.main(hero, cards).toElement());</code></pre>
+
   </section>
 
   <!-- ── TypeScript ─────────────────────────────────────────────── -->
@@ -368,25 +347,62 @@ document.body.append(svg);</code></pre>
   <section id="typescript">
     <h2>TypeScript</h2>
 
+    <div class="ide-mock" aria-hidden="true">
+      <div class="ide-titlebar">
+        <span class="ide-dot ide-dot-red"></span>
+        <span class="ide-dot ide-dot-yellow"></span>
+        <span class="ide-dot ide-dot-green"></span>
+        <span class="ide-filename">index.ts</span>
+      </div>
+      <div class="ide-editor">
+        <span class="ide-ln">1</span><span>t</span><span>.</span><span class="ide-t-fn">input</span><span>({</span> <span class="ide-t-prop">formenctype</span><span>:</span> <span class="ide-squiggly"><span class="ide-t-str">'text'</span></span> <span>})</span>
+      </div>
+      <div class="ide-popup">
+        <div class="ide-popup-msg">
+          <span class="ide-error-icon">
+            <svg viewBox="0 0 16 16" width="13" height="13" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6.5" stroke="#f14c4c" stroke-width="1.5"/><path d="M8 4.5v3.5M8 10.5v.5" stroke="#f14c4c" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </span>
+          <span class="ide-ts-code">TS2322</span>
+          <span>Type <span class="ide-t-str">'text'</span> is not assignable to type</span>
+        </div>
+        <div class="ide-popup-type">
+          <span class="ide-ts-str">"application/x-www-form-urlencoded"</span> | <span class="ide-ts-str">"multipart/form-data"</span><br>| <span class="ide-ts-str">"text/plain"</span>
+        </div>
+      </div>
+    </div>
+
     <h3 id="ts-attribute-types">Attribute types</h3>
 
     <p>Types are generated directly from the HTML, SVG, and MathML living standards. Attribute names are checked, attribute values are typed as enums, booleans, or numbers as appropriate, and the <code>style</code> object is typed with <a href="https://www.npmjs.com/package/csstype">csstype</a>. You get a compile-time error when a value is wrong.</p>
-
-    <img class="screenshot" src="screenshot-ts-validation.png" alt="TypeScript error when an invalid formenctype value is used">
 
     <h3 id="ts-content-model">Content model</h3>
 
     <p>Strict containers enforce which children are valid at compile time. Passing a <code>div</code> to <code>t.tr()</code> is a type error. Branded return types (<code>TdTag</code>, <code>LiTag</code>, <code>ImgTag</code>, etc.) extend <code>ContentTag</code>, so existing code that types values as <code>ContentTag</code> still works.</p>
 
-    <pre><code class="language-typescript">const cell: TdTag = t.td('data');     // branded return type
-const tag: ContentTag = t.td('data'); // still assignable to ContentTag
-
-// @ts-expect-error — div is not valid in tr
-t.tr(t.div('invalid'));
-
-// arrays map correctly too
-const cells = ['Name', 'Role'].map(h =&gt; t.th(h)); // ThTag[]
-t.tr(cells); // fine</code></pre>
+    <div class="ide-mock" aria-hidden="true">
+      <div class="ide-titlebar">
+        <span class="ide-dot ide-dot-red"></span>
+        <span class="ide-dot ide-dot-yellow"></span>
+        <span class="ide-dot ide-dot-green"></span>
+        <span class="ide-filename">index.ts</span>
+      </div>
+      <div class="ide-editor">
+        <div class="ide-line"><span class="ide-ln">1</span><span>t</span><span>.</span><span class="ide-t-fn">tr</span><span>(</span><span>t</span><span>.</span><span class="ide-t-fn">td</span><span>(</span><span class="ide-t-str">'Name'</span><span>))</span></div>
+        <div class="ide-line"><span class="ide-ln">2</span><span>t</span><span>.</span><span class="ide-t-fn">tr</span><span>(</span><span class="ide-squiggly"><span>t</span><span>.</span><span class="ide-t-fn">div</span><span>(</span><span class="ide-t-str">'Name'</span><span>)</span></span><span>)</span></div>
+      </div>
+      <div class="ide-popup">
+        <div class="ide-popup-msg">
+          <span class="ide-error-icon">
+            <svg viewBox="0 0 16 16" width="13" height="13" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6.5" stroke="#f14c4c" stroke-width="1.5"/><path d="M8 4.5v3.5M8 10.5v.5" stroke="#f14c4c" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </span>
+          <span class="ide-ts-code">TS2345</span>
+          <span>Argument of type <span class="ide-ts-type">DivTag</span> is not assignable to parameter of type</span>
+        </div>
+        <div class="ide-popup-type">
+          <span class="ide-ts-type">TdTag</span> | <span class="ide-ts-type">ThTag</span>
+        </div>
+      </div>
+    </div>
 
     <h3 id="ts-module-augmentation">Custom elements</h3>
 
@@ -416,14 +432,12 @@ class MyEngine extends Kensington {
   <section id="advanced">
     <h2>Advanced</h2>
 
-    <p>Most users won't need any of this.</p>
-
     <h3 id="constructor">Constructor options</h3>
 
     <pre><code class="language-javascript">import Kensington from 'kensington';
 
 const t = new Kensington({
-  validationLevel: 'warn',                    // 'off' | 'warn' | 'error', default 'warn'
+  validationLevel: 'warn',                    // 'off' | 'warn' | 'error', default 'off'
   additionalNamespaces: ['hx'],               // allow hx-* (htmx), x-* (alpine), etc.
   additionalGlobalAttributes: {               // allow specific attributes on every element
     popover: ['auto', 'manual'],
@@ -440,8 +454,8 @@ const t = new Kensington({
         <tr><th>Level</th><th>Behavior</th></tr>
       </thead>
       <tbody>
-        <tr><td data-label="Level"><code>'off'</code></td><td data-label="Behavior">No validation. Best for production.</td></tr>
-        <tr><td data-label="Level"><code>'warn'</code></td><td data-label="Behavior">Logs via <code>logger</code> (default <code>console.log</code>). Does not throw. <strong>Default.</strong></td></tr>
+        <tr><td data-label="Level"><code>'off'</code></td><td data-label="Behavior">No validation. Best for production. <strong>Default.</strong></td></tr>
+        <tr><td data-label="Level"><code>'warn'</code></td><td data-label="Behavior">Logs via <code>logger</code> (default <code>console.log</code>). Does not throw.</td></tr>
         <tr><td data-label="Level"><code>'error'</code></td><td data-label="Behavior">Throws an <code>Error</code>. Useful for CI or strict development environments.</td></tr>
       </tbody>
     </table>
@@ -594,22 +608,308 @@ import type { NameSpaceAttributes, GlobalAttributes, GlobalEvents, UniversalAttr
 
     <p>If ESLint or Prettier is present in the working directory, the converter runs the formatter over the output.</p>
 
-    <h3 id="llms">AI assistants</h3>
+    <h3 id="ai-assistants">AI assistants</h3>
 
-    <p>Kensington ships an <code>llms.txt</code> file at the package root. It is a compact, single-file reference of the full API: method signatures, attribute rules, constructor options, TypeScript types, and the CLI. AI coding assistants can read it to answer questions and generate accurate Kensington code without hallucinating APIs that don't exist.</p>
-
-    <p><code>llms.txt</code> is a <a href="https://llmstxt.org">community convention</a> for making library documentation machine-readable. The file lives at <code>node_modules/kensington/llms.txt</code> after installation.</p>
+    <p>Kensington ships an <code>AGENTS.md</code> file at the package root. It is a compact, single-file reference of the full API: method signatures, attribute rules, constructor options, TypeScript types, the CLI, and working examples. AI coding assistants can read it to answer questions and generate accurate Kensington code.</p>
 
     <h3>Using it</h3>
 
-    <p>Most AI editors and assistants let you add files or URLs as context. Point yours at <code>llms.txt</code> and it will have everything it needs to work with Kensington correctly:</p>
+    <p>Most AI editors and assistants let you add files as context. Point yours at <code>AGENTS.md</code> and it will have everything it needs to work with Kensington correctly:</p>
 
     <ul>
-      <li><strong>Claude Code</strong>: reference the file path in your conversation, or add it to your project's <code>CLAUDE.md</code>.</li>
+      <li><strong>Claude Code</strong>: reference <code>node_modules/kensington/AGENTS.md</code> in your conversation, or add it to your project's <code>CLAUDE.md</code>.</li>
       <li><strong>Cursor / Windsurf</strong>: add the file to your <code>.cursorrules</code> context or drag it into the chat.</li>
       <li><strong>Any chat interface</strong>: paste the contents directly into the conversation before asking questions about Kensington.</li>
     </ul>
   </section>
+
+  <!-- ── More examples ────────────────────────────────────────── -->
+
+  <section id="more-examples">
+    <h2>More examples</h2>
+
+    <h3 id="reusable-components">Reusable components</h3>
+
+    <p>Plain functions work as components. They take arguments and return tag objects.</p>
+
+    <div class="panels">
+      <div>
+        <div class="panel-label">JavaScript</div>
+        <pre><code class="language-javascript">function card(heading, body) {
+  return t.div({ class: 'card' }, [
+    t.div({ class: 'card-header' }, heading),
+    t.div({ class: 'card-body' }, body),
+  ]);
+}
+
+function statusBadge(active) {
+  return t.span(
+    { class: ['badge', active ? 'badge-success' : 'badge-muted'] },
+    active ? 'Active' : 'Inactive',
+  );
+}
+
+t.div({ class: 'card-grid' }, [
+  card('Alice', [t.p('Role: Admin'), statusBadge(true)]),
+  card('Bob',   [t.p('Role: Editor'), statusBadge(false)]),
+]);</code></pre>
+      </div>
+      <div>
+        <div class="panel-label">HTML output</div>
+        <pre><code class="language-html">&lt;div class="card-grid"&gt;
+  &lt;div class="card"&gt;
+    &lt;div class="card-header"&gt;Alice&lt;/div&gt;
+    &lt;div class="card-body"&gt;
+      &lt;p&gt;Role: Admin&lt;/p&gt;
+      &lt;span class="badge badge-success"&gt;Active&lt;/span&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="card"&gt;
+    &lt;div class="card-header"&gt;Bob&lt;/div&gt;
+    &lt;div class="card-body"&gt;
+      &lt;p&gt;Role: Editor&lt;/p&gt;
+      &lt;span class="badge badge-muted"&gt;Inactive&lt;/span&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+      </div>
+    </div>
+
+    <h3 id="icon-reuse">Shared icons and elements</h3>
+
+    <p>When sharing UI elements like icons across multiple locations, export a function rather than a tag instance. A tag instance holds exactly one DOM node. Inserting it a second time moves it rather than copying it, so only the last insertion is visible.</p>
+
+    <div class="panels">
+      <div>
+        <div class="panel-label">Wrong: one node, moves on reuse</div>
+        <pre><code class="language-javascript">// icons.js
+export const expandIcon = t.svg({ viewBox: '0 0 24 24' }, [
+  t.path({ d: 'M5 12h14M12 5l7 7-7 7' }),
+]);
+
+// header.js
+import { expandIcon } from './icons.js';
+header.append(expandIcon.toElement()); // inserted here
+
+// sidebar.js
+import { expandIcon } from './icons.js';
+sidebar.append(expandIcon.toElement()); // moved here, vanishes from header</code></pre>
+      </div>
+      <div>
+        <div class="panel-label">Correct: factory function, one node per call</div>
+        <pre><code class="language-javascript">// icons.js
+export function expandIcon() {
+  return t.svg({ viewBox: '0 0 24 24' }, [
+    t.path({ d: 'M5 12h14M12 5l7 7-7 7' }),
+  ]);
+}
+
+// header.js
+import { expandIcon } from './icons.js';
+header.append(expandIcon().toElement()); // own independent node
+
+// sidebar.js
+import { expandIcon } from './icons.js';
+sidebar.append(expandIcon().toElement()); // own independent node</code></pre>
+      </div>
+    </div>
+
+    <p>With <code>validationLevel: 'warn'</code> or <code>'error'</code>, calling <code>.toElement()</code> on an already-mounted instance logs or throws to help catch this early.</p>
+
+    <h3 id="server-and-browser">Server and browser</h3>
+
+    <p>Because <code>.toString()</code> and <code>.toElement()</code> are just methods, the same component function works in both environments with no changes.</p>
+
+    <pre><code class="language-javascript">// components/product-card.js -- shared, runs anywhere
+import { t } from 'kensington';
+
+export function productCard({ name, price, image }) {
+  return t.div({ class: 'product-card' }, [
+    t.img({ src: image, alt: name }),
+    t.h3(name),
+    t.span({ class: 'price' }, `$${price.toFixed(2)}`),
+  ]);
+}</code></pre>
+
+    <div class="panels">
+      <div>
+        <div class="panel-label">Server (Node)</div>
+        <pre><code class="language-javascript">import { productCard } from './components/product-card.js';
+
+app.get('/products/:id', async (req, res) =&gt; {
+  const product = await db.getProduct(req.params.id);
+  res.send(productCard(product).toString());
+});</code></pre>
+      </div>
+      <div>
+        <div class="panel-label">Browser</div>
+        <pre><code class="language-javascript">import { productCard } from './components/product-card.js';
+
+const product = await fetch('/api/products/1').then(r =&gt; r.json());
+
+document.querySelector('#app').append(
+  productCard(product).toElement(),
+);</code></pre>
+      </div>
+    </div>
+
+    <h3 id="ssr">Server-side rendering</h3>
+
+    <p>Tag objects convert to strings automatically in template literals and string concatenation. Call <code>.toString()</code> explicitly when passing to a function like <code>res.send()</code>, which won't coerce the argument otherwise.</p>
+
+    <pre><code class="language-javascript">import express from 'express';
+import { t } from 'kensington';
+
+function layout(title, content) {
+  return t.htmlWithDocType({ lang: 'en' }, [
+    t.head([
+      t.meta({ charset: 'utf-8' }),
+      t.title(title),
+      t.link({ rel: 'stylesheet', href: '/style.css' }),
+    ]),
+    t.body(t.main({ class: 'container' }, content)),
+  ]).toString();
+}
+
+function usersPage(users) {
+  return [
+    t.h1('Users'),
+    t.table([
+      t.thead(t.tr(['Name', 'Role'].map(h =&gt; t.th(h)))),
+      t.tbody(users.map(u =&gt;
+        t.tr([t.td(u.name), t.td(u.role)])
+      )),
+    ]),
+  ];
+}
+
+const app = express();
+
+app.get('/users', async (req, res) =&gt; {
+  const users = await db.getUsers();
+  res.send(layout('Users', usersPage(users)));
+});</code></pre>
+
+    <h3 id="htmx">htmx</h3>
+
+    <p>Pass <code>'hx'</code> to <code>additionalNamespaces</code> to allow <code>hx-*</code> attributes. Alpine.js uses <code>'x'</code>.</p>
+
+    <pre><code class="language-javascript">import Kensington from 'kensington';
+
+const t = new Kensington({ additionalNamespaces: ['hx'] });
+
+// Live search: htmx swaps in the result fragment
+t.div([
+  t.input({
+    type: 'search',
+    name: 'q',
+    placeholder: 'Search...',
+    hxGet: '/search',
+    hxTrigger: 'input changed delay:300ms',
+    hxTarget: '#results',
+  }),
+  t.ul({ id: 'results' }),
+]);
+
+// The partial route returns just the &lt;li&gt; items (htmx swaps them into the &lt;ul&gt;)
+app.get('/search', async (req, res) =&gt; {
+  const rows = await db.search(req.query.q);
+  res.send(rows.map(r =&gt; t.li(r.name)).join('\n'));
+});</code></pre>
+
+    <h3 id="destructuring">Destructuring</h3>
+
+    <p>Tag methods are bound to the instance, so you can destructure them and call them directly.</p>
+
+    <pre><code class="language-javascript">const { div, p, ul, li, span } = t;
+
+div({ class: 'card' }, [
+  p('Methods are bound, so destructuring works anywhere.'),
+  ul([
+    li(span({ class: 'highlight' }, 'item one')),
+    li('item two'),
+  ]),
+]);</code></pre>
+
+    <h3 id="form-from-schema">Form from schema</h3>
+
+    <p>Build forms from a field definition array using a helper function.</p>
+
+    <div class="panels">
+      <div>
+        <div class="panel-label">JavaScript</div>
+        <pre><code class="language-javascript">const fields = [
+  { name: 'email',    type: 'email',    label: 'Email',    required: true },
+  { name: 'password', type: 'password', label: 'Password', required: true },
+  { name: 'remember', type: 'checkbox', label: 'Remember me' },
+];
+
+function formField({ name, type, label, required }) {
+  return t.div({ class: 'field' }, [
+    t.label({ for: name }, label),
+    t.input({ id: name, name, type, required }),
+  ]);
+}
+
+t.form({ action: '/login', method: 'post' }, [
+  ...fields.map(formField),
+  t.button({ type: 'submit' }, 'Log in'),
+]);</code></pre>
+      </div>
+      <div>
+        <div class="panel-label">HTML output</div>
+        <pre><code class="language-html">&lt;form action="/login" method="post"&gt;
+  &lt;div class="field"&gt;
+    &lt;label for="email"&gt;Email&lt;/label&gt;
+    &lt;input id="email" name="email" type="email" required&gt;
+  &lt;/div&gt;
+  &lt;div class="field"&gt;
+    &lt;label for="password"&gt;Password&lt;/label&gt;
+    &lt;input id="password" name="password" type="password" required&gt;
+  &lt;/div&gt;
+  &lt;div class="field"&gt;
+    &lt;label for="remember"&gt;Remember me&lt;/label&gt;
+    &lt;input id="remember" name="remember" type="checkbox"&gt;
+  &lt;/div&gt;
+  &lt;button type="submit"&gt;Log in&lt;/button&gt;
+&lt;/form&gt;</code></pre>
+      </div>
+    </div>
+
+    <h3 id="preformatted">Preformatted blocks</h3>
+
+    <p><code>script</code>, <code>style</code>, <code>pre</code>, and <code>textarea</code> join content arrays with newlines and skip indentation, so string content is inserted without modification.</p>
+
+    <div class="panels">
+      <div>
+        <div class="panel-label">JavaScript</div>
+        <pre><code class="language-javascript">t.style([
+  'body { margin: 0; }',
+  'h1 { color: steelblue; }',
+]);
+
+t.script(`
+  const el = document.getElementById("app");
+  el.textContent = "Hello";
+`);
+</code></pre>
+      </div>
+      <div>
+        <div class="panel-label">HTML output</div>
+        <pre><code class="language-html">&lt;style&gt;
+body { margin: 0; }
+h1 { color: steelblue; }
+&lt;/style&gt;
+
+&lt;script&gt;
+  const el = document.getElementById("app");
+  el.textContent = "Hello";
+&lt;/script&gt;</code></pre>
+      </div>
+    </div>
+
+  </section>
+
 
 </main>
 

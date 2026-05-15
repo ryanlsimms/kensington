@@ -29,12 +29,23 @@
     <a href="api.html">API</a>
   </div>
   <ul>
-    <li><a href="#ssr">Server-side rendering</a></li>
-    <li><a href="#framework-integration">Framework integration</a></li>
-    <li><a href="#express-render-helper">Express render helper</a></li>
-    <li><a href="#htmx">htmx</a></li>
-    <li><a href="#form-from-schema">Form from schema</a></li>
-    <li><a href="#preformatted">Preformatted blocks</a></li>
+    <li><a href="#string-rendering">String rendering</a>
+      <ul>
+        <li><a href="#ssr">Server-side rendering</a></li>
+        <li><a href="#framework-integration">Framework integration</a></li>
+        <li><a href="#express-render-helper">Express render helper</a></li>
+        <li><a href="#form-from-schema">Form from schema</a></li>
+        <li><a href="#preformatted">Preformatted blocks</a></li>
+      </ul>
+    </li>
+    <li><a href="#integrations">Integrations</a>
+      <ul>
+        <li><a href="#htmx">htmx</a></li>
+        <li><a href="#tailwind">Tailwind CSS</a></li>
+        <li><a href="#alpine">Alpine.js</a></li>
+        <li><a href="#elysia">Elysia</a></li>
+      </ul>
+    </li>
   </ul>
   <div class="sidebar-footer">
     <a href="https://github.com/ryanlsimms/kensington" target="_blank" rel="noopener">
@@ -51,12 +62,17 @@
     <p>Worked examples covering common patterns and framework integrations.</p>
   </header>
 
-  <section id="ssr">
-    <h2>Server-side rendering</h2>
+  <!-- ── String rendering ───────────────────────────────────── -->
 
-    <p>Tag objects convert to strings automatically in template literals and string concatenation. Call <code>.toString()</code> explicitly when passing to a function like <code>res.send()</code>, which won't coerce the argument otherwise.</p>
+  <section id="string-rendering">
+    <h2>String rendering</h2>
 
-    <pre><code class="language-javascript">import express from 'express';
+    <section id="ssr">
+      <h3>Server-side rendering</h3>
+
+      <p>Tag objects convert to strings automatically in template literals and string concatenation. Call <code>.toString()</code> explicitly when passing to a function like <code>res.send()</code>, which won't coerce the argument otherwise.</p>
+
+      <pre><code class="language-javascript">import express from 'express';
 import { t } from 'kensington';
 
 function layout(title, content) {
@@ -88,17 +104,17 @@ app.get('/users', async (req, res) => {
   const users = await db.getUsers();
   res.send(layout('Users', usersPage(users)));
 });</code></pre>
-  </section>
+    </section>
 
-  <section id="framework-integration">
-    <h2>Framework integration</h2>
+    <section id="framework-integration">
+      <h3>Framework integration</h3>
 
-    <p>Kensington works with any Node.js HTTP framework. The pattern is the same everywhere: build your HTML with Kensington, call <code>.toString()</code>, and pass the string to the framework's response method.</p>
+      <p>Kensington works with any Node.js HTTP framework. The pattern is the same everywhere: build your HTML with Kensington, call <code>.toString()</code>, and pass the string to the framework's response method.</p>
 
-    <div class="panels">
-      <div>
-        <div class="panel-label">Hono</div>
-        <pre><code class="language-javascript">import { Hono } from 'hono';
+      <div class="panels">
+        <div>
+          <div class="panel-label">Hono</div>
+          <pre><code class="language-javascript">import { Hono } from 'hono';
 import { t } from 'kensington';
 
 const app = new Hono();
@@ -107,10 +123,10 @@ app.get('/users', async (c) => {
   const users = await db.getUsers();
   return c.html(layout('Users', usersPage(users)));
 });</code></pre>
-      </div>
-      <div>
-        <div class="panel-label">Fastify</div>
-        <pre><code class="language-javascript">import Fastify from 'fastify';
+        </div>
+        <div>
+          <div class="panel-label">Fastify</div>
+          <pre><code class="language-javascript">import Fastify from 'fastify';
 import { t } from 'kensington';
 
 const app = Fastify();
@@ -121,21 +137,21 @@ app.get('/users', async (req, reply) => {
     .header('content-type', 'text/html; charset=utf-8')
     .send(layout('Users', usersPage(users)));
 });</code></pre>
+        </div>
       </div>
-    </div>
 
-    <p>Hono's <code>c.html()</code> sets the content-type header automatically. For frameworks that don't have a dedicated HTML method, set <code>Content-Type: text/html; charset=utf-8</code> manually as shown in the Fastify example.</p>
-  </section>
+      <p>Hono's <code>c.html()</code> sets the content-type header automatically. For frameworks that don't have a dedicated HTML method, set <code>Content-Type: text/html; charset=utf-8</code> manually as shown in the Fastify example.</p>
+    </section>
 
-  <section id="express-render-helper">
-    <h2>Express render helper</h2>
+    <section id="express-render-helper">
+      <h3>Express render helper</h3>
 
-    <p>Attach a <code>res.renderKensington</code> helper via middleware so routes never call <code>.toString()</code> directly and the layout is applied in one place.</p>
+      <p>Attach a <code>res.renderKensington</code> helper via middleware so routes never call <code>.toString()</code> directly and the layout is applied in one place.</p>
 
-    <div class="panels">
-      <div>
-        <div class="panel-label">middleware/render.js</div>
-        <pre><code class="language-javascript">import { layout } from './layout.js';
+      <div class="panels">
+        <div>
+          <div class="panel-label">middleware/render.js</div>
+          <pre><code class="language-javascript">import { layout } from './layout.js';
 
 export function renderMiddleware(req, res, next) {
   res.renderKensington = (pageFunc, ...args) => {
@@ -144,10 +160,10 @@ export function renderMiddleware(req, res, next) {
   };
   next();
 }</code></pre>
-      </div>
-      <div>
-        <div class="panel-label">server.js</div>
-        <pre><code class="language-javascript">import express from 'express';
+        </div>
+        <div>
+          <div class="panel-label">server.js</div>
+          <pre><code class="language-javascript">import express from 'express';
 import { homePage, usersPage } from './pages.js';
 import { renderMiddleware } from './middleware/render.js';
 
@@ -162,16 +178,104 @@ app.get('/users', async (req, res) => {
   const users = await db.getUsers();
   res.renderKensington(usersPage, { title: 'Users', users });
 });</code></pre>
+        </div>
       </div>
-    </div>
+    </section>
+
+    <section id="form-from-schema">
+      <h3>Form from schema</h3>
+
+      <p>Build forms from a field definition array using a helper function.</p>
+
+      <div class="panels">
+        <div>
+          <div class="panel-label">JavaScript</div>
+          <pre><code class="language-javascript">const fields = [
+  { name: 'email',    type: 'email',    label: 'Email',    required: true },
+  { name: 'password', type: 'password', label: 'Password', required: true },
+  { name: 'remember', type: 'checkbox', label: 'Remember me' },
+];
+
+function formField({ name, type, label, required }) {
+  return t.div({ class: 'field' }, [
+    t.label({ for: name }, label),
+    t.input({ id: name, name, type, required }),
+  ]);
+}
+
+t.form({ action: '/login', method: 'post' }, [
+  ...fields.map(formField),
+  t.button({ type: 'submit' }, 'Log in'),
+]);</code></pre>
+        </div>
+        <div>
+          <div class="panel-label">HTML output</div>
+          <pre><code class="language-html">&lt;form action="/login" method="post"&gt;
+  &lt;div class="field"&gt;
+    &lt;label for="email"&gt;Email&lt;/label&gt;
+    &lt;input id="email" name="email" type="email" required&gt;
+  &lt;/div&gt;
+  &lt;div class="field"&gt;
+    &lt;label for="password"&gt;Password&lt;/label&gt;
+    &lt;input id="password" name="password" type="password" required&gt;
+  &lt;/div&gt;
+  &lt;div class="field"&gt;
+    &lt;label for="remember"&gt;Remember me&lt;/label&gt;
+    &lt;input id="remember" name="remember" type="checkbox"&gt;
+  &lt;/div&gt;
+  &lt;button type="submit"&gt;Log in&lt;/button&gt;
+&lt;/form&gt;</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section id="preformatted">
+      <h3>Preformatted blocks</h3>
+
+      <p><code>script</code>, <code>style</code>, <code>pre</code>, and <code>textarea</code> join content arrays with newlines and skip indentation, so string content is inserted without modification.</p>
+
+      <div class="panels">
+        <div>
+          <div class="panel-label">JavaScript</div>
+          <pre><code class="language-javascript">t.style([
+  'body { margin: 0; }',
+  'h1 { color: steelblue; }',
+]);
+
+t.script(`
+  const el = document.getElementById("app");
+  el.textContent = "Hello";
+`);
+</code></pre>
+        </div>
+        <div>
+          <div class="panel-label">HTML output</div>
+          <pre><code class="language-html">&lt;style&gt;
+body { margin: 0; }
+h1 { color: steelblue; }
+&lt;/style&gt;
+
+&lt;script&gt;
+  const el = document.getElementById("app");
+  el.textContent = "Hello";
+&lt;/script&gt;</code></pre>
+        </div>
+      </div>
+    </section>
+
   </section>
 
-  <section id="htmx">
-    <h2>htmx</h2>
+  <!-- ── Integrations ───────────────────────────────────────── -->
 
-    <p>Pass <code>'hx'</code> to <code>additionalNamespaces</code> to allow <code>hx-*</code> attributes. Alpine.js uses <code>'x'</code>.</p>
+  <section id="integrations">
+    <h2>Integrations</h2>
 
-    <pre><code class="language-javascript">import Kensington from 'kensington';
+    <section id="htmx">
+      <h3>htmx</h3>
+
+      <p>Pass <code>'hx'</code> to <code>additionalNamespaces</code> to allow <code>hx-*</code> attributes. Alpine.js uses <code>'x'</code>.</p>
+
+      <pre><code class="language-javascript">import Kensington from 'kensington';
 
 const t = new Kensington({ additionalNamespaces: ['hx'] });
 
@@ -193,87 +297,139 @@ app.get('/search', async (req, res) => {
   const rows = await db.search(req.query.q);
   res.send(rows.map(r => t.li(r.name)).join('\n'));
 });</code></pre>
-  </section>
+    </section>
 
-  <section id="form-from-schema">
-    <h2>Form from schema</h2>
+    <section id="tailwind">
+      <h3>Tailwind CSS</h3>
 
-    <p>Build forms from a field definition array using a helper function.</p>
+      <p>The <code>class</code> array is a natural fit for Tailwind. Falsy entries are dropped, so conditional classes don't need ternaries or string concatenation.</p>
 
-    <div class="panels">
-      <div>
-        <div class="panel-label">JavaScript</div>
-        <pre><code class="language-javascript">const fields = [
-  { name: 'email',    type: 'email',    label: 'Email',    required: true },
-  { name: 'password', type: 'password', label: 'Password', required: true },
-  { name: 'remember', type: 'checkbox', label: 'Remember me' },
-];
+      <pre><code class="language-javascript">import { t } from 'kensington';
 
-function formField({ name, type, label, required }) {
-  return t.div({ class: 'field' }, [
-    t.label({ for: name }, label),
-    t.input({ id: name, name, type, required }),
+function button(label, { variant = 'primary', disabled = false } = {}) {
+  return t.button({
+    type: 'button',
+    disabled,
+    class: [
+      'inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium',
+      'focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors',
+      variant === 'primary'   && 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
+      variant === 'secondary' && 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50',
+      variant === 'danger'    && 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
+      disabled && 'opacity-50 cursor-not-allowed',
+    ],
+  }, label);
+}
+
+function card(title, body) {
+  return t.div({ class: 'rounded-lg border border-gray-200 bg-white shadow-sm p-6' }, [
+    t.h3({ class: 'text-lg font-semibold text-gray-900 mb-2' }, title),
+    t.div({ class: 'text-gray-600 text-sm' }, body),
   ]);
 }
 
-t.form({ action: '/login', method: 'post' }, [
-  ...fields.map(formField),
-  t.button({ type: 'submit' }, 'Log in'),
+function alert(message, type = 'info') {
+  const styles = {
+    info:    'bg-blue-50 text-blue-800 border-blue-200',
+    success: 'bg-green-50 text-green-800 border-green-200',
+    warning: 'bg-yellow-50 text-yellow-800 border-yellow-200',
+    error:   'bg-red-50 text-red-800 border-red-200',
+  };
+  return t.div({ class: `rounded-md border px-4 py-3 text-sm ${styles[type]}` }, message);
+}
+
+t.div({ class: 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8' }, [
+  t.h1({ class: 'text-3xl font-bold text-gray-900 mb-6' }, 'Dashboard'),
+  alert('Your trial expires in 3 days.', 'warning'),
+  t.div({ class: 'mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3' }, [
+    card('Users', '1,284 total'),
+    card('Revenue', '$24,500 this month'),
+    card('Active sessions', '42 right now'),
+  ]),
+  t.div({ class: 'mt-8 flex gap-3' }, [
+    button('Save changes'),
+    button('Cancel', { variant: 'secondary' }),
+    button('Delete account', { variant: 'danger' }),
+  ]),
 ]);</code></pre>
-      </div>
-      <div>
-        <div class="panel-label">HTML output</div>
-        <pre><code class="language-html">&lt;form action="/login" method="post"&gt;
-  &lt;div class="field"&gt;
-    &lt;label for="email"&gt;Email&lt;/label&gt;
-    &lt;input id="email" name="email" type="email" required&gt;
-  &lt;/div&gt;
-  &lt;div class="field"&gt;
-    &lt;label for="password"&gt;Password&lt;/label&gt;
-    &lt;input id="password" name="password" type="password" required&gt;
-  &lt;/div&gt;
-  &lt;div class="field"&gt;
-    &lt;label for="remember"&gt;Remember me&lt;/label&gt;
-    &lt;input id="remember" name="remember" type="checkbox"&gt;
-  &lt;/div&gt;
-  &lt;button type="submit"&gt;Log in&lt;/button&gt;
-&lt;/form&gt;</code></pre>
-      </div>
-    </div>
-  </section>
+    </section>
 
-  <section id="preformatted">
-    <h2>Preformatted blocks</h2>
+    <section id="alpine">
+      <h3>Alpine.js</h3>
 
-    <p><code>script</code>, <code>style</code>, <code>pre</code>, and <code>textarea</code> join content arrays with newlines and skip indentation, so string content lands exactly as written.</p>
+      <p>Pass <code>'x'</code> to <code>additionalNamespaces</code> to allow <code>x-*</code> attributes. The camelCase conversion handles <code>xOn</code>, <code>xBind</code>, <code>xShow</code>, etc. automatically.</p>
 
-    <div class="panels">
-      <div>
-        <div class="panel-label">JavaScript</div>
-        <pre><code class="language-javascript">t.style([
-  'body { margin: 0; }',
-  'h1 { color: steelblue; }',
-]);
+      <pre><code class="language-javascript">import Kensington from 'kensington';
 
-t.script(`
-  const el = document.getElementById("app");
-  el.textContent = "Hello";
-`);
-</code></pre>
-      </div>
-      <div>
-        <div class="panel-label">HTML output</div>
-        <pre><code class="language-html">&lt;style&gt;
-body { margin: 0; }
-h1 { color: steelblue; }
-&lt;/style&gt;
+const t = new Kensington({ additionalNamespaces: ['x'] });
 
-&lt;script&gt;
-  const el = document.getElementById("app");
-  el.textContent = "Hello";
-&lt;/script&gt;</code></pre>
-      </div>
-    </div>
+// Dropdown menu
+function dropdown(label, items) {
+  return t.div({ xData: '{ open: false }', class: 'dropdown' }, [
+    t.button({
+      type: 'button',
+      xOn: { click: 'open = !open' },
+      xBind: { ariaExpanded: 'open' },
+    }, label),
+    t.ul({
+      xShow: 'open',
+      xOn: { 'click.outside': 'open = false' },
+      class: 'dropdown-menu',
+    }, items.map(item =>
+      t.li(t.a({ href: item.href }, item.label))
+    )),
+  ]);
+}
+
+// Tabs
+function tabs(items) {
+  return t.div({ xData: '{ active: 0 }', class: 'tabs' }, [
+    t.div({ class: 'tab-list', role: 'tablist' },
+      items.map((item, i) =>
+        t.button({
+          type: 'button',
+          role: 'tab',
+          xOn: { click: `active = ${i}` },
+          xBind: { class: `active === ${i} ? 'tab--active' : ''` },
+        }, item.label)
+      )
+    ),
+    t.div({ class: 'tab-panels' },
+      items.map((item, i) =>
+        t.div({ role: 'tabpanel', xShow: `active === ${i}` }, item.content)
+      )
+    ),
+  ]);
+}</code></pre>
+    </section>
+
+    <section id="elysia">
+      <h3>Elysia</h3>
+
+      <p>Elysia runs on Bun. Pass the tag's string representation to <code>new Response()</code> and set the content-type header manually, since Elysia doesn't have a dedicated HTML response method.</p>
+
+      <pre><code class="language-javascript">import { Elysia } from 'elysia';
+import { t } from 'kensington';
+import { layout } from './layout.js';
+
+const app = new Elysia()
+  .get('/', () => new Response(
+    layout('Home', t.h1('Welcome')),
+    { headers: { 'content-type': 'text/html; charset=utf-8' } }
+  ))
+  .get('/users', async () => {
+    const users = await db.getUsers();
+    return new Response(
+      layout('Users', [
+        t.h1('Users'),
+        t.ul(users.map(u => t.li(u.name))),
+      ]),
+      { headers: { 'content-type': 'text/html; charset=utf-8' } }
+    );
+  })
+  .listen(3000);</code></pre>
+    </section>
+
   </section>
 
 </main>

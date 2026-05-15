@@ -34,6 +34,7 @@
       <ul>
         <li><a href="#content-elements">Content elements</a></li>
         <li><a href="#void-elements">Void elements</a></li>
+        <li><a href="#instance-methods">Instance methods</a></li>
       </ul>
     </li>
     <li><a href="#special-methods">Special methods</a>
@@ -80,7 +81,7 @@
         <tr><th>Option</th><th>Default</th><th>Description</th></tr>
       </thead>
       <tbody>
-        <tr><td data-label="Option"><code>validationLevel</code></td><td data-label="Default"><code>'warn'</code></td><td data-label="Description">Attribute validation behavior. <code>'off'</code> disables validation entirely (required for the slim build). <code>'warn'</code> logs via <code>logger</code>. <code>'error'</code> throws.</td></tr>
+        <tr><td data-label="Option"><code>validationLevel</code></td><td data-label="Default"><code>'off'</code></td><td data-label="Description">Attribute validation behavior. <code>'off'</code> disables validation entirely (required for the slim build). <code>'warn'</code> logs via <code>logger</code>. <code>'error'</code> throws.</td></tr>
         <tr><td data-label="Option"><code>additionalNamespaces</code></td><td data-label="Default">—</td><td data-label="Description">Allow extra attribute prefixes on all elements, e.g. <code>'hx'</code> for htmx <code>hx-*</code> attributes or <code>'x'</code> for Alpine.js.</td></tr>
         <tr><td data-label="Option"><code>additionalGlobalAttributes</code></td><td data-label="Default">—</td><td data-label="Description">Allow specific extra attributes on all elements. Same validator format as <code>createCustomTag</code>.</td></tr>
         <tr><td data-label="Option"><code>indentationLevel</code></td><td data-label="Default"><code>2</code></td><td data-label="Description">Spaces per indentation level in <code>.toString()</code> output. Set to <code>0</code> to disable indentation.</td></tr>
@@ -98,7 +99,7 @@
 
     <h3 id="content-elements">Content elements</h3>
 
-    <p>Most elements — <code>div</code>, <code>p</code>, <code>span</code>, <code>section</code>, <code>a</code>, <code>table</code>, and so on.</p>
+    <p>Most elements: <code>div</code>, <code>p</code>, <code>span</code>, <code>section</code>, <code>a</code>, <code>table</code>, and so on.</p>
 
     <pre><code class="language-typescript">t.div(attributes: DivAttributes, content?: Content): DivTag
 t.div(content?: Content): DivTag</code></pre>
@@ -130,12 +131,26 @@ t.div(content?: Content): DivTag</code></pre>
 
     <h3 id="void-elements">Void elements</h3>
 
-    <p>Void elements — <code>br</code>, <code>hr</code>, <code>input</code>, <code>img</code>, <code>link</code>, <code>meta</code>, <code>source</code>, <code>wbr</code>, and others — take no content argument.</p>
+    <p>Void elements take no content argument: <code>br</code>, <code>hr</code>, <code>input</code>, <code>img</code>, <code>link</code>, <code>meta</code>, <code>source</code>, <code>wbr</code>, and others.</p>
 
     <pre><code class="language-typescript">t.input(attributes?: InputAttributes): VoidTag
 t.img(attributes?: ImgAttributes): ImgTag</code></pre>
 
     <p><code>img</code> has a branded return type (<code>ImgTag</code>) so it can participate in <code>picture</code>'s strict content model.</p>
+
+    <h3 id="instance-methods">Instance methods</h3>
+
+    <p>All tag objects share these methods.</p>
+
+    <table>
+      <thead>
+        <tr><th>Method</th><th>Returns</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td data-label="Method"><code>.toString()</code></td><td data-label="Returns"><code>string</code></td><td data-label="Description">Serializes to an indented HTML string. Text content is HTML-encoded.</td></tr>
+        <tr><td data-label="Method"><code>.toElement()</code></td><td data-label="Returns"><code>Element</code></td><td data-label="Description">Creates a live DOM node. Browser only. <code>LiteralTag</code> returns a <code>DocumentFragment</code>; <code>CommentTag</code> returns a <code>Comment</code>.</td></tr>
+      </tbody>
+    </table>
   </section>
 
   <!-- ── Special methods ──────────────────────────────────────── -->
@@ -155,7 +170,7 @@ t.htmlWithDocType(content?: HtmlContent): ContentTag</code></pre>
     <pre><code class="language-typescript">t.literal(str: string): LiteralTag
 t.unsafeLiteral(str: string): LiteralTag</code></pre>
 
-    <p><code>literal</code> embeds a raw HTML string into the output. <code>&lt;script&gt;</code> tags trigger a validation warning or error. <code>unsafeLiteral</code> skips that check — use only for trusted HTML.</p>
+    <p><code>literal</code> embeds a raw HTML string into the output. <code>&lt;script&gt;</code> tags trigger a validation warning or error. <code>unsafeLiteral</code> skips that check and should only be used for trusted HTML.</p>
 
     <h3 id="inline-comment">inlineComment</h3>
 
@@ -215,8 +230,8 @@ class MyEngine extends Kensington {
 
     <h3>kensington</h3>
 
-    <pre><code class="language-javascript">import Kensington from 'kensington';    // the class
-import { t } from 'kensington';          // shared default instance (new Kensington())</code></pre>
+    <pre><code class="language-javascript">import Kensington from 'kensington';                         // the class
+import { t } from 'kensington';                              // shared default instance (new Kensington())</code></pre>
 
     <pre><code class="language-javascript">// browser, via CDN
 import { t } from 'https://cdn.jsdelivr.net/npm/kensington/dist/kensington.min.js';</code></pre>
@@ -272,8 +287,8 @@ const t = new Kensington({ validationLevel: 'off' });</code></pre>
         <tr><td data-label="Type"><code>ContentMethod&lt;T&gt;</code></td><td data-label="Description">Type of a custom element method created by <code>createCustomTag</code>. <code>T</code> is the element-specific attribute shape.</td></tr>
         <tr><td data-label="Type"><code>GlobalAttributes</code></td><td data-label="Description">Attributes shared by all HTML elements (<code>id</code>, <code>class</code>, <code>style</code>, &hellip;).</td></tr>
         <tr><td data-label="Type"><code>GlobalEvents</code></td><td data-label="Description">Event handler attributes (<code>onclick</code>, <code>oninput</code>, &hellip;) shared by all elements.</td></tr>
-        <tr><td data-label="Type"><code>UniversalAttributes</code></td><td data-label="Description">Intersection of <code>GlobalAttributes</code>, <code>GlobalEvents</code>, and <code>NameSpaceAttributes</code>.</td></tr>
         <tr><td data-label="Type"><code>NameSpaceAttributes</code></td><td data-label="Description">Interface to extend via module augmentation to allow custom attribute namespaces.</td></tr>
+        <tr><td data-label="Type"><code>UniversalAttributes</code></td><td data-label="Description">Intersection of <code>GlobalAttributes</code>, <code>GlobalEvents</code>, and <code>NameSpaceAttributes</code>.</td></tr>
       </tbody>
     </table>
 
