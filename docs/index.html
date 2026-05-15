@@ -534,6 +534,7 @@ document.body.append(app.toElement());</code></pre>
           <li><code>.transform(fn)</code>: returns a derived signal. Equivalent to <code>computed(() =&gt; fn(signal.get()))</code>. Chainable.</li>
           <li><code>.toJSON()</code>: returns the current value. Makes signals transparent to <code>JSON.stringify</code>: <code>JSON.stringify({ done: signal(true) })</code> &rarr; <code>'{"done":true}'</code>. Works recursively through nested signal trees.</li>
           <li><code>.toString()</code>: returns <code>String(this.get())</code>. Signals work in template literals and string concatenation. Because it calls <code>.get()</code>, dependency tracking works correctly inside <code>computed</code> and <code>effect</code>.</li>
+          <li><code>.value</code>: property getter. Returns the current value without tracking. Unlike <code>.get()</code>, reading <code>.value</code> inside <code>computed()</code> or <code>effect()</code> does not create a dependency. The computation will not re-run when this signal changes.</li>
         </ul>
       </li>
       <li><code>computed(fn)</code>: read-only signal derived from others; re-evaluates automatically.</li>
@@ -549,6 +550,28 @@ const display = count.transform(n =&gt; n * 2).transform(n =&gt; `${n}px`);
 
 // convenient for passing a signal directly as a string attribute
 t.td(sortAsc.transform(String));</code></pre>
+
+    <p>Use <code>.value</code> inside <code>effect()</code> or <code>computed()</code> when you need the current value of a signal without making it a dependency. This matters most when the same signal is written to later in the same async flow: using <code>.get()</code> would subscribe the effect to it, and the write would re-trigger the effect.</p>
+
+    <pre><code class="language-javascript">const searchTerm   = signal('');
+const previousTerm = signal('');  // shown reactively in UI, so it must be a signal
+
+// Re-runs when searchTerm changes. previousTerm.value reads the last
+// completed search without subscribing. Using .get() would subscribe
+// the effect to previousTerm, so the .set() in the callback would
+// re-trigger the effect and fire a duplicate request.
+effect(() =&gt; {
+  const current = searchTerm.get();
+  const previous = previousTerm.value;
+  const isRefinement = current.startsWith(previous) &amp;&amp; previous.length &gt; 0;
+
+  fetch(`/search?q=${current}`)
+    .then(r =&gt; r.json())
+    .then(data =&gt; {
+      results.set(data);
+      previousTerm.set(current);
+    });
+});</code></pre>
 
     <h3 id="signals-attributes">As attribute values</h3>
 

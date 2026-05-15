@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- `Signal.value` property getter. Returns the current value without registering a subscription. Unlike `.get()`, reading `.value` inside `computed()` or `effect()` does not make the signal a dependency of that computation. Use it when the same signal is written to later in the same async flow and subscribing via `.get()` would cause the effect to re-trigger.
+
 ## [2.0.0-signals.6] - 2026-05-12
 
 ### Added

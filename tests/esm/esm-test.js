@@ -1222,6 +1222,36 @@ describe('signal', () => {
     s.set('world');
     assert.strictEqual(upper.get(), 'WORLD');
   });
+  it('value returns the current value', () => {
+    const s = signal(42);
+    assert.strictEqual(s.value, 42);
+    s.set(99);
+    assert.strictEqual(s.value, 99);
+  });
+  it('value does not subscribe inside computed()', () => {
+    const s = signal(0);
+    const other = signal(10);
+    const c = computed(() => other.get() + s.value);
+    assert.strictEqual(c.get(), 10);
+    s.set(5);
+    assert.strictEqual(c.get(), 10);
+    other.set(20);
+    assert.strictEqual(c.get(), 25);
+  });
+  it('value does not subscribe inside effect()', async () => {
+    const s = signal(0);
+    const trigger = signal(0);
+    let calls = 0;
+    effect(() => { trigger.get(); s.value; calls++; });
+    calls = 0;
+    s.set(99);
+    await Promise.resolve();
+    assert.strictEqual(calls, 0);
+  });
+  it('assigning to .value throws', () => {
+    const s = signal(0);
+    assert.throws(() => { s.value = 99; }, TypeError);
+  });
 });
 
 // ─── signal.transform ──────────────────────────────────────────────────────

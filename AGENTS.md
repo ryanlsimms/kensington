@@ -175,7 +175,8 @@ import { renderForHydration, registerComponents } from 'kensington';
 
 ```javascript
 const n = signal(0);
-n.get()                   // read
+n.get()                   // read; subscribes inside computed/effect
+n.value                   // read without tracking; does not create a dependency inside computed/effect
 n.set(1)                  // set
 n.set(v => v + 1)         // update via function
 n.stop()                  // clear all subscribers; signal retains current value
@@ -184,6 +185,22 @@ n.toString()              // returns String(this.get()); works in template liter
 
 const double = n.transform(v => v * 2)                       // derived; chainable
 const label  = computed(() => n.get() === 1 ? 'item' : 'items')  // read multiple signals
+```
+
+Use `.value` instead of `.get()` when you need the current value inside an `effect` or `computed` but do not want that signal to be a dependency. The most important case is when the same signal is written to later in the same async flow. Using `.get()` would subscribe the effect to it, and the subsequent `.set()` would re-trigger the effect.
+
+```javascript
+const searchTerm   = signal('');
+const previousTerm = signal('');  // shown in the UI, so it must be a signal
+
+effect(() => {
+  fetch(`/search?q=${searchTerm.get()}`)
+    .then(r => r.json())
+    .then(data => {
+      results.set(data);
+      previousTerm.set(searchTerm.value);  // .value avoids re-triggering this effect
+    });
+});
 ```
 
 ### As content and attributes

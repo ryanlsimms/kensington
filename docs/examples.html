@@ -45,6 +45,7 @@
         <li><a href="#todo-list">Todo list</a></li>
         <li><a href="#dark-mode">Dark mode</a></li>
         <li><a href="#character-counter">Character counter</a></li>
+        <li><a href="#incremental-search">Incremental search</a></li>
         <li><a href="#sortable-table">Sortable table</a></li>
         <li><a href="#hydrated-like-button">Hydrated component</a></li>
         <li><a href="#hydrated-form-validation">Form validation</a></li>
@@ -441,6 +442,62 @@ document.body.append(
     t.p({
       class: remaining.transform(n => n < 0 ? 'counter counter--over' : 'counter'),
     }, [remaining, ' characters remaining']),
+  ]).toElement()
+);</code></pre>
+    </section>
+
+
+    <section id="incremental-search">
+      <h3>Incremental search</h3>
+
+      <p>When the new query extends the previous one (e.g. <code>"cat"</code> to <code>"cats"</code>), existing results can be filtered client-side instantly with no spinner. <code>previousTerm</code> is read via <code>.value</code> rather than <code>.get()</code>. If <code>.get()</code> were used, calling <code>previousTerm.set(current)</code> inside the fetch callback would re-trigger the effect and fire a duplicate request for every search. <code>previousTerm</code> cannot be a plain variable because it is shown reactively in the UI. The updater pattern cannot help because <code>previousTerm</code> is being read to compute <code>isRefinement</code>, not written back to itself.</p>
+
+      <pre><code class="language-javascript">import { t, signal, computed, effect } from 'kensington';
+
+const searchTerm   = signal('');
+const previousTerm = signal('');
+const results      = signal([]);
+const isLoading    = signal(false);
+
+const status = computed(() =&gt;
+  isLoading.get() ? 'Loading...' : `${results.get().length} result(s)`
+);
+
+effect(() =&gt; {
+  const current = searchTerm.get();
+  if (!current.trim()) return;
+
+  // previousTerm must be a signal -- it is shown reactively in the UI below.
+  // .value reads it without subscribing, so previousTerm.set(current) inside
+  // the fetch callback does not re-trigger this effect and fire a duplicate request.
+  const previous = previousTerm.value;
+  const isRefinement = previous.length &gt; 0 &amp;&amp; current.startsWith(previous);
+
+  if (!isRefinement) {
+    isLoading.set(true);
+  }
+
+  fetch(`/search?q=${encodeURIComponent(current)}`)
+    .then(r =&gt; r.json())
+    .then(data =&gt; {
+      results.set(data);
+      previousTerm.set(current);
+      isLoading.set(false);
+    });
+});
+
+document.body.append(
+  t.div([
+    t.input({
+      type: 'search',
+      placeholder: 'Search...',
+      oninput: e =&gt; searchTerm.set(e.target.value),
+    }),
+    t.p(status),
+    t.p(previousTerm.transform(p =&gt; p ? `Previous search: "${p}"` : '')),
+    t.ul(results.transform(items =&gt;
+      items.map((item, i) =&gt; t.li({ dataKey: i }, item.title))
+    )),
   ]).toElement()
 );</code></pre>
     </section>

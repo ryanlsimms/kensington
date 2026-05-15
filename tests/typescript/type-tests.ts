@@ -380,6 +380,15 @@ _t.set(5);
 const _divWithComputed: ContentTag = t.div(_c);
 const _divWithTransform: ContentTag = t.div(_t);
 
+// .value is typed as T on Signal and ReadonlySignal
+const _vS: number = _s.value;
+const _vC: number = _c.value;
+const _vT: number = _t.value;
+
+// .value is read-only — assignment is not allowed
+// @ts-expect-error — value is readonly
+_s.value = 99;
+
 // Signal constructor is private — use signal() or computed() instead
 // @ts-expect-error - cannot construct Signal directly
 new Signal(5);

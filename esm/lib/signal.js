@@ -65,6 +65,10 @@ export default class Signal {
     return this.#value;
   }
 
+  get value() {
+    return this.#value;
+  }
+
   set(valueOrFn) {
     // Blocks external writes to computed/transform signals; depth > 0 means we're inside an update().
     if (derivedSignals.has(this) && derivedWriteDepth === 0) {
