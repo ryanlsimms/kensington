@@ -38,9 +38,16 @@ Or in a browser without a build step, via CDN:
 
 ## TypeScript
 
-Tags, attribute names/values, inline style property names, and some nested tags are typed against the HTML/SVG/MathML spec. As far as I can tell, this is the most complete typing written for HTML/SVG/MathML. It's generated straight from the official spec (see [generator files](generate/fetch)) and keeping them up to date is as easy running the fetch script.
+Tags, attribute names/values, inline style property names, and some nested tags are comprehensively typed against the official HTML/SVG/MathML specs. Typos in attribute names and out-of-range values are caught at compile time. Most IDEs will display TypeScript errors/suggestions in JavaScript files as well.
 
-![Attribute validation error](docs/screenshot-ts-validation.png)
+```typescript
+t.input({ typ: 'checkbox' });
+// TypeScript: Property 'typ' does not exist on type 'InputAttributes'
+
+t.input({ formenctype: 'text' });
+// TypeScript: Type '"text"' is not assignable to type
+// "application/x-www-form-urlencoded" | "multipart/form-data" | "text/plain"
+```
 
 ## Example
 
@@ -82,4 +89,9 @@ const page = t.htmlWithDocType({ lang: 'en' }, [
 ]).toString();
 // or .toElement() in the browser to create a dom node
 ```
+
+## Dev vs production
+
+In development, set `validationLevel` to `'warn'` or `'error'` to catch invalid attributes at runtime. In production, import from `kensington/dist/slim` for a bundle about 9× smaller (~136 KB to ~15 KB minified). See [Dev vs production](https://ryanlsimms.github.io/kensington#dev-vs-prod) for the Vite, Rollup, esbuild, and Webpack setups that switch builds automatically.
+
 **[Full documentation →](https://ryanlsimms.github.io/kensington)**

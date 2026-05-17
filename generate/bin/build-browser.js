@@ -6,6 +6,8 @@ import { rollup } from 'rollup';
 const entry = new URL('../../esm/index.js', import.meta.url).pathname;
 const attributesId = new URL('../../esm/attributes.js', import.meta.url).pathname;
 const attributesHref = new URL('../../esm/attributes.js', import.meta.url).href;
+const kensingtonId = new URL('../../esm/kensington.js', import.meta.url).pathname;
+const kensingtonSlimId = new URL('../../esm/kensington-slim.js', import.meta.url).pathname;
 
 const attributesModule = await import(attributesHref);
 const camelCaseNames = JSON.stringify([...new Set(
@@ -14,12 +16,23 @@ const camelCaseNames = JSON.stringify([...new Set(
     .filter(k => /[A-Z]/.test(k)),
 )]);
 
+// The slim bundle swaps two source files inside rollup:
+// - esm/kensington.js (huge generated class) -> esm/kensington-slim.js (small Proxy class)
+// - esm/attributes.js (per-tag spec maps) -> a stub exporting __slim__ and camelCaseNames
+// Together these eliminate the bulk of the full bundle for slim consumers.
 const slimPlugin = {
-  load: id => id === '\0slim-attributes'
-    ? `export const __slim__ = true;\nexport const camelCaseNames = new Set(${camelCaseNames});`
-    : null,
-  name: 'slim-attributes',
-  resolveId: id => id === attributesId ? '\0slim-attributes' : null,
+  name: 'slim-build',
+  resolveId(id) {
+    if (id === attributesId) { return '\0slim-attributes'; }
+    if (id === kensingtonId) { return kensingtonSlimId; }
+    return null;
+  },
+  load(id) {
+    if (id === '\0slim-attributes') {
+      return `export const __slim__ = true;\nexport const camelCaseNames = new Set(${camelCaseNames});`;
+    }
+    return null;
+  },
 };
 
 const bundle = await rollup({

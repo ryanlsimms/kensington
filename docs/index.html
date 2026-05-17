@@ -47,11 +47,11 @@
         <li><a href="#ts-module-augmentation">Custom elements</a></li>
       </ul>
     </li>
+    <li><a href="#dev-vs-prod">Dev vs production</a></li>
     <li><a href="#advanced">Advanced</a>
       <ul>
         <li><a href="#constructor">Constructor options</a></li>
         <li><a href="#validation">Validation</a></li>
-        <li><a href="#slim-build">Slim build</a></li>
         <li><a href="#custom-elements">Custom elements</a></li>
         <li><a href="#raw-html">Raw HTML &amp; comments</a></li>
       </ul>
@@ -444,6 +444,36 @@ class MyEngine extends Kensington {
 }</code></pre>
   </section>
 
+  <!-- ── Dev vs production ───────────────────────────────────────── -->
+
+  <section id="dev-vs-prod">
+    <h2>Dev vs production</h2>
+
+    <p>In development, set <code>validationLevel</code> to <code>'warn'</code> or <code>'error'</code> so invalid attributes are reported at runtime. In production, import from <code>kensington/dist/slim</code> for a bundle about 9&times; smaller (~136 KB to ~15 KB minified). The slim build has no spec data, so it throws if <code>validationLevel</code> is anything other than <code>'off'</code>.</p>
+
+    <p>With Vite, alias the import based on build mode so your application code stays unchanged.</p>
+
+    <pre><code class="language-javascript">// vite.config.js
+import { defineConfig } from 'vite';
+
+export default defineConfig(({ mode }) =&gt; ({
+  resolve: {
+    alias: mode === 'production'
+      ? { kensington: 'kensington/dist/slim' }
+      : {},
+  },
+}));</code></pre>
+
+    <pre><code class="language-javascript">// src/t.js
+import Kensington from 'kensington';
+
+export const t = new Kensington({
+  validationLevel: import.meta.env.DEV ? 'error' : 'off',
+});</code></pre>
+
+    <p>See <a href="examples.html#rollup">Rollup</a>, <a href="examples.html#esbuild">esbuild</a>, and <a href="examples.html#webpack">Webpack</a> for equivalent setups with other bundlers.</p>
+  </section>
+
   <!-- ── Advanced ──────────────────────────────────────────────── -->
 
   <section id="advanced">
@@ -489,14 +519,6 @@ t.div({ class: 'ok' });                        // fine
 t.div({ unknownAttr: 'x' });                   // throws: not a known attribute
 t.input({ type: 'checkbox' });                 // fine
 t.input({ type: 'notatype' });                 // throws: not an allowed value</code></pre>
-
-    <h3 id="slim-build">Slim build</h3>
-
-    <p>The slim build omits all attribute validation data, shrinking the minified bundle by ~77%. It requires <code>validationLevel: 'off'</code> and is otherwise identical.</p>
-
-    <pre><code class="language-javascript">import Kensington from 'kensington/dist/slim';
-
-const t = new Kensington({ validationLevel: 'off' });</code></pre>
 
     <h3 id="custom-elements">Custom elements</h3>
 

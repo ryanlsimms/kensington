@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import fs from 'node:fs';
+import { before, describe, it } from 'node:test';
 
 import Kensington, { t } from 'kensington';
 
@@ -1004,37 +1005,289 @@ describe('other', () => {
 // ─── slim build ───────────────────────────────────────────────────────────
 
 describe('slim build', () => {
-  it('throws when validationLevel is not off', async () => {
-    const { default: SlimKensington } = await import('../../dist/kensington.slim.js');
-    assert.throws(
-      () => new SlimKensington({ validationLevel: 'warn' }),
-      { message: "The slim build does not include attribute data. Set validationLevel: 'off' or use the full build." },
-    );
+  // Cache the loaded module across tests so we don't re-import the bundled file every time.
+  let SlimKensington;
+  let tt;
+  before(async () => {
+    ({ default: SlimKensington } = await import('../../dist/kensington.slim.js'));
+    tt = new SlimKensington();
   });
-  it('does not throw when validationLevel is off', async () => {
-    const { default: SlimKensington } = await import('../../dist/kensington.slim.js');
-    assert.doesNotThrow(() => new SlimKensington({ validationLevel: 'off' }));
+
+  // ─── constructor ──────────────────────────────────────────────────────
+
+  describe('constructor', () => {
+    it('throws when validationLevel is not off', () => {
+      const expected = 'The slim build does not include attribute data. '
+        + "Set validationLevel: 'off' or use the full build.";
+      assert.throws(
+        () => new SlimKensington({ validationLevel: 'warn' }),
+        { message: expected },
+      );
+      assert.throws(() => new SlimKensington({ validationLevel: 'error' }));
+    });
+    it('does not throw when validationLevel is off', () => {
+      assert.doesNotThrow(() => new SlimKensington({ validationLevel: 'off' }));
+    });
+    it('defaults validationLevel to off', () => {
+      assert.doesNotThrow(() => new SlimKensington());
+      assert.strictEqual(new SlimKensington().validationLevel, 'off');
+    });
+    it('validates additionalGlobalAttributes', () => {
+      assert.throws(() => new SlimKensington({ additionalGlobalAttributes: 'bad' }));
+      assert.throws(() => new SlimKensington({ additionalGlobalAttributes: [] }));
+      assert.doesNotThrow(() => new SlimKensington({ additionalGlobalAttributes: {} }));
+    });
+    it('validates indentationLevel', () => {
+      assert.throws(() => new SlimKensington({ indentationLevel: -1 }));
+      assert.throws(() => new SlimKensington({ indentationLevel: 'two' }));
+      assert.doesNotThrow(() => new SlimKensington({ indentationLevel: 0 }));
+      assert.doesNotThrow(() => new SlimKensington({ indentationLevel: 4 }));
+    });
+    it('validates logger', () => {
+      assert.throws(() => new SlimKensington({ logger: 'not a fn' }));
+      assert.doesNotThrow(() => new SlimKensington({ logger: () => {} }));
+    });
+    it('accepts additionalNamespaces', () => {
+      const k = new SlimKensington({ additionalNamespaces: ['hx'] });
+      assert.deepStrictEqual(k.namespaces, ['data', 'aria', 'hx']);
+    });
   });
-  it('preserves camelCase SVG attribute names', async () => {
-    const { default: SlimKensington } = await import('../../dist/kensington.slim.js');
-    const tt = new SlimKensington({ validationLevel: 'off' });
-    assert.strictEqual(
-      tt.svg({ viewBox: '0 0 100 100' }).toString(),
-      '<svg viewBox="0 0 100 100"></svg>',
-    );
-    assert.strictEqual(
-      tt.marker({ markerWidth: 10, markerHeight: 10, preserveAspectRatio: 'none' }).toString(),
-      '<marker markerWidth="10" markerHeight="10" preserveAspectRatio="none"></marker>',
-    );
+
+  // ─── Proxy tag dispatch ────────────────────────────────────────────────
+
+  describe('Proxy dispatch', () => {
+    it('dispatches HTML content tags', () => {
+      assert.strictEqual(tt.div().toString(), '<div></div>');
+      assert.strictEqual(tt.span('hi').toString(), '<span>hi</span>');
+      assert.strictEqual(tt.p({ class: 'x' }, 'text').toString(), '<p class="x">text</p>');
+    });
+    it('dispatches void tags without a closing tag', () => {
+      assert.strictEqual(tt.br().toString(), '<br>');
+      assert.strictEqual(tt.img({ src: '/x.png' }).toString(), '<img src="/x.png">');
+      assert.strictEqual(tt.input({ type: 'text' }).toString(), '<input type="text">');
+    });
+    it('dispatches SVG tags with the SVG namespace and preserves camelCase', () => {
+      assert.strictEqual(tt.svg({ viewBox: '0 0 100 100' }).toString(), '<svg viewBox="0 0 100 100"></svg>');
+      assert.strictEqual(tt.circle({ cx: 50, cy: 50, r: 40 }).toString(), '<circle cx="50" cy="50" r="40"></circle>');
+      assert.strictEqual(tt.animateMotion().toString(), '<animateMotion></animateMotion>');
+    });
+    it('dispatches MathML tags including kebab-case mapping', () => {
+      assert.strictEqual(tt.math().toString(), '<math></math>');
+      assert.strictEqual(tt.mi('x').toString(), '<mi>x</mi>');
+      // annotation-xml is the one MathML tag whose method name differs from its tag name.
+      assert.strictEqual(tt.annotationXml().toString(), '<annotation-xml></annotation-xml>');
+    });
+    it('dispatches literal-content tags (script, style) without encoding the body', () => {
+      assert.strictEqual(
+        tt.script('if (a < b) {}').toString(),
+        '<script>if (a < b) {}</script>',
+      );
+      assert.strictEqual(
+        tt.style('a { color: red; }').toString(),
+        '<style>a { color: red; }</style>',
+      );
+    });
+    it('dispatches htmlWithDocType with the doctype prefix', () => {
+      assert.strictEqual(
+        tt.htmlWithDocType(tt.body('hi')).toString(),
+        '<!DOCTYPE html>\n<html>\n  <body>hi</body>\n</html>',
+      );
+    });
+    it('returns undefined for unknown tag names', () => {
+      assert.strictEqual(tt.notATag, undefined);
+      assert.strictEqual(tt.somethingMadeUp, undefined);
+    });
+    it('returns undefined for symbol keys', () => {
+      assert.strictEqual(tt[Symbol.iterator], undefined);
+      assert.strictEqual(tt[Symbol.toPrimitive], undefined);
+    });
+    it('memoizes resolved tag closures so repeated access returns the same fn', () => {
+      assert.strictEqual(tt.div, tt.div);
+      assert.strictEqual(tt.svg, tt.svg);
+    });
+    it('names the cached closure after the tag for stack traces', () => {
+      assert.strictEqual(tt.div.name, 'div');
+      assert.strictEqual(tt.animateMotion.name, 'animateMotion');
+    });
+    it('supports destructuring', () => {
+      const { div, span } = tt;
+      assert.strictEqual(div('a').toString(), '<div>a</div>');
+      assert.strictEqual(span('b').toString(), '<span>b</span>');
+    });
+    it('passes instanceof check', () => {
+      assert.ok(tt instanceof SlimKensington);
+    });
   });
-  it('still converts user camelCase keys to kebab-case in slim build', async () => {
-    const { default: SlimKensington } = await import('../../dist/kensington.slim.js');
-    const tt = new SlimKensington({ validationLevel: 'off' });
-    assert.strictEqual(
-      tt.div({ dataBsTarget: '#modal' }).toString(),
-      '<div data-bs-target="#modal"></div>',
-    );
+
+  // ─── attribute handling ───────────────────────────────────────────────
+
+  describe('attributes', () => {
+    it('converts user camelCase keys to kebab-case', () => {
+      assert.strictEqual(
+        tt.div({ dataBsTarget: '#modal' }).toString(),
+        '<div data-bs-target="#modal"></div>',
+      );
+    });
+    it('flattens nested attribute namespaces', () => {
+      assert.strictEqual(
+        tt.div({ data: { bs: { toggle: 'collapse' } } }).toString(),
+        '<div data-bs-toggle="collapse"></div>',
+      );
+    });
+    it('renders boolean attributes as bare names', () => {
+      assert.strictEqual(
+        tt.input({ type: 'checkbox', checked: true }).toString(),
+        '<input type="checkbox" checked>',
+      );
+    });
+    it('omits attributes with false or null values', () => {
+      assert.strictEqual(
+        tt.input({ disabled: false }).toString(),
+        '<input>',
+      );
+    });
+    it('joins class arrays and drops falsy entries', () => {
+      assert.strictEqual(
+        tt.div({ class: ['a', null, '', 'c'] }).toString(),
+        '<div class="a c"></div>',
+      );
+    });
+    it('serializes style objects with camelCase to kebab-case keys', () => {
+      assert.strictEqual(
+        tt.div({ style: { backgroundColor: 'red', zIndex: 2 } }).toString(),
+        '<div style="background-color: red; z-index: 2"></div>',
+      );
+    });
+    it('renders additionalGlobalAttributes correctly', () => {
+      const k = new SlimKensington({ additionalGlobalAttributes: { enterkeyhint: ['enter'] } });
+      assert.strictEqual(
+        k.input({ enterkeyhint: 'enter' }).toString(),
+        '<input enterkeyhint="enter">',
+      );
+    });
+    it('renders namespaced attributes via additionalNamespaces', () => {
+      const k = new SlimKensington({ additionalNamespaces: ['hx'] });
+      assert.strictEqual(
+        k.div({ hxGet: '/users' }).toString(),
+        '<div hx-get="/users"></div>',
+      );
+    });
   });
+
+  // ─── content handling ────────────────────────────────────────────────
+
+  describe('content', () => {
+    it('renders nested tags', () => {
+      assert.strictEqual(
+        tt.div(tt.p('inner')).toString(),
+        '<div>\n  <p>inner</p>\n</div>',
+      );
+    });
+    it('flattens array content and drops falsy entries', () => {
+      assert.strictEqual(
+        tt.ul([tt.li('a'), false, null, tt.li('b')]).toString(),
+        '<ul>\n  <li>a</li>\n  <li>b</li>\n</ul>',
+      );
+    });
+    it('handles encodeContent on HTML content but not on script/style', () => {
+      assert.strictEqual(
+        tt.div('a < b').toString(),
+        '<div>a &#x3C; b</div>',
+      );
+      assert.strictEqual(
+        tt.script('if (a < b) {}').toString(),
+        '<script>if (a < b) {}</script>',
+      );
+    });
+  });
+
+  // ─── helper methods ───────────────────────────────────────────────────
+
+  describe('helpers', () => {
+    it('literal() embeds raw HTML', () => {
+      assert.strictEqual(
+        tt.div([tt.literal('<span>raw</span>')]).toString(),
+        '<div>\n  <span>raw</span>\n</div>',
+      );
+    });
+    it('unsafeLiteral() accepts script content', () => {
+      assert.strictEqual(
+        tt.div(tt.unsafeLiteral('<script>void 0</script>')).toString(),
+        '<div>\n  <script>void 0</script>\n</div>',
+      );
+    });
+    it('inlineComment() emits an HTML comment', () => {
+      assert.strictEqual(
+        tt.div(tt.inlineComment('note')).toString(),
+        '<div>\n  <!-- note -->\n</div>',
+      );
+    });
+  });
+
+  // ─── create*Tag factories ─────────────────────────────────────────────
+
+  describe('create*Tag factories', () => {
+    it('createCustomTag works', () => {
+      const myCard = tt.createCustomTag('my-card');
+      assert.strictEqual(myCard().toString(), '<my-card></my-card>');
+      assert.strictEqual(myCard(tt.p('x')).toString(), '<my-card>\n  <p>x</p>\n</my-card>');
+    });
+    it('createCustomTag throws on non-string tagName', () => {
+      assert.throws(() => tt.createCustomTag(''));
+      assert.throws(() => tt.createCustomTag(123));
+    });
+    it('createContentTag, createVoidTag, createSvgContentTag work', () => {
+      const customDiv = tt.createContentTag('x-card');
+      const customBr = tt.createVoidTag('x-line');
+      const customSvg = tt.createSvgContentTag('x-shape');
+      assert.strictEqual(customDiv().toString(), '<x-card></x-card>');
+      assert.strictEqual(customBr().toString(), '<x-line>');
+      assert.strictEqual(customSvg({ viewBox: '0 0 10 10' }).toString(), '<x-shape viewBox="0 0 10 10"></x-shape>');
+    });
+  });
+
+  // ─── output parity with full build (smoke test) ───────────────────────
+
+  describe('parity with full build', () => {
+    it('produces the same output as the full build for common patterns', async () => {
+      const { default: Full } = await import('kensington');
+      const full = new Full();
+      const cases = [
+        f => f.div(),
+        f => f.div({ class: 'a' }, 'hi'),
+        f => f.input({ type: 'checkbox', checked: true }),
+        f => f.ul([f.li('a'), f.li('b')]),
+        f => f.svg({ viewBox: '0 0 10 10' }, f.circle({ cx: 5, cy: 5, r: 3 })),
+        f => f.script('if (a < b) {}'),
+      ];
+      for (const make of cases) {
+        assert.strictEqual(make(tt).toString(), make(full).toString());
+      }
+    });
+  });
+});
+
+// ─── bundle size budget ───────────────────────────────────────────────────
+//
+// Regression guard. Each minified bundle has a maximum size budget. The budgets give some
+// headroom over the current measurements so minor variations don't flake, but catch any
+// accidental bloat. Update the budgets deliberately when a real feature warrants the growth.
+
+describe('bundle sizes', () => {
+  const BUDGETS = [
+    { path: '../../dist/kensington.min.js', maxKb: 180 },
+    { path: '../../dist/kensington.slim.min.js', maxKb: 22 },
+  ];
+  for (const { path, maxKb } of BUDGETS) {
+    it(`${path.replace('../../dist/', '')} stays under ${maxKb} KB`, () => {
+      const stat = fs.statSync(new URL(path, import.meta.url));
+      const actualKb = stat.size / 1024;
+      assert.ok(
+        actualKb < maxKb,
+        `${path}: ${actualKb.toFixed(1)} KB exceeds the ${maxKb} KB budget`,
+      );
+    });
+  }
 });
 
 // ─── htmlWithDocType ───────────────────────────────────────────────────────

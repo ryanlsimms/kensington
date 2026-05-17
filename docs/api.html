@@ -251,11 +251,11 @@ import { t } from 'https://cdn.jsdelivr.net/npm/kensington/dist/kensington.min.j
 
     <h3>Slim build</h3>
 
-    <p>Omits all attribute validation data (~77% smaller minified). Requires <code>validationLevel: 'off'</code>.</p>
+    <p>Proxy-based class with no per-element attribute spec data. About 9&times; smaller minified (~136 KB to ~15 KB). Throws if <code>validationLevel</code> is anything other than <code>'off'</code>. See <a href="index.html#dev-vs-prod">Dev vs production</a> for the recommended workflow.</p>
 
     <pre><code class="language-javascript">import Kensington from 'kensington/dist/slim';
 
-const t = new Kensington({ validationLevel: 'off' });</code></pre>
+const t = new Kensington();</code></pre>
   </section>
 
   <!-- ── TypeScript types ─────────────────────────────────────── -->
