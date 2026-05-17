@@ -3,7 +3,10 @@ import Signal, { computed, effect } from './lib/reactive/signal.js';
 
 export default Kensington;
 
-export const t = new Kensington();
+// `@__PURE__` lets bundlers drop the Kensington class for slim consumers who only import
+// the reactive primitives (signal/effect/computed). Combined with `"sideEffects": false`
+// in package.json, an unused `t` removes the class and all its transitive imports.
+export const t = /* @__PURE__ */ new Kensington();
 
 /**
  * Creates a reactive signal. Pass as content or an attribute value — the DOM updates live.

@@ -28,22 +28,22 @@ export default defineConfig({
     /* Dist bundle tests — chromium only, one project per bundle */
     {
       name: 'dist:kensington.js',
-      testMatch: ['**/browser.spec.js', '**/signals.spec.js'],
+      testMatch: ['**/browser.spec.js', '**/signals.spec.js', '**/hydration.spec.js'],
       use: { ...devices['Desktop Chrome'], bundle: '/dist/kensington.js' },
     },
     {
       name: 'dist:kensington.min.js',
-      testMatch: ['**/browser.spec.js', '**/signals.spec.js'],
+      testMatch: ['**/browser.spec.js', '**/signals.spec.js', '**/hydration.spec.js'],
       use: { ...devices['Desktop Chrome'], bundle: '/dist/kensington.min.js' },
     },
     {
       name: 'dist:kensington.slim.js',
-      testMatch: ['**/browser.spec.js', '**/signals.spec.js'],
+      testMatch: ['**/browser.spec.js', '**/signals.spec.js', '**/hydration.spec.js'],
       use: { ...devices['Desktop Chrome'], bundle: '/dist/kensington.slim.js' },
     },
     {
       name: 'dist:kensington.slim.min.js',
-      testMatch: ['**/browser.spec.js', '**/signals.spec.js'],
+      testMatch: ['**/browser.spec.js', '**/signals.spec.js', '**/hydration.spec.js'],
       use: { ...devices['Desktop Chrome'], bundle: '/dist/kensington.slim.min.js' },
     },
   ],

@@ -69,6 +69,13 @@
         <li><a href="#d3">D3</a></li>
       </ul>
     </li>
+    <li><a href="#build-systems">Build systems</a>
+      <ul>
+        <li><a href="#rollup">Rollup</a></li>
+        <li><a href="#esbuild">esbuild</a></li>
+        <li><a href="#webpack">Webpack</a></li>
+      </ul>
+    </li>
   </ul>
   <div class="sidebar-footer">
     <a href="https://github.com/ryanlsimms/kensington" target="_blank" rel="noopener">
@@ -1245,7 +1252,117 @@ document.getElementById('refresh').addEventListener('click', () =&gt; {
   data.set(Array.from({ length: 7 }, () =&gt; Math.round(Math.random() * 60) + 5));
 });</code></pre>
 
-      <p>D3 owns the contents of the SVG element. Kensington owns everything outside it -- the surrounding layout, controls, and any other reactive UI on the page. The two libraries operate in separate parts of the DOM and do not conflict.</p>
+      <p>D3 owns the contents of the SVG element. Kensington owns everything outside it. The surrounding layout, controls, and any other reactive UI on the page belong to Kensington. The two libraries operate in separate parts of the DOM and do not conflict.</p>
+    </section>
+
+  </section>
+
+  <!-- ── Build systems ───────────────────────────────────────── -->
+
+  <section id="build-systems">
+    <h2>Build systems</h2>
+
+    <p>The recommended setup runs the full Kensington build in development (with runtime <a href="index.html#dev-validation">validation</a> on) and the <a href="index.html#prod-slim">slim build</a> in production (with no validation). The <a href="index.html#vite">Vite example</a> on the home page shows the pattern. The same idea works in every bundler that supports module aliasing.</p>
+
+    <section id="rollup">
+      <h3>Rollup</h3>
+
+      <p>Use <code>@rollup/plugin-alias</code> to swap the import in production. <code>@rollup/plugin-replace</code> sets <code>process.env.NODE_ENV</code> so application code can pick a <code>validationLevel</code> at build time.</p>
+
+      <pre><code class="language-javascript">// rollup.config.js
+import alias from '@rollup/plugin-alias';
+import nodeResolve from '@rollup/plugin-node-resolve';
+import replace from '@rollup/plugin-replace';
+
+const production = process.env.NODE_ENV === 'production';
+
+export default {
+  input: 'src/main.js',
+  output: { file: 'dist/bundle.js', format: 'es' },
+  plugins: [
+    nodeResolve(),
+    replace({
+      preventAssignment: true,
+      'process.env.NODE_ENV': JSON.stringify(production ? 'production' : 'development'),
+    }),
+    production &amp;&amp; alias({
+      entries: [{ find: 'kensington', replacement: 'kensington/dist/slim' }],
+    }),
+  ].filter(Boolean),
+};</code></pre>
+
+      <pre><code class="language-javascript">// src/t.js
+import Kensington from 'kensington';
+
+export const t = new Kensington({
+  validationLevel: process.env.NODE_ENV === 'production' ? 'off' : 'error',
+});</code></pre>
+
+      <p>Run with <code>NODE_ENV=production rollup -c</code> for the slim bundle, <code>rollup -c</code> for the full one.</p>
+    </section>
+
+    <section id="esbuild">
+      <h3>esbuild</h3>
+
+      <p>esbuild has built-in support for both aliasing and environment-variable replacement via <code>alias</code> and <code>define</code>. No plugins required.</p>
+
+      <pre><code class="language-javascript">// build.js
+import esbuild from 'esbuild';
+
+const production = process.env.NODE_ENV === 'production';
+
+await esbuild.build({
+  entryPoints: ['src/main.js'],
+  outfile: 'dist/bundle.js',
+  bundle: true,
+  format: 'esm',
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(production ? 'production' : 'development'),
+  },
+  alias: production
+    ? { kensington: 'kensington/dist/slim' }
+    : {},
+});</code></pre>
+
+      <pre><code class="language-javascript">// src/t.js
+import Kensington from 'kensington';
+
+export const t = new Kensington({
+  validationLevel: process.env.NODE_ENV === 'production' ? 'off' : 'error',
+});</code></pre>
+
+      <p>Run <code>node build.js</code> for the dev build, <code>NODE_ENV=production node build.js</code> for the slim one.</p>
+    </section>
+
+    <section id="webpack">
+      <h3>Webpack</h3>
+
+      <p>Webpack&rsquo;s <code>mode</code> option auto-sets <code>process.env.NODE_ENV</code>, and <code>resolve.alias</code> handles the import swap. A config function receives the mode so the alias map can be built per environment.</p>
+
+      <pre><code class="language-javascript">// webpack.config.js
+const path = require('path');
+
+module.exports = (env, argv) =&gt; ({
+  entry: './src/main.js',
+  output: {
+    path: path.resolve(__dirname, 'dist'),
+    filename: 'bundle.js',
+  },
+  resolve: {
+    alias: argv.mode === 'production'
+      ? { kensington: 'kensington/dist/slim' }
+      : {},
+  },
+});</code></pre>
+
+      <pre><code class="language-javascript">// src/t.js
+import Kensington from 'kensington';
+
+export const t = new Kensington({
+  validationLevel: process.env.NODE_ENV === 'production' ? 'off' : 'error',
+});</code></pre>
+
+      <p>Run <code>webpack --mode development</code> for the full build, <code>webpack --mode production</code> for the slim one.</p>
     </section>
 
   </section>

@@ -11,6 +11,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `addConnectedCallback(fn)` and `addDisconnectedCallback(fn)` on `ContentTag`. Register callbacks that fire when the element is inserted into or removed from the DOM. `fn` receives the live element as its first argument and as `this`. By default each fires once. With `toElement({ persist: true })` all callbacks re-fire on every insertion or removal cycle.
 - `toElement({ persist: true })`. Pass `persist: true` to pause signal effects on DOM removal and resume them automatically on re-insertion. Without this option, effects are stopped permanently on first removal. Works across unlimited remove/re-insert cycles.
 
+### Changed
+- Slim build redesigned. The `kensington/dist/slim` and `kensington/dist/slim/min` bundles now use a Proxy-based class that dispatches tag methods lazily via a small tag-info lookup, replacing the previous approach that shipped the full generated class with only attribute data stripped. Minified slim drops from roughly 100 KB to about 27 KB, about 5x smaller than the full build. Public API is unchanged. The constructor still throws if `validationLevel` is anything other than `'off'`.
+- `new Kensington()` in the package entry is now annotated `/* @__PURE__ */`. Combined with the package's existing `"sideEffects": false`, bundlers can drop the entire `Kensington` class for consumers who only import the reactive primitives (`signal`, `effect`, `computed`). A signal-only slim consumer minifies to about 1.5 KB.
+
 ## [2.0.0-signals.7] - 2026-05-15
 
 ### Added

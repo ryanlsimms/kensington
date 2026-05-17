@@ -46,12 +46,18 @@
     <li><a href="#dom">Browser DOM</a></li>
     <li><a href="#signals">Reactive Data</a></li>
     <li><a href="#typescript">TypeScript</a></li>
+    <li><a href="#dev-vs-prod">Dev vs production</a>
+      <ul>
+        <li><a href="#dev-validation">Validation in dev</a></li>
+        <li><a href="#prod-slim">Slim build for prod</a></li>
+        <li><a href="#vite">Wiring it up with Vite</a></li>
+      </ul>
+    </li>
   </ul>
   <div class="sidebar-title">Advanced</div>
   <ul>
     <li><a href="#constructor">Constructor options</a></li>
     <li><a href="#validation">Validation</a></li>
-    <li><a href="#slim-build">Slim build</a></li>
     <li><a href="#custom-elements">Custom elements</a></li>
     <li><a href="#raw-html">Raw HTML &amp; comments</a></li>
     <li><a href="#cli">HTML &rarr; Kensington</a></li>
@@ -509,6 +515,67 @@ t.div({ prop: { _instance: myWidget } }).toElement();</code></pre>
     <p>TypeScript types are also generated for custom elements and module augmentation. See <a href="#custom-elements">Custom elements</a> in the Advanced section.</p>
   </section>
 
+  <!-- ── Dev vs production ───────────────────────────────────────── -->
+
+  <section id="dev-vs-prod">
+    <h2>Dev vs production</h2>
+
+    <p>Two settings are worth flipping between local development and production. Use them together to catch attribute typos and bad values during development while shipping a small bundle to users.</p>
+
+    <h3 id="dev-validation">Validation in development</h3>
+
+    <p>By default, <code>validationLevel</code> is <code>'off'</code>. In development, set it to <code>'warn'</code> or <code>'error'</code> so invalid attribute names and values are reported at runtime instead of silently rendering. TypeScript catches most issues at compile time. This catches the rest (dynamic attribute names, JS callers, and any code path TypeScript can&rsquo;t reach).</p>
+
+    <pre><code class="language-javascript">import Kensington from 'kensington';
+
+const t = new Kensington({ validationLevel: 'error' });
+
+t.input({ type: 'checkbox' });   // fine
+t.input({ type: 'notatype' });   // throws. Not an allowed value
+t.div({ unknownAttr: 'x' });     // throws. Not a known attribute</code></pre>
+
+    <p>See <a href="#validation">Validation</a> below for the full options and behavior.</p>
+
+    <h3 id="prod-slim">Slim build for production</h3>
+
+    <p>The slim build is a separate bundle that ships without per-element attribute spec data. The minified output drops from ~148 KB to ~27 KB, about 5&times; smaller. The public API is identical. Tags, attributes, signals, and hydration all work the same.</p>
+
+    <p>Since the slim build has no spec data, runtime validation is unavailable. The constructor throws if you set <code>validationLevel</code> to anything other than <code>'off'</code>.</p>
+
+    <pre><code class="language-javascript">import Kensington from 'kensington/dist/slim';
+
+const t = new Kensington();   // validationLevel defaults to 'off'
+t.div({ class: 'card' }, t.p('Hello'));</code></pre>
+
+    <h3 id="vite">Wiring it up with Vite</h3>
+
+    <p>Use a Vite alias to swap the import target by build mode. Your application code stays as <code>import Kensington from 'kensington'</code> everywhere. Vite resolves to the full build in dev and the slim build in production.</p>
+
+    <pre><code class="language-javascript">// vite.config.js
+import { defineConfig } from 'vite';
+
+export default defineConfig(({ mode }) =&gt; ({
+  resolve: {
+    alias: mode === 'production'
+      ? { kensington: 'kensington/dist/slim' }
+      : {},
+  },
+}));</code></pre>
+
+    <p>Pick the validation level from Vite&rsquo;s build environment so dev gets runtime checks and prod gets the no-op fast path.</p>
+
+    <pre><code class="language-javascript">// src/t.js
+import Kensington from 'kensington';
+
+export const t = new Kensington({
+  validationLevel: import.meta.env.DEV ? 'error' : 'off',
+});</code></pre>
+
+    <p>Use <code>t</code> everywhere in your app. <code>npm run dev</code> loads the full build with errors on bad attributes. <code>npm run build</code> produces a bundle backed by the slim runtime.</p>
+
+    <p>The same pattern works with other bundlers. See <a href="examples.html#rollup">Rollup</a>, <a href="examples.html#esbuild">esbuild</a>, and <a href="examples.html#webpack">Webpack</a> in the examples page for equivalent setups.</p>
+  </section>
+
   <!-- ── Advanced ──────────────────────────────────────────────── -->
 
   <header>
@@ -558,14 +625,6 @@ t.div({ class: 'ok' });         // fine
 t.div({ unknownAttr: 'x' });    // throws: not a known attribute
 t.input({ type: 'checkbox' });  // fine
 t.input({ type: 'notatype' });  // throws: not an allowed value</code></pre>
-
-    <h3 id="slim-build">Slim build</h3>
-
-    <p>The slim build omits all attribute validation data, shrinking the minified bundle by ~77%. It requires <code>validationLevel: 'off'</code> and is otherwise identical.</p>
-
-    <pre><code class="language-javascript">import Kensington from 'kensington/dist/slim';
-
-const t = new Kensington({ validationLevel: 'off' });</code></pre>
 
     <h3 id="custom-elements">Custom elements</h3>
 

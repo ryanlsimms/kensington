@@ -103,6 +103,10 @@ t.input({ formenctype: 'text' });
 // "application/x-www-form-urlencoded" | "multipart/form-data" | "text/plain"
 ```
 
+## Dev vs production
+
+In development, set `validationLevel` to `'warn'` or `'error'` to catch invalid attributes at runtime. In production, import from `kensington/dist/slim` for a bundle about 5× smaller (~148 KB to ~27 KB minified). See [Dev vs production](https://ryanlsimms.github.io/kensington#dev-vs-prod) for the Vite, Rollup, esbuild, and Webpack setups that switch builds automatically.
+
 ## AI assistants
 
 An `AGENTS.md` file is included in the package and published to npm. Point your AI assistant at it for accurate help with Kensington:

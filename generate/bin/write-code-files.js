@@ -9,6 +9,7 @@ import buildAttributesDeclarations from '../build-attributes-declarations.js';
 import buildDeclarations from '../build-declarations.js';
 import buildKensington from '../build-kensington.js';
 import buildSvgElementCase from '../build-svg-element-case.js';
+import buildTagInfo from '../build-tag-info.js';
 import parseCssPropertyTypes, { svgOnlySupplementNames } from '../parse-css-property-types.js';
 import parseData from '../parse-data.js';
 import parseIdlTypes from '../parse-idl-types.js';
@@ -58,10 +59,13 @@ const attributesContent = buildAttributes({
 
 const svgElementCaseContent = buildSvgElementCase({ svgElements: svgData.svgElements });
 
+const tagInfoContent = buildTagInfo({ elements });
+
 fs.writeFileSync(path.resolve(import.meta.dirname, '../../types.d.ts'), declarationsContent, 'utf8');
 fs.writeFileSync(path.resolve(import.meta.dirname, '../../attributes.d.ts'), attributesDeclarationsContent, 'utf8');
 fs.writeFileSync(path.resolve(import.meta.dirname, '../../esm/kensington.js'), kensingtonClassContent, 'utf8');
 fs.writeFileSync(path.resolve(import.meta.dirname, '../../esm/attributes.js'), attributesContent, 'utf8');
+fs.writeFileSync(path.resolve(import.meta.dirname, '../../esm/tag-info.js'), tagInfoContent, 'utf8');
 fs.writeFileSync(path.resolve(import.meta.dirname, '../../bin/lib/svg-element-case.js'), svgElementCaseContent, 'utf8');
 
 await import('./build-cjs.js');
