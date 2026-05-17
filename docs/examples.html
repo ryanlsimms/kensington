@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Kensington Examples</title>
   <link href="https://api.fontshare.com/v2/css?f[]=supreme@1,900,700,500,400,300&display=swap" rel="stylesheet">
+  <link href="https://api.fontshare.com/v2/css?f[]=tanker@400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -53,6 +54,7 @@
         <li><a href="#hydrated-form-validation">Form validation</a></li>
         <li><a href="#lifecycle-widget">Lifecycle widget</a></li>
         <li><a href="#effect-resume">Effect pause and resume</a></li>
+        <li><a href="#spa-router">Single-page app router</a></li>
       </ul>
     </li>
     <li><a href="#integrations">Integrations</a>
@@ -61,6 +63,10 @@
         <li><a href="#tailwind">Tailwind CSS</a></li>
         <li><a href="#alpine">Alpine.js</a></li>
         <li><a href="#elysia">Elysia</a></li>
+        <li><a href="#hono">Hono</a></li>
+        <li><a href="#navigo">Navigo</a></li>
+        <li><a href="#web-components">Web Components</a></li>
+        <li><a href="#d3">D3</a></li>
       </ul>
     </li>
   </ul>
@@ -811,6 +817,80 @@ customElements.define('live-clock', LiveClock);</code></pre>
       <p>The effect is defined once, created once, and reused across every connection cycle. Without <code>resume()</code> you would call <code>effect(...)</code> again inside <code>connectedCallback</code> on every reconnection, discarding the previous effect object each time.</p>
     </section>
 
+    <section id="spa-router">
+      <h3>Single-page app router</h3>
+
+      <p>A minimal client-side router built on <code>history.pushState</code> and the <code>popstate</code> event. The current route is held in a signal so any <code>effect</code> or <code>computed</code> that reads it re-runs automatically when the URL changes.</p>
+
+      <pre><code class="language-javascript">import { t, signal, effect } from 'kensington';
+
+function parseRoute() {
+  const [path, search] = window.location.pathname.split('?');
+  const params = Object.fromEntries(new URLSearchParams(search));
+  const segments = path.split('/').filter(Boolean);
+  return { path, segments, params };
+}
+
+const route = signal(parseRoute());
+
+function navigate(path) {
+  history.pushState(null, '', path);
+  route.set(parseRoute());
+}
+
+window.addEventListener('popstate', () => route.set(parseRoute()));
+
+// Intercept same-origin &lt;a&gt; clicks so internal links do not cause full reloads.
+document.addEventListener('click', e =&gt; {
+  const a = e.target.closest('a[href]');
+  if (!a || a.origin !== location.origin || a.hasAttribute('download')) return;
+  e.preventDefault();
+  navigate(a.pathname + a.search);
+});
+
+const app = document.getElementById('app');
+
+effect(() =&gt; {
+  const { path } = route.get();
+  let view;
+
+  if (path === '/') {
+    view = homePage();
+  } else if (path.startsWith('/user/')) {
+    const id = path.split('/')[2];
+    view = userPage(id);
+  } else {
+    view = notFound();
+  }
+
+  app.replaceChildren(view.toElement());
+});
+
+function homePage() {
+  return t.main(
+    t.h1('Home'),
+    t.nav(
+      t.a({ href: '/user/1' }, 'User 1'),
+      ' ',
+      t.a({ href: '/user/2' }, 'User 2'),
+    ),
+  );
+}
+
+function userPage(id) {
+  return t.main(
+    t.h1(`User ${id}`),
+    t.a({ href: '/' }, 'Back'),
+  );
+}
+
+function notFound() {
+  return t.main(t.h1('404 - Not found'));
+}</code></pre>
+
+      <p>The <code>click</code> interceptor is the part most often omitted. Without it, internal links trigger a full page reload even with <code>pushState</code> in place. The <code>a.origin !== location.origin</code> check lets external links and <code>target="_blank"</code> links through unmodified.</p>
+    </section>
+
   </section>
 
   <section id="integrations">
@@ -974,6 +1054,198 @@ const app = new Elysia()
     );
   })
   .listen(3000);</code></pre>
+    </section>
+
+    <section id="hono">
+      <h3>Hono</h3>
+
+      <p><a href="https://hono.dev" target="_blank" rel="noopener">Hono</a> runs on Node, Bun, Deno, and Cloudflare Workers. Use <code>c.html()</code> to send a Kensington string as an HTML response.</p>
+
+      <pre><code class="language-javascript">import { Hono } from 'hono';
+import { t } from 'kensington';
+import { layout } from './layout.js';
+
+const app = new Hono();
+
+app.get('/', c =&gt; c.html(
+  layout('Home', t.h1('Welcome'))
+));
+
+app.get('/users/:id', async c =&gt; {
+  const user = await db.getUser(c.req.param('id'));
+  return c.html(
+    layout(user.name, [
+      t.h1(user.name),
+      t.p(user.bio),
+    ])
+  );
+});
+
+export default app;</code></pre>
+
+      <p>For Cloudflare Workers, export <code>app</code> as the default and set <code>compatibility_date</code> in <code>wrangler.toml</code>. The same Kensington code runs unchanged across every Hono runtime.</p>
+    </section>
+
+    <section id="navigo">
+      <h3>Navigo</h3>
+
+      <p><a href="https://github.com/krasimir/navigo" target="_blank" rel="noopener">Navigo</a> is a small (~4 kb) client-side router with named routes, guards, and a <code>navigate()</code> helper. Wire its route callbacks into a signal and the rest of your UI reacts automatically.</p>
+
+      <pre><code class="language-javascript">import { t, signal, effect } from 'kensington';
+import Navigo from 'navigo';
+
+const route = signal({ page: 'home', params: {} });
+
+const router = new Navigo('/');
+
+router
+  .on('/',          ()         =&gt; route.set({ page: 'home',    params: {} }))
+  .on('/user/:id',  ({ data }) =&gt; route.set({ page: 'user',    params: data }))
+  .on('/settings',  ()         =&gt; route.set({ page: 'settings', params: {} }))
+  .notFound(()                 =&gt; route.set({ page: '404',     params: {} }))
+  .resolve();
+
+const app = document.getElementById('app');
+
+effect(() =&gt; {
+  const { page, params } = route.get();
+  const views = {
+    home:     () =&gt; homePage(),
+    user:     () =&gt; userPage(params.id),
+    settings: () =&gt; settingsPage(),
+    '404':    () =&gt; notFound(),
+  };
+  app.replaceChildren((views[page] ?? views['404'])().toElement());
+});
+
+function homePage() {
+  return t.main(
+    t.h1('Home'),
+    t.nav(
+      t.a({ href: '/user/1', onClick: [e =&gt; { e.preventDefault(); router.navigate('/user/1'); }] }, 'User 1'),
+      ' ',
+      t.a({ href: '/settings', onClick: [e =&gt; { e.preventDefault(); router.navigate('/settings'); }] }, 'Settings'),
+    ),
+  );
+}
+
+function userPage(id) {
+  return t.main(
+    t.h1(`User ${id}`),
+    t.a({ href: '/', onClick: [e =&gt; { e.preventDefault(); router.navigate('/'); }] }, 'Back'),
+  );
+}
+
+function settingsPage() {
+  return t.main(t.h1('Settings'));
+}
+
+function notFound() {
+  return t.main(t.h1('404 - Not found'));
+}</code></pre>
+
+      <p>Navigo intercepts link clicks itself when you use its <code>navigate()</code> method or annotate links with <code>data-navigo</code>, so the manual <code>click</code> delegation from the pushState example is not needed here.</p>
+    </section>
+
+    <section id="web-components">
+      <h3>Web Components</h3>
+
+      <p>Kensington and signals map naturally onto the custom element lifecycle. Build the element tree with <code>toElement()</code> in <code>connectedCallback</code> and let the signal effects keep it up to date. Use <code>persist: true</code> on <code>toElement()</code> so effects pause on removal and resume on re-insertion rather than being destroyed.</p>
+
+      <pre><code class="language-javascript">import { t, signal, computed } from 'kensington';
+
+class UserCard extends HTMLElement {
+  #name = signal('');
+  #role = signal('');
+  #initials = computed(() =&gt; {
+    return this.#name.get()
+      .split(' ')
+      .map(w =&gt; w[0])
+      .join('')
+      .toUpperCase();
+  });
+
+  static get observedAttributes() { return ['name', 'role']; }
+
+  attributeChangedCallback(attr, _prev, next) {
+    if (attr === 'name') this.#name.set(next ?? '');
+    if (attr === 'role') this.#role.set(next ?? '');
+  }
+
+  connectedCallback() {
+    this.replaceChildren(
+      t.div({ class: 'user-card' }, [
+        t.div({ class: 'user-card__avatar' }, this.#initials),
+        t.div({ class: 'user-card__body' }, [
+          t.strong(this.#name),
+          t.span({ class: 'user-card__role' }, this.#role),
+        ]),
+      ]).toElement()
+    );
+  }
+}
+
+customElements.define('user-card', UserCard);</code></pre>
+
+      <p>Passing a signal directly to a tag (<code>t.strong(this.#name)</code>) sets up a live text effect inside <code>toElement()</code>. Updating the attribute calls <code>attributeChangedCallback</code>, which sets the signal, which updates only the affected text node. The dom-tracker cleans up the effects automatically when the element is removed from the DOM.</p>
+    </section>
+
+    <section id="d3">
+      <h3>D3</h3>
+
+      <p>Use Kensington to build the SVG container, then hand it to D3 for data-driven rendering. Wrap the D3 draw logic in an <code>effect</code> so the chart redraws automatically whenever the signal holding the data changes.</p>
+
+      <pre><code class="language-javascript">import { t, signal, effect } from 'kensington';
+import * as d3 from 'd3';
+
+const data = signal([12, 40, 28, 55, 33, 20, 47]);
+
+const W = 500, H = 220;
+const m = { top: 10, right: 10, bottom: 30, left: 34 };
+
+const svg = t.svg({ width: W, height: H, viewBox: `0 0 ${W} ${H}` }).toElement();
+document.getElementById('chart').replaceChildren(svg);
+
+effect(() =&gt; {
+  const values = data.get();
+
+  const x = d3.scaleBand()
+    .domain(values.map((_, i) =&gt; i))
+    .range([m.left, W - m.right])
+    .padding(0.2);
+
+  const y = d3.scaleLinear()
+    .domain([0, d3.max(values)])
+    .nice()
+    .range([H - m.bottom, m.top]);
+
+  const chart = d3.select(svg);
+  chart.selectAll('*').remove();
+
+  chart.append('g')
+    .attr('transform', `translate(0,${H - m.bottom})`)
+    .call(d3.axisBottom(x).tickFormat(i =&gt; `Day ${i + 1}`));
+
+  chart.append('g')
+    .attr('transform', `translate(${m.left},0)`)
+    .call(d3.axisLeft(y).ticks(5));
+
+  chart.selectAll('rect')
+    .data(values)
+    .join('rect')
+    .attr('x',      (_, i) =&gt; x(i))
+    .attr('y',      d =&gt; y(d))
+    .attr('width',  x.bandwidth())
+    .attr('height', d =&gt; y(0) - y(d))
+    .attr('fill',   'steelblue');
+});
+
+// Replace the data to redraw the chart.
+document.getElementById('refresh').addEventListener('click', () =&gt; {
+  data.set(Array.from({ length: 7 }, () =&gt; Math.round(Math.random() * 60) + 5));
+});</code></pre>
+
+      <p>D3 owns the contents of the SVG element. Kensington owns everything outside it -- the surrounding layout, controls, and any other reactive UI on the page. The two libraries operate in separate parts of the DOM and do not conflict.</p>
     </section>
 
   </section>

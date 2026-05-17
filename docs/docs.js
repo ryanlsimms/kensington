@@ -4,6 +4,24 @@
   const linkMap = new Map(Array.from(links, l => [l.getAttribute('href').slice(1), l]));
   const targets = Array.from(document.querySelectorAll('[id]')).filter(el => linkMap.has(el.id));
 
+  const nav = document.getElementById('sidebar');
+  let currentActiveLink = null;
+
+  const sidebarPages = nav.querySelector('.sidebar-pages');
+
+  function scrollNavToActive(link) {
+    const topBoundary = sidebarPages
+      ? sidebarPages.getBoundingClientRect().bottom
+      : nav.getBoundingClientRect().top;
+    const navBottom = nav.getBoundingClientRect().bottom;
+    const linkRect = link.getBoundingClientRect();
+    if (linkRect.top < topBoundary) {
+      nav.scrollTop -= topBoundary - linkRect.top + 16;
+    } else if (linkRect.bottom > navBottom) {
+      nav.scrollTop += linkRect.bottom - navBottom + 16;
+    }
+  }
+
   function update() {
     const nearBottom = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 80;
     let active = targets[0];
@@ -15,7 +33,14 @@
       }
     }
     links.forEach(l => l.classList.remove('active'));
-    if (active) { linkMap.get(active.id).classList.add('active'); }
+    if (active) {
+      const link = linkMap.get(active.id);
+      link.classList.add('active');
+      if (link !== currentActiveLink) {
+        currentActiveLink = link;
+        scrollNavToActive(link);
+      }
+    }
   }
 
   window.addEventListener('scroll', update, { passive: true });
