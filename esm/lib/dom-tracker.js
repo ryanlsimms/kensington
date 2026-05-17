@@ -1,19 +1,36 @@
 const tracked = new Map();
+const connectCallbacks = new Map();
 const contentTracked = new WeakSet();
 let observer = null;
 
 function stopRemoved(node) {
   const stop = tracked.get(node);
   if (stop !== undefined) {
-    stop();
     tracked.delete(node);
+    if (!connectCallbacks.get(node)?.persist) { connectCallbacks.delete(node); }
+    stop();
     return;
   }
   if (node.nodeType !== 1) { return; }
   for (const [el, elStop] of [...tracked]) {
     if (node.contains(el)) {
-      elStop();
       tracked.delete(el);
+      if (!connectCallbacks.get(el)?.persist) { connectCallbacks.delete(el); }
+      elStop();
+    }
+  }
+}
+
+function fireConnected(node) {
+  const entry = connectCallbacks.get(node);
+  if (entry !== undefined) {
+    entry.fn();
+    return;
+  }
+  if (node.nodeType !== 1) { return; }
+  for (const [el, { fn }] of connectCallbacks) {
+    if (node.contains(el)) {
+      fn();
     }
   }
 }
@@ -21,10 +38,13 @@ function stopRemoved(node) {
 function buildOberver() {
   if (observer !== null) { return; }
   observer = new MutationObserver(records => {
-    if (tracked.size === 0) { return; }
+    if (tracked.size === 0 && connectCallbacks.size === 0) { return; }
     for (const record of records) {
       for (const node of record.removedNodes) {
         stopRemoved(node);
+      }
+      for (const node of record.addedNodes) {
+        fireConnected(node);
       }
     }
   });
@@ -34,6 +54,11 @@ function buildOberver() {
 export function trackForStop(element, stop) {
   buildOberver();
   tracked.set(element, stop);
+}
+
+export function trackForConnect(element, fn, persist = false) {
+  buildOberver();
+  connectCallbacks.set(element, { fn, persist });
 }
 
 export function addOnStop(element, fn) {
@@ -59,5 +84,6 @@ export function stopTracked(element) {
   if (stop !== undefined) {
     stop();
     tracked.delete(element);
+    if (!connectCallbacks.get(element)?.persist) { connectCallbacks.delete(element); }
   }
 }

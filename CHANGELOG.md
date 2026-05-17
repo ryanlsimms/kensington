@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- `effect()` now returns `{ pause(), resume(), stop() }`. `pause()` temporarily unsubscribes the effect; `resume()` re-runs the callback and re-establishes all signal subscriptions. `stop()` behavior is unchanged from prior releases.
+- `addConnectedCallback(fn)` and `addDisconnectedCallback(fn)` on `ContentTag`. Register callbacks that fire when the element is inserted into or removed from the DOM. `fn` receives the live element as its first argument and as `this`. By default each fires once. With `toElement({ persist: true })` all callbacks re-fire on every insertion or removal cycle.
+- `toElement({ persist: true })`. Pass `persist: true` to pause signal effects on DOM removal and resume them automatically on re-insertion. Without this option, effects are stopped permanently on first removal. Works across unlimited remove/re-insert cycles.
+
 ## [2.0.0-signals.7] - 2026-05-15
 
 ### Added

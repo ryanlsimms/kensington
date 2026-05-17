@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Kensington API</title>
+  <link href="https://api.fontshare.com/v2/css?f[]=supreme@1,900,700,500,400,300&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -24,7 +25,8 @@
 
 <nav id="sidebar">
   <div class="sidebar-pages">
-    <a href="index.html">Guide</a>
+    <a href="index.html">Basics</a>
+    <a href="reactivity.html">Reactivity</a>
     <a href="examples.html">Examples</a>
     <a href="api.html" class="active">API</a>
   </div>
@@ -137,7 +139,9 @@ t.div(content?: Content): DivTag</code></pre>
 
     <p>These elements also have branded return types but accept any <code>Content</code>: <code>td</code>, <code>th</code>, <code>li</code>, <code>dt</code>, <code>dd</code>, <code>caption</code>, <code>option</code>, <code>body</code>, <code>head</code>, and others. Void elements with branded types: <code>img</code> (<code>ImgTag</code>), <code>col</code> (<code>ColTag</code>), <code>source</code> (<code>SourceTag</code>), <code>hr</code> (<code>HrTag</code>).</p>
 
-    <p>All branded types extend <code>ContentTag</code>, so existing code typed as <code>ContentTag</code> continues to work.</p>
+    <aside>
+      <p>All branded types extend <code>ContentTag</code>, so existing code typed as <code>ContentTag</code> continues to work.</p>
+    </aside>
 
     <h3 id="void-elements">Void elements</h3>
 
@@ -146,7 +150,9 @@ t.div(content?: Content): DivTag</code></pre>
     <pre><code class="language-typescript">t.input(attributes?: InputAttributes): VoidTag
 t.img(attributes?: ImgAttributes): ImgTag</code></pre>
 
-    <p><code>img</code> has a branded return type (<code>ImgTag</code>) so it can participate in <code>picture</code>'s strict content model.</p>
+    <aside>
+      <p><code>img</code> has a branded return type (<code>ImgTag</code>) so it can participate in <code>picture</code>'s strict content model.</p>
+    </aside>
 
     <h3 id="instance-methods">Instance methods</h3>
 
@@ -158,8 +164,10 @@ t.img(attributes?: ImgAttributes): ImgTag</code></pre>
       </thead>
       <tbody>
         <tr><td data-label="Method"><code>.toString()</code></td><td data-label="Returns"><code>string</code></td><td data-label="Description">Serializes to an indented HTML string. Text content is HTML-encoded. Signal values are read as a snapshot at call time.</td></tr>
-        <tr><td data-label="Method"><code>.toElement()</code></td><td data-label="Returns"><code>Element</code></td><td data-label="Description">Creates a live DOM node. Signal attribute values, signal content, and <code>prop</code> values update the DOM in place when the signal changes. Signal effects are stopped automatically when the element is removed from the DOM. Browser only. <code>LiteralTag</code> returns a <code>DocumentFragment</code>; <code>CommentTag</code> returns a <code>Comment</code>.</td></tr>
+        <tr><td data-label="Method"><code>.toElement(options?)</code></td><td data-label="Returns"><code>Element</code></td><td data-label="Description">Creates a live DOM node. Signal attribute values, signal content, and <code>prop</code> values update the DOM in place when the signal changes. Signal effects are stopped automatically when the element is removed from the DOM. Pass <code>{ persist: true }</code> to pause effects on removal and resume them automatically on re-insertion instead of stopping permanently. Browser only. <code>LiteralTag</code> returns a <code>DocumentFragment</code>; <code>CommentTag</code> returns a <code>Comment</code>.</td></tr>
         <tr><td data-label="Method"><code>.getDomElement()</code></td><td data-label="Returns"><code>Element | null</code></td><td data-label="Description">Returns the live DOM element created by a prior <code>.toElement()</code> call if it is still connected to the document, otherwise <code>null</code>.</td></tr>
+        <tr><td data-label="Method"><code>.addConnectedCallback(fn)</code></td><td data-label="Returns"><code>this</code></td><td data-label="Description">Registers a callback that fires when the element is inserted into the DOM. <code>fn</code> receives the live element as its first argument and as <code>this</code>. Call before <code>.toElement()</code>. With <code>toElement({ persist: true })</code> the callback re-fires on every re-insertion. Can be called multiple times to register multiple handlers.</td></tr>
+        <tr><td data-label="Method"><code>.addDisconnectedCallback(fn)</code></td><td data-label="Returns"><code>this</code></td><td data-label="Description">Registers a callback that fires when the element leaves the DOM, after signal effects are stopped. With <code>toElement({ persist: true })</code> the callback re-fires on every removal and is re-registered automatically on each reconnection, so the full enter/leave cycle repeats without extra setup.</td></tr>
       </tbody>
     </table>
   </section>
@@ -283,7 +291,7 @@ label.stop(); // unsubscribes from tracked signals, value freezes</code></pre>
 
     <pre><code class="language-typescript">import { effect } from 'kensington';
 
-effect(fn: () =&gt; void): { stop(): void }</code></pre>
+effect(fn: () =&gt; void): { pause(): void, resume(): void, stop(): void }</code></pre>
 
     <p>Runs <code>fn</code> immediately and re-runs it whenever any signal read inside it changes. Re-runs are deferred via <code>queueMicrotask</code>, so multiple synchronous <code>.set()</code> calls in the same turn batch into one re-run. Errors thrown inside the callback are re-surfaced asynchronously so they do not abort other pending effects.</p>
 
@@ -291,7 +299,9 @@ effect(fn: () =&gt; void): { stop(): void }</code></pre>
   document.title = `${count.get()} items`;
 });
 
-e.stop(); // unsubscribes from all tracked signals</code></pre>
+e.pause();  // unsubscribes temporarily
+e.resume(); // re-runs fn and re-establishes subscriptions
+e.stop();   // permanently destroys. resume() after stop() is a no-op</code></pre>
 
     <p>Elements created with <code>.toElement()</code> automatically stop their signal effects when removed from the DOM. During SSR (<code>renderForHydration</code>), <code>effect()</code> is a no-op.</p>
 
@@ -444,69 +454,6 @@ const t = new Kensington({ validationLevel: 'off' });</code></pre>
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-core.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1/plugins/autoloader/prism-autoloader.min.js"
   data-autoloader-path="https://cdn.jsdelivr.net/npm/prismjs@1/components/"></script>
-<script>
-  (function () {
-    // scrollspy
-    const links = document.querySelectorAll('nav#sidebar ul a[href^="#"]');
-    const linkMap = new Map(Array.from(links, l => [l.getAttribute('href').slice(1), l]));
-    const targets = Array.from(document.querySelectorAll('[id]')).filter(el => linkMap.has(el.id));
-
-    function update() {
-      let active = targets[0];
-      for (const el of targets) {
-        if (el.getBoundingClientRect().top <= 80) { active = el; }
-      }
-      links.forEach(l => l.classList.remove('active'));
-      if (active) { linkMap.get(active.id).classList.add('active'); }
-    }
-
-    window.addEventListener('scroll', update, { passive: true });
-    update();
-
-    // mobile menu
-    const toggle = document.getElementById('menu-toggle');
-    const sidebar = document.getElementById('sidebar');
-    const backdrop = document.getElementById('menu-backdrop');
-    const closeIcon = '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M2 2L16 16M16 2L2 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
-    const openIcon = toggle.innerHTML;
-
-    function openMenu() {
-      sidebar.classList.add('open');
-      backdrop.classList.add('open');
-      toggle.innerHTML = closeIcon;
-      toggle.setAttribute('aria-label', 'Close navigation');
-    }
-
-    function closeMenu() {
-      sidebar.classList.remove('open');
-      backdrop.classList.remove('open');
-      toggle.innerHTML = openIcon;
-      toggle.setAttribute('aria-label', 'Open navigation');
-    }
-
-    toggle.addEventListener('click', () => sidebar.classList.contains('open') ? closeMenu() : openMenu());
-    backdrop.addEventListener('click', closeMenu);
-    links.forEach(l => l.addEventListener('click', closeMenu));
-
-    // copy buttons
-    document.querySelectorAll('pre[class*="language-"]').forEach(pre => {
-      const btn = document.createElement('button');
-      btn.className = 'copy-btn';
-      btn.textContent = 'Copy';
-      btn.addEventListener('click', () => {
-        const code = pre.querySelector('code');
-        navigator.clipboard.writeText((code ?? pre).textContent).then(() => {
-          btn.textContent = 'Copied!';
-          btn.classList.add('copied');
-          setTimeout(() => {
-            btn.textContent = 'Copy';
-            btn.classList.remove('copied');
-          }, 2000);
-        });
-      });
-      pre.appendChild(btn);
-    });
-  }());
-</script>
+<script src="docs.js"></script>
 </body>
 </html>

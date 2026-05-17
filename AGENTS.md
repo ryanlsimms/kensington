@@ -254,7 +254,8 @@ const e = effect(() => {
   document.title = count.get() === 0 ? 'Home' : `(${count.get()}) Home`;
 });
 
-e.stop();  // unsubscribe; no further runs
+e.stop();    // unsubscribe; no further runs
+e.resume();  // restart: re-runs the callback and re-establishes all signal subscriptions
 ```
 
 ### Keyed lists
@@ -273,7 +274,7 @@ Add `dataKey` whenever items may reorder, be added, or removed. Reused nodes are
 
 ### Cleanup
 
-`.toElement()` stops reactive effects automatically when the element is removed from the DOM. For standalone `effect()` calls, stop manually:
+`.toElement()` stops reactive effects automatically when the element is removed from the DOM. Pass `{ persist: true }` to pause effects instead — they resume automatically on re-insertion and can cycle through unlimited remove/re-insert. For standalone `effect()` calls, stop manually:
 
 ```javascript
 class MyWidget extends HTMLElement {
@@ -1159,10 +1160,6 @@ function createModal(title, bodyContent) {
 
 const modal = createModal('Confirm', t.p('Are you sure?'));
 document.body.append(modal);
-
-// .mount(target) replaces an existing element by CSS selector or reference
-t.div({ id: 'app' }, t.h1('Hello')).mount('#app');
-t.div({ id: 'app' }, t.h1('Hello')).mount(document.getElementById('app'));
 ```
 
 ### TypeScript — typed components
@@ -1630,8 +1627,8 @@ document.body.append(
 
 | Type | Description |
 |------|-------------|
-| `ContentTag` | Returned by content element methods (`div`, `p`, `span`, ...). Has `.toString()`, `.toElement()`, and `.mount(target)`. |
-| `VoidTag` | Returned by void element methods (`br`, `hr`, `input`, ...). Extends `ContentTag` — has `.toString()`, `.toElement()`, and `.mount(target)`. |
+| `ContentTag` | Returned by content element methods (`div`, `p`, `span`, ...). Has `.toString()` and `.toElement()`. |
+| `VoidTag` | Returned by void element methods (`br`, `hr`, `input`, ...). Extends `ContentTag` — has `.toString()` and `.toElement()`. |
 | `LiteralTag` | Returned by `.literal()` / `.unsafeLiteral()`. |
 | `CommentTag` | Returned by `.inlineComment()`. |
 | `Content` | `string \| number \| ContentTag \| VoidTag \| LiteralTag \| CommentTag \| Content[]` — valid content for any tag method. |

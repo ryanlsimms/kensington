@@ -122,21 +122,20 @@ function track(run, fn) {
 
 /**
  * Runs `fn` immediately and re-runs it whenever any signal read via `.get()` inside changes.
- * Returns an object with a `stop()` method that tears down all subscriptions and prevents further runs.
+ * Returns `{ pause(), resume(), stop() }`. `pause()` unsubscribes temporarily; `resume()` restarts.
+ * `stop()` permanently destroys the effect — calling `resume()` after `stop()` is a no-op.
  * @param {function(): void} fn
- * @returns {{ stop: function(): void }}
- * @example
- * const e = effect(() => { localStorage.setItem('sort', sortKey.get()); });
- * e.stop(); // unsubscribes from all tracked signals
+ * @returns {{ pause: function(): void, resume: function(): void, stop: function(): void }}
  */
 export function effect(fn) {
   // During SSR we only need a static snapshot; skip subscriptions entirely.
   if (ssrDepth > 0) {
-    return { stop() {} };
+    return { pause() {}, resume() {}, stop() {} };
   }
-  let stopped = false;
+  let paused = false;
+  let destroyed = false;
   function run() {
-    if (stopped) {
+    if (paused) {
       return;
     }
     track(run, fn);
@@ -145,13 +144,24 @@ export function effect(fn) {
   run._isEffect = true;
   run();
   return {
-    stop() {
-      stopped = true;
+    pause() {
+      paused = true;
       pending.delete(run);
       for (const cleanup of run._cleanups) {
         cleanup();
       }
       run._cleanups = [];
+    },
+    resume() {
+      if (destroyed) {
+        return;
+      }
+      paused = false;
+      run();
+    },
+    stop() {
+      this.pause();
+      destroyed = true;
     },
   };
 }

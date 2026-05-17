@@ -1,6 +1,6 @@
 import attributesArrayFromObject from '../lib/attributes-array-from-object.js';
 import attributesStringFromObject from '../lib/attributes-string-from-object.js';
-import { addOnStop, markContentTracked, trackForStop } from '../lib/dom-tracker.js';
+import { addOnStop, markContentTracked, trackForConnect, trackForStop } from '../lib/dom-tracker.js';
 import he from '../lib/he.js';
 import indent from '../lib/indent.js';
 import { reconcile } from '../lib/reconcile.js';
@@ -42,7 +42,7 @@ function applySignalAttribute(element, attrName, sig) {
       el.setAttribute(attrName, String(val));
     }
   });
-  return () => e.stop();
+  return e;
 }
 
 function applySignalProp(element, propName, sig) {
@@ -52,7 +52,7 @@ function applySignalProp(element, propName, sig) {
     if (!el) { e.stop(); return; }
     el[propName] = sig.get();
   });
-  return () => e.stop();
+  return e;
 }
 
 function isPropWritable(element, propName) {
@@ -104,6 +104,18 @@ export default class ContentTag {
     this.content = collectContent(options.content);
     this.namespace = options.namespace;
     this.encodeContent = options.encodeContent;
+    this._connectedCallbacks = [];
+    this._disconnectedCallbacks = [];
+  }
+
+  addConnectedCallback(fn) {
+    this._connectedCallbacks.push(fn);
+    return this;
+  }
+
+  addDisconnectedCallback(fn) {
+    this._disconnectedCallbacks.push(fn);
+    return this;
   }
 
   validate() {
@@ -330,7 +342,7 @@ export default class ContentTag {
     el.replaceWith(this.toElement());
   }
 
-  toElement() {
+  toElement({ persist = false } = {}) {
     if (this._domElement) {
       if (this._domElement.parentNode !== null) {
         showInvalid(`toElement() called on a tag instance already in the DOM — the same node will be moved. Call the tag as a function to create a new independent node.`, this.validationLevel, this.logger);
@@ -349,13 +361,18 @@ export default class ContentTag {
     }
 
     const stops = [];
+    // Collect signal effects so they can be paused and resumed on re-insertion when persist is true.
+    // null when persist is false so there is no overhead for the common case.
+    const resumables = persist ? [] : null;
     let hasSignalContent = false;
 
     for (const [attrName, attrValue] of this.attributeArray()) {
       if (/^on[a-z]/.test(attrName) && typeof attrValue === 'function') {
         element.addEventListener(attrName.slice(2), attrValue);
       } else if (attrValue instanceof Signal) {
-        stops.push(applySignalAttribute(element, attrName, attrValue));
+        const eff = applySignalAttribute(element, attrName, attrValue);
+        stops.push(() => (persist ? eff.pause() : eff.stop()));
+        if (resumables !== null) { resumables.push(eff); }
       } else {
         element.setAttribute(attrName, attrValue);
       }
@@ -377,7 +394,9 @@ export default class ContentTag {
           continue;
         }
         if (propValue instanceof Signal) {
-          stops.push(applySignalProp(element, propName, propValue));
+          const eff = applySignalProp(element, propName, propValue);
+          stops.push(() => (persist ? eff.pause() : eff.stop()));
+          if (resumables !== null) { resumables.push(eff); }
         } else {
           element[propName] = propValue;
         }
@@ -401,7 +420,8 @@ export default class ContentTag {
           const val = node.get();
           reconcile(el, startAnchor, endAnchor, Array.isArray(val) ? val : [val]);
         });
-        stops.push(() => e.stop());
+        stops.push(() => (persist ? e.pause() : e.stop()));
+        if (resumables !== null) { resumables.push(e); }
         continue;
       }
       if (!this.contentIsLiteral && typeof node === 'string') { // literal tags (script/style) need exact spacing preserved. Only convert for regular tags
@@ -410,9 +430,51 @@ export default class ContentTag {
       element.append(document.createTextNode(String(node))); // String() handles Symbols. + or template literals would throw
     }
 
-    if (stops.length > 0) {
+    const dcbs = this._disconnectedCallbacks;
+    const cbs = this._connectedCallbacks;
+
+    if (stops.length > 0 || dcbs.length > 0) {
       trackForStop(element, () => { for (const stop of stops) { stop(); } });
       addOnStop(element, () => { if (this._domElement === element) { this._domElement = null; } });
+      for (const fn of dcbs) {
+        addOnStop(element, () => fn.call(element, element));
+      }
+      if (persist) {
+        // Rebuild the stop chain on each removal so effects and disconnect callbacks run again
+        // on every subsequent removal.
+        const reFireAndRegister = () => {
+          trackForStop(element, () => {});
+          addOnStop(element, () => { if (this._domElement === element) { this._domElement = null; } });
+          for (const fn of dcbs) { addOnStop(element, () => fn.call(element, element)); }
+          addOnStop(element, reFireAndRegister);
+        };
+        addOnStop(element, reFireAndRegister);
+      }
+    }
+
+    const needsConnect = persist || cbs.length > 0;
+    if (needsConnect) {
+      let firstConnection = true;
+      trackForConnect(element, () => {
+        if (firstConnection) {
+          // First connection: fire all callbacks.
+          firstConnection = false;
+          for (const fn of cbs) { fn.call(element, element); }
+        } else {
+          // Reconnection: restore _domElement so getDomElement() works.
+          this._domElement = element;
+          // Resume signal effects stopped on removal and wire them into the new stop chain
+          // so they are cleaned up again if this element is removed a second time.
+          if (resumables !== null && resumables.length > 0) {
+            for (const eff of resumables) {
+              eff.resume();
+              addOnStop(element, () => eff.pause());
+            }
+          }
+          // All callbacks re-fire on reconnection (this branch is only reached when persist is true).
+          for (const fn of cbs) { fn.call(element, element); }
+        }
+      }, persist);
     }
     if (hasSignalContent) {
       markContentTracked(element);

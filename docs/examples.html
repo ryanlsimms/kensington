@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Kensington Examples</title>
+  <link href="https://api.fontshare.com/v2/css?f[]=supreme@1,900,700,500,400,300&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -24,7 +25,8 @@
 
 <nav id="sidebar">
   <div class="sidebar-pages">
-    <a href="index.html">Guide</a>
+    <a href="index.html">Basics</a>
+    <a href="reactivity.html">Reactivity</a>
     <a href="examples.html" class="active">Examples</a>
     <a href="api.html">API</a>
   </div>
@@ -49,6 +51,8 @@
         <li><a href="#sortable-table">Sortable table</a></li>
         <li><a href="#hydrated-like-button">Hydrated component</a></li>
         <li><a href="#hydrated-form-validation">Form validation</a></li>
+        <li><a href="#lifecycle-widget">Lifecycle widget</a></li>
+        <li><a href="#effect-resume">Effect pause and resume</a></li>
       </ul>
     </li>
     <li><a href="#integrations">Integrations</a>
@@ -72,7 +76,6 @@
 
   <header>
     <h1>Examples</h1>
-    <p>Worked examples covering common patterns, reactive data, and framework integrations.</p>
   </header>
 
   <!-- ── String rendering ───────────────────────────────────── -->
@@ -450,7 +453,11 @@ document.body.append(
     <section id="incremental-search">
       <h3>Incremental search</h3>
 
-      <p>When the new query extends the previous one (e.g. <code>"cat"</code> to <code>"cats"</code>), existing results can be filtered client-side instantly with no spinner. <code>previousTerm</code> is read via <code>.value</code> rather than <code>.get()</code>. If <code>.get()</code> were used, calling <code>previousTerm.set(current)</code> inside the fetch callback would re-trigger the effect and fire a duplicate request for every search. <code>previousTerm</code> cannot be a plain variable because it is shown reactively in the UI. The updater pattern cannot help because <code>previousTerm</code> is being read to compute <code>isRefinement</code>, not written back to itself.</p>
+      <p>When the new query extends the previous one (e.g. <code>"cat"</code> to <code>"cats"</code>), existing results can be filtered client-side instantly with no spinner.</p>
+
+      <aside>
+        <p><code>previousTerm</code> is read via <code>.value</code> rather than <code>.get()</code>. If <code>.get()</code> were used, calling <code>previousTerm.set(current)</code> inside the fetch callback would re-trigger the effect and fire a duplicate request for every search. <code>previousTerm</code> cannot be a plain variable because it is shown reactively in the UI. The updater pattern cannot help because <code>previousTerm</code> is being read to compute <code>isRefinement</code>, not written back to itself.</p>
+      </aside>
 
       <pre><code class="language-javascript">import { t, signal, computed, effect } from 'kensington';
 
@@ -721,9 +728,90 @@ registerComponents({ registrationForm });</code></pre>
       </div>
     </section>
 
-  </section>
+    <section id="lifecycle-widget">
+      <h3>Lifecycle widget</h3>
 
-  <!-- ── Integrations ───────────────────────────────────────── -->
+      <p>A polling component that uses <code>addConnectedCallback</code> to start a data fetch loop when mounted, and <code>addDisconnectedCallback</code> to stop it when removed. Passing <code>{ persist: true }</code> to <code>toElement</code> makes both callbacks re-fire on every mount and unmount, so the ticker pauses polling when removed from the DOM and restarts when re-inserted.</p>
+
+      <pre><code class="language-javascript">import { t, signal } from 'kensington';
+
+function PriceTicker({ symbol }) {
+  const price = signal('--');
+  const direction = signal(0);
+  let prevPrice = null;
+  let pollId = null;
+
+  const ticker = t.div(
+    { class: 'ticker' },
+    t.span({ class: 'symbol' }, symbol),
+    t.span({ class: 'price' }, price),
+    t.span(
+      { class: direction.transform(d => d > 0 ? 'up' : d < 0 ? 'down' : 'flat') },
+      direction.transform(d => d > 0 ? '▲' : d < 0 ? '▼' : '–'),
+    ),
+  );
+
+  ticker.addConnectedCallback(function() {
+    async function poll() {
+      const res = await fetch(`/api/price/${symbol}`);
+      const { price: p } = await res.json();
+      if (prevPrice !== null) { direction.set(Math.sign(p - prevPrice)); }
+      price.set(p.toFixed(2));
+      prevPrice = p;
+    }
+    poll();
+    pollId = setInterval(poll, 5000);
+  });
+
+  ticker.addDisconnectedCallback(() => {
+    clearInterval(pollId);
+  });
+
+  return ticker.toElement({ persist: true });
+}</code></pre>
+    </section>
+
+    <section id="effect-resume">
+      <h3>Effect pause and resume</h3>
+
+      <p><code>effect()</code> returns an object with <code>stop()</code> and <code>resume()</code>. <code>stop()</code> unsubscribes the effect from all signals so it stops reacting to changes. <code>resume()</code> re-runs the callback and re-establishes subscriptions. Together they let you pause and restart a single effect object without creating a new one on every cycle.</p>
+
+      <p>The natural home for this is a hand-written web component. The render effect is created once in the constructor and started stopped. <code>connectedCallback</code> resumes it; <code>disconnectedCallback</code> stops it again so signal updates do not fire against a detached element.</p>
+
+      <pre><code class="language-javascript">import { signal, effect } from 'kensington';
+
+class LiveClock extends HTMLElement {
+  #time = signal('');
+  #tickId = null;
+  #render;
+
+  constructor() {
+    super();
+    this.#render = effect(() => {
+      this.textContent = this.#time.get();
+    });
+    this.#render.pause(); // start paused; do not render until connected
+  }
+
+  connectedCallback() {
+    this.#render.resume();
+    const tick = () => this.#time.set(new Date().toLocaleTimeString());
+    tick();
+    this.#tickId = setInterval(tick, 1000);
+  }
+
+  disconnectedCallback() {
+    this.#render.pause();
+    clearInterval(this.#tickId);
+  }
+}
+
+customElements.define('live-clock', LiveClock);</code></pre>
+
+      <p>The effect is defined once, created once, and reused across every connection cycle. Without <code>resume()</code> you would call <code>effect(...)</code> again inside <code>connectedCallback</code> on every reconnection, discarding the previous effect object each time.</p>
+    </section>
+
+  </section>
 
   <section id="integrations">
     <h2>Integrations</h2>
@@ -895,67 +983,6 @@ const app = new Elysia()
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-core.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1/plugins/autoloader/prism-autoloader.min.js"
   data-autoloader-path="https://cdn.jsdelivr.net/npm/prismjs@1/components/"></script>
-<script>
-  (function () {
-    const links = document.querySelectorAll('nav#sidebar ul a[href^="#"]');
-    const linkMap = new Map(Array.from(links, l => [l.getAttribute('href').slice(1), l]));
-    const targets = Array.from(document.querySelectorAll('[id]')).filter(el => linkMap.has(el.id));
-
-    function update() {
-      let active = targets[0];
-      for (const el of targets) {
-        if (el.getBoundingClientRect().top <= 80) { active = el; }
-      }
-      links.forEach(l => l.classList.remove('active'));
-      if (active) { linkMap.get(active.id).classList.add('active'); }
-    }
-
-    window.addEventListener('scroll', update, { passive: true });
-    update();
-
-    const toggle = document.getElementById('menu-toggle');
-    const sidebar = document.getElementById('sidebar');
-    const backdrop = document.getElementById('menu-backdrop');
-    const closeIcon = '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M2 2L16 16M16 2L2 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
-    const openIcon = toggle.innerHTML;
-
-    function openMenu() {
-      sidebar.classList.add('open');
-      backdrop.classList.add('open');
-      toggle.innerHTML = closeIcon;
-      toggle.setAttribute('aria-label', 'Close navigation');
-    }
-
-    function closeMenu() {
-      sidebar.classList.remove('open');
-      backdrop.classList.remove('open');
-      toggle.innerHTML = openIcon;
-      toggle.setAttribute('aria-label', 'Open navigation');
-    }
-
-    toggle.addEventListener('click', () => sidebar.classList.contains('open') ? closeMenu() : openMenu());
-    backdrop.addEventListener('click', closeMenu);
-    links.forEach(l => l.addEventListener('click', closeMenu));
-
-    // copy buttons
-    document.querySelectorAll('pre[class*="language-"]').forEach(pre => {
-      const btn = document.createElement('button');
-      btn.className = 'copy-btn';
-      btn.textContent = 'Copy';
-      btn.addEventListener('click', () => {
-        const code = pre.querySelector('code');
-        navigator.clipboard.writeText((code ?? pre).textContent).then(() => {
-          btn.textContent = 'Copied!';
-          btn.classList.add('copied');
-          setTimeout(() => {
-            btn.textContent = 'Copy';
-            btn.classList.remove('copied');
-          }, 2000);
-        });
-      });
-      pre.appendChild(btn);
-    });
-  }());
-</script>
+<script src="docs.js"></script>
 </body>
 </html>

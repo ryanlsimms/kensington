@@ -416,7 +416,27 @@ test('effect tracks multiple signals', async ({ page, bundle }) => {
   await expect(page).toHaveTitle('John Smith');
 });
 
-test('effect stop() prevents further runs', async ({ page, bundle }) => {
+test('effect pause() temporarily stops the effect', async ({ page, bundle }) => {
+  const log = await page.evaluate(async src => {
+    const { signal, effect } = await import(src);
+    const s = signal('a');
+    const calls = [];
+    const e = effect(() => { calls.push(s.get()); });
+    s.set('b');
+    await Promise.resolve();
+    e.pause();
+    s.set('c'); // skipped — effect is paused
+    s.set('d'); // skipped — effect is paused
+    await Promise.resolve();
+    e.resume(); // runs once immediately with current value 'd', then re-subscribes
+    s.set('e');
+    await Promise.resolve();
+    return calls;
+  }, bundle);
+  expect(log).toEqual(['a', 'b', 'd', 'e']);
+});
+
+test('effect stop() permanently prevents further runs', async ({ page, bundle }) => {
   const log = await page.evaluate(async src => {
     const { signal, effect } = await import(src);
     const s = signal('a');
@@ -427,6 +447,10 @@ test('effect stop() prevents further runs', async ({ page, bundle }) => {
     e.stop();
     s.set('c');
     s.set('d');
+    await Promise.resolve();
+    e.resume(); // no-op after stop()
+    s.set('e');
+    await Promise.resolve();
     return calls;
   }, bundle);
   expect(log).toEqual(['a', 'b']);
@@ -750,5 +774,427 @@ test('signal prop effect stops when element is removed from DOM', async ({ page,
     return el.value;
   }, bundle);
   expect(result).toBe('before');
+});
+
+// ─── addConnectedCallback / addDisconnectedCallback ──────────────────────────
+
+test('addConnectedCallback fires when element is appended to the DOM', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const tag = t.div({ id: 'cc-basic' });
+    let fired = false;
+    tag.addConnectedCallback(() => { fired = true; });
+    document.body.append(tag.toElement());
+    await Promise.resolve();
+    return fired;
+  }, bundle);
+  expect(result).toBe(true);
+});
+
+test('addConnectedCallback receives the DOM element as its argument and as this', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const tag = t.div({ id: 'cc-this' });
+    let argId = null;
+    let thisId = null;
+    tag.addConnectedCallback(function connectedCallback(el) { argId = el.id; thisId = this.id; });
+    document.body.append(tag.toElement());
+    await Promise.resolve();
+    return { argId, thisId };
+  }, bundle);
+  expect(result.argId).toBe('cc-this');
+  expect(result.thisId).toBe('cc-this');
+});
+
+test('addConnectedCallback fires when an ancestor is appended to the DOM', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const child = t.span({ id: 'cc-child' });
+    let fired = false;
+    child.addConnectedCallback(() => { fired = true; });
+    const parent = document.createElement('div');
+    parent.append(child.toElement());
+    document.body.append(parent);
+    await Promise.resolve();
+    return fired;
+  }, bundle);
+  expect(result).toBe(true);
+});
+
+test('addConnectedCallback does not fire if element is never added to the DOM', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const tag = t.div({ id: 'cc-noop' });
+    let fired = false;
+    tag.addConnectedCallback(() => { fired = true; });
+    tag.toElement();
+    await Promise.resolve();
+    return fired;
+  }, bundle);
+  expect(result).toBe(false);
+});
+
+test('multiple addConnectedCallback handlers all fire on connect', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const tag = t.div({ id: 'cc-multi' });
+    const calls = [];
+    tag.addConnectedCallback(() => { calls.push('a'); });
+    tag.addConnectedCallback(() => { calls.push('b'); });
+    document.body.append(tag.toElement());
+    await Promise.resolve();
+    return calls;
+  }, bundle);
+  expect(result).toEqual(['a', 'b']);
+});
+
+test('addConnectedCallback re-fires on every re-attachment with toElement persist', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const tag = t.div({ id: 'cc-persist' });
+    const calls = [];
+    tag.addConnectedCallback(() => { calls.push('connected'); });
+    const el = tag.toElement({ persist: true });
+    document.body.append(el);
+    await Promise.resolve();
+    el.remove();
+    await Promise.resolve();
+    document.body.append(el);
+    await Promise.resolve();
+    return calls;
+  }, bundle);
+  expect(result).toEqual(['connected', 'connected']);
+});
+
+test('addDisconnectedCallback re-fires on every removal with toElement persist', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const tag = t.div({ id: 'dc-persist' });
+    const calls = [];
+    tag.addConnectedCallback(() => { calls.push('connected'); });
+    tag.addDisconnectedCallback(() => { calls.push('disconnected'); });
+    const el = tag.toElement({ persist: true });
+    document.body.append(el);
+    await Promise.resolve();
+    el.remove();
+    await Promise.resolve();
+    document.body.append(el);
+    await Promise.resolve();
+    el.remove();
+    await Promise.resolve();
+    return calls;
+  }, bundle);
+  expect(result).toEqual(['connected', 'disconnected', 'connected', 'disconnected']);
+});
+
+test('addConnectedCallback does not re-fire after removal without toElement persist', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const tag = t.div({ id: 'cc-no-persist' });
+    const calls = [];
+    tag.addConnectedCallback(() => { calls.push('connected'); });
+    tag.addDisconnectedCallback(() => { calls.push('disconnected'); });
+    const el = tag.toElement();
+    document.body.append(el);
+    await Promise.resolve();
+    el.remove();
+    await Promise.resolve();
+    document.body.append(el);
+    await Promise.resolve();
+    return calls;
+  }, bundle);
+  expect(result).toEqual(['connected', 'disconnected']);
+});
+
+test('addDisconnectedCallback fires when element is removed from the DOM', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const tag = t.div({ id: 'dc-basic' });
+    let fired = false;
+    tag.addDisconnectedCallback(() => { fired = true; });
+    const el = tag.toElement();
+    document.body.append(el);
+    el.remove();
+    await Promise.resolve();
+    return fired;
+  }, bundle);
+  expect(result).toBe(true);
+});
+
+test('addDisconnectedCallback receives the DOM element as its argument and as this', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const tag = t.div({ id: 'dc-this' });
+    let argId = null;
+    let thisId = null;
+    tag.addDisconnectedCallback(function disconnectedCallback(el) { argId = el.id; thisId = this.id; });
+    const el = tag.toElement();
+    document.body.append(el);
+    el.remove();
+    await Promise.resolve();
+    return { argId, thisId };
+  }, bundle);
+  expect(result.argId).toBe('dc-this');
+  expect(result.thisId).toBe('dc-this');
+});
+
+test('addDisconnectedCallback fires when an ancestor is removed from the DOM', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const child = t.span({ id: 'dc-child' });
+    let fired = false;
+    child.addDisconnectedCallback(() => { fired = true; });
+    const parent = document.createElement('div');
+    parent.append(child.toElement());
+    document.body.append(parent);
+    parent.remove();
+    await Promise.resolve();
+    return fired;
+  }, bundle);
+  expect(result).toBe(true);
+});
+
+test('addDisconnectedCallback does not fire if element is never removed from the DOM', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const tag = t.div({ id: 'dc-noop' });
+    let fired = false;
+    tag.addDisconnectedCallback(() => { fired = true; });
+    document.body.append(tag.toElement());
+    await Promise.resolve();
+    return fired;
+  }, bundle);
+  expect(result).toBe(false);
+});
+
+test('addDisconnectedCallback fires alongside signal effect cleanup on removal', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const cls = signal('on');
+    const tag = t.div({ id: 'dc-signal', class: cls });
+    let dcFired = false;
+    tag.addDisconnectedCallback(() => { dcFired = true; });
+    const el = tag.toElement();
+    document.body.append(el);
+    el.remove();
+    await Promise.resolve();
+    cls.set('off');
+    await Promise.resolve();
+    return { dcFired, classAfterRemove: el.className };
+  }, bundle);
+  expect(result.dcFired).toBe(true);
+  expect(result.classAfterRemove).toBe('on');
+});
+
+test('multiple addDisconnectedCallback handlers all fire on removal', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const tag = t.div({ id: 'dc-multi' });
+    const calls = [];
+    tag.addDisconnectedCallback(() => { calls.push('a'); });
+    tag.addDisconnectedCallback(() => { calls.push('b'); });
+    const el = tag.toElement();
+    document.body.append(el);
+    el.remove();
+    await Promise.resolve();
+    return calls;
+  }, bundle);
+  expect(result).toEqual(['a', 'b']);
+});
+
+test('addConnectedCallback and addDisconnectedCallback fire in lifecycle order', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const tag = t.div({ id: 'cc-dc-order' });
+    const events = [];
+    tag.addConnectedCallback(() => { events.push('connected'); });
+    tag.addDisconnectedCallback(() => { events.push('disconnected'); });
+    const el = tag.toElement();
+    document.body.append(el);
+    await Promise.resolve();
+    el.remove();
+    await Promise.resolve();
+    return events;
+  }, bundle);
+  expect(result).toEqual(['connected', 'disconnected']);
+});
+
+test('addDisconnectedCallback re-fires on every removal with persist, no connect cb', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const tag = t.div({ id: 'dc-persist-solo' });
+    const calls = [];
+    tag.addDisconnectedCallback(() => { calls.push('disconnected'); });
+    const el = tag.toElement({ persist: true });
+    document.body.append(el);
+    el.remove();
+    await Promise.resolve();
+    document.body.append(el);
+    el.remove();
+    await Promise.resolve();
+    return calls;
+  }, bundle);
+  expect(result).toEqual(['disconnected', 'disconnected']);
+});
+
+test('all callbacks re-fire on every cycle with toElement persist', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const tag = t.div({ id: 'dc-mixed-persist' });
+    const calls = [];
+    tag.addConnectedCallback(() => { calls.push('connected'); });
+    tag.addDisconnectedCallback(() => { calls.push('a'); });
+    tag.addDisconnectedCallback(() => { calls.push('b'); });
+    const el = tag.toElement({ persist: true });
+    document.body.append(el);
+    await Promise.resolve();
+    el.remove();
+    await Promise.resolve();
+    document.body.append(el);
+    await Promise.resolve();
+    el.remove();
+    await Promise.resolve();
+    return calls;
+  }, bundle);
+  expect(result.filter(e => e === 'connected')).toEqual(['connected', 'connected']);
+  expect(result.filter(e => e === 'a')).toEqual(['a', 'a']);
+  expect(result.filter(e => e === 'b')).toEqual(['b', 'b']);
+});
+
+test('addDisconnectedCallback receives element on every removal with toElement persist', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const tag = t.div({ id: 'dc-persist-arg' });
+    const ids = [];
+    tag.addDisconnectedCallback(el => { ids.push(el.id); });
+    const el = tag.toElement({ persist: true });
+    document.body.append(el);
+    el.remove();
+    await Promise.resolve();
+    document.body.append(el);
+    el.remove();
+    await Promise.resolve();
+    return ids;
+  }, bundle);
+  expect(result).toEqual(['dc-persist-arg', 'dc-persist-arg']);
+});
+
+test('signal attribute stays reactive across remove and re-insert with toElement persist', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const cls = signal('a');
+    const tag = t.div({ id: 'sig-resume', class: cls });
+    const el = tag.toElement({ persist: true });
+    document.body.append(el);
+    el.remove();
+    await Promise.resolve();
+    document.body.append(el);
+    await Promise.resolve();
+    cls.set('b');
+    await Promise.resolve();
+    return el.className;
+  }, bundle);
+  expect(result).toBe('b');
+});
+
+test('signal content stays reactive across remove and re-insert with toElement persist', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const text = signal('before');
+    const tag = t.p({ id: 'sig-content-resume' }, text);
+    const el = tag.toElement({ persist: true });
+    document.body.append(el);
+    el.remove();
+    await Promise.resolve();
+    document.body.append(el);
+    await Promise.resolve();
+    text.set('after');
+    await Promise.resolve();
+    return el.textContent;
+  }, bundle);
+  expect(result).toBe('after');
+});
+
+test('signal effects stop again when a resumed element is removed a second time', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const cls = signal('a');
+    const tag = t.div({ id: 'sig-restop', class: cls });
+    const el = tag.toElement({ persist: true });
+    document.body.append(el);
+    el.remove();
+    await Promise.resolve();
+    document.body.append(el);
+    await Promise.resolve();
+    el.remove();
+    await Promise.resolve();
+    cls.set('b');
+    await Promise.resolve();
+    return el.className;
+  }, bundle);
+  expect(result).toBe('a');
+});
+
+test('signal effects resume and stop correctly across three removal cycles', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const cls = signal('a');
+    const tag = t.div({ id: 'sig-three-cycles', class: cls });
+    const el = tag.toElement({ persist: true });
+    const snapshot = [];
+
+    for (let i = 0; i < 3; i++) {
+      document.body.append(el);
+      await Promise.resolve();
+      cls.set(String(i + 1));
+      await Promise.resolve();
+      snapshot.push(el.className);
+      el.remove();
+      await Promise.resolve();
+      cls.set('dead');
+      await Promise.resolve();
+      snapshot.push(el.className);
+    }
+    return snapshot;
+  }, bundle);
+  // Each cycle: class updates while connected, stays frozen while disconnected
+  expect(result).toEqual(['1', '1', '2', '2', '3', '3']);
+});
+
+test('getDomElement() returns the live element after reconnection in persist scenario', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const tag = t.div({ id: 'gde-reconnect' });
+    const el = tag.toElement({ persist: true });
+    document.body.append(el);
+    await Promise.resolve();
+    el.remove();
+    await Promise.resolve();
+    document.body.append(el);
+    await Promise.resolve();
+    return tag.getDomElement()?.id ?? null;
+  }, bundle);
+  expect(result).toBe('gde-reconnect');
+});
+
+test('disconnect callbacks fire in order on every removal with toElement persist', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const tag = t.div({ id: 'dc-order' });
+    const calls = [];
+    tag.addDisconnectedCallback(() => { calls.push('first'); });
+    tag.addDisconnectedCallback(() => { calls.push('second'); });
+    const el = tag.toElement({ persist: true });
+    document.body.append(el);
+    await Promise.resolve();
+    el.remove();
+    await Promise.resolve();
+    document.body.append(el);
+    await Promise.resolve();
+    el.remove();
+    await Promise.resolve();
+    return calls;
+  }, bundle);
+  expect(result).toEqual(['first', 'second', 'first', 'second']);
 });
 

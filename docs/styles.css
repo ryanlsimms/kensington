@@ -4,7 +4,7 @@
 
 :root {
   --sidebar-width: 220px;
-  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --font: 'Supreme', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
   --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
   --color-text: #1f2328;
   --color-muted: #57606a;
@@ -77,13 +77,19 @@ nav#sidebar {
   overflow-y: auto;
   background: var(--color-sidebar-bg);
   border-right: 1px solid var(--color-border);
-  padding: 1.5rem 0;
+  padding-bottom: 1.5rem;
 }
 
 nav#sidebar .sidebar-pages {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 0.375rem;
-  padding: 0 1rem 1rem;
+  padding: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: color-mix(in srgb, var(--color-sidebar-bg) 85%, var(--color-border));
+  border-bottom: 1px solid var(--color-border);
 }
 
 nav#sidebar .sidebar-pages a {
@@ -95,6 +101,7 @@ nav#sidebar .sidebar-pages a {
   border-radius: 4px;
   text-decoration: none;
   color: var(--color-muted);
+  background: var(--color-sidebar-bg);
   border: 1px solid var(--color-border);
   transition: color 0.15s, background 0.15s, border-color 0.15s;
 }
@@ -113,11 +120,15 @@ nav#sidebar .sidebar-title {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--color-muted);
-  padding: 0 1rem 0.5rem;
+  padding: 1.25rem 1rem 0.5rem;
 }
 
 nav#sidebar ul {
   list-style: none;
+}
+
+nav#sidebar .sidebar-pages + ul {
+  padding-top: 0.7rem;
 }
 
 nav#sidebar ul li a {
@@ -137,7 +148,7 @@ nav#sidebar ul li a:hover {
 }
 
 nav#sidebar ul ul li a {
-  padding-left: 1.75rem;
+  padding-left: 1rem;
   font-size: 0.8125rem;
   color: var(--color-muted);
 }
@@ -217,6 +228,12 @@ header {
   border-bottom: 1px solid var(--color-border);
 }
 
+section + header {
+  margin-top: 12rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-border);
+}
+
 .header-github {
   position: absolute;
   top: 0;
@@ -233,10 +250,13 @@ header {
 .header-github:hover { color: var(--color-link); text-decoration: none; }
 
 header h1 {
-  font-size: 2.25rem;
+  margin-bottom: 0.75rem;
+}
+
+h1 {
   font-weight: 700;
   color: var(--color-heading);
-  margin-bottom: 0.75rem;
+  font-size: 2.5rem;
 }
 
 .badges {
@@ -264,25 +284,38 @@ section > section {
 }
 
 section h2 {
-  font-size: 1.4rem;
-  font-weight: 600;
+  font-size: 1.7rem;
+  font-weight: 800;
   color: var(--color-heading);
+  margin-top: 4rem;
   margin-bottom: 1rem;
   padding-bottom: 0.4rem;
   border-bottom: 1px solid var(--color-border);
 }
 
 section h3 {
-  font-size: 1.05rem;
-  font-weight: 600;
+  font-size: 1.2rem;
+  font-weight: 800;
   color: var(--color-heading);
-  margin: 1.5rem 0 0.6rem;
+  margin: 3rem 0 0.6rem;
+}
+
+.section-group-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-muted);
+  margin: 4rem 0 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+  max-width: 900px;
 }
 
 p { margin-bottom: 0.9rem; }
 
 ul, ol {
-  padding-left: 1.5rem;
+  padding-left: 1rem;
   margin-bottom: 0.9rem;
 }
 
@@ -295,12 +328,17 @@ a {
 
 a:hover { color: var(--color-link-hover); text-decoration: underline; }
 
-code:not([class]) {
-  font-family: var(--mono);
+code:is(:not([class]), .wrappable) {
+  font-family: var(--mono), monospace;
   font-size: 0.875em;
   background: var(--color-inline-code-bg);
   padding: 0.15em 0.35em;
   border-radius: 4px;
+  text-wrap: nowrap;
+}
+
+code.wrappable {
+  text-wrap: wrap;
 }
 
 /* ── Code blocks ──────────────────────────────────────────── */
@@ -397,6 +435,19 @@ table td:first-child {
   width: 13em;
 }
 
+/* ── Aside ────────────────────────────────────────────────── */
+
+aside {
+  border-left: 3px solid var(--color-border);
+  padding: 0.4rem 0.75rem 0.4rem 1rem;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  margin: 0.5rem 0 1rem;
+  max-width: 900px;
+}
+
+aside p:last-child { margin-bottom: 0; }
+
 /* ── Feature list ─────────────────────────────────────────── */
 
 .feature-list {
@@ -405,28 +456,180 @@ table td:first-child {
   margin: 0.75rem 0 1rem;
   display: flex;
   flex-direction: column;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.3rem;
 }
 
 .feature-list li {
-  background: var(--color-inline-code-bg);
-  border-radius: 4px;
-  padding: 0.25em 0.65em;
   font-size: 0.875rem;
+  color: var(--color-muted);
   margin-bottom: 0;
+}
+
+.feature-list li::before {
+  content: '✓';
+  color: var(--color-link);
+  font-weight: 600;
+  margin-right: 0.35em;
+}
+
+/* ── Example link ─────────────────────────────────────────── */
+
+.example-link {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-link);
+  background: color-mix(in srgb, var(--color-link) 7%, var(--color-bg));
+  border: 1px solid color-mix(in srgb, var(--color-link) 25%, transparent);
+  border-radius: 4px;
+  padding: 0.15rem 0.55rem;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.example-link:hover {
+  background: color-mix(in srgb, var(--color-link) 14%, var(--color-bg));
+  border-color: color-mix(in srgb, var(--color-link) 45%, transparent);
+  text-decoration: none;
+  color: var(--color-link);
+}
+
+/* ── Compare button ───────────────────────────────────────── */
+
+.compare-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 0.85rem;
+  font-family: var(--font);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-link);
+  background: transparent;
+  border: 1px solid var(--color-link);
+  border-radius: 5px;
+  cursor: pointer;
+  margin-bottom: 0.9rem;
+  transition: background 0.15s, color 0.15s;
+}
+
+.compare-btn:hover {
+  background: var(--color-link);
+  color: #fff;
+}
+
+.subtle-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  color: color-mix(in srgb, var(--color-link) 18%, var(--color-text));
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--color-link) 18%, var(--color-border));
+  text-underline-offset: 2px;
+  transition: color 0.15s, text-decoration-color 0.15s;
+}
+
+.subtle-link:hover {
+  color: var(--color-link);
+  text-decoration-color: var(--color-link);
+}
+
+/* ── Modals ───────────────────────────────────────────────── */
+
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.5);
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.modal.open { display: flex; }
+
+.modal-box {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1.75rem;
+  max-width: 860px;
+  width: 100%;
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-box h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-heading);
+}
+
+.modal-box h4 {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-heading);
+  margin: 1.5rem 0 0.5rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.modal-box h4:first-of-type { margin-top: 0.5rem; }
+
+.modal-box p { max-width: none; }
+
+.modal-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--color-muted);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.modal-close:hover {
+  color: var(--color-text);
+  background: var(--color-inline-code-bg);
+}
+
+/* ── Option table ─────────────────────────────────────────── */
+
+.option-table td:first-child {
+  width: 1px;
+  white-space: nowrap;
+}
+
+.option-table thead th,
+.option-table tbody td {
+  border-left: none;
+  border-right: none;
+}
+
+.option-table tbody tr:nth-child(even) td {
+  background: none;
 }
 
 /* ── IDE mock ─────────────────────────────────────────────── */
 
 .ide-mock {
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.875rem;
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid #3c3c3c;
   max-width: 600px;
-  margin: 1.5rem 0 0;
+  margin: 1.5rem 0;
   line-height: 1.5;
   color: #d4d4d4;
 }
@@ -592,6 +795,18 @@ table td:first-child {
   main > header, main > section { padding-left: 1.25rem; padding-right: 1.25rem; }
 
   .copy-btn { opacity: 1; }
+
+  .option-table td:first-child { width: auto; white-space: normal; font-weight: 600; padding-bottom: 0.1rem; }
+  .option-table td {
+    border-bottom: none;
+    text-align: left;
+
+    &:not(tbody tr:first-child td:first-child) {
+      border-top: none;
+    }
+  }
+  .option-table td::before { content: none; }
+  .option-table tr { border-bottom: 1px solid var(--color-border); margin-bottom: 0.5rem; }
 
   .panel-label { padding-left: 1.25rem; padding-right: 1.25rem; }
 
