@@ -1,20 +1,24 @@
-import attributesArrayFromObject from '../lib/attributes-array-from-object.js';
-import attributesStringFromObject from '../lib/attributes-string-from-object.js';
-import { addOnStop, markContentTracked, trackForConnect, trackForStop } from '../lib/dom-tracker.js';
-import he from '../lib/he.js';
-import indent from '../lib/indent.js';
-import { reconcile } from '../lib/reconcile.js';
-import showInvalid from '../lib/show-invalid.js';
-import Signal, { effect, isSSRMode } from '../lib/signal.js';
-import stringifyContentArray from '../lib/stringify-content-array.js';
-import { styleObjectToCss } from '../lib/style-utils.js';
-import { camelToKebab, LINE_BREAK_TEST_REGEX, preserveSpaces } from '../lib/text-utils.js';
+import { markContentTracked } from '../lib/reactive/dom-tracker.js';
+import { createLifecycle } from '../lib/reactive/lifecycle.js';
+import { reconcile } from '../lib/reactive/reconcile.js';
+import Signal from '../lib/reactive/signal.js';
+import {
+  attributeArray,
+  attributeString,
+  contentIsShort,
+  renderToString,
+} from '../lib/render/serialize.js';
+import {
+  attributeIsValid,
+  attributeValueIsValid,
+  isValidNamespaceAttribute,
+  validate,
+  validateAttributeByType,
+} from '../lib/render/validate.js';
+import showInvalid from '../lib/util/show-invalid.js';
+import { preserveSpaces } from '../lib/util/text-utils.js';
 import CommentTag from './comment-tag.js';
 import LiteralTag from './literal-tag.js';
-
-function isValidStyleValue(v) {
-  return [null, undefined, false].includes(v) || ['string', 'number'].includes(typeof v); // null/undefined/false are valid. They're silently omitted at render time, not errors
-}
 
 function isValidContentItem(c, contentIsLiteral) {
   if (typeof c === 'string') {
@@ -26,33 +30,6 @@ function isValidContentItem(c, contentIsLiteral) {
   // literal tags (script/style) accept only raw strings, not child tag objects
   return !contentIsLiteral
     && (c instanceof ContentTag || c instanceof LiteralTag || c instanceof CommentTag || c instanceof Signal);
-}
-
-function applySignalAttribute(element, attrName, sig) {
-  const ref = new WeakRef(element);
-  const e = effect(() => {
-    const el = ref.deref();
-    if (!el) { e.stop(); return; }
-    const val = sig.get();
-    if (val === false || val === null || val === undefined) {
-      el.removeAttribute(attrName);
-    } else if (val === true) {
-      el.setAttribute(attrName, '');
-    } else {
-      el.setAttribute(attrName, String(val));
-    }
-  });
-  return e;
-}
-
-function applySignalProp(element, propName, sig) {
-  const ref = new WeakRef(element);
-  const e = effect(() => {
-    const el = ref.deref();
-    if (!el) { e.stop(); return; }
-    el[propName] = sig.get();
-  });
-  return e;
 }
 
 function isPropWritable(element, propName) {
@@ -73,7 +50,7 @@ function collectContent(items, seen = new Set()) {
   const out = [];
   for (const c of [].concat(items)) {
     if ([undefined, null, '', false, true].includes(c)) {
-      continue; // false/true arise from conditional content patterns: someCondition && t.span(...)
+      continue; // false/true arise from conditional content patterns. someCondition && t.span(...)
     }
     if (Array.isArray(c)) {
       if (seen.has(c)) {
@@ -81,7 +58,7 @@ function collectContent(items, seen = new Set()) {
       }
       seen.add(c);
       out.push(...collectContent(c, seen));
-      // no seen.delete: a content array appearing twice is always circular, not a legitimate reuse
+      // no seen.delete. A content array appearing twice is always circular, not a legitimate reuse
       continue;
     }
     out.push(c);
@@ -90,12 +67,16 @@ function collectContent(items, seen = new Set()) {
 }
 
 export default class ContentTag {
+  #connectedCallbacks = [];
+  #disconnectedCallbacks = [];
+  #domElement = null;
+
   constructor(options) {
     this.tagName = options.tagName;
     this.attributes = options.attributes;
     this.prop = options.attributes?.prop ?? null;
     this.additionalGlobalAttributes = options.additionalGlobalAttributes ?? {};
-    this.allowedAttributeMap = options.allowedAttributeMap ?? new Map(); // empty Map fallback: all non-namespace attrs fail has(), so custom tags with no spec reject everything except namespaces
+    this.allowedAttributeMap = options.allowedAttributeMap ?? new Map(); // empty Map fallback. All non-namespace attrs fail has(), so custom tags with no spec reject everything except namespaces
     this.contentIsLiteral = options.contentIsLiteral;
     this.indentationLevel = options.indentationLevel ?? 2;
     this.namespaces = options.namespaces;
@@ -104,232 +85,42 @@ export default class ContentTag {
     this.content = collectContent(options.content);
     this.namespace = options.namespace;
     this.encodeContent = options.encodeContent;
-    this._connectedCallbacks = [];
-    this._disconnectedCallbacks = [];
   }
 
   addConnectedCallback(fn) {
-    this._connectedCallbacks.push(fn);
+    this.#connectedCallbacks.push(fn);
     return this;
   }
 
   addDisconnectedCallback(fn) {
-    this._disconnectedCallbacks.push(fn);
+    this.#disconnectedCallbacks.push(fn);
     return this;
   }
 
-  validate() {
-    const unallowedAttributes = Object.keys(this.attributes).filter(attr => !this.attributeIsValid(attr));
-    if (unallowedAttributes.length) {
-      showInvalid(`attribute(s): ${unallowedAttributes.join(', ')} not allowed for ${this.tagName}`, this.validationLevel, this.logger);
-    }
+  validate() { return validate(this); }
 
-    const invalidAttributeValues = Object.entries(this.attributes).filter(([attr, value]) => {
-      return !unallowedAttributes.includes(attr) && !this.attributeValueIsValid(attr, value); // skip value check for already-flagged attrs to avoid double-reporting
-    });
-    if (invalidAttributeValues.length) {
-      const attrString = invalidAttributeValues.map(([attr, value]) => {
-        if (attr === 'style' && value !== null && typeof value === 'object' && !Array.isArray(value)) { // !Array.isArray: typeof [] === 'object'
-          return `style="${styleObjectToCss(value, (_, v) => !isValidStyleValue(v))}"`;
-        }
-        if (Array.isArray(value)) {
-          // JSON.stringify(Symbol) returns undefined, which JSON array serialization renders as null. String() gives 'Symbol(x)'
-          const parts = value.map(v => (typeof v === 'symbol' ? String(v) : JSON.stringify(v)));
-          return `${attr}=[${parts.join(',')}]`;
-        }
-        try {
-          return `${attr}="${String(value)}"`;
-        } catch {
-          // null-proto objects and others with no toString throw when coerced to string
-          return `${attr}=[non-serializable]`;
-        }
-      }).join(', ');
-      const message = `invalid attribute \`${attrString}\` given for element \`${this.tagName}\``;
-      showInvalid(message, this.validationLevel, this.logger);
-    }
-  }
+  isValidNamespaceAttribute(attr) { return isValidNamespaceAttribute(this, attr); }
 
-  isValidNamespaceAttribute(attr) {
-    const match = attr.match(/[^A-Z|-]+/u); // characters before first uppercase or hyphen
-    return match !== null && this.namespaces.includes(match[0]); // null when attr starts with a hyphen or is all-uppercase
-  }
+  attributeIsValid(attr) { return attributeIsValid(this, attr); }
 
-  attributeIsValid(attr) {
-    if (attr === 'on' || attr === 'prop') { return true; }
-    return this.allowedAttributeMap.has(attr) ||
-      this.allowedAttributeMap.has(camelToKebab(attr)) ||
-      this.isValidNamespaceAttribute(attr) ||
-      camelToKebab(attr) in this.additionalGlobalAttributes;
-  }
+  attributeValueIsValid(attr, value) { return attributeValueIsValid(this, attr, value); }
 
-  attributeValueIsValid(attr, value) {
-    if (attr === 'on') {
-      if (value === null || value === undefined) { return true; }
-      return typeof value === 'object' && !Array.isArray(value) && !(value instanceof Signal);
-    }
-    if (attr === 'prop') {
-      if (value === null || value === undefined) { return true; }
-      return typeof value === 'object' && !Array.isArray(value) && !(value instanceof Signal);
-    }
-    if (value instanceof Signal) { return true; }
-    if ([undefined, null].includes(value)) {
-      return true;
-    }
-    if (typeof value === 'symbol') {
-      return false;
-    }
-    if (typeof value === 'number' && !isFinite(value)) { // NaN/Infinity are not valid attribute values
-      return false;
-    }
-    if (this.isValidNamespaceAttribute(attr)) {
-      return true; // namespace attrs (data-*, aria-*) have no type spec in the map. Any value is accepted
-    }
-    if (attr === 'id' && typeof value === 'string' && /^\d/.test(value)) {
-      return false;
-    }
-    if (attr === 'class' && Array.isArray(value)) {
-      return true; // must return early: the type spec for class is String, so validateAttributeByType would reject arrays
-    }
-    if (attr === 'style' && value !== null && typeof value === 'object' && !Array.isArray(value)) { // !Array.isArray: typeof [] === 'object'
-      for (const k of Object.keys(value)) {
-        let v;
-        try {
-          v = value[k];
-        } catch {
-          continue;
-        }
-        if (!isValidStyleValue(v)) {
-          return false;
-        }
-      }
-      return true;
-    }
-    const kebab = camelToKebab(attr);
-    const type = this.allowedAttributeMap.get(attr)
-      ?? this.allowedAttributeMap.get(kebab)
-      ?? this.additionalGlobalAttributes[kebab];
-    return this.validateAttributeByType(type, value);
-  }
-
-  validateAttributeByType(type, value) {
-    if (['number', 'string'].includes(typeof type)) {
-      return value === type; // literal enum spec: type: 'submit', type: 'ltr', etc.
-    }
-    if (type === Function) {
-      return typeof value === 'function';
-    }
-    if (type === Boolean) {
-      return [true, false, undefined, null].includes(value);
-    }
-    if (type === String) {
-      return ['number', 'string'].includes(typeof value);
-    }
-    if (type === Number) {
-      if (typeof value === 'number') { return isFinite(value); }
-      if (typeof value !== 'string') { return false; } // Number(Symbol) throws. Only attempt coercion on strings
-      const n = Number(value);
-      return isFinite(n) && n.toString() === value; // round-trip rejects non-canonical ('042', ' 1') and NaN/Infinity strings
-    }
-    if (typeof type === 'function') {
-      return type(value); // custom validator: type spec can be an arbitrary predicate function
-    }
-
-    if (Array.isArray(type)) {
-      return type.some(typeItem => this.validateAttributeByType(typeItem, value));
-    }
-    return false; // type is undefined (attr not in the spec map). Treat as invalid
-  }
+  validateAttributeByType(type, value) { return validateAttributeByType(type, value); }
 
   validateContent() {
-    const invalid = this.content.filter(c => !isValidContentItem(c, this.contentIsLiteral));
-    if (!invalid.length) { return; }
+    const valid = this.content.filter(c => isValidContentItem(c, this.contentIsLiteral));
+    if (valid.length === this.content.length) { return; }
     showInvalid(`Invalid content passed to element \`${this.tagName}\``, this.validationLevel, this.logger);
-    this.content = this.content.filter(c => isValidContentItem(c, this.contentIsLiteral));
+    this.content = valid;
   }
 
-  contentIsShort() { // fast path: avoids the heavier stringifyContentArray+indent pipeline for simple single-string content
-    if (!this.content.length) {
-      return true;
-    }
+  contentIsShort() { return contentIsShort(this); }
 
-    if (this.content.length > 1) {
-      return false;
-    }
+  attributeString() { return attributeString(this); }
 
-    let [content] = this.content;
-    if (content instanceof Signal) { content = content.get(); }
+  attributeArray() { return attributeArray(this); }
 
-    if (!['string', 'number'].includes(typeof content)) {
-      return false;
-    }
-
-    if (content.length > 100) { // numbers have no .length (undefined). undefined > 100 is false, so a single number always passes
-      return false;
-    }
-
-    return !LINE_BREAK_TEST_REGEX.test(content);
-  }
-
-  attributeString() {
-    const onFunction = (this.validationLevel === 'off' || isSSRMode())
-      ? undefined
-      : attrName => showInvalid(`function value for attribute \`${attrName}\` is not supported in toString()`, this.validationLevel, this.logger);
-    const attrString = attributesStringFromObject(
-      this.attributes,
-      { attrsSet: this.allowedAttributeMap, encode: true, onFunction },
-    );
-    return attrString ? ` ${attrString}` : '';
-  }
-
-  attributeArray() {
-    return attributesArrayFromObject(this.attributes, { attrsSet: this.allowedAttributeMap, encode: false }); // encode: false — setAttribute handles its own encoding. encode: true is only needed for toString()
-  }
-
-  toString() {
-    this.validateContent();
-
-    let str = '<'; // chained += instead of a template literal: V8 rope optimization makes many short += faster than one large interpolation
-    str += this.tagName;
-    str += this.attributeString();
-    str += '>';
-
-    if (this.contentIsLiteral) {
-      let literalStr = '';
-      for (const c of this.content) {
-        if (literalStr) { literalStr += '\n'; }
-        literalStr += (typeof c === 'string' && this.encodeContent) ? he.encode(c) : String(c); // String(): he.encode requires a string. Literal content can include numbers
-      }
-      str += literalStr;
-    } else if (this.contentIsShort()) {
-      for (const c of this.content) {
-        const val = c instanceof Signal ? c.get() : c;
-        if (typeof val === 'string' && this.encodeContent) {
-          str += he.encode(preserveSpaces(val));
-        } else {
-          str += val;
-        }
-      }
-    } else {
-      const resolved = this.content.flatMap(c => {
-        const val = c instanceof Signal ? c.get() : c;
-        return Array.isArray(val) ? val : [val];
-      });
-      let content = stringifyContentArray(resolved);
-
-      if (this.indentationLevel) { // falsy (0) means no indentation. Skip the pass entirely rather than calling indent with level 0
-        content = indent(content, this.indentationLevel);
-      }
-      str += '\n';
-      str += content;
-      str += '\n';
-    }
-
-    str += '</';
-    str += this.tagName;
-    str += '>';
-
-    return str;
-  }
+  toString() { return renderToString(this); }
 
   mount(target) {
     if (typeof document === 'undefined') {
@@ -343,36 +134,36 @@ export default class ContentTag {
   }
 
   toElement({ persist = false } = {}) {
-    if (this._domElement) {
-      if (this._domElement.parentNode !== null) {
+    if (this.#domElement) {
+      if (this.#domElement.parentNode !== null) {
         showInvalid(`toElement() called on a tag instance already in the DOM — the same node will be moved. Call the tag as a function to create a new independent node.`, this.validationLevel, this.logger);
       }
-      return this._domElement;
+      return this.#domElement;
     }
     if (typeof document === 'undefined') {
       throw new Error('toElement only supported in browser');
     }
     this.validateContent();
-    let element;
-    if (this.namespace) {
-      element = document.createElementNS(this.namespace, this.tagName);
-    } else {
-      element = document.createElement(this.tagName);
-    }
+    const element = this.namespace
+      ? document.createElementNS(this.namespace, this.tagName)
+      : document.createElement(this.tagName);
 
-    const stops = [];
-    // Collect signal effects so they can be paused and resumed on re-insertion when persist is true.
-    // null when persist is false so there is no overhead for the common case.
-    const resumables = persist ? [] : null;
+    const lifecycle = createLifecycle({ element, persist });
     let hasSignalContent = false;
 
     for (const [attrName, attrValue] of this.attributeArray()) {
       if (/^on[a-z]/.test(attrName) && typeof attrValue === 'function') {
         element.addEventListener(attrName.slice(2), attrValue);
       } else if (attrValue instanceof Signal) {
-        const eff = applySignalAttribute(element, attrName, attrValue);
-        stops.push(() => (persist ? eff.pause() : eff.stop()));
-        if (resumables !== null) { resumables.push(eff); }
+        lifecycle.signalEffect(attrValue, (el, val) => {
+          if (val === false || val === null || val === undefined) {
+            el.removeAttribute(attrName);
+          } else if (val === true) {
+            el.setAttribute(attrName, '');
+          } else {
+            el.setAttribute(attrName, String(val));
+          }
+        });
       } else {
         element.setAttribute(attrName, attrValue);
       }
@@ -394,34 +185,26 @@ export default class ContentTag {
           continue;
         }
         if (propValue instanceof Signal) {
-          const eff = applySignalProp(element, propName, propValue);
-          stops.push(() => (persist ? eff.pause() : eff.stop()));
-          if (resumables !== null) { resumables.push(eff); }
+          lifecycle.signalEffect(propValue, (el, val) => { el[propName] = val; });
         } else {
           element[propName] = propValue;
         }
       }
     }
 
-    for (let node of this.content) { // let, not const: node is reassigned to preserveSpaces(node) below
+    for (let node of this.content) { // let, not const. node is reassigned to preserveSpaces(node) below
       if (node instanceof ContentTag || node instanceof LiteralTag || node instanceof CommentTag) {
         element.append(node.toElement());
         continue;
       }
       if (node instanceof Signal) {
         hasSignalContent = true;
-        const elementRef = new WeakRef(element);
         const startAnchor = document.createComment('');
         const endAnchor = document.createComment('');
         element.append(startAnchor, endAnchor);
-        const e = effect(() => {
-          const el = elementRef.deref();
-          if (!el) { e.stop(); return; }
-          const val = node.get();
+        lifecycle.signalEffect(node, (el, val) => {
           reconcile(el, startAnchor, endAnchor, Array.isArray(val) ? val : [val]);
         });
-        stops.push(() => (persist ? e.pause() : e.stop()));
-        if (resumables !== null) { resumables.push(e); }
         continue;
       }
       if (!this.contentIsLiteral && typeof node === 'string') { // literal tags (script/style) need exact spacing preserved. Only convert for regular tags
@@ -430,62 +213,22 @@ export default class ContentTag {
       element.append(document.createTextNode(String(node))); // String() handles Symbols. + or template literals would throw
     }
 
-    const dcbs = this._disconnectedCallbacks;
-    const cbs = this._connectedCallbacks;
+    lifecycle.finalize({
+      connectCallbacks: this.#connectedCallbacks,
+      disconnectCallbacks: this.#disconnectedCallbacks,
+      onCleared: () => { if (this.#domElement === element) { this.#domElement = null; } },
+      onReconnect: () => { this.#domElement = element; },
+    });
 
-    if (stops.length > 0 || dcbs.length > 0) {
-      trackForStop(element, () => { for (const stop of stops) { stop(); } });
-      addOnStop(element, () => { if (this._domElement === element) { this._domElement = null; } });
-      for (const fn of dcbs) {
-        addOnStop(element, () => fn.call(element, element));
-      }
-      if (persist) {
-        // Rebuild the stop chain on each removal so effects and disconnect callbacks run again
-        // on every subsequent removal.
-        const reFireAndRegister = () => {
-          trackForStop(element, () => {});
-          addOnStop(element, () => { if (this._domElement === element) { this._domElement = null; } });
-          for (const fn of dcbs) { addOnStop(element, () => fn.call(element, element)); }
-          addOnStop(element, reFireAndRegister);
-        };
-        addOnStop(element, reFireAndRegister);
-      }
-    }
-
-    const needsConnect = persist || cbs.length > 0;
-    if (needsConnect) {
-      let firstConnection = true;
-      trackForConnect(element, () => {
-        if (firstConnection) {
-          // First connection: fire all callbacks.
-          firstConnection = false;
-          for (const fn of cbs) { fn.call(element, element); }
-        } else {
-          // Reconnection: restore _domElement so getDomElement() works.
-          this._domElement = element;
-          // Resume signal effects stopped on removal and wire them into the new stop chain
-          // so they are cleaned up again if this element is removed a second time.
-          if (resumables !== null && resumables.length > 0) {
-            for (const eff of resumables) {
-              eff.resume();
-              addOnStop(element, () => eff.pause());
-            }
-          }
-          // All callbacks re-fire on reconnection (this branch is only reached when persist is true).
-          for (const fn of cbs) { fn.call(element, element); }
-        }
-      }, persist);
-    }
     if (hasSignalContent) {
       markContentTracked(element);
     }
 
-    this._domElement = element;
-
+    this.#domElement = element;
     return element;
   }
 
   getDomElement() {
-    return this._domElement?.isConnected ? this._domElement : null;
+    return this.#domElement?.isConnected ? this.#domElement : null;
   }
 }

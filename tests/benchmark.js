@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-import he from '../esm/lib/he.js';
+import he from '../esm/lib/util/he.js';
 
 const WARMUP = 3;
 const ITERS = 10;

@@ -1,5 +1,5 @@
 import Kensington from './kensington.js';
-import Signal, { computed, effect } from './lib/signal.js';
+import Signal, { computed, effect } from './lib/reactive/signal.js';
 
 export default Kensington;
 
@@ -21,4 +21,4 @@ export function signal(initial) {
 
 export { computed, effect };
 export const isBrowser = typeof window !== 'undefined';
-export { registerComponents, renderForHydration } from './lib/hydration.js';
+export { registerComponents, renderForHydration } from './lib/render/hydration.js';

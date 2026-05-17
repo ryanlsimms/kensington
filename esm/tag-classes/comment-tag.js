@@ -1,18 +1,20 @@
-import { addOnStop, trackForStop } from '../lib/dom-tracker.js';
-import showInvalid from '../lib/show-invalid.js';
-import Signal, { effect } from '../lib/signal.js';
+import { addOnStop, trackForStop } from '../lib/reactive/dom-tracker.js';
+import Signal, { effect } from '../lib/reactive/signal.js';
+import showInvalid from '../lib/util/show-invalid.js';
 
 const TYPE_ERROR = 'inlineComment only accepts a string or number';
 const DOUBLE_DASH_ERROR = 'inlineComment text must not contain "--"';
 
 export default class CommentTag {
+  #domElement = null;
+
   constructor(text, validationLevel = 'off', logger = undefined) {
     this.text = text;
     this.validationLevel = validationLevel;
     this.logger = logger;
   }
 
-  _normalize(raw) {
+  #normalize(raw) {
     if (!['string', 'number'].includes(typeof raw)) {
       showInvalid(TYPE_ERROR, this.validationLevel, this.logger);
       return null;
@@ -27,7 +29,7 @@ export default class CommentTag {
 
   toString() {
     const raw = this.text instanceof Signal ? this.text.get() : this.text;
-    const text = this._normalize(raw);
+    const text = this.#normalize(raw);
     if (text === null) { return ''; }
     if (/[\r\n]/.test(text)) {
       const normalized = text.replace(/\r\n?/g, '\n');
@@ -38,11 +40,11 @@ export default class CommentTag {
   }
 
   toElement() {
-    if (this._domElement) {
-      if (this._domElement.parentNode !== null) {
+    if (this.#domElement) {
+      if (this.#domElement.parentNode !== null) {
         showInvalid(`toElement() called on a tag instance already in the DOM — the same node will be moved. Call the tag as a function to create a new independent node.`, this.validationLevel, this.logger);
       }
-      return this._domElement;
+      return this.#domElement;
     }
     if (typeof document === 'undefined') {
       throw new Error('toElement only supported in browser');
@@ -54,24 +56,23 @@ export default class CommentTag {
       const e = effect(() => {
         const c = ref.deref();
         if (!c) { e.stop(); return; }
-        const text = this._normalize(sig.get());
+        const text = this.#normalize(sig.get());
         if (text === null) { return; }
         c.nodeValue = text;
       });
-      const clearCache = () => { if (this._domElement === comment) { this._domElement = null; } };
+      const clearCache = () => { if (this.#domElement === comment) { this.#domElement = null; } };
       trackForStop(comment, () => e.stop());
       addOnStop(comment, clearCache);
-      this._domElement = comment;
+      this.#domElement = comment;
       return comment;
     }
 
-    const text = this._normalize(this.text);
-    const comment = text === null ? document.createComment('') : document.createComment(text);
-    this._domElement = comment;
+    const comment = document.createComment(this.#normalize(this.text) ?? '');
+    this.#domElement = comment;
     return comment;
   }
 
   getDomElement() {
-    return this._domElement?.isConnected ? this._domElement : null;
+    return this.#domElement?.isConnected ? this.#domElement : null;
   }
 }

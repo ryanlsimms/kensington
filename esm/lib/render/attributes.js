@@ -1,9 +1,9 @@
-import he from './he.js';
-import Signal from './signal.js';
-import { styleObjectToCss } from './style-utils.js';
-import { getAttrName } from './text-utils.js';
+import Signal from '../reactive/signal.js';
+import he from '../util/he.js';
+import { styleObjectToCss } from '../util/style-utils.js';
+import { getAttrName } from '../util/text-utils.js';
 
-export default function attributesArrayFromObject(obj, options = {}) {
+export function attributesArrayFromObject(obj, options = {}) {
   const { attrsSet = new Map(), encode, prefix = '', seen = new WeakSet() } = options; // seen default is a fresh WeakSet per top-level call. Recursive calls pass the existing one to share cycle state
   const result = [];
 
@@ -75,6 +75,40 @@ export default function attributesArrayFromObject(obj, options = {}) {
     } else {
       result.push([attrName, val.toString()]);
     }
+  }
+  return result;
+}
+
+export function attributesStringFromObject(obj, options = {}) {
+  const { onFunction, encode } = options;
+  let result = '';
+  for (const [name, rawVal] of attributesArrayFromObject(obj, options)) {
+    let val = rawVal;
+    if (val instanceof Signal) {
+      val = val.get();
+      if (val === false || val === null || val === undefined) {
+        continue;
+      }
+      if (result) {
+        result += ' ';
+      }
+      if (val === true) {
+        result += name;
+      } else {
+        result += `${name}="${encode ? he.encode(String(val)) : String(val)}"`;
+      }
+      continue;
+    }
+    if (typeof val === 'function') {
+      if (onFunction) {
+        onFunction(name);
+      }
+      continue;
+    }
+    if (result) {
+      result += ' ';
+    }
+    result += val === '' ? name : `${name}="${val}"`; // '' encodes a boolean attribute (true → '' in array builder)
   }
   return result;
 }

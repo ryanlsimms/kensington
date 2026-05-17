@@ -1,5 +1,5 @@
-import LiteralTag from '../tag-classes/literal-tag.js';
-import { _enterSSRMode, _exitSSRMode } from './signal.js';
+import LiteralTag from '../../tag-classes/literal-tag.js';
+import { _enterSSRMode, _exitSSRMode } from '../reactive/signal.js';
 
 const SCRIPT_CLOSE_RE = /<\/script>/gi;
 

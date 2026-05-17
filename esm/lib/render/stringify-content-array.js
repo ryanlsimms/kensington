@@ -1,5 +1,5 @@
-import he from './he.js';
-import { LINE_BREAK_REGEX, preserveSpaces } from './text-utils.js';
+import he from '../util/he.js';
+import { LINE_BREAK_REGEX, preserveSpaces } from '../util/text-utils.js';
 
 export default function stringifyContentArray(arr) {
   let result = '';

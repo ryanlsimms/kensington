@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 
 import Kensington, { computed, effect, isBrowser, renderForHydration, signal, t } from 'kensington';
 
-import attributesArrayFromObject from '../../esm/lib/attributes-array-from-object.js';
+import { attributesArrayFromObject } from '../../esm/lib/render/attributes.js';
 
 // ─── content tag ───────────────────────────────────────────────────────────
 

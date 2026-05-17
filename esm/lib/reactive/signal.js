@@ -25,6 +25,10 @@ const derivedSignals = new WeakSet();
 // Counter rather than boolean so nested computed calls don't prematurely re-enable the guard.
 let derivedWriteDepth = 0;
 
+function rethrowAsync(err) {
+  queueMicrotask(() => { throw err; });
+}
+
 function flush() {
   scheduled = false;
   while (pending.size > 0) {
@@ -34,7 +38,7 @@ function flush() {
       try {
         fn();
       } catch (err) {
-        queueMicrotask(() => { throw err; });
+        rethrowAsync(err);
       }
     }
   }
@@ -185,7 +189,7 @@ export function computed(fn) {
       try {
         s.set(fn());
       } catch (err) {
-        queueMicrotask(() => { throw err; });
+        rethrowAsync(err);
       } finally {
         derivedWriteDepth--;
       }

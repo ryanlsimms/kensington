@@ -1,0 +1,1848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kensington Architecture</title>
+  <link href="https://api.fontshare.com/v2/css?f[]=supreme@1,900,700,500,400,300&display=swap" rel="stylesheet">
+  <link href="https://api.fontshare.com/v2/css?f[]=tanker@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* ── Architecture-specific styles ─────────────────────────── */
+
+    :root {
+      --color-stage1: #1f7a8c;   /* teal. Construction */
+      --color-stage2: #b56727;   /* orange. String output */
+      --color-stage3: #6f42c1;   /* purple. DOM output */
+      --color-stage4: #2da44e;   /* green. Lifecycle/reconnect */
+      --color-stage5: #c4291c;   /* red. Removal/teardown */
+      --color-note-bg: #f0f6fc;
+      --color-note-border: #54aeff;
+      --color-warn-bg: #fff8c5;
+      --color-warn-border: #d4a72c;
+      --color-tip-bg: #dafbe1;
+      --color-tip-border: #2da44e;
+      --color-key-bg: #fbefff;
+      --color-key-border: #8250df;
+      --color-card-bg: #f6f8fa;
+      --color-mermaid-bg: #ffffff;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --color-stage1: #59c2d7;
+        --color-stage2: #e09650;
+        --color-stage3: #b083f0;
+        --color-stage4: #56d364;
+        --color-stage5: #ff7b72;
+        --color-note-bg: #0d1f3a;
+        --color-note-border: #2f81f7;
+        --color-warn-bg: #2d2200;
+        --color-warn-border: #ae7f00;
+        --color-tip-bg: #032d1e;
+        --color-tip-border: #2da44e;
+        --color-key-bg: #2b1659;
+        --color-key-border: #a371f7;
+        --color-card-bg: #161b22;
+        --color-mermaid-bg: #0d1117;
+      }
+    }
+
+    /* Sidebar stage labels */
+    nav#sidebar .stage-label {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      margin-right: 0.4rem;
+      vertical-align: middle;
+    }
+    .stage1-dot { background: var(--color-stage1); }
+    .stage2-dot { background: var(--color-stage2); }
+    .stage3-dot { background: var(--color-stage3); }
+    .stage4-dot { background: var(--color-stage4); }
+    .stage5-dot { background: var(--color-stage5); }
+
+    /* Stage section accents */
+    section.stage h2 {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    section.stage h2::before {
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 1.6rem;
+      border-radius: 2px;
+    }
+    section.stage-1 h2::before { background: var(--color-stage1); }
+    section.stage-2 h2::before { background: var(--color-stage2); }
+    section.stage-3 h2::before { background: var(--color-stage3); }
+    section.stage-4 h2::before { background: var(--color-stage4); }
+    section.stage-5 h2::before { background: var(--color-stage5); }
+
+    /* Code reference links (file:line) */
+    .loc {
+      font-family: var(--mono);
+      font-size: 0.78em;
+      background: var(--color-inline-code-bg);
+      padding: 0.1em 0.4em;
+      border-radius: 4px;
+      color: var(--color-text);
+      text-decoration: none;
+      border-bottom: 1px dashed transparent;
+      white-space: nowrap;
+    }
+    .loc:hover {
+      color: var(--color-link);
+      border-bottom-color: var(--color-link);
+      text-decoration: none;
+      background: var(--color-inline-code-bg);
+    }
+    .loc .ln {
+      color: var(--color-muted);
+      font-weight: 400;
+    }
+
+    /* Callout boxes */
+    .callout {
+      border-left: 3px solid;
+      padding: 0.7rem 1rem;
+      margin: 1rem 0;
+      border-radius: 0 4px 4px 0;
+      max-width: 900px;
+    }
+    .callout p:last-child { margin-bottom: 0; }
+    .callout .callout-title {
+      font-weight: 700;
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 0.3rem;
+    }
+    .callout.note {
+      background: var(--color-note-bg);
+      border-color: var(--color-note-border);
+    }
+    .callout.note .callout-title { color: var(--color-note-border); }
+    .callout.warn {
+      background: var(--color-warn-bg);
+      border-color: var(--color-warn-border);
+    }
+    .callout.warn .callout-title { color: var(--color-warn-border); }
+    .callout.tip {
+      background: var(--color-tip-bg);
+      border-color: var(--color-tip-border);
+    }
+    .callout.tip .callout-title { color: var(--color-tip-border); }
+    .callout.key {
+      background: var(--color-key-bg);
+      border-color: var(--color-key-border);
+    }
+    .callout.key .callout-title { color: var(--color-key-border); }
+
+    /* Pipeline step cards */
+    .step-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 0.75rem;
+      margin: 1rem 0;
+      max-width: 900px;
+    }
+    .step-card {
+      background: var(--color-card-bg);
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
+      padding: 0.75rem 0.9rem;
+    }
+    .step-card .step-num {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--color-muted);
+      margin-bottom: 0.25rem;
+    }
+    .step-card .step-title {
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+      font-size: 0.95rem;
+    }
+    .step-card .step-body {
+      font-size: 0.85rem;
+      color: var(--color-muted);
+      line-height: 1.45;
+    }
+    .step-card.s1 { border-left: 3px solid var(--color-stage1); }
+    .step-card.s2 { border-left: 3px solid var(--color-stage2); }
+    .step-card.s3 { border-left: 3px solid var(--color-stage3); }
+    .step-card.s4 { border-left: 3px solid var(--color-stage4); }
+    .step-card.s5 { border-left: 3px solid var(--color-stage5); }
+
+    /* Mermaid diagram container */
+    .mermaid {
+      background: var(--color-mermaid-bg);
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
+      padding: 1rem;
+      margin: 1rem 0;
+      max-width: 900px;
+      text-align: center;
+      overflow-x: auto;
+    }
+
+    /* Numbered ordered list with emphasized markers */
+    ol.numbered {
+      counter-reset: num;
+      list-style: none;
+      padding-left: 0;
+      max-width: 900px;
+    }
+    ol.numbered > li {
+      counter-increment: num;
+      position: relative;
+      padding-left: 2.5rem;
+      margin-bottom: 1rem;
+    }
+    ol.numbered > li::before {
+      content: counter(num);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1.75rem;
+      height: 1.75rem;
+      background: var(--color-link);
+      color: white;
+      border-radius: 50%;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Two-column compare layout */
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0;
+      max-width: 900px;
+    }
+    .compare-grid > div {
+      background: var(--color-card-bg);
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
+      padding: 0.9rem 1rem;
+    }
+    .compare-grid h4 {
+      margin-top: 0;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--color-heading);
+    }
+    @media (max-width: 768px) {
+      .compare-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Legend pill */
+    .legend {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.78rem;
+      color: var(--color-muted);
+      margin-right: 0.7rem;
+    }
+    .legend .pill {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+
+    /* File path breadcrumb */
+    .file-crumb {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--color-muted);
+      margin-bottom: 0.4rem;
+      letter-spacing: 0.01em;
+    }
+    .file-crumb .slash { opacity: 0.4; padding: 0 0.1em; }
+
+    /* Inline kbd-style key */
+    .term {
+      font-family: var(--mono);
+      font-size: 0.85em;
+      padding: 0.05em 0.4em;
+      background: var(--color-inline-code-bg);
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+
+    /* Scroll offset so deep-linked headings clear the sticky legend bar */
+    section[id], section[id] > section[id] {
+      scroll-margin-top: 46px;
+    }
+
+    /* Sticky legend bar. Sits below the header and stays visible while scrolling */
+    .legend-bar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0 0.7rem;
+      padding: 0.65rem 0;
+      margin: -0.5rem 0 2rem;
+      background: var(--color-bg);
+      border-bottom: 1px solid var(--color-border);
+      backdrop-filter: blur(6px);
+    }
+    .legend-bar .legend { margin-right: 0; }
+
+    /* Author tag, shown only while the legend is in its stuck state */
+    .legend-bar .author {
+      margin-left: auto;
+      font-size: 0.78rem;
+      color: var(--color-muted);
+      opacity: 0;
+      transform: translateY(-2px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .legend-bar.is-stuck .author {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Zero-height sentinel for IntersectionObserver to detect the stuck state */
+    .legend-sentinel {
+      height: 1px;
+      margin-top: -1px;
+    }
+
+    @media (max-width: 768px) {
+      .legend-bar { top: 44px; }   /* mobile topbar height */
+      .legend-bar .author { display: none; }   /* not enough horizontal room on phone */
+      section[id], section[id] > section[id] { scroll-margin-top: 90px; }   /* topbar + legend */
+    }
+  </style>
+</head>
+<body>
+
+<div id="menu-backdrop"></div>
+
+<div id="topbar">
+  <button id="menu-toggle" aria-label="Open navigation">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <rect y="2" width="18" height="2" rx="1" fill="currentColor"/>
+      <rect y="8" width="18" height="2" rx="1" fill="currentColor"/>
+      <rect y="14" width="18" height="2" rx="1" fill="currentColor"/>
+    </svg>
+  </button>
+  <span class="topbar-title">Architecture</span>
+</div>
+
+<nav id="sidebar">
+  <div class="sidebar-pages">
+    <a href="index.html">Basics</a>
+    <a href="reactivity.html">Reactivity</a>
+    <a href="examples.html">Examples</a>
+    <a href="api.html">API</a>
+  </div>
+  <ul>
+    <li><a href="#introduction">Introduction</a></li>
+    <li><a href="#concepts">Concepts</a></li>
+    <li><a href="#pipeline">The Pipeline</a></li>
+    <li><a href="#construction"><span class="stage-label stage1-dot"></span>Construction</a>
+      <ul>
+        <li><a href="#construction-createtag">createTag closure</a></li>
+        <li><a href="#construction-contenttag">ContentTag constructor</a></li>
+        <li><a href="#construction-validation">Validation</a></li>
+      </ul>
+    </li>
+    <li><a href="#serialize"><span class="stage-label stage2-dot"></span>String Output</a>
+      <ul>
+        <li><a href="#serialize-paths">Three content paths</a></li>
+      </ul>
+    </li>
+    <li><a href="#render"><span class="stage-label stage3-dot"></span>DOM Output</a>
+      <ul>
+        <li><a href="#render-cache">Cache check</a></li>
+        <li><a href="#render-element">Element creation</a></li>
+        <li><a href="#render-attributes">Attribute wiring</a></li>
+        <li><a href="#render-events">Event handlers</a></li>
+        <li><a href="#render-props">Prop wiring</a></li>
+        <li><a href="#render-content">Content wiring</a></li>
+        <li><a href="#render-finalize">Lifecycle finalize</a></li>
+      </ul>
+    </li>
+    <li><a href="#signal-anatomy">Signal Anatomy</a>
+      <ul>
+        <li><a href="#signal-subscribe">Subscription</a></li>
+        <li><a href="#signal-write">Writes &amp; flush</a></li>
+        <li><a href="#signal-effect">effect()</a></li>
+        <li><a href="#signal-computed">computed()</a></li>
+      </ul>
+    </li>
+    <li><a href="#lifecycle"><span class="stage-label stage4-dot"></span>Lifecycle Module</a></li>
+    <li><a href="#dom-tracker">DOM Tracker</a></li>
+    <li><a href="#removal"><span class="stage-label stage5-dot"></span>Removal Flow</a></li>
+    <li><a href="#persist"><span class="stage-label stage4-dot"></span>Persist Mode</a></li>
+    <li><a href="#reconcile">Reconciliation</a></li>
+    <li><a href="#hydration">SSR &amp; Hydration</a></li>
+    <li><a href="#invariants">Invariants</a></li>
+    <li><a href="#cheatsheet">Where to look</a></li>
+  </ul>
+  <div class="sidebar-footer">
+    <a href="https://github.com/ryanlsimms/kensington" target="_blank" rel="noopener">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      GitHub
+    </a>
+  </div>
+</nav>
+
+<main>
+
+  <header>
+    <h1>Architecture</h1>
+    <div style="position: relative; top: -1.7rem;">Authored by Claude</div>
+    <p>A complete trace of what happens from <code>t.div(...)</code> through DOM teardown. Every signal subscription, every cleanup hook, every line of the pipeline.</p>
+  </header>
+
+  <div class="legend-sentinel" aria-hidden="true"></div>
+  <div class="legend-bar">
+    <span class="legend"><span class="pill" aria-hidden="true" style="background: var(--color-stage1)"></span>Construction</span>
+    <span class="legend"><span class="pill" aria-hidden="true" style="background: var(--color-stage2)"></span>String output</span>
+    <span class="legend"><span class="pill" aria-hidden="true" style="background: var(--color-stage3)"></span>DOM output</span>
+    <span class="legend"><span class="pill" aria-hidden="true" style="background: var(--color-stage4)"></span>Lifecycle</span>
+    <span class="legend"><span class="pill" aria-hidden="true" style="background: var(--color-stage5)"></span>Removal</span>
+    <span class="author">Authored by Claude</span>
+  </div>
+
+  <!-- ── Introduction ────────────────────────────────────────── -->
+
+  <section id="introduction">
+    <h2>Introduction</h2>
+
+    <p>This document is the deep-dive companion to <a href="https://github.com/ryanlsimms/kensington/blob/master/ARCHITECTURE.md" target="_blank" rel="noopener"><code>ARCHITECTURE.md</code></a>. It traces exactly what happens during the life of a Kensington tag instance, from the moment <code>t.div(...)</code> is called until the resulting DOM node and its signal subscriptions are torn down.</p>
+
+    <p>You don&rsquo;t need to read this to <em>use</em> Kensington. Read it if you&rsquo;re:</p>
+
+    <ul class="feature-list">
+      <li>Hunting a bug in the reactive system</li>
+      <li>Adding a new tag-class variant or rendering mode</li>
+      <li>Designing an integration that needs to understand cleanup semantics</li>
+      <li>Curious how a small library can support signals, SSR, hydration, and reconciliation in ~1200 lines of hand-written source</li>
+    </ul>
+
+    <p>Throughout this page, code references appear as <a class="loc" href="../esm/lib/reactive/signal.js">reactive/signal.js<span class="ln">:55</span></a>. Click to open the source file. Line numbers reflect the source at the time of writing.</p>
+  </section>
+
+  <!-- ── Concepts ────────────────────────────────────────────── -->
+
+  <section id="concepts">
+    <h2>Concepts at a glance</h2>
+
+    <p>If you&rsquo;ve never read the source before, these are the seven moving parts you&rsquo;ll see referenced throughout. Each links to the section that explains it in full.</p>
+
+    <table>
+      <thead>
+        <tr><th style="width: 12em">Concept</th><th>What it is</th><th>Lives in</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="term">Tag instance</span></td>
+          <td>The object returned by <code>t.div(...)</code>. Holds attributes, content, namespace, and lifecycle callback arrays. Two output methods: <code>toString()</code> and <code>toElement()</code>.</td>
+          <td><a class="loc" href="../esm/tag-classes/content-tag.js">content-tag.js</a></td>
+        </tr>
+        <tr>
+          <td><span class="term">Signal</span></td>
+          <td>A reactive value container. <code>.get()</code> subscribes the current effect; <code>.set()</code> schedules every subscriber. <code>.value</code> reads without subscribing.</td>
+          <td><a class="loc" href="../esm/lib/reactive/signal.js">signal.js</a></td>
+        </tr>
+        <tr>
+          <td><span class="term">effect</span></td>
+          <td>A closure that re-runs whenever any signal it reads changes. Exposes <code>pause / resume / stop</code>.</td>
+          <td><a class="loc" href="../esm/lib/reactive/signal.js">signal.js<span class="ln">:134</span></a></td>
+        </tr>
+        <tr>
+          <td><span class="term">Lifecycle</span></td>
+          <td>Per-element orchestrator that owns every signal effect, the persist mechanism, and the connect/disconnect callback chain.</td>
+          <td><a class="loc" href="../esm/lib/reactive/lifecycle.js">lifecycle.js</a></td>
+        </tr>
+        <tr>
+          <td><span class="term">DOM tracker</span></td>
+          <td>A shared <code>MutationObserver</code> that fires stop chains on removal and connect callbacks on insertion. One per document.</td>
+          <td><a class="loc" href="../esm/lib/reactive/dom-tracker.js">dom-tracker.js</a></td>
+        </tr>
+        <tr>
+          <td><span class="term">Reconciler</span></td>
+          <td>Patches DOM in place when a signal&rsquo;s value is an array. Matches by <code>data-key</code>, recursive sync, two guards for signal-managed elements.</td>
+          <td><a class="loc" href="../esm/lib/reactive/reconcile.js">reconcile.js</a></td>
+        </tr>
+        <tr>
+          <td><span class="term">persist mode</span></td>
+          <td>Opt-in via <code>toElement({ persist: true })</code>. Effects pause on removal and resume on reconnect. Disconnect/connect callbacks fire every cycle.</td>
+          <td><a class="loc" href="../esm/lib/reactive/lifecycle.js">lifecycle.js</a></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout key">
+      <div class="callout-title">The mental model in three sentences</div>
+      <p>Every tag is a plain object that becomes a string or an element on demand. When it becomes an element, a <span class="term">Lifecycle</span> wires every signal-driven value into an effect bound to that element via <code>WeakRef</code>. A document-wide <span class="term">MutationObserver</span> watches for that element&rsquo;s removal and tears the effects down (or pauses them, if persist is on).</p>
+    </div>
+  </section>
+
+  <!-- ── The Pipeline ────────────────────────────────────────── -->
+
+  <section id="pipeline">
+    <h2>The Pipeline</h2>
+
+    <p>Kensington has two output modes from one tag instance. The same <code>ContentTag</code> object can produce an HTML string (via <code>toString</code>) or a live DOM tree (via <code>toElement</code>). The pipelines diverge only at the rendering stage.</p>
+
+    <div class="mermaid">
+flowchart TD
+  A["t.div(attrs, content)"] --> B["createTag closure"]
+  B --> C["new ContentTag(options)"]
+  C --> D["collectContent<br/>flatten arrays, drop falsy"]
+  D --> E{"validationLevel<br/>!== 'off'?"}
+  E -- yes --> F["validate(tag)"]
+  E -- no --> G["tag instance returned"]
+  F --> G
+  G --> H{"User calls…"}
+  H -- "toString()" --> I["renderToString"]
+  H -- "toElement()" --> J["DOM build + Lifecycle"]
+  I --> K["HTML string"]
+  J --> L["Live element"]
+
+  style A fill:#e1f5fe,stroke:#0277bd,color:#01579b
+  style C fill:#e8f5e9,stroke:#388e3c,color:#1b5e20
+  style F fill:#fff3e0,stroke:#f57c00,color:#e65100
+  style I fill:#fff3e0,stroke:#b56727,color:#b56727
+  style J fill:#f3e5f5,stroke:#6f42c1,color:#4a148c
+  style L fill:#e8f5e9,stroke:#2da44e,color:#1b5e20
+    </div>
+
+    <p style="font-size: 0.9rem; color: var(--color-muted); max-width: 900px;">
+      Code references for each step:
+      <a class="loc" href="../esm/kensington.js">kensington.js<span class="ln">:171</span></a> (createTag closure),
+      <a class="loc" href="../esm/tag-classes/content-tag.js">content-tag.js<span class="ln">:74</span></a> (constructor),
+      <a class="loc" href="../esm/lib/render/validate.js">validate.js<span class="ln">:96</span></a> (validate),
+      <a class="loc" href="../esm/lib/render/serialize.js">serialize.js<span class="ln">:47</span></a> (renderToString),
+      <a class="loc" href="../esm/tag-classes/content-tag.js">content-tag.js<span class="ln">:136</span></a> (toElement).
+    </p>
+
+    <div class="callout note">
+      <div class="callout-title">Note</div>
+      <p><code>t</code> is an instance of the generated <code>Kensington</code> class at <a class="loc" href="../esm/kensington.js">esm/kensington.js<span class="ln">:22</span></a>. Every tag method (<code>t.div</code>, <code>t.span</code>, &hellip;) is a closure produced by <code>createTag</code> at <a class="loc" href="../esm/kensington.js">kensington.js<span class="ln">:134</span></a>. The closure captures the tag name, the allowed-attribute spec map, the <code>Klass</code> (which subclass to instantiate), and per-tag options like <code>namespace</code> or <code>contentIsLiteral</code>.</p>
+    </div>
+  </section>
+
+  <!-- ── Stage 1: Construction ───────────────────────────────── -->
+
+  <section id="construction" class="stage stage-1">
+    <h2>Stage 1: Tag Construction</h2>
+
+    <p>The closure returned by <code>createTag</code> accepts three forms of call:</p>
+    <pre><code class="language-javascript">t.div();                              // no attributes, no content
+t.div('hello');                        // content only
+t.div({ class: 'a' });                 // attributes only
+t.div({ class: 'a' }, 'hello');        // attributes, then content
+t.div({ class: 'a' }, [t.p(), t.p()]); // attributes, then array content</code></pre>
+
+    <p>The closure body (<a class="loc" href="../esm/kensington.js">kensington.js<span class="ln">:171</span></a>) disambiguates these forms by inspecting the first argument&rsquo;s prototype. If it&rsquo;s a plain object (<code>Object.prototype</code> or <code>null</code> prototype), it&rsquo;s treated as attributes; anything else (a tag instance, an array, a string, a number, a Signal) is treated as content.</p>
+
+    <section id="construction-createtag">
+      <h3>The createTag closure</h3>
+
+      <p>Each closure constructs a tag instance with the same template:</p>
+
+      <pre><code class="language-javascript">return (attributesOrContent = null, content, thirdArg) =&gt; {
+  // ... argument disambiguation ...
+  const instance = new Klass({
+    additionalGlobalAttributes: this.additionalGlobalAttributes,
+    allowedAttributeMap,    // built once when createTag was called
+    attributes,
+    content,
+    contentIsLiteral,
+    encodeContent,
+    indentationLevel: this.indentationLevel,
+    logger: this.logger,
+    namespace,
+    namespaces: this.namespaces,
+    tagName,
+    validationLevel: this.validationLevel,
+  });
+
+  if (this.validationLevel !== 'off') {
+    instance.validate(this.validationLevel);
+  }
+  return instance;
+};</code></pre>
+
+      <p>The <code>allowedAttributeMap</code> is built once when <code>createTag</code> is first called and shared across every invocation of that closure. This is a performance win: validating <code>t.div(&hellip;)</code> a million times does not rebuild the spec map a million times.</p>
+    </section>
+
+    <section id="construction-contenttag">
+      <h3>The ContentTag constructor</h3>
+
+      <div class="file-crumb">esm <span class="slash">/</span> tag-classes <span class="slash">/</span> content-tag.js</div>
+
+      <p>The constructor (<a class="loc" href="../esm/tag-classes/content-tag.js">content-tag.js<span class="ln">:74</span></a>) does three things: store options on instance fields, flatten the content via <code>collectContent</code>, and initialize the private callback arrays.</p>
+
+      <pre><code class="language-javascript">constructor(options) {
+  this.tagName = options.tagName;
+  this.attributes = options.attributes;
+  this.prop = options.attributes?.prop ?? null;
+  this.additionalGlobalAttributes = options.additionalGlobalAttributes ?? {};
+  this.allowedAttributeMap = options.allowedAttributeMap ?? new Map();
+  this.contentIsLiteral = options.contentIsLiteral;
+  this.indentationLevel = options.indentationLevel ?? 2;
+  this.namespaces = options.namespaces;
+  this.validationLevel = options.validationLevel;
+  this.logger = options.logger;
+  this.content = collectContent(options.content);
+  this.namespace = options.namespace;
+  this.encodeContent = options.encodeContent;
+}
+
+// Private fields
+#connectedCallbacks = [];
+#disconnectedCallbacks = [];
+#domElement = null;</code></pre>
+
+      <h4 style="margin-top: 1.5rem;">collectContent</h4>
+
+      <p><code>collectContent</code> (<a class="loc" href="../esm/tag-classes/content-tag.js">content-tag.js<span class="ln">:49</span></a>) recursively flattens nested arrays into a single linear list, dropping items that should not render at all:</p>
+
+      <pre><code class="language-javascript">function collectContent(items, seen = new Set()) {
+  const out = [];
+  for (const c of [].concat(items)) {
+    if ([undefined, null, '', false, true].includes(c)) {
+      continue;  // false/true arise from `someCondition && t.span(...)` patterns
+    }
+    if (Array.isArray(c)) {
+      if (seen.has(c)) { continue; } // circular reuse. Skip
+      seen.add(c);
+      out.push(...collectContent(c, seen));
+      continue;
+    }
+    out.push(c);
+  }
+  return out;
+}</code></pre>
+
+      <div class="callout key">
+        <div class="callout-title">Key behaviors</div>
+        <ul style="margin-bottom: 0;">
+          <li>Boolean <code>false</code>/<code>true</code> are dropped. This is what makes <code>condition &amp;&amp; t.span(&hellip;)</code> work.</li>
+          <li><code>null</code>, <code>undefined</code>, and empty string are dropped. Equivalent to &ldquo;render nothing.&rdquo;</li>
+          <li>Arrays flatten recursively, and a cycle-detection <code>seen</code> set prevents infinite recursion if a user accidentally creates one.</li>
+          <li>Signals pass through unchanged. They&rsquo;ll be unwrapped at render time.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="construction-validation">
+      <h3>Validation</h3>
+
+      <p>If <code>validationLevel</code> is <code>'warn'</code> or <code>'error'</code>, <code>instance.validate()</code> runs immediately after construction. The class method delegates to <a class="loc" href="../esm/lib/render/validate.js">validate.js<span class="ln">:96</span></a>:</p>
+
+      <ol class="numbered">
+        <li><strong>Collect unallowed attributes.</strong> Filter <code>Object.keys(tag.attributes)</code> through <code>attributeIsValid</code>. An attribute is allowed if it&rsquo;s <code>on</code>/<code>prop</code>, or it&rsquo;s in <code>allowedAttributeMap</code> (camelCase or kebab-case), or it matches a namespace prefix (<code>data-</code>, <code>aria-</code>, custom), or it&rsquo;s in <code>additionalGlobalAttributes</code>.</li>
+        <li><strong>Report them once</strong> via <code>showInvalid</code>. At <code>'warn'</code> this logs; at <code>'error'</code> this throws.</li>
+        <li><strong>Collect invalid attribute values.</strong> For each attribute that <em>was</em> allowed, run <code>attributeValueIsValid</code> against the type spec from the map (or the namespace-attr free-pass, or the special-cased <code>id</code>/<code>class</code>/<code>style</code> rules).</li>
+        <li><strong>Report invalid values</strong> as a single combined message. Reporting collects per-attribute strings so the user sees all problems at once, not one per refresh.</li>
+      </ol>
+
+      <div class="callout warn">
+        <div class="callout-title">Never throws at 'off'</div>
+        <p>All runtime validation goes through <a class="loc" href="../esm/lib/util/show-invalid.js">show-invalid.js</a>. At <code>'off'</code> it&rsquo;s a no-op. Production deployments run with <code>'off'</code> for performance; a malformed attribute in user data must not crash the page.</p>
+      </div>
+
+      <h4 style="margin-top: 1.5rem;">Attribute validation rules</h4>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Pattern</th>
+            <th>What passes</th>
+            <th>Where</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>on</code> or <code>prop</code></td>
+            <td>Plain object, <code>null</code>, or <code>undefined</code></td>
+            <td><a class="loc" href="../esm/lib/render/validate.js">validate.js<span class="ln">:52</span></a></td>
+          </tr>
+          <tr>
+            <td>Any attribute</td>
+            <td>Signal instances accepted unconditionally</td>
+            <td><a class="loc" href="../esm/lib/render/validate.js">validate.js<span class="ln">:56</span></a></td>
+          </tr>
+          <tr>
+            <td>Namespace attr (<code>data-*</code>, <code>aria-*</code>, &hellip;)</td>
+            <td>Any value</td>
+            <td><a class="loc" href="../esm/lib/render/validate.js">validate.js<span class="ln">:66</span></a></td>
+          </tr>
+          <tr>
+            <td><code>id</code></td>
+            <td>String not starting with a digit</td>
+            <td><a class="loc" href="../esm/lib/render/validate.js">validate.js<span class="ln">:69</span></a></td>
+          </tr>
+          <tr>
+            <td><code>class</code></td>
+            <td>String, number, or array</td>
+            <td><a class="loc" href="../esm/lib/render/validate.js">validate.js<span class="ln">:72</span></a></td>
+          </tr>
+          <tr>
+            <td><code>style</code></td>
+            <td>String, or plain object with string/number/falsy values</td>
+            <td><a class="loc" href="../esm/lib/render/validate.js">validate.js<span class="ln">:75</span></a></td>
+          </tr>
+          <tr>
+            <td>Other</td>
+            <td>Type check via <code>validateAttributeByType</code></td>
+            <td><a class="loc" href="../esm/lib/render/validate.js">validate.js<span class="ln">:23</span></a></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </section>
+
+  <!-- ── Stage 2: String Output ──────────────────────────────── -->
+
+  <section id="serialize" class="stage stage-2">
+    <h2>Stage 2: String Output</h2>
+
+    <p><code>tag.toString()</code> delegates to <a class="loc" href="../esm/lib/render/serialize.js">serialize.js<span class="ln">:47</span></a> (<code>renderToString</code>). The path:</p>
+
+    <ol class="numbered">
+      <li><strong>Filter invalid content</strong> via <code>tag.validateContent()</code>. Items that aren&rsquo;t a string, finite number, tag instance, or Signal are dropped (and reported via <code>showInvalid</code>).</li>
+      <li><strong>Open the tag.</strong> Concatenate <code>'&lt;'</code>, the tag name, the attribute string (with a leading space if non-empty), and <code>'&gt;'</code>.</li>
+      <li><strong>Render the content body</strong> via one of three paths (see below).</li>
+      <li><strong>Close the tag.</strong> Concatenate <code>'&lt;/'</code>, the tag name, <code>'&gt;'</code>.</li>
+    </ol>
+
+    <div class="callout tip">
+      <div class="callout-title">Why string concatenation, not template literals?</div>
+      <p>V8&rsquo;s rope-string optimization makes many short <code>str +=</code> calls faster than a single large template literal interpolation. Kensington&rsquo;s benchmarks bottlenecked on rendering at one point. See <a class="loc" href="../esm/lib/render/serialize.js">serialize.js<span class="ln">:50</span></a>.</p>
+    </div>
+
+    <section id="serialize-paths">
+      <h3>Three content paths</h3>
+
+      <p><code>renderToString</code> picks one of three paths based on tag type and content shape:</p>
+
+      <div class="step-grid">
+        <div class="step-card s2">
+          <div class="step-num">Path A</div>
+          <div class="step-title">Literal content</div>
+          <div class="step-body">For <code>&lt;script&gt;</code>/<code>&lt;style&gt;</code> tags (<code>contentIsLiteral</code>). Each child is joined by newlines, and non-script/style get HTML-encoded.</div>
+        </div>
+        <div class="step-card s2">
+          <div class="step-num">Path B</div>
+          <div class="step-title">Short single-line</div>
+          <div class="step-body">Fast path when content is a single string/number under 100 characters with no line breaks. Concatenates directly without the <code>stringifyContentArray</code>+<code>indent</code> overhead.</div>
+        </div>
+        <div class="step-card s2">
+          <div class="step-num">Path C</div>
+          <div class="step-title">Multi-line indented</div>
+          <div class="step-body">Everything else. Resolves Signals via <code>.get()</code>, flattens, passes to <code>stringifyContentArray</code>, then applies <code>indent</code> at the tag&rsquo;s indentation level.</div>
+        </div>
+      </div>
+
+      <p>The selector is <code>contentIsShort(tag)</code> at <a class="loc" href="../esm/lib/render/serialize.js">serialize.js<span class="ln">:9</span></a>:</p>
+
+      <pre><code class="language-javascript">export function contentIsShort(tag) {
+  if (!tag.content.length) { return true; }
+  if (tag.content.length &gt; 1) { return false; }
+  let [content] = tag.content;
+  if (content instanceof Signal) { content = content.get(); }
+  if (!['string', 'number'].includes(typeof content)) { return false; }
+  if (content.length &gt; 100) { return false; }
+  return !LINE_BREAK_TEST_REGEX.test(content);
+}</code></pre>
+
+      <h4 style="margin-top: 1.5rem;">Attribute serialization</h4>
+
+      <p><code>attributeString(tag)</code> at <a class="loc" href="../esm/lib/render/serialize.js">serialize.js<span class="ln">:32</span></a> calls <code>attributesStringFromObject</code> at <a class="loc" href="../esm/lib/render/attributes.js">attributes.js<span class="ln">:82</span></a>, which iterates the array form and serializes each pair as <code>name="value"</code> (with HTML encoding). Booleans render as the bare name (<code>disabled</code> not <code>disabled="true"</code>).</p>
+
+      <p>Function values cannot be serialized to strings. When <code>validationLevel !== 'off'</code>, the <code>onFunction</code> callback reports them; otherwise they are silently omitted.</p>
+    </section>
+  </section>
+
+  <!-- ── Stage 3: DOM Output ─────────────────────────────────── -->
+
+  <section id="render" class="stage stage-3">
+    <h2>Stage 3: DOM Output</h2>
+
+    <p><code>tag.toElement(opts)</code> is the heavy path. It builds a live DOM element, wires every signal-attribute/prop/content into an effect, registers connect/disconnect callbacks with the DOM tracker, and returns the element ready to be inserted into the document.</p>
+
+    <p>The function lives in <a class="loc" href="../esm/tag-classes/content-tag.js">content-tag.js<span class="ln">:136</span></a>. Its body is ~95 lines, much of which delegates to the lifecycle module.</p>
+
+    <div class="mermaid">
+flowchart TD
+  S(["toElement(persist)"]) --> A{"domElement<br/>cached?"}
+  A -- yes --> R1["return cached"]
+  A -- no --> B["validateContent"]
+  B --> C["createElement(NS)"]
+  C --> D["createLifecycle(element, persist)"]
+  D --> E["For each attribute"]
+  E --> E1{"Type?"}
+  E1 -- "on*+function" --> E2["addEventListener"]
+  E1 -- "Signal" --> E3["lifecycle.signalEffect"]
+  E1 -- "plain" --> E4["setAttribute"]
+  E2 & E3 & E4 --> F["For each 'on' entry"]
+  F --> F1["addEventListener"]
+  F1 --> G{"Has props?"}
+  G -- yes --> G1["For each prop<br/>Signal? signalEffect : assign"]
+  G -- no --> H["For each content node"]
+  G1 --> H
+  H --> H1{"Type?"}
+  H1 -- "ContentTag/Literal/Comment" --> H2["recurse toElement, append"]
+  H1 -- "Signal" --> H3["anchors + signalEffect → reconcile"]
+  H1 -- "plain" --> H4["createTextNode"]
+  H2 & H3 & H4 --> I["lifecycle.finalize"]
+  I --> J{"hasSignalContent?"}
+  J -- yes --> K["markContentTracked"]
+  J -- no --> L["domElement = element"]
+  K --> L
+  L --> R2["return element"]
+
+  style D fill:#e8f5e9,stroke:#2da44e,color:#1b5e20
+  style E3 fill:#e8f5e9,stroke:#2da44e,color:#1b5e20
+  style G1 fill:#e8f5e9,stroke:#2da44e,color:#1b5e20
+  style H3 fill:#e8f5e9,stroke:#2da44e,color:#1b5e20
+  style I fill:#e8f5e9,stroke:#2da44e,color:#1b5e20
+    </div>
+
+    <section id="render-cache">
+      <h3>Cache check</h3>
+
+      <p><a class="loc" href="../esm/tag-classes/content-tag.js">content-tag.js<span class="ln">:137</span></a>. If <code>#domElement</code> is set, return it. If the cached element is still attached (<code>parentNode !== null</code>), this would silently move the node, which is rarely what the caller wants. <code>showInvalid</code> reports it.</p>
+
+      <pre><code class="language-javascript">if (this.#domElement) {
+  if (this.#domElement.parentNode !== null) {
+    showInvalid(`toElement() called on a tag instance already in the DOM …`, ...);
+  }
+  return this.#domElement;
+}</code></pre>
+
+      <div class="callout note">
+        <div class="callout-title">Why cache?</div>
+        <p>So that <code>getDomElement()</code> returns a stable reference, and so that re-calling <code>toElement()</code> on the same tag instance does not produce two independent DOM nodes that fight over the same signals.</p>
+      </div>
+    </section>
+
+    <section id="render-element">
+      <h3>Element creation</h3>
+
+      <p><a class="loc" href="../esm/tag-classes/content-tag.js">content-tag.js<span class="ln">:147</span></a>. Namespace-aware creation:</p>
+
+      <pre><code class="language-javascript">const element = this.namespace
+  ? document.createElementNS(this.namespace, this.tagName)
+  : document.createElement(this.tagName);
+
+const lifecycle = createLifecycle({ element, persist });
+let hasSignalContent = false;</code></pre>
+
+      <p>SVG and MathML tags carry their namespace through the <code>createSvgContentTag</code> / <code>createMathTag</code> factories on <code>Kensington</code>. For HTML tags, namespace is undefined and <code>createElement</code> is used.</p>
+
+      <p>The <code>lifecycle</code> object is the orchestrator for every signal effect and connect/disconnect callback for this element. See <a href="#lifecycle">The Lifecycle Module</a>.</p>
+    </section>
+
+    <section id="render-attributes">
+      <h3>Attribute wiring</h3>
+
+      <p><a class="loc" href="../esm/tag-classes/content-tag.js">content-tag.js<span class="ln">:154</span></a>. Iterate the result of <code>attributeArray()</code>, which calls <code>attributesArrayFromObject</code>. The array is a flat list of <code>[name, value]</code> pairs after camelCase&rarr;kebab conversion, nested-namespace expansion, style-object stringification, and class-array joining.</p>
+
+      <p>For each pair, the dispatch is:</p>
+
+      <table>
+        <thead>
+          <tr><th>Match</th><th>Action</th><th>Line</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>onclick</code>, <code>oninput</code>, &hellip; (function value)</td>
+            <td><code>element.addEventListener(name.slice(2), fn)</code></td>
+            <td><a class="loc" href="../esm/tag-classes/content-tag.js">:155</a></td>
+          </tr>
+          <tr>
+            <td>Signal value</td>
+            <td><code>lifecycle.signalEffect(sig, apply)</code> with attribute-write logic</td>
+            <td><a class="loc" href="../esm/tag-classes/content-tag.js">:157</a></td>
+          </tr>
+          <tr>
+            <td>Plain value</td>
+            <td><code>element.setAttribute(name, value)</code></td>
+            <td><a class="loc" href="../esm/tag-classes/content-tag.js">:167</a></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>The signal-attribute apply function:</p>
+
+      <pre><code class="language-javascript">lifecycle.signalEffect(attrValue, (el, val) =&gt; {
+  if (val === false || val === null || val === undefined) {
+    el.removeAttribute(attrName);
+  } else if (val === true) {
+    el.setAttribute(attrName, '');     // bare attribute (disabled, checked)
+  } else {
+    el.setAttribute(attrName, String(val));
+  }
+});</code></pre>
+
+      <p>The effect runs once immediately to set the initial value, then re-runs every time the signal changes. <code>el</code> is the result of <code>elementRef.deref()</code> inside the lifecycle module. If the element has been garbage-collected, the effect self-stops.</p>
+    </section>
+
+    <section id="render-events">
+      <h3>Event handlers (the <code>on</code> object)</h3>
+
+      <p><a class="loc" href="../esm/tag-classes/content-tag.js">content-tag.js<span class="ln">:172</span></a>. The <code>on</code> attribute lets a user attach multiple event handlers via a single nested object:</p>
+
+      <pre><code class="language-javascript">t.button({ on: { click: handleClick, mouseenter: handleHover } }, 'Press me')</code></pre>
+
+      <p>The loop iterates <code>Object.entries(events)</code> and calls <code>element.addEventListener(eventName, handler)</code> for each function value. No cleanup is needed. Event listeners are released when the element is garbage-collected with no other references.</p>
+    </section>
+
+    <section id="render-props">
+      <h3>Prop wiring (DOM properties, not attributes)</h3>
+
+      <p><a class="loc" href="../esm/tag-classes/content-tag.js">content-tag.js<span class="ln">:181</span></a>. <code>prop</code> lets a user set DOM properties directly, not attributes. The distinction matters for things like <code>input.value</code> (DOM property reflects current state) versus <code>input[value]</code> (attribute reflects initial state).</p>
+
+      <pre><code class="language-javascript">t.input({ prop: { value: count } })       // <input>.value updates as `count` changes
+t.input({ value: count.get() })            // <input value="0">. Frozen attribute</code></pre>
+
+      <p>The dispatch checks <code>isPropWritable</code> against the live element. If the property exists on the prototype chain but is read-only, <code>showInvalid</code> reports it and the assignment is skipped. Otherwise:</p>
+
+      <pre><code class="language-javascript">if (propValue instanceof Signal) {
+  lifecycle.signalEffect(propValue, (el, val) =&gt; { el[propName] = val; });
+} else {
+  element[propName] = propValue;
+}</code></pre>
+    </section>
+
+    <section id="render-content">
+      <h3>Content wiring</h3>
+
+      <p><a class="loc" href="../esm/tag-classes/content-tag.js">content-tag.js<span class="ln">:195</span></a>. For each item in the (already-flattened) content array, three cases:</p>
+
+      <div class="step-grid">
+        <div class="step-card s3">
+          <div class="step-num">Case 1</div>
+          <div class="step-title">Tag instance</div>
+          <div class="step-body">Recurse into <code>child.toElement()</code> and append the resulting node. The child has its own lifecycle. This parent does not own its cleanup.</div>
+        </div>
+        <div class="step-card s3">
+          <div class="step-num">Case 2</div>
+          <div class="step-title">Signal value</div>
+          <div class="step-body">Insert two comment-node anchors. Wire a signal effect that calls <code>reconcile(parent, start, end, items)</code> on every change. Flip <code>hasSignalContent</code> so <code>markContentTracked</code> runs later.</div>
+        </div>
+        <div class="step-card s3">
+          <div class="step-num">Case 3</div>
+          <div class="step-title">Plain value</div>
+          <div class="step-body">If a string and not a literal-content tag, apply <code>preserveSpaces</code>. Create a text node, append. <code>String()</code> handles Symbol values gracefully.</div>
+        </div>
+      </div>
+
+      <p>The signal-content case is where reactivity meets the DOM. The anchor pair is critical. It gives the reconciler stable boundaries even when sibling content is added or removed around it:</p>
+
+      <pre><code class="language-javascript">if (node instanceof Signal) {
+  hasSignalContent = true;
+  const startAnchor = document.createComment('');
+  const endAnchor = document.createComment('');
+  element.append(startAnchor, endAnchor);
+  lifecycle.signalEffect(node, (el, val) =&gt; {
+    reconcile(el, startAnchor, endAnchor, Array.isArray(val) ? val : [val]);
+  });
+  continue;
+}</code></pre>
+
+      <div class="callout key">
+        <div class="callout-title">Anchors persist for the element&rsquo;s lifetime</div>
+        <p>The two comment nodes are held only by the effect&rsquo;s closure (not by the user). <code>markContentTracked(element)</code> tells the reconciler &ldquo;don&rsquo;t replace this element&rsquo;s children even if a parent reconcile sees a fresh element with different children&rdquo;. See <a class="loc" href="../esm/lib/reactive/reconcile.js">reconcile.js<span class="ln">:51</span></a>.</p>
+      </div>
+    </section>
+
+    <section id="render-finalize">
+      <h3>Lifecycle finalize</h3>
+
+      <p><a class="loc" href="../esm/tag-classes/content-tag.js">content-tag.js<span class="ln">:216</span></a>. After all wiring, the lifecycle is finalized:</p>
+
+      <pre><code class="language-javascript">lifecycle.finalize({
+  connectCallbacks: this.#connectedCallbacks,
+  disconnectCallbacks: this.#disconnectedCallbacks,
+  onCleared: () =&gt; { if (this.#domElement === element) { this.#domElement = null; } },
+  onReconnect: () =&gt; { this.#domElement = element; },
+});
+
+if (hasSignalContent) {
+  markContentTracked(element);
+}
+
+this.#domElement = element;
+return element;</code></pre>
+
+      <p>The four callbacks passed to <code>finalize</code> are what make the lifecycle module reusable without coupling it to <code>ContentTag</code>:</p>
+
+      <ul>
+        <li><strong><code>connectCallbacks</code></strong>. User-registered via <code>addConnectedCallback</code>. Fire on every insertion (only re-fires on reconnect when <code>persist</code> is true).</li>
+        <li><strong><code>disconnectCallbacks</code></strong>. User-registered via <code>addDisconnectedCallback</code>. Fire on every removal.</li>
+        <li><strong><code>onCleared</code></strong>. Internal: reset <code>#domElement</code> to <code>null</code> after removal so a future <code>getDomElement()</code> returns <code>null</code>.</li>
+        <li><strong><code>onReconnect</code></strong>. Internal: restore <code>#domElement</code> to the live element on re-insertion under <code>persist</code>.</li>
+      </ul>
+    </section>
+  </section>
+
+  <!-- ── Signal Anatomy ──────────────────────────────────────── -->
+
+  <section id="signal-anatomy">
+    <h2>Signal Anatomy</h2>
+
+    <p>Before tracing the lifecycle module&rsquo;s internals, here&rsquo;s how a Signal actually works. The full implementation is ~200 lines at <a class="loc" href="../esm/lib/reactive/signal.js">signal.js</a>.</p>
+
+    <section id="signal-subscribe">
+      <h3>Subscription via <code>.get()</code></h3>
+
+      <p>A Signal&rsquo;s subscribers are kept in a private <code>Set</code> on the instance. The mechanism that wires up a subscription is the module-scoped <code>currentEffect</code> reference, set during an <code>effect()</code> or <code>computed()</code> run.</p>
+
+      <pre><code class="language-javascript">// signal.js:63
+get() {
+  if (currentEffect !== null && !this.#subscribers.has(currentEffect)) {
+    this.#subscribers.add(currentEffect);
+    const sub = currentEffect;
+    sub._cleanups.push(() =&gt; this.#subscribers.delete(sub));
+  }
+  return this.#value;
+}</code></pre>
+
+      <p>Key consequences:</p>
+
+      <ul>
+        <li>Calling <code>.get()</code> outside an effect/computed registers no subscription. It&rsquo;s just a read.</li>
+        <li>Calling <code>.get()</code> twice in the same effect is idempotent. The <code>has(currentEffect)</code> check prevents duplicates.</li>
+        <li>The cleanup function is pushed to the effect&rsquo;s <code>_cleanups</code> array, which the <code>track</code> helper drains and resets on each re-run.</li>
+      </ul>
+
+      <div class="callout note">
+        <div class="callout-title"><code>.value</code> and <code>.toJSON()</code> never subscribe</div>
+        <p>If you need the current value without registering a dependency (for example, inside an <code>effect</code> body that should not re-run when this particular signal changes), use <code>.value</code> (getter, no tracking) or pass the signal to <code>JSON.stringify</code> (which calls <code>.toJSON()</code>, also no tracking). See <a class="loc" href="../esm/lib/reactive/signal.js">signal.js<span class="ln">:72</span></a> and <a class="loc" href="../esm/lib/reactive/signal.js">:104</a>.</p>
+      </div>
+    </section>
+
+    <section id="signal-write">
+      <h3>Writes and the microtask flush</h3>
+
+      <p><code>.set(next)</code> at <a class="loc" href="../esm/lib/reactive/signal.js">signal.js<span class="ln">:76</span></a> compares via <code>Object.is</code> and bails on equality, then iterates <code>this.#subscribers</code> to schedule effect re-runs and immediately call computed-update closures.</p>
+
+      <div class="mermaid">
+sequenceDiagram
+  participant U as User code
+  participant S as Signal
+  participant Q as pending Set
+  participant Mt as queueMicrotask
+  participant E as effect.run
+
+  U-&gt;&gt;S: .set(next)
+  S-&gt;&gt;S: Object.is(next, current)?
+  alt equal
+    S--&gt;&gt;U: return early
+  else changed
+    S-&gt;&gt;S: private value updated
+    loop each subscriber
+      alt subscriber is effect
+        S-&gt;&gt;Q: scheduleRun(fn)
+        S-&gt;&gt;Mt: queueMicrotask(flush)
+      else subscriber is computed.update
+        S-&gt;&gt;E: fn(value) synchronously
+      end
+    end
+    S--&gt;&gt;U: return
+    Mt-&gt;&gt;Q: flush()
+    loop each pending fn
+      Q-&gt;&gt;E: run()
+    end
+  end
+    </div>
+
+      <p>Effects are batched. Multiple <code>.set()</code> calls in the same synchronous turn coalesce into a single re-run per effect because <code>pending</code> is a <code>Set</code> and <code>scheduleRun</code> is a no-op if the effect is already pending.</p>
+
+      <p>Computed updates run synchronously. This is intentional. Computed signals should never &ldquo;lag&rdquo; their inputs. A computed reading <code>a.get() + b.get()</code> must always be consistent with the latest values of <code>a</code> and <code>b</code>.</p>
+
+      <div class="callout warn">
+        <div class="callout-title">Error isolation in batches</div>
+        <p><code>flush()</code> wraps each effect run in <code>try/catch</code> and re-throws via <code>queueMicrotask</code>. This prevents one effect&rsquo;s thrown error from aborting the batch. Every queued effect still runs. See <a class="loc" href="../esm/lib/reactive/signal.js">signal.js<span class="ln">:32</span></a>.</p>
+      </div>
+    </section>
+
+    <section id="signal-effect">
+      <h3>effect()</h3>
+
+      <p><code>effect(fn)</code> at <a class="loc" href="../esm/lib/reactive/signal.js">signal.js<span class="ln">:134</span></a> creates a tracked closure that re-runs whenever any signal read inside it changes:</p>
+
+      <pre><code class="language-javascript">export function effect(fn) {
+  if (ssrDepth &gt; 0) {
+    return { pause() {}, resume() {}, stop() {} };
+  }
+  let paused = false;
+  let destroyed = false;
+  function run() {
+    if (paused) { return; }
+    track(run, fn);
+  }
+  run._cleanups = [];
+  run._isEffect = true;
+  run();
+  return {
+    pause() {
+      paused = true;
+      pending.delete(run);
+      for (const cleanup of run._cleanups) { cleanup(); }
+      run._cleanups = [];
+    },
+    resume() {
+      if (destroyed) { return; }
+      paused = false;
+      run();
+    },
+    stop() {
+      this.pause();
+      destroyed = true;
+    },
+  };
+}</code></pre>
+
+      <p>The three returned methods give the caller control:</p>
+
+      <div class="compare-grid">
+        <div>
+          <h4>pause()</h4>
+          <p style="margin: 0; font-size: 0.88rem;">Drains <code>_cleanups</code> (unsubscribing from every signal) and removes itself from <code>pending</code>. The effect won&rsquo;t re-run until <code>resume()</code> is called. Can be paused/resumed any number of times.</p>
+        </div>
+        <div>
+          <h4>resume()</h4>
+          <p style="margin: 0; font-size: 0.88rem;">Calls <code>run()</code> immediately, which re-tracks subscriptions to every signal it reads. No-op if <code>destroyed</code> is true.</p>
+        </div>
+      </div>
+
+      <p><code>stop()</code> calls <code>pause()</code> and sets <code>destroyed = true</code>, making <code>resume()</code> a permanent no-op. This is the cleanup path when an element is removed without <code>persist</code>.</p>
+
+      <p>The <code>track()</code> helper at <a class="loc" href="../esm/lib/reactive/signal.js">signal.js<span class="ln">:113</span></a> is what sets <code>currentEffect</code> for the duration of a run, ensuring any <code>.get()</code> calls inside subscribe back. It also clears stale subscriptions from the previous run. If an effect reads <code>signalA</code> on one run and not on the next, the subscription to <code>signalA</code> is severed automatically.</p>
+    </section>
+
+    <section id="signal-computed">
+      <h3>computed()</h3>
+
+      <p><code>computed(fn)</code> at <a class="loc" href="../esm/lib/reactive/signal.js">signal.js<span class="ln">:184</span></a> creates a Signal whose value is derived from other signals. Updates are synchronous (unlike effects).</p>
+
+      <pre><code class="language-javascript">export function computed(fn) {
+  const s = new Signal(undefined);
+  function update() {
+    track(update, () =&gt; {
+      derivedWriteDepth++;
+      try {
+        s.set(fn());
+      } catch (err) {
+        rethrowAsync(err);
+      } finally {
+        derivedWriteDepth--;
+      }
+    });
+  }
+  update._cleanups = [];
+  update();
+  stopFns.set(s, () =&gt; {
+    for (const cleanup of update._cleanups) { cleanup(); }
+    update._cleanups = [];
+  });
+  derivedSignals.add(s);
+  return s;
+}</code></pre>
+
+      <p>Three small but important details:</p>
+
+      <ol>
+        <li><code>derivedWriteDepth</code> is incremented before the <code>fn()</code> call so that <code>s.set()</code> can succeed even though <code>s</code> is in the <code>derivedSignals</code> WeakSet (which normally blocks external writes).</li>
+        <li>Errors are caught and re-thrown asynchronously via <code>rethrowAsync</code> so that a throw in one computed doesn&rsquo;t corrupt other parts of the dependency graph.</li>
+        <li><code>stopFns.set(s, &hellip;)</code> stores a cleanup closure keyed by the Signal. <code>Signal.stop()</code> at <a class="loc" href="../esm/lib/reactive/signal.js">signal.js<span class="ln">:95</span></a> retrieves and runs it, properly tearing down the derived computation.</li>
+      </ol>
+
+      <p><code>Signal.prototype.transform = fn =&gt; computed(() =&gt; fn(this.get()))</code> at <a class="loc" href="../esm/lib/reactive/signal.js">signal.js<span class="ln">:213</span></a> is just sugar for the same pattern. It&rsquo;s defined on the prototype after <code>computed</code> is in scope to avoid a forward reference.</p>
+    </section>
+  </section>
+
+  <!-- ── The Lifecycle Module ────────────────────────────────── -->
+
+  <section id="lifecycle" class="stage stage-4">
+    <h2>The Lifecycle Module</h2>
+
+    <div class="file-crumb">esm <span class="slash">/</span> lib <span class="slash">/</span> reactive <span class="slash">/</span> lifecycle.js</div>
+
+    <p><code>createLifecycle({ element, persist })</code> at <a class="loc" href="../esm/lib/reactive/lifecycle.js">lifecycle.js<span class="ln">:10</span></a> is a closure factory. Each tag&rsquo;s <code>toElement</code> creates one. The returned object exposes two methods: <code>signalEffect(sig, apply)</code> and <code>finalize({&hellip;})</code>.</p>
+
+    <p>This module is the entire home of the persist mechanism. No other file decides whether to pause-or-stop on removal.</p>
+
+    <h3>Internal state</h3>
+
+    <pre><code class="language-javascript">export function createLifecycle({ element, persist }) {
+  const stops = [];                              // pause-or-stop closures, one per signal effect
+  const resumables = persist ? [] : null;        // effect objects for resume() on reconnect
+  const elementRef = new WeakRef(element);       // shared across every signalEffect
+
+  function pauseOrStop(eff) {
+    return () =&gt; persist ? eff.pause() : eff.stop();
+  }
+
+  function wireEffect(eff) {
+    stops.push(pauseOrStop(eff));
+    if (resumables !== null) { resumables.push(eff); }
+  }
+  // ...
+}</code></pre>
+
+    <p><code>resumables</code> is allocated only when <code>persist</code> is true. The common (non-persist) case has zero overhead.</p>
+
+    <h3>signalEffect</h3>
+
+    <pre><code class="language-javascript">signalEffect(sig, apply) {
+  const eff = effect(() =&gt; {
+    const el = elementRef.deref();
+    if (!el) { eff.stop(); return; }
+    apply(el, sig.get());
+  });
+  wireEffect(eff);
+  return eff;
+}</code></pre>
+
+    <p>The effect runs once synchronously when created, applying the initial signal value. On subsequent runs (triggered by signal writes), the effect dereferences the <code>WeakRef</code>. If the element has been garbage-collected, the effect self-stops. No zombie subscriptions.</p>
+
+    <div class="callout tip">
+      <div class="callout-title">WeakRef is the GC safety net</div>
+      <p>If a user creates a tag, calls <code>toElement</code>, and then loses every reference without ever inserting the element, the element is eligible for GC. The Signal&rsquo;s subscriber set would otherwise hold the effect closure, which would hold the element by reference. <code>WeakRef</code> breaks the cycle.</p>
+    </div>
+
+    <h3>finalize</h3>
+
+    <p><code>finalize</code> registers the stop chain and (if needed) the connect callback with <code>dom-tracker</code>. Two branches:</p>
+
+    <div class="compare-grid">
+      <div>
+        <h4>persist: false (default)</h4>
+        <p style="font-size: 0.88rem; margin: 0 0 0.4rem;">On removal, every effect&rsquo;s <code>stop()</code> is called. Permanent teardown. Disconnect callbacks fire once. Connect callback (if any) fires once on the first insertion only.</p>
+      </div>
+      <div>
+        <h4>persist: true</h4>
+        <p style="font-size: 0.88rem; margin: 0 0 0.4rem;">On removal, every effect&rsquo;s <code>pause()</code> is called. The stop chain is rebuilt for the next cycle via <code>reFireAndRegister</code>. On reconnect, every effect&rsquo;s <code>resume()</code> is called and the connect callback re-fires.</p>
+      </div>
+    </div>
+
+    <h4>The disconnect chain</h4>
+
+    <pre><code class="language-javascript">function registerDisconnectChain() {
+  trackForStop(element, () =&gt; { for (const stop of stops) { stop(); } });
+  if (onCleared) { addOnStop(element, onCleared); }
+  for (const fn of disconnectCallbacks) {
+    addOnStop(element, () =&gt; fn.call(element, element));
+  }
+}</code></pre>
+
+    <p><code>trackForStop</code> registers the first link of the chain (running every signal effect&rsquo;s <code>pauseOrStop</code> closure). <code>addOnStop</code> appends to that chain. First the <code>onCleared</code> hook (which resets the tag&rsquo;s <code>#domElement</code> cache), then each user-registered disconnect callback.</p>
+
+    <h4>The persist rebuild</h4>
+
+    <p>When <code>persist</code> is true, the chain is rebuilt every cycle so disconnect callbacks fire on every removal, not just the first:</p>
+
+    <pre><code class="language-javascript">if (persist) {
+  const reFireAndRegister = () =&gt; {
+    trackForStop(element, () =&gt; {});                 // fresh empty stop
+    if (onCleared) { addOnStop(element, onCleared); }
+    for (const fn of disconnectCallbacks) {
+      addOnStop(element, () =&gt; fn.call(element, element));
+    }
+    addOnStop(element, reFireAndRegister);             // chain self-perpetuates
+  };
+  addOnStop(element, reFireAndRegister);
+}</code></pre>
+
+    <h4>The connect path</h4>
+
+    <pre><code class="language-javascript">const needsConnect = persist || connectCallbacks.length &gt; 0;
+if (needsConnect) {
+  let firstConnection = true;
+  trackForConnect(element, () =&gt; {
+    if (!firstConnection) {
+      if (onReconnect) { onReconnect(); }
+      if (resumables !== null &amp;&amp; resumables.length &gt; 0) {
+        for (const eff of resumables) {
+          eff.resume();
+          addOnStop(element, () =&gt; eff.pause());
+        }
+      }
+    }
+    firstConnection = false;
+    for (const fn of connectCallbacks) { fn.call(element, element); }
+  }, persist);
+}</code></pre>
+
+    <p>The shared callback-fire loop runs on both first connection and reconnection. Only the reconnect-specific work (<code>onReconnect</code>, <code>resume</code>, re-pause wiring) is gated on <code>!firstConnection</code>.</p>
+  </section>
+
+  <!-- ── The DOM Tracker ─────────────────────────────────────── -->
+
+  <section id="dom-tracker">
+    <h2>The DOM Tracker</h2>
+
+    <div class="file-crumb">esm <span class="slash">/</span> lib <span class="slash">/</span> reactive <span class="slash">/</span> dom-tracker.js</div>
+
+    <p>A shared <code>MutationObserver</code> watches <code>document.documentElement</code> for any subtree mutation. When tracked elements are added or removed, it fires registered callbacks. This is what closes the loop between &ldquo;element removed from the DOM&rdquo; and &ldquo;effects stop, signals unsubscribe.&rdquo;</p>
+
+    <h3>The unified entries map</h3>
+
+    <pre><code class="language-javascript">// dom-tracker.js:3
+const entries = new Map();
+const contentTracked = new WeakSet();
+let observer = null;</code></pre>
+
+    <p>Each tracked element has a single record in <code>entries</code>:</p>
+
+    <table>
+      <thead>
+        <tr><th>Field</th><th>Type</th><th>Set by</th><th>Cleared on</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>stop</code></td>
+          <td><code>() =&gt; void</code></td>
+          <td><code>trackForStop</code>; extended by <code>addOnStop</code></td>
+          <td>Element removal (always)</td>
+        </tr>
+        <tr>
+          <td><code>connect</code></td>
+          <td><code>() =&gt; void</code></td>
+          <td><code>trackForConnect</code></td>
+          <td>Element removal, only if <code>persist</code> is false</td>
+        </tr>
+        <tr>
+          <td><code>persist</code></td>
+          <td><code>boolean</code></td>
+          <td><code>trackForConnect</code></td>
+          <td>Element removal, only if <code>persist</code> was false</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>The entry survives stop-cleanup as long as <code>persist</code> is true and <code>connect</code> is still set. This is how reconnection works. The entry is deleted entirely only when both <code>stop</code> and <code>connect</code> are gone.</p>
+
+    <h3>The observer</h3>
+
+    <pre><code class="language-javascript">// dom-tracker.js:53
+function buildObserver() {
+  if (observer !== null) { return; }
+  observer = new MutationObserver(records =&gt; {
+    if (entries.size === 0) { return; }
+    for (const record of records) {
+      for (const node of record.removedNodes) { stopRemoved(node); }
+      for (const node of record.addedNodes)   { fireConnected(node); }
+    }
+  });
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+}</code></pre>
+
+    <p>The observer is built lazily on first <code>trackForStop</code>/<code>trackForConnect</code> call. There is exactly one for the whole document. Not one per tracked element.</p>
+
+    <p>The <code>entries.size === 0</code> short-circuit means that if every tracked element has been cleaned up, mutation records are skipped without any per-record work. The observer itself remains active because reattaching it would lose the document.body subtree.</p>
+
+    <h3>The <code>visit</code> helper</h3>
+
+    <p>Both <code>stopRemoved</code> and <code>fireConnected</code> need to handle two cases for a mutation record&rsquo;s node: the node itself might be tracked, or it might be an ancestor of one or more tracked elements. <code>visit</code> abstracts this:</p>
+
+    <pre><code class="language-javascript">// dom-tracker.js:27
+function visit(node, fn) {
+  if (entries.has(node)) {
+    fn(node, entries.get(node));
+    return;
+  }
+  if (node.nodeType !== 1) { return; }              // text nodes etc. have no descendants
+  for (const [el, entry] of [...entries]) {         // snapshot copy in case fn mutates
+    if (node.contains(el)) { fn(el, entry); }
+  }
+}</code></pre>
+
+    <div class="callout note">
+      <div class="callout-title">Why the snapshot copy?</div>
+      <p><code>stopRemoved</code> deletes from <code>entries</code> inside the callback. Iterating a live Map while deleting from it is allowed in spec but can be subtle. The snapshot makes the iteration order and completeness obvious.</p>
+    </div>
+
+    <h3>API surface</h3>
+
+    <table>
+      <thead>
+        <tr><th>Export</th><th>Purpose</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><a class="loc" href="../esm/lib/reactive/dom-tracker.js">trackForStop(el, fn)<span class="ln">:69</span></a></td>
+          <td>Register the initial stop function. Replaces any prior one.</td>
+        </tr>
+        <tr>
+          <td><a class="loc" href="../esm/lib/reactive/dom-tracker.js">trackForConnect(el, fn, persist)<span class="ln">:74</span></a></td>
+          <td>Register the connect callback. <code>persist</code> controls re-fire and entry survival.</td>
+        </tr>
+        <tr>
+          <td><a class="loc" href="../esm/lib/reactive/dom-tracker.js">addOnStop(el, fn)<span class="ln">:81</span></a></td>
+          <td>Append to the stop chain. No-op if <code>stop</code> isn&rsquo;t set.</td>
+        </tr>
+        <tr>
+          <td><a class="loc" href="../esm/lib/reactive/dom-tracker.js">markContentTracked(el)<span class="ln">:88</span></a></td>
+          <td>Flag an element as &ldquo;owns signal-content anchors&rdquo; for reconcile.</td>
+        </tr>
+        <tr>
+          <td><a class="loc" href="../esm/lib/reactive/dom-tracker.js">isTracked(el)<span class="ln">:92</span></a></td>
+          <td>Read-only: does this element have an active stop registration?</td>
+        </tr>
+        <tr>
+          <td><a class="loc" href="../esm/lib/reactive/dom-tracker.js">isContentTracked(el)<span class="ln">:96</span></a></td>
+          <td>Read-only: was this element flagged via <code>markContentTracked</code>?</td>
+        </tr>
+        <tr>
+          <td><a class="loc" href="../esm/lib/reactive/dom-tracker.js">stopTracked(el)<span class="ln">:100</span></a></td>
+          <td>Force teardown. Used by <code>reconcile</code> for discarded fresh nodes.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── Removal Flow ────────────────────────────────────────── -->
+
+  <section id="removal" class="stage stage-5">
+    <h2>Removal Flow</h2>
+
+    <p>An element is removed when something calls <code>element.remove()</code>, <code>parent.removeChild(element)</code>, <code>parent.replaceChildren(...)</code>, etc. The browser fires a mutation record. The shared <code>MutationObserver</code> picks it up.</p>
+
+    <div class="mermaid">
+sequenceDiagram
+  participant U as User code
+  participant B as Browser
+  participant Mo as MutationObserver
+  participant T as DOM tracker
+  participant L as Lifecycle stops
+  participant S as Signals
+
+  U-&gt;&gt;B: element.remove()
+  B-&gt;&gt;Mo: MutationRecord (removedNodes)
+  Mo-&gt;&gt;T: stopRemoved(node)
+  T-&gt;&gt;T: visit(node, fn)
+  Note over T: For node itself or any tracked descendant
+  T-&gt;&gt;T: clearStop(entry, el)
+  Note over T: delete entry.stop, then connect+persist if not persisted, then entry if empty
+  T-&gt;&gt;L: stop()
+  Note over L: Runs every chained fn in order. First pauseOrStop for each effect, then onCleared, then each disconnectCallback
+  L-&gt;&gt;S: eff.stop() or eff.pause()
+  Note over S: Drains _cleanups, each removes from subscribers
+    </div>
+
+    <h3>Step by step</h3>
+
+    <ol class="numbered">
+      <li><strong>Browser fires the MutationRecord.</strong> <code>record.removedNodes</code> contains the directly-removed node(s). The element itself may or may not be the directly-removed node. It could be a descendant of one.</li>
+      <li><strong><code>stopRemoved(node)</code> at <a class="loc" href="../esm/lib/reactive/dom-tracker.js">dom-tracker.js<span class="ln">:38</span></a>.</strong> Calls <code>visit(node, fn)</code> which finds the tracked entry for the node itself or any tracked descendant.</li>
+      <li><strong><code>clearStop(entry, el)</code>.</strong> Deletes <code>entry.stop</code>. If not persisted, also deletes <code>connect</code> and <code>persist</code>. If both halves are gone, removes the entry from the map entirely.</li>
+      <li><strong>The captured <code>stop</code> function runs.</strong> This is the chained closure built up via <code>trackForStop</code> + every <code>addOnStop</code>.</li>
+      <li><strong>For each signal effect: <code>eff.pause()</code> or <code>eff.stop()</code>.</strong> Driven by the <code>persist</code> flag. <code>pause</code> drains <code>_cleanups</code> (unsubscribing from each Signal); <code>stop</code> does the same and sets <code>destroyed</code>.</li>
+      <li><strong><code>onCleared</code> runs.</strong> If the tag&rsquo;s <code>#domElement</code> still points at this element, set it to <code>null</code>.</li>
+      <li><strong>Each user disconnect callback runs.</strong> In registration order, each <code>fn.call(element, element)</code>.</li>
+    </ol>
+
+    <div class="callout warn">
+      <div class="callout-title">Removal vs <code>stopTracked</code></div>
+      <p>The removal path above is triggered automatically by the MutationObserver. <code>stopTracked(el)</code> at <a class="loc" href="../esm/lib/reactive/dom-tracker.js">dom-tracker.js<span class="ln">:100</span></a> does the same teardown synchronously without waiting for a mutation record. The reconciler calls this on discarded &ldquo;fresh&rdquo; nodes. Nodes that were built up by a parent <code>toElement</code> but then thrown away in favor of patching an existing node.</p>
+    </div>
+  </section>
+
+  <!-- ── Persist Mode ────────────────────────────────────────── -->
+
+  <section id="persist" class="stage stage-4">
+    <h2>Persist Mode</h2>
+
+    <p>By default, removal is permanent: effects stop, the tag&rsquo;s <code>#domElement</code> cache clears, and the user&rsquo;s disconnect callbacks fire. If the element is re-inserted later, the effects are gone. The signal subscriptions need to be rebuilt by calling <code>toElement()</code> again.</p>
+
+    <p><code>toElement({ persist: true })</code> changes this. Effects pause instead of stop. The tag&rsquo;s <code>#domElement</code> stays cleared during the gap, then restores when the element returns. The disconnect-callback chain rebuilds so it fires on every cycle, not just the first.</p>
+
+    <p>This is the pattern you want for elements that move between containers without losing identity. Tabs that swap, modals that hide and reshow, custom elements whose <code>connectedCallback</code> fires multiple times.</p>
+
+    <div class="mermaid">
+sequenceDiagram
+  participant U as User code
+  participant E as Element
+  participant Mo as MutationObserver
+  participant L as Lifecycle
+  participant Sg as Signals
+
+  Note over E,L: Initial render with persist true
+  U-&gt;&gt;E: parent.append(element)
+  Mo-&gt;&gt;L: fireConnected, first connect cb run
+
+  Note over E: User updates signals, effects re-run normally
+  U-&gt;&gt;Sg: signal.set(v)
+  Sg-&gt;&gt;L: scheduled effect runs
+
+  Note over E,L: First removal
+  U-&gt;&gt;E: parent.removeChild(element)
+  Mo-&gt;&gt;L: stopRemoved, each eff pauses
+  L-&gt;&gt;L: onCleared (clear domElement)
+  L-&gt;&gt;L: disconnectCallbacks fire
+  L-&gt;&gt;L: reFireAndRegister installs new stop chain
+  Note over Sg: Subscriptions cleared, .set() during gap does nothing
+
+  Note over E,L: Re-insertion
+  U-&gt;&gt;E: parent.append(element)
+  Mo-&gt;&gt;L: fireConnected
+  L-&gt;&gt;L: onReconnect (restore domElement)
+  L-&gt;&gt;L: for each eff, call eff.resume() (re-subscribes, applies current value)
+  L-&gt;&gt;L: addOnStop(eff.pause). Re-arm for next removal
+  L-&gt;&gt;L: connect callbacks fire again
+    </div>
+
+    <h3>The persist invariants</h3>
+
+    <ol class="numbered">
+      <li><strong>Pause, don&rsquo;t stop.</strong> Every signal effect is captured in <code>resumables</code>. On removal, <code>pauseOrStop</code> picks <code>pause()</code>. The effect closure still exists. It just isn&rsquo;t subscribed to anything.</li>
+      <li><strong>Disconnect callbacks re-arm.</strong> <code>reFireAndRegister</code> installs a fresh stop chain after each removal so that the next removal fires them again.</li>
+      <li><strong>Reconnect resumes.</strong> <code>eff.resume()</code> calls <code>run()</code>, which re-tracks subscriptions and applies the current signal value. Any updates that happened during the gap are visible immediately.</li>
+      <li><strong>Resume wires its own pause.</strong> Right after <code>eff.resume()</code>, the lifecycle adds <code>() =&gt; eff.pause()</code> to the new stop chain. The cycle continues.</li>
+      <li><strong>Connect callbacks fire every cycle.</strong> On the first insertion AND on every reconnect. This is the only way they can fire more than once.</li>
+    </ol>
+
+    <h3>Without persist vs. with persist</h3>
+
+    <table>
+      <thead>
+        <tr><th></th><th><code>persist: false</code></th><th><code>persist: true</code></th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>On removal: effects</td>
+          <td><code>eff.stop()</code>. Permanent</td>
+          <td><code>eff.pause()</code>. Temporary</td>
+        </tr>
+        <tr>
+          <td>On removal: <code>connectCallbacks</code> entry</td>
+          <td>Deleted from <code>entries</code> map</td>
+          <td>Survives in <code>entries</code> map</td>
+        </tr>
+        <tr>
+          <td>On removal: disconnect callbacks</td>
+          <td>Fire once total</td>
+          <td>Fire on every removal cycle</td>
+        </tr>
+        <tr>
+          <td>On reinsert: connect callbacks</td>
+          <td>Do not fire (entry is gone)</td>
+          <td>Fire every cycle</td>
+        </tr>
+        <tr>
+          <td>On reinsert: signal state</td>
+          <td>Subscriptions gone; tag must be rebuilt</td>
+          <td><code>eff.resume()</code> reconnects with current value</td>
+        </tr>
+        <tr>
+          <td>Memory footprint</td>
+          <td>Lower. <code>resumables</code> is <code>null</code></td>
+          <td>Higher. Effects + chain survive</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout key">
+      <div class="callout-title">When NOT to use persist</div>
+      <p>If <code>connectedCallback</code> creates a fresh element each time (the common Web Components pattern), <code>persist</code> is wrong. The old paused effects become orphaned when the new element replaces them. Use <code>persist: true</code> only when you hold the same DOM node across reconnections.</p>
+    </div>
+  </section>
+
+  <!-- ── Reconciliation ──────────────────────────────────────── -->
+
+  <section id="reconcile">
+    <h2>Reconciliation</h2>
+
+    <div class="file-crumb">esm <span class="slash">/</span> lib <span class="slash">/</span> reactive <span class="slash">/</span> reconcile.js</div>
+
+    <p>Every signal-content update calls <code>reconcile</code> at <a class="loc" href="../esm/lib/reactive/reconcile.js">reconcile.js<span class="ln">:72</span></a>. The function patches the DOM in place rather than tearing it down and rebuilding. It works for both single-value and array-valued signals. <code>toElement</code> wraps non-arrays as <code>[val]</code> before passing them in, so the algorithm only has to handle the array case.</p>
+
+    <p>Reconciliation runs between a pair of comment anchors set up at element construction. The anchors give the function stable boundaries: <code>startAnchor.nextSibling</code> is the first child to consider, <code>endAnchor</code> is the sentinel.</p>
+
+    <h3>Keyed matching</h3>
+
+    <p>Each item can have a <code>data-key</code> attribute (or <code>dataKey</code> shorthand). Items with keys are matched against existing children with the same key. Not against the same positional index. This is what enables efficient reordering:</p>
+
+    <pre><code class="language-javascript">// reconcile.js:72
+export function reconcile(parent, startAnchor, endAnchor, newItems) {
+  const oldNodes = new Map();
+  let node = startAnchor.nextSibling;
+  while (node !== endAnchor) {
+    const key = node.dataset?.key;
+    if (key !== undefined) { oldNodes.set(key, node); }
+    node = node.nextSibling;
+  }
+  // ...
+}</code></pre>
+
+    <p>Without a key, items are matched positionally (and recreated if shape differs).</p>
+
+    <h3>syncNode. The recursive patcher</h3>
+
+    <p><code>syncNode(existing, fresh)</code> at <a class="loc" href="../esm/lib/reactive/reconcile.js">reconcile.js<span class="ln">:19</span></a> handles a matched pair. If the node types differ, the fresh node replaces the existing one. If they&rsquo;re both text nodes, just <code>nodeValue</code> is patched. If they&rsquo;re both elements:</p>
+
+    <ol>
+      <li>Apply every fresh attribute. Remove any old attribute not present in fresh.</li>
+      <li>Recursively syncNode each child pair.</li>
+    </ol>
+
+    <h3>The two guards</h3>
+
+    <div class="callout key">
+      <div class="callout-title">Why guards are needed</div>
+      <p>The &ldquo;fresh&rdquo; node passed to <code>syncNode</code> is the result of calling <code>itemToNode(item)</code>, which calls <code>item.toElement()</code>. That fresh node is fully wired with its own signal effects pointing at the fresh element. If we patched attributes/children naively, we&rsquo;d corrupt the live element&rsquo;s effects.</p>
+    </div>
+
+    <p>Two guards prevent this:</p>
+
+    <pre><code class="language-javascript">// reconcile.js:43
+if (!isTracked(existing)) {
+  for (const attr of oldAttrNames) {
+    existing.removeAttribute(attr);
+  }
+}
+// reconcile.js:51
+if (!isContentTracked(existing)) {
+  const oldChildren = [...existing.childNodes];
+  const newChildren = [...fresh.childNodes];
+  // ... positional sync ...
+}</code></pre>
+
+    <ul>
+      <li><strong><code>isTracked(existing)</code></strong>. If true, the existing element has signal-managed attributes. Don&rsquo;t remove any attribute that wasn&rsquo;t on the fresh node. Those signal effects haven&rsquo;t yet applied their initial values to <code>fresh</code> when reconcile inspects it.</li>
+      <li><strong><code>isContentTracked(existing)</code></strong>. If true, the existing element holds signal-content comment anchors. Don&rsquo;t patch its children at all. Replacing the anchors would break the live content effects whose closures still reference them.</li>
+    </ul>
+
+    <p>After patching, <code>stopTracked(fresh)</code> tears down the discarded fresh node&rsquo;s effects so they don&rsquo;t leak.</p>
+
+    <h3>Insertion, reuse, leftover cleanup</h3>
+
+    <p>Back in <code>reconcile()</code> itself, the main loop walks <code>newItems</code> in order. For each item:</p>
+
+    <ol class="numbered">
+      <li>Skip <code>null</code>/<code>undefined</code>/<code>false</code> items.</li>
+      <li>If the item has a key and matches an existing keyed node, call <code>syncNode(old, itemToNode(item))</code>. The result is either the patched <code>existing</code> or the <code>fresh</code> node if types diverged.</li>
+      <li>If no match (or no key), build a brand-new node via <code>itemToNode(item)</code>.</li>
+      <li>If <code>cursor === targetNode</code>, advance. The node is already in position. Otherwise <code>parent.insertBefore(targetNode, cursor)</code> to slide it into place.</li>
+      <li>After the loop, every node between <code>cursor</code> and <code>endAnchor</code> is leftover from the previous render. Remove them.</li>
+      <li>Every entry remaining in the <code>oldNodes</code> map is a keyed node whose key was not in <code>newItems</code>. Remove them too.</li>
+    </ol>
+  </section>
+
+  <!-- ── SSR & Hydration ─────────────────────────────────────── -->
+
+  <section id="hydration">
+    <h2>SSR and Hydration</h2>
+
+    <div class="file-crumb">esm <span class="slash">/</span> lib <span class="slash">/</span> render <span class="slash">/</span> hydration.js</div>
+
+    <p>On the server (or any environment without a real DOM), effects must not run. Subscribing to signals with no DOM to update and no cleanup path would leak memory immediately. Signal&rsquo;s answer is the <code>ssrDepth</code> counter at <a class="loc" href="../esm/lib/reactive/signal.js">signal.js<span class="ln">:5</span></a>.</p>
+
+    <h3>The SSR bypass</h3>
+
+    <pre><code class="language-javascript">// signal.js:134. Effect()
+export function effect(fn) {
+  if (ssrDepth &gt; 0) {
+    return { pause() {}, resume() {}, stop() {} };
+  }
+  // ... normal path ...
+}</code></pre>
+
+    <p>Inside an SSR call, <code>effect()</code> returns a no-op stub. No subscription, no closure, no cleanup chain. <code>tag.toString()</code> still reads signal values via <code>.get()</code> (which works fine without a current effect) and produces a static HTML snapshot.</p>
+
+    <h3>renderForHydration</h3>
+
+    <p><code>renderForHydration(html, components, state)</code> in <a class="loc" href="../esm/lib/render/hydration.js">hydration.js</a> wraps an SSR render. It increments <code>ssrDepth</code>, invokes each component function in the state map, embeds the resulting HTML alongside a JSON state script block, and decrements <code>ssrDepth</code> in <code>finally</code>.</p>
+
+    <h3>registerComponents + the JSON block</h3>
+
+    <p>On the client, <code>registerComponents({ name: fn })</code> reads the JSON block, looks up each registered component by name, and runs <code>fn(state)</code> to produce a fresh tag instance. The new tag&rsquo;s <code>toElement()</code> creates the live DOM tree (with signal effects this time), which then replaces the SSR-rendered HTML node in the document.</p>
+
+    <p>This is &ldquo;remove and replace&rdquo; hydration, not &ldquo;reuse and attach.&rdquo; The SSR HTML is for time-to-first-paint; the live version takes over once JS is ready.</p>
+
+    <div class="callout note">
+      <div class="callout-title">Why not reuse?</div>
+      <p>Reuse hydration is feasible but requires the SSR HTML and the client&rsquo;s tag-tree shape to match exactly. The current strategy avoids that constraint at the cost of one extra DOM swap per component.</p>
+    </div>
+  </section>
+
+  <!-- ── Invariants ──────────────────────────────────────────── -->
+
+  <section id="invariants">
+    <h2>Invariants</h2>
+
+    <p>The rules that hold across every code path. Violations are bugs.</p>
+
+    <ol class="numbered">
+      <li><strong><code>validationLevel: 'off'</code> never throws on runtime input.</strong> All validation routes through <a class="loc" href="../esm/lib/util/show-invalid.js">show-invalid.js</a>, which is a no-op at <code>'off'</code>. Only hard invariants (e.g. <code>createTag</code> called with a non-string <code>tagName</code>) throw unconditionally.</li>
+
+      <li><strong>Signal values are accepted everywhere a plain value is accepted.</strong> <code>attributeValueIsValid</code> returns true for Signals without inspecting them. Resolution happens at render time, not validation time. See <a class="loc" href="../esm/lib/render/validate.js">validate.js<span class="ln">:56</span></a>.</li>
+
+      <li><strong><code>.value</code> and <code>.toJSON()</code> do not subscribe; <code>.get()</code> and <code>.toString()</code> do.</strong> The asymmetry is intentional. Lets you read a current value inside an effect without creating a dependency. Tests cover this behavior.</li>
+
+      <li><strong>The persist mechanism lives entirely in <a class="loc" href="../esm/lib/reactive/lifecycle.js">lifecycle.js</a>.</strong> No other file decides between <code>pause()</code> and <code>stop()</code>. The <code>dom-tracker</code> knows about <code>persist</code> only to decide whether to preserve the <code>connect</code>/<code>persist</code> entry fields across stop-cleanup.</li>
+
+      <li><strong>The two reconcile guards must never be bypassed.</strong> <code>isTracked</code> prevents attribute-strip on signal-managed elements. <code>isContentTracked</code> prevents child-patch on elements holding signal-content anchors. See <a class="loc" href="../esm/lib/reactive/reconcile.js">reconcile.js<span class="ln">:43</span></a>.</li>
+
+      <li><strong>Effects batch via microtasks; computed updates are synchronous.</strong> Multiple <code>.set()</code> calls in the same turn coalesce into one effect re-run. Computed signals see consistent inputs because their updates happen inline with the write.</li>
+
+      <li><strong>The DOM tracker has exactly one observer for the whole document.</strong> Not one per tracked element. It&rsquo;s built lazily on the first <code>trackForStop</code> or <code>trackForConnect</code> call.</li>
+
+      <li><strong><code>WeakRef</code> is the GC safety net for signal effects on detached elements.</strong> If an element is never inserted into the DOM and is garbage-collected, the next signal write triggers an effect that finds <code>ref.deref()</code> returning undefined and self-stops.</li>
+    </ol>
+  </section>
+
+  <!-- ── Cheatsheet ──────────────────────────────────────────── -->
+
+  <section id="cheatsheet">
+    <h2>Where to look</h2>
+
+    <p>If you&rsquo;re fixing a bug or adding a feature, here&rsquo;s where the change probably belongs.</p>
+
+    <table>
+      <thead>
+        <tr><th style="width: 18em">If you&rsquo;re working on…</th><th>Look at…</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>A new attribute type or validation rule</td>
+          <td><a class="loc" href="../esm/lib/render/validate.js">validate.js</a>. Either <code>attributeValueIsValid</code> or <code>validateAttributeByType</code></td>
+        </tr>
+        <tr>
+          <td>HTML output formatting (indentation, encoding)</td>
+          <td><a class="loc" href="../esm/lib/render/serialize.js">serialize.js</a> + <a class="loc" href="../esm/lib/render/stringify-content-array.js">stringify-content-array.js</a></td>
+        </tr>
+        <tr>
+          <td>DOM property vs attribute, event handler wiring</td>
+          <td><a class="loc" href="../esm/tag-classes/content-tag.js">content-tag.js<span class="ln">:136</span></a>. The <code>toElement</code> dispatch</td>
+        </tr>
+        <tr>
+          <td>Signal subscription semantics (<code>.get</code>, <code>.set</code>, <code>.value</code>)</td>
+          <td><a class="loc" href="../esm/lib/reactive/signal.js">signal.js</a>. The <code>Signal</code> class</td>
+        </tr>
+        <tr>
+          <td>Effect lifecycle (<code>pause</code>, <code>resume</code>, <code>stop</code>, batching)</td>
+          <td><a class="loc" href="../esm/lib/reactive/signal.js">signal.js<span class="ln">:134</span></a>. <code>effect()</code> and <code>flush()</code></td>
+        </tr>
+        <tr>
+          <td>Persist mode (pause on removal, resume on reconnect)</td>
+          <td><a class="loc" href="../esm/lib/reactive/lifecycle.js">lifecycle.js</a>. The entire file</td>
+        </tr>
+        <tr>
+          <td>When effects stop or connect callbacks fire</td>
+          <td><a class="loc" href="../esm/lib/reactive/dom-tracker.js">dom-tracker.js</a>. <code>stopRemoved</code> and <code>fireConnected</code></td>
+        </tr>
+        <tr>
+          <td>Signal-array DOM patching</td>
+          <td><a class="loc" href="../esm/lib/reactive/reconcile.js">reconcile.js</a>. Particularly <code>syncNode</code> and the two guards</td>
+        </tr>
+        <tr>
+          <td>SSR or hydration behavior</td>
+          <td><a class="loc" href="../esm/lib/render/hydration.js">hydration.js</a> + the <code>ssrDepth</code> counter in <a class="loc" href="../esm/lib/reactive/signal.js">signal.js<span class="ln">:5</span></a></td>
+        </tr>
+        <tr>
+          <td>A new tag-class flavor (e.g. for custom output)</td>
+          <td><a class="loc" href="../esm/tag-classes/">esm/tag-classes/</a>. Extend <code>ContentTag</code></td>
+        </tr>
+        <tr>
+          <td>Generated Kensington class behavior</td>
+          <td><a class="loc" href="../generate/build-kensington.js">generate/build-kensington.js</a>. The template that emits <code>esm/kensington.js</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout tip">
+      <div class="callout-title">Before you change a tracked path</div>
+      <p>Almost every browser test in <a class="loc" href="../tests/browser/signals.spec.js">tests/browser/signals.spec.js</a> exercises one of the paths above. Running <code>npm run test-browser</code> after any change to <code>signal.js</code>, <code>lifecycle.js</code>, <code>dom-tracker.js</code>, or <code>reconcile.js</code> is the fastest way to catch regressions.</p>
+    </div>
+  </section>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-core.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1/plugins/autoloader/prism-autoloader.min.js"
+  data-autoloader-path="https://cdn.jsdelivr.net/npm/prismjs@1/components/"></script>
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+
+  // Take over scroll restoration so the browser doesn't restore an old position during mermaid
+  // render. We'll do the fragment scroll ourselves after diagrams finish laying out.
+  if ('scrollRestoration' in history) {
+    history.scrollRestoration = 'manual';
+  }
+  // Park at the top until mermaid finishes. Avoids a flash of wrong position.
+  if (window.location.hash) {
+    window.scrollTo(0, 0);
+  }
+
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: isDark ? 'dark' : 'neutral',
+    fontFamily: 'Supreme, -apple-system, BlinkMacSystemFont, sans-serif',
+    securityLevel: 'loose',
+  });
+  await mermaid.run();
+
+  // Mermaid renders SVGs asynchronously, growing the page height after layout. Wait two
+  // frames for layout to settle, then scroll the fragment target to the top (respecting
+  // the scroll-margin-top that clears the sticky legend).
+  if (window.location.hash) {
+    const target = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+    if (target) {
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      target.scrollIntoView({ block: 'start', behavior: 'instant' });
+
+      // Pin the active sidebar entry near the top of the sidebar. Lets docs.js' scrollspy
+      // mark the .active class first, then we override the gentle in-view nudge with a
+      // hard top-pin so the user sees where they are in the nav at a glance.
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const nav = document.getElementById('sidebar');
+      const activeLink = nav?.querySelector('ul a.active');
+      if (nav && activeLink) {
+        const sidebarPages = nav.querySelector('.sidebar-pages');
+        const topBoundary = sidebarPages
+          ? sidebarPages.getBoundingClientRect().bottom
+          : nav.getBoundingClientRect().top;
+        nav.scrollTop += activeLink.getBoundingClientRect().top - topBoundary - 8;
+      }
+    }
+  }
+</script>
+<script>
+  // Toggle .is-stuck on the legend bar when its sentinel scrolls out of view.
+  (function () {
+    const sentinel = document.querySelector('.legend-sentinel');
+    const bar = document.querySelector('.legend-bar');
+    if (!sentinel || !bar) { return; }
+    new IntersectionObserver(([entry]) => {
+      bar.classList.toggle('is-stuck', !entry.isIntersecting);
+    }, { threshold: 0 }).observe(sentinel);
+  })();
+</script>
+<script src="docs.js"></script>
+</body>
+</html>

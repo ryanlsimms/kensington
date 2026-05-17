@@ -1,8 +1,8 @@
 export default function buildKensington({ elements }) {
   return `import * as allAttributes from './attributes.js';
-import getPrototypeMethods from './lib/get-prototype-methods.js';
-import showInvalid from './lib/show-invalid.js';
-import { camelToKebab } from './lib/text-utils.js';
+import getPrototypeMethods from './lib/util/get-prototype-methods.js';
+import showInvalid from './lib/util/show-invalid.js';
+import { camelToKebab } from './lib/util/text-utils.js';
 import CommentTag from './tag-classes/comment-tag.js';
 import ContentTag from './tag-classes/content-tag.js';
 import HtmlWithDoctypeTag from './tag-classes/html-with-doctype-tag.js';
