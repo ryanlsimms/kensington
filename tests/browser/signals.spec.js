@@ -1608,3 +1608,39 @@ test('disconnect callbacks fire in order on every removal with toElement persist
   expect(result).toEqual(['first', 'second', 'first', 'second']);
 });
 
+test('literal(signal) stops its effect when the host element is removed', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const html = signal('<p>a</p>');
+    const host = t.div({ id: 'lit-leak' }, t.literal(html)).toElement();
+    document.body.append(host);
+
+    html.set('<p>b</p>');
+    await Promise.resolve();
+    const before = document.querySelector('#lit-leak').textContent;
+
+    // Count template element constructions during signal updates after removal.
+    // The literal effect creates one <template> per run, so any post-removal count > 0
+    // means the effect leaked.
+    host.remove();
+    await new Promise(resolve => { requestAnimationFrame(() => resolve()); });
+
+    const orig = Document.prototype.createElement;
+    let templates = 0;
+    Document.prototype.createElement = function createElement(tag, ...rest) {
+      if (tag === 'template') { templates++; }
+      return orig.call(this, tag, ...rest);
+    };
+    try {
+      html.set('<p>c</p>');
+      html.set('<p>d</p>');
+      await Promise.resolve();
+    } finally {
+      Document.prototype.createElement = orig;
+    }
+    return { before, templates };
+  }, bundle);
+  expect(result.before).toBe('b');
+  expect(result.templates).toBe(0);
+});
+

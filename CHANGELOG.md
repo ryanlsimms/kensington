@@ -9,6 +9,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 - Keyed list reconciliation now skips rebuilding the DOM when a tag's attributes and content are structurally equal to the previous render.
 
+### Fixed
+- `literal()` with a `Signal` now stops its reactive effect when the host subtree is removed from the DOM. Previously the effect ran on detached nodes for every signal change and the subscription was retained indefinitely.
+
 ## [2.0.0-signals.8] - 2026-05-17
 
 ### Added

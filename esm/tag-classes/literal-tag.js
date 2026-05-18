@@ -1,3 +1,4 @@
+import { trackForStop } from '../lib/reactive/dom-tracker.js';
 import Signal, { effect } from '../lib/reactive/signal.js';
 import showInvalid from '../lib/util/show-invalid.js';
 
@@ -60,6 +61,10 @@ export default class LiteralTag {
         template.innerHTML = val;
         start.after(...[...template.content.childNodes]);
       });
+      // Register against the start anchor so dom-tracker stops the effect when the anchor
+      // (or any ancestor of it) is removed from the DOM. Without this the effect would
+      // re-run forever on every signal change, leaking the run closure and its subscription.
+      trackForStop(startAnchor, () => e.stop());
       return frag;
     }
 
