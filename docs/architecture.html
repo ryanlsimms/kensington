@@ -1148,6 +1148,11 @@ sequenceDiagram
       <p><code>computed(fn)</code> at <a class="loc" href="../esm/lib/reactive/signal.js">signal.js<span class="ln">:184</span></a> creates a Signal whose value is derived from other signals. Updates are synchronous (unlike effects).</p>
 
       <pre><code class="language-javascript">export function computed(fn) {
+  if (ssrDepth &gt; 0) {
+    const s = new Signal(fn());
+    derivedSignals.add(s);
+    return s;
+  }
   const s = new Signal(undefined);
   function update() {
     track(update, () =&gt; {
@@ -1171,9 +1176,10 @@ sequenceDiagram
   return s;
 }</code></pre>
 
-      <p>Three small but important details:</p>
+      <p>Four small but important details:</p>
 
       <ol>
+        <li><strong>SSR bypass.</strong> Inside <code>renderForHydration</code>, <code>fn()</code> runs once with no <code>currentEffect</code> set, so source <code>.get()</code> calls do not register a subscription. The returned Signal carries the snapshot value and never updates. This prevents per-request <code>computed</code>/<code>transform</code> calls from leaking subscribers onto module-level signals that outlive the request.</li>
         <li><code>derivedWriteDepth</code> is incremented before the <code>fn()</code> call so that <code>s.set()</code> can succeed even though <code>s</code> is in the <code>derivedSignals</code> WeakSet (which normally blocks external writes).</li>
         <li>Errors are caught and re-thrown asynchronously via <code>rethrowAsync</code> so that a throw in one computed doesn&rsquo;t corrupt other parts of the dependency graph.</li>
         <li><code>stopFns.set(s, &hellip;)</code> stores a cleanup closure keyed by the Signal. <code>Signal.stop()</code> at <a class="loc" href="../esm/lib/reactive/signal.js">signal.js<span class="ln">:95</span></a> retrieves and runs it, properly tearing down the derived computation.</li>
@@ -1684,19 +1690,32 @@ if (!isContentTracked(existing)) {
 
     <div class="file-crumb">esm <span class="slash">/</span> lib <span class="slash">/</span> render <span class="slash">/</span> hydration.js</div>
 
-    <p>On the server (or any environment without a real DOM), effects must not run. Subscribing to signals with no DOM to update and no cleanup path would leak memory immediately. Signal&rsquo;s answer is the <code>ssrDepth</code> counter at <a class="loc" href="../esm/lib/reactive/signal.js">signal.js<span class="ln">:5</span></a>.</p>
+    <p>On the server (or any environment without a real DOM), reactive subscriptions must not be created. They would have nothing to update and no cleanup path, so they would leak immediately. Both <code>effect()</code> and <code>computed()</code> consult the <code>ssrDepth</code> counter at <a class="loc" href="../esm/lib/reactive/signal.js">signal.js<span class="ln">:5</span></a>.</p>
 
     <h3>The SSR bypass</h3>
 
-    <pre><code class="language-javascript">// signal.js:134. Effect()
-export function effect(fn) {
+    <pre><code class="language-javascript">export function effect(fn) {
   if (ssrDepth &gt; 0) {
     return { pause() {}, resume() {}, stop() {} };
   }
   // ... normal path ...
+}
+
+export function computed(fn) {
+  if (ssrDepth &gt; 0) {
+    const s = new Signal(fn());     // value-only snapshot
+    derivedSignals.add(s);
+    return s;
+  }
+  // ... normal path ...
 }</code></pre>
 
-    <p>Inside an SSR call, <code>effect()</code> returns a no-op stub. No subscription, no closure, no cleanup chain. <code>tag.toString()</code> still reads signal values via <code>.get()</code> (which works fine without a current effect) and produces a static HTML snapshot.</p>
+    <p>Inside an SSR call, <code>effect()</code> returns a no-op stub and <code>computed()</code> returns a frozen-value Signal. No subscriptions are created in either case. <code>tag.toString()</code> still reads signal values via <code>.get()</code> (which works fine without a current effect) and produces a static HTML snapshot.</p>
+
+    <div class="callout warn">
+      <div class="callout-title">Why <code>computed()</code> needs the bypass too</div>
+      <p>Without it, a per-request <code>computed</code> (or <code>transform</code>) reading a module-level signal would register an <code>update</code> closure in that signal&rsquo;s subscriber set. The signal lives across requests, so each render leaves one dead subscriber behind. Over time the subscriber set, and the time spent iterating it on every <code>set()</code>, grows without bound.</p>
+    </div>
 
     <h3>renderForHydration</h3>
 

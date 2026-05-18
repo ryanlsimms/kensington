@@ -182,6 +182,16 @@ export function effect(fn) {
  * const cls = computed(() => active.get() ? 'btn-primary' : 'btn-outline');
  */
 export function computed(fn) {
+  // Under SSR we want the value but not the subscription. Subscribing to a source signal
+  // that outlives the request (e.g. a module-level signal) would permanently retain the
+  // computed's update function in that source's subscriber set, leaking once per request.
+  // currentEffect is null here, so reading sources via .get() inside fn() will not
+  // register a subscription either.
+  if (ssrDepth > 0) {
+    const s = new Signal(fn());
+    derivedSignals.add(s);
+    return s;
+  }
   const s = new Signal(undefined);
   function update() {
     track(update, () => {

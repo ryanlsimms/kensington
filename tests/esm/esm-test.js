@@ -1876,6 +1876,48 @@ describe('renderForHydration', () => {
   it('isBrowser is false in Node.js', () => {
     assert.strictEqual(isBrowser, false);
   });
+
+  it('computed() during SSR does not subscribe to its sources', () => {
+    // A computed created during renderForHydration must not leave its update function
+    // in the source signal's subscriber set. Otherwise long-lived module-level signals
+    // accumulate one dead subscriber per request indefinitely.
+    const src = signal(1);
+    let fnCalls = 0;
+    function computedComp() {
+      const c = computed(() => { fnCalls++; return src.get() * 2; });
+      assert.strictEqual(c.get(), 2);
+      return t.div();
+    }
+    renderForHydration(computedComp, {});
+    assert.strictEqual(fnCalls, 1);
+
+    // If the SSR computed had subscribed, src.set() would synchronously re-run its update.
+    src.set(99);
+    assert.strictEqual(fnCalls, 1);
+
+    // After SSR, computed() resumes subscribing normally.
+    let postFnCalls = 0;
+    const c2 = computed(() => { postFnCalls++; return src.get() + 1; });
+    assert.strictEqual(c2.get(), 100);
+    assert.strictEqual(postFnCalls, 1);
+    src.set(100);
+    assert.strictEqual(postFnCalls, 2);
+    c2.stop();
+  });
+
+  it('transform() during SSR does not subscribe to its source', () => {
+    const src = signal('hello');
+    let calls = 0;
+    function transformComp() {
+      const upper = src.transform(v => { calls++; return v.toUpperCase(); });
+      assert.strictEqual(upper.get(), 'HELLO');
+      return t.div();
+    }
+    renderForHydration(transformComp, {});
+    assert.strictEqual(calls, 1);
+    src.set('world');
+    assert.strictEqual(calls, 1);
+  });
 });
 
 // ─── renderForHydration — checkState ──────────────────────────────────────
