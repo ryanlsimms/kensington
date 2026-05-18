@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 - `literal()` with a `Signal` now stops its reactive effect when the host subtree is removed from the DOM. Previously the effect ran on detached nodes for every signal change and the subscription was retained indefinitely.
 - `computed()` and `transform()` called inside `renderForHydration` no longer subscribe to their source signals. Previously a per-request computed reading a module-level signal would leak one subscriber per request on that source.
+- `computed()` created inside an `effect()` body (or inside another `computed()`) is now stopped automatically when the parent re-runs or is stopped. Previously each parent run left the prior computed's update closure subscribed to its source signals, growing the source's subscriber set without bound.
 
 ## [2.0.0-signals.8] - 2026-05-17
 

@@ -1616,6 +1616,33 @@ describe('computed signal', () => {
     s.set(5);
     assert.strictEqual(c.get(), 10);
   });
+  it('computed created inside effect is auto-stopped on parent re-run', async () => {
+    // Without auto-cleanup, each parent re-run creates a fresh computed whose update
+    // closure stays subscribed to src forever. After N runs, src has N stale subscribers
+    // that each invoke the user's compute function on every set, so the work per set
+    // grows quadratically with run count.
+    const src = signal(1);
+    let computeCalls = 0;
+    const fx = effect(() => {
+      const c = computed(() => {
+        computeCalls++;
+        return src.get() * 2;
+      });
+      c.get();
+    });
+    assert.strictEqual(computeCalls, 1);
+    for (let i = 0; i < 10; i++) {
+      src.set(i + 2);
+      await new Promise(resolve => { queueMicrotask(resolve); });
+    }
+    // With cleanup: ~21 calls (1 initial + 2 per set: existing update fires, then new
+    // computed is created during the parent re-run). Without: ~66 (quadratic).
+    assert.ok(
+      computeCalls < 30,
+      `computed inside effect leaked: ${computeCalls} compute calls after 10 sets`,
+    );
+    fx.stop();
+  });
 });
 
 // ─── effect ────────────────────────────────────────────────────────────────

@@ -214,6 +214,13 @@ export function computed(fn) {
     update._cleanups = [];
   });
   derivedSignals.add(s);
+  // If created inside an effect's run or another computed's update, attach our stop to the
+  // parent's _cleanups so we are torn down when the parent re-runs or is stopped. Without
+  // this, calling computed() in an effect body leaks one update closure per parent run —
+  // each one stays subscribed to its source signals forever.
+  if (currentEffect !== null) {
+    currentEffect._cleanups.push(() => s.stop());
+  }
   return s;
 }
 

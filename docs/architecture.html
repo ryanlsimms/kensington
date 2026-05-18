@@ -1173,16 +1173,20 @@ sequenceDiagram
     update._cleanups = [];
   });
   derivedSignals.add(s);
+  if (currentEffect !== null) {
+    currentEffect._cleanups.push(() =&gt; s.stop());
+  }
   return s;
 }</code></pre>
 
-      <p>Four small but important details:</p>
+      <p>Five small but important details:</p>
 
       <ol>
         <li><strong>SSR bypass.</strong> Inside <code>renderForHydration</code>, <code>fn()</code> runs once with no <code>currentEffect</code> set, so source <code>.get()</code> calls do not register a subscription. The returned Signal carries the snapshot value and never updates. This prevents per-request <code>computed</code>/<code>transform</code> calls from leaking subscribers onto module-level signals that outlive the request.</li>
         <li><code>derivedWriteDepth</code> is incremented before the <code>fn()</code> call so that <code>s.set()</code> can succeed even though <code>s</code> is in the <code>derivedSignals</code> WeakSet (which normally blocks external writes).</li>
         <li>Errors are caught and re-thrown asynchronously via <code>rethrowAsync</code> so that a throw in one computed doesn&rsquo;t corrupt other parts of the dependency graph.</li>
         <li><code>stopFns.set(s, &hellip;)</code> stores a cleanup closure keyed by the Signal. <code>Signal.stop()</code> at <a class="loc" href="../esm/lib/reactive/signal.js">signal.js<span class="ln">:95</span></a> retrieves and runs it, properly tearing down the derived computation.</li>
+        <li><strong>Parent auto-stop.</strong> If <code>computed</code> is called while another effect&rsquo;s <code>run</code> or computed&rsquo;s <code>update</code> is on the stack, this computed&rsquo;s <code>stop()</code> is pushed onto the parent&rsquo;s <code>_cleanups</code>. When the parent re-runs (or is stopped), this computed is torn down. Without this, calling <code>computed()</code> in an <code>effect()</code> body grows the source signal&rsquo;s subscriber set by one per parent re-run.</li>
       </ol>
 
       <p><code>Signal.prototype.transform = fn =&gt; computed(() =&gt; fn(this.get()))</code> at <a class="loc" href="../esm/lib/reactive/signal.js">signal.js<span class="ln">:213</span></a> is just sugar for the same pattern. It&rsquo;s defined on the prototype after <code>computed</code> is in scope to avoid a forward reference.</p>
