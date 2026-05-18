@@ -1320,8 +1320,9 @@ if (needsConnect) {
 
     <h3>The unified entries map</h3>
 
-    <pre><code class="language-javascript">// dom-tracker.js:3
-const entries = new Map();
+    <pre><code class="language-javascript">const entries = new WeakMap();
+const trackedRefs = new Set();
+const trackedCleanup = new FinalizationRegistry(ref =&gt; trackedRefs.delete(ref));
 const contentTracked = new WeakSet();
 let observer = null;</code></pre>
 
@@ -1332,6 +1333,12 @@ let observer = null;</code></pre>
         <tr><th>Field</th><th>Type</th><th>Set by</th><th>Cleared on</th></tr>
       </thead>
       <tbody>
+        <tr>
+          <td><code>ref</code></td>
+          <td><code>WeakRef&lt;Element&gt;</code></td>
+          <td>Entry creation in <code>getOrCreate</code></td>
+          <td>Entry deletion (or via <code>FinalizationRegistry</code> when the element is collected)</td>
+        </tr>
         <tr>
           <td><code>stop</code></td>
           <td><code>() =&gt; void</code></td>
@@ -1355,13 +1362,17 @@ let observer = null;</code></pre>
 
     <p>The entry survives stop-cleanup as long as <code>persist</code> is true and <code>connect</code> is still set. This is how reconnection works. The entry is deleted entirely only when both <code>stop</code> and <code>connect</code> are gone.</p>
 
+    <div class="callout key">
+      <div class="callout-title">Why <code>WeakMap</code> + a parallel ref set?</div>
+      <p>A plain <code>Map</code> would pin every tracked element by its key, so an element produced by <code>toElement()</code> and then dropped without ever being inserted into the document would never become eligible for collection. <code>entries</code> is therefore a <code>WeakMap</code>. Iteration in <code>visit</code> still needs a list of tracked elements, which is what <code>trackedRefs</code> provides. The <code>FinalizationRegistry</code> drops dead <code>WeakRef</code>s as their elements are collected so the <code>trackedRefs.size</code> short-circuit stays approximately accurate.</p>
+    </div>
+
     <h3>The observer</h3>
 
-    <pre><code class="language-javascript">// dom-tracker.js:53
-function buildObserver() {
+    <pre><code class="language-javascript">function buildObserver() {
   if (observer !== null) { return; }
   observer = new MutationObserver(records =&gt; {
-    if (entries.size === 0) { return; }
+    if (trackedRefs.size === 0) { return; }
     for (const record of records) {
       for (const node of record.removedNodes) { stopRemoved(node); }
       for (const node of record.addedNodes)   { fireConnected(node); }
@@ -1372,27 +1383,35 @@ function buildObserver() {
 
     <p>The observer is built lazily on first <code>trackForStop</code>/<code>trackForConnect</code> call. There is exactly one for the whole document. Not one per tracked element.</p>
 
-    <p>The <code>entries.size === 0</code> short-circuit means that if every tracked element has been cleaned up, mutation records are skipped without any per-record work. The observer itself remains active because reattaching it would lose the document.body subtree.</p>
+    <p>The <code>trackedRefs.size === 0</code> short-circuit means that if every tracked element has been cleaned up (either explicitly or by GC), mutation records are skipped without any per-record work. The observer itself remains active because reattaching it would lose the document.body subtree.</p>
 
     <h3>The <code>visit</code> helper</h3>
 
     <p>Both <code>stopRemoved</code> and <code>fireConnected</code> need to handle two cases for a mutation record&rsquo;s node: the node itself might be tracked, or it might be an ancestor of one or more tracked elements. <code>visit</code> abstracts this:</p>
 
-    <pre><code class="language-javascript">// dom-tracker.js:27
-function visit(node, fn) {
-  if (entries.has(node)) {
-    fn(node, entries.get(node));
+    <pre><code class="language-javascript">function visit(node, fn) {
+  const own = entries.get(node);
+  if (own !== undefined) {
+    fn(node, own);
     return;
   }
-  if (node.nodeType !== 1) { return; }              // text nodes etc. have no descendants
-  for (const [el, entry] of [...entries]) {         // snapshot copy in case fn mutates
-    if (node.contains(el)) { fn(el, entry); }
+  if (node.nodeType !== 1) { return; }                  // text nodes etc. have no descendants
+  for (const ref of [...trackedRefs]) {                 // snapshot copy in case fn mutates
+    const el = ref.deref();
+    if (el === undefined) {
+      trackedRefs.delete(ref);                          // opportunistic prune of GC'd refs
+      continue;
+    }
+    if (node.contains(el)) {
+      const entry = entries.get(el);
+      if (entry !== undefined) { fn(el, entry); }
+    }
   }
 }</code></pre>
 
     <div class="callout note">
       <div class="callout-title">Why the snapshot copy?</div>
-      <p><code>stopRemoved</code> deletes from <code>entries</code> inside the callback. Iterating a live Map while deleting from it is allowed in spec but can be subtle. The snapshot makes the iteration order and completeness obvious.</p>
+      <p><code>stopRemoved</code> deletes from <code>entries</code> (and from <code>trackedRefs</code>) inside the callback. Iterating a live Set while deleting from it is allowed in spec but can be subtle. The snapshot makes the iteration order and completeness obvious.</p>
     </div>
 
     <h3>API surface</h3>

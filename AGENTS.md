@@ -274,7 +274,9 @@ Add `dataKey` whenever items may reorder, be added, or removed. Reused nodes are
 
 ### Cleanup
 
-`.toElement()` stops reactive effects automatically when the element is removed from the DOM. Pass `{ persist: true }` to pause effects instead — they resume automatically on re-insertion and can cycle through unlimited remove/re-insert. For standalone `effect()` calls, stop manually:
+`.toElement()` stops reactive effects automatically when the element is removed from the DOM. Pass `{ persist: true }` to pause effects instead — they resume automatically on re-insertion and can cycle through unlimited remove/re-insert.
+
+For standalone `effect()` calls, stop manually:
 
 ```javascript
 class MyWidget extends HTMLElement {
