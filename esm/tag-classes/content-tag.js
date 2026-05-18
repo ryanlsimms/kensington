@@ -1,5 +1,10 @@
 import { markContentTracked } from '../lib/reactive/dom-tracker.js';
 import { createLifecycle } from '../lib/reactive/lifecycle.js';
+// Forms a known cycle with reconcile.js (reconcile imports ContentTag for its structural
+// equality check). Benign because `reconcile` here is only invoked inside the signal-content
+// effect callback at runtime, not at module-load time. ESM live bindings resolve correctly
+// by the time the callback fires. Rollup emits a CIRCULAR_DEPENDENCY warning that's
+// informational only. See reconcile.js for the other half of the cycle.
 import { reconcile } from '../lib/reactive/reconcile.js';
 import Signal from '../lib/reactive/signal.js';
 import {

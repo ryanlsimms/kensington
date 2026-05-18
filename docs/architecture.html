@@ -1014,7 +1014,7 @@ return element;</code></pre>
     <p>Before tracing the lifecycle module&rsquo;s internals, here&rsquo;s how a Signal actually works. The full implementation is ~200 lines at <a class="loc" href="../esm/lib/reactive/signal.js">signal.js</a>.</p>
 
     <section id="signal-subscribe">
-      <h3>Subscription via <code>.get()</code></h3>
+      <h3>Subscription via <code>.get</code></h3>
 
       <p>A Signal&rsquo;s subscribers are kept in a private <code>Set</code> on the instance. The mechanism that wires up a subscription is the module-scoped <code>currentEffect</code> reference, set during an <code>effect()</code> or <code>computed()</code> run.</p>
 
@@ -1088,7 +1088,7 @@ sequenceDiagram
     </section>
 
     <section id="signal-effect">
-      <h3>effect()</h3>
+      <h3>effect</h3>
 
       <p><code>effect(fn)</code> at <a class="loc" href="../esm/lib/reactive/signal.js">signal.js<span class="ln">:134</span></a> creates a tracked closure that re-runs whenever any signal read inside it changes:</p>
 
@@ -1128,11 +1128,11 @@ sequenceDiagram
 
       <div class="compare-grid">
         <div>
-          <h4>pause()</h4>
+          <h4>pause</h4>
           <p style="margin: 0; font-size: 0.88rem;">Drains <code>_cleanups</code> (unsubscribing from every signal) and removes itself from <code>pending</code>. The effect won&rsquo;t re-run until <code>resume()</code> is called. Can be paused/resumed any number of times.</p>
         </div>
         <div>
-          <h4>resume()</h4>
+          <h4>resume</h4>
           <p style="margin: 0; font-size: 0.88rem;">Calls <code>run()</code> immediately, which re-tracks subscriptions to every signal it reads. No-op if <code>destroyed</code> is true.</p>
         </div>
       </div>
@@ -1143,7 +1143,7 @@ sequenceDiagram
     </section>
 
     <section id="signal-computed">
-      <h3>computed()</h3>
+      <h3>computed</h3>
 
       <p><code>computed(fn)</code> at <a class="loc" href="../esm/lib/reactive/signal.js">signal.js<span class="ln">:184</span></a> creates a Signal whose value is derived from other signals. Updates are synchronous (unlike effects).</p>
 
@@ -1599,6 +1599,31 @@ export function reconcile(parent, startAnchor, endAnchor, newItems) {
 }</code></pre>
 
     <p>Without a key, items are matched positionally (and recreated if shape differs).</p>
+
+    <h3>Snapshot fast path</h3>
+
+    <p>Once a keyed match is found, the reconciler checks a structural snapshot of the previous render before doing any DOM work. A <code>WeakMap</code> keyed by DOM node holds the last <code>(attributes, content)</code> pair that produced it. If the new tag&rsquo;s attributes and content are value-equal to the snapshot, the entire <code>itemToNode(item)</code> + <code>syncNode</code> chain is skipped. The existing DOM node is reused as-is.</p>
+
+    <pre><code class="language-javascript">// reconcile.js
+if (snapshotMatches(snapshots.get(old), item)) {
+  // Attributes and content structurally equal the previous render. Skip the
+  // toElement() build and the syncNode diff. Just reuse the existing node.
+  targetNode = old;
+} else {
+  targetNode = syncNode(old, itemToNode(item));
+  recordSnapshot(targetNode, item);
+}</code></pre>
+
+    <p><code>valueEqual</code> handles plain objects and arrays by structure, recurses into <code>ContentTag</code> children (matching on <code>tagName</code> + attributes + content), and falls back to reference equality for everything else (functions, <code>Signal</code>, <code>LiteralTag</code>, <code>CommentTag</code>, DOM nodes, <code>Date</code>, anything with a non-plain prototype).</p>
+
+    <div class="callout key">
+      <div class="callout-title">Why value equality, not reference equality</div>
+      <p>The natural pattern <code>arr.map(item =&gt; t.li({ class: item.cls }, item.label))</code> allocates a fresh attribute object literal on every render. Reference equality on those literals would always miss. Value equality detects that the literal is structurally identical to last time and skips the rebuild without forcing the developer to memoize.</p>
+    </div>
+
+    <p>A stable <code>Signal</code> reference (typed in once and stored on the item) hits the fast path because it satisfies the reference-equality fallback. A fresh closure or fresh <code>LiteralTag</code> per render does not. The snapshot is recorded only on the non-fast-path branch, so an item that hits the fast path keeps its original snapshot indefinitely.</p>
+
+    <p>There is a <strong>known circular import</strong> here. <code>reconcile.js</code> imports <code>ContentTag</code> for the <code>instanceof</code> check, and <code>content-tag.js</code> imports <code>reconcile</code> for its signal-content effect. Rollup emits a CIRCULAR_DEPENDENCY warning that is informational only. Both sides consult the other inside function bodies that run at call time, not at module-load time, so ESM live bindings resolve correctly.</p>
 
     <h3>syncNode. The recursive patcher</h3>
 

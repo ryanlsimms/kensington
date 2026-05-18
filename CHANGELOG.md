@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Changed
+- Keyed list reconciliation now skips rebuilding the DOM when a tag's attributes and content are structurally equal to the previous render.
+
 ## [2.0.0-signals.8] - 2026-05-17
 
 ### Added

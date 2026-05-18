@@ -829,7 +829,7 @@ t.input({ typ: 'checkbox' });
     <h4>vs DOM methods</h4>
     <p><code>document.createElement</code> is verbose and browser-only. Kensington's <code>.toElement()</code> produces live DOM nodes, so the same component can render an HTML string on the server and a live DOM node in the browser from the same code.</p>
 
-    <h4>vs hyperscript / h()</h4>
+    <h4>vs hyperscript / h</h4>
     <p>Hyperscript-style APIs like <code>h('div', attrs, children)</code> (used in React, Vue render functions, and standalone hyperscript libraries) take the element name as a string, so TypeScript can only type the attribute argument as a generic object. Kensington exposes a dedicated method for each element, so TypeScript knows exactly which attributes are valid for <code>t.input</code> versus <code>t.select</code> versus <code>t.a</code>.</p>
     <div class="panels">
       <div>

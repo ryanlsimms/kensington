@@ -250,7 +250,7 @@ class MyEngine extends Kensington {
 
     <p>Signals are reactive values. Read them with <code>.get()</code>, write them with <code>.set()</code>, and derive new ones with <code>computed()</code> or <code>.transform()</code>. Pass a signal as an option value or content and <code>.toElement()</code> wires up live DOM updates automatically.</p>
 
-    <h3 id="signal">signal()</h3>
+    <h3 id="signal">signal</h3>
 
     <pre><code class="language-typescript">import { signal } from 'kensington';
 
@@ -275,7 +275,7 @@ signal&lt;T&gt;(initialValue: T): Signal&lt;T&gt;</code></pre>
       </tbody>
     </table>
 
-    <h3 id="computed">computed()</h3>
+    <h3 id="computed">computed</h3>
 
     <pre><code class="language-typescript">import { computed } from 'kensington';
 
@@ -288,7 +288,7 @@ const label = computed(() =&gt; count.get() === 1 ? 'item' : 'items');
 
 label.stop(); // unsubscribes from tracked signals, value freezes</code></pre>
 
-    <h3 id="effect">effect()</h3>
+    <h3 id="effect">effect</h3>
 
     <pre><code class="language-typescript">import { effect } from 'kensington';
 
@@ -325,7 +325,7 @@ t.input({ prop: { checked: isChecked } });       // typed: boolean
 t.video({ prop: { muted: true, playbackRate: 1.5 } });  // typed: HTMLVideoElement props
 t.div({ prop: { _instance: component } });       // expando: accepted as unknown</code></pre>
 
-    <h3 id="render-for-hydration">renderForHydration()</h3>
+    <h3 id="render-for-hydration">renderForHydration</h3>
 
     <pre><code class="language-typescript">import { renderForHydration } from 'kensington';
 
@@ -344,7 +344,7 @@ renderForHydration(
     <pre><code class="language-javascript">// server
 res.send(layout(renderForHydration(counter, { count: 0 })).toString());</code></pre>
 
-    <h3 id="register-components">registerComponents()</h3>
+    <h3 id="register-components">registerComponents</h3>
 
     <pre><code class="language-typescript">import { registerComponents } from 'kensington';
 

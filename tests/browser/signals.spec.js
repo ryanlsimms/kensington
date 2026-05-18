@@ -327,6 +327,416 @@ test('signal content switches from array to null and clears the DOM region', asy
   await expect(page.locator('#switch-arr-to-null li')).toHaveCount(0);
 });
 
+// ─── reconcile snapshot fast path ──────────────────────────────────────────
+// The reconciler caches a structural snapshot of each keyed tag and compares the next
+// render's tag by value (recursing into nested ContentTag instances). When the snapshot
+// matches, toElement() is skipped entirely. These tests verify the fast path fires for
+// the naive-but-correct workflow, declines correctly when data changes, and degrades
+// safely when an attribute value can't be compared structurally.
+
+test('snapshot fast path: skips toElement when value-equal tag is re-rendered', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+    const items = signal([
+      { id: 1, label: 'one', done: false },
+      { id: 2, label: 'two', done: true },
+    ]);
+    const rows = computed(() =>
+      items.get().map(item =>
+        t.li({ dataKey: item.id, class: item.done ? 'done' : 'open' }, item.label),
+      ),
+    );
+    document.body.append(t.ul({ id: 'fastpath-equal' }, rows).toElement());
+    document.querySelectorAll('#fastpath-equal li').forEach(el => { el._sentinel = true; });
+
+    // Count createElement calls during the re-render. The naive workflow allocates fresh
+    // attribute object literals every map() call. Reference equality would always miss.
+    // Value equality should still detect the structural match and skip toElement.
+    const orig = Document.prototype.createElement;
+    let count = 0;
+    Document.prototype.createElement = function createElement(...args) {
+      count++;
+      return orig.apply(this, args);
+    };
+    try {
+      items.set(prev => [...prev]); // fresh array, same items
+      await Promise.resolve();
+    } finally {
+      Document.prototype.createElement = orig;
+    }
+
+    const preserved = Array.from(document.querySelectorAll('#fastpath-equal li')).map(el => el._sentinel === true);
+    return { count, preserved };
+  }, bundle);
+  expect(result.count).toBe(0);
+  expect(result.preserved).toEqual([true, true]);
+});
+
+test('snapshot fast path: skips toElement through nested tag children', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+    const items = signal([
+      { id: 1, href: '/a', label: 'A' },
+      { id: 2, href: '/b', label: 'B' },
+    ]);
+    const rows = computed(() =>
+      items.get().map(item =>
+        t.li({ dataKey: item.id }, t.a({ href: item.href }, item.label)),
+      ),
+    );
+    document.body.append(t.ul({ id: 'fastpath-nested' }, rows).toElement());
+    document.querySelectorAll('#fastpath-nested li').forEach(el => { el._sentinel = true; });
+    document.querySelectorAll('#fastpath-nested a').forEach(el => { el._innerSentinel = true; });
+
+    const orig = Document.prototype.createElement;
+    let count = 0;
+    Document.prototype.createElement = function createElement(...args) {
+      count++;
+      return orig.apply(this, args);
+    };
+    try {
+      items.set(prev => [...prev]);
+      await Promise.resolve();
+    } finally {
+      Document.prototype.createElement = orig;
+    }
+
+    return {
+      count,
+      liPreserved: Array.from(document.querySelectorAll('#fastpath-nested li')).map(el => el._sentinel === true),
+      aPreserved: Array.from(document.querySelectorAll('#fastpath-nested a')).map(el => el._innerSentinel === true),
+    };
+  }, bundle);
+  expect(result.count).toBe(0);
+  expect(result.liPreserved).toEqual([true, true]);
+  expect(result.aPreserved).toEqual([true, true]);
+});
+
+test('snapshot fast path: declines when a text content value changes', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+    const items = signal([{ id: 1, label: 'before' }, { id: 2, label: 'static' }]);
+    const rows = computed(() =>
+      items.get().map(item => t.li({ dataKey: item.id }, item.label)),
+    );
+    document.body.append(t.ul({ id: 'fastpath-decline-text' }, rows).toElement());
+    document.querySelectorAll('#fastpath-decline-text li').forEach(el => { el._sentinel = true; });
+
+    items.set([{ id: 1, label: 'after' }, { id: 2, label: 'static' }]);
+    await Promise.resolve();
+
+    const lis = Array.from(document.querySelectorAll('#fastpath-decline-text li'));
+    return {
+      texts: lis.map(el => el.textContent),
+      preserved: lis.map(el => el._sentinel === true),
+    };
+  }, bundle);
+  expect(result.texts).toEqual(['after', 'static']);
+  // Both DOM nodes are reused: syncNode patched the text node in place for #1, fast path
+  // fired for #2. Neither was replaced by a fresh element.
+  expect(result.preserved).toEqual([true, true]);
+});
+
+test('snapshot fast path: declines when an attribute value changes', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+    const items = signal([{ id: 1, done: false }, { id: 2, done: true }]);
+    const rows = computed(() =>
+      items.get().map(item =>
+        t.li({ dataKey: item.id, class: item.done ? 'done' : 'open' }, 'item'),
+      ),
+    );
+    document.body.append(t.ul({ id: 'fastpath-decline-attr' }, rows).toElement());
+
+    items.set([{ id: 1, done: true }, { id: 2, done: true }]);
+    await Promise.resolve();
+
+    return Array.from(document.querySelectorAll('#fastpath-decline-attr li')).map(el => el.className);
+  }, bundle);
+  expect(result).toEqual(['done', 'done']);
+});
+
+test('snapshot fast path: declines when an inline event handler closure changes', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+    const items = signal([{ id: 1 }]);
+    const rows = computed(() =>
+      items.get().map(item =>
+        // Fresh arrow per render. Forces the fast path to decline.
+        t.li({ dataKey: item.id, onclick: () => {} }, 'item'),
+      ),
+    );
+    document.body.append(t.ul({ id: 'fastpath-decline-fn' }, rows).toElement());
+
+    const orig = Document.prototype.createElement;
+    let count = 0;
+    Document.prototype.createElement = function createElement(...args) {
+      count++;
+      return orig.apply(this, args);
+    };
+    try {
+      items.set(prev => [...prev]); // fresh array, same data, fresh closures
+      await Promise.resolve();
+    } finally {
+      Document.prototype.createElement = orig;
+    }
+    return count;
+  }, bundle);
+  // At least one createElement call means the fast path declined and itemToNode ran.
+  expect(result).toBeGreaterThan(0);
+});
+
+test('snapshot fast path: a stable Signal as an attribute hits the fast path', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+    // Per-item signal stored on the item itself, so the attribute value reference is stable
+    // across renders. This is the recommended pattern when per-row reactivity is needed.
+    const items = signal([
+      { id: 1, cls: signal('open') },
+      { id: 2, cls: signal('done') },
+    ]);
+    const rows = computed(() =>
+      items.get().map(item => t.li({ dataKey: item.id, class: item.cls }, 'item')),
+    );
+    document.body.append(t.ul({ id: 'fastpath-signal-attr' }, rows).toElement());
+    document.querySelectorAll('#fastpath-signal-attr li').forEach(el => { el._sentinel = true; });
+
+    const orig = Document.prototype.createElement;
+    let count = 0;
+    Document.prototype.createElement = function createElement(...args) {
+      count++;
+      return orig.apply(this, args);
+    };
+    try {
+      items.set(prev => [...prev]);
+      await Promise.resolve();
+    } finally {
+      Document.prototype.createElement = orig;
+    }
+
+    // The per-row signal should still drive its attribute. Mutating it updates the DOM
+    // even though the row was reused via the fast path.
+    items.get()[0].cls.set('done');
+    await Promise.resolve();
+
+    return {
+      count,
+      preserved: Array.from(document.querySelectorAll('#fastpath-signal-attr li')).map(el => el._sentinel === true),
+      classes: Array.from(document.querySelectorAll('#fastpath-signal-attr li')).map(el => el.className),
+    };
+  }, bundle);
+  expect(result.count).toBe(0);
+  expect(result.preserved).toEqual([true, true]);
+  expect(result.classes).toEqual(['done', 'done']);
+});
+
+test('snapshot fast path: LiteralTag in content forces fallback', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+    const items = signal([{ id: 1, html: '<span>a</span>' }]);
+    const rows = computed(() =>
+      // Fresh LiteralTag instance each render. Not a ContentTag, falls back to
+      // reference equality, which fails on fresh instances. The fast path declines.
+      items.get().map(item => t.li({ dataKey: item.id }, t.literal(item.html))),
+    );
+    document.body.append(t.ul({ id: 'fastpath-literal' }, rows).toElement());
+
+    const orig = Document.prototype.createElement;
+    let count = 0;
+    Document.prototype.createElement = function createElement(...args) {
+      count++;
+      return orig.apply(this, args);
+    };
+    try {
+      items.set(prev => [...prev]);
+      await Promise.resolve();
+    } finally {
+      Document.prototype.createElement = orig;
+    }
+    return count;
+  }, bundle);
+  expect(result).toBeGreaterThan(0);
+});
+
+test('in-place data mutation followed by signal.set with a fresh array updates the DOM', async ({ page, bundle }) => {
+  // Re-rendering reads the source data via row(), so an in-place mutation followed by
+  // signal.set with a fresh array reference produces value-unequal tags. The fast path
+  // declines, syncNode patches the DOM in place. The genuine footgun is mutation without
+  // a re-render trigger, but that's a signal.set short-circuit, not a snapshot-path issue.
+  const result = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+    const item = { id: 1, label: 'before' };
+    const items = signal([item]);
+    const rows = computed(() =>
+      items.get().map(it => t.li({ dataKey: it.id }, it.label)),
+    );
+    document.body.append(t.ul({ id: 'mut-fresh-array' }, rows).toElement());
+
+    item.label = 'after';
+    items.set([item]); // fresh array reference, signal notifies, transform re-runs
+    await Promise.resolve();
+
+    return document.querySelector('#mut-fresh-array li').textContent;
+  }, bundle);
+  expect(result).toBe('after');
+});
+
+test('snapshot fast path: a stable Signal in content hits the fast path', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+    // Per-item label signal stored on the item itself. The content reference is stable across
+    // renders so the fast path's reference-equality fallback for Signal instances matches.
+    const items = signal([
+      { id: 1, label: signal('one') },
+      { id: 2, label: signal('two') },
+    ]);
+    const rows = computed(() =>
+      items.get().map(item => t.li({ dataKey: item.id }, item.label)),
+    );
+    document.body.append(t.ul({ id: 'fastpath-signal-content' }, rows).toElement());
+    document.querySelectorAll('#fastpath-signal-content li').forEach(el => { el._sentinel = true; });
+
+    const orig = Document.prototype.createElement;
+    let count = 0;
+    Document.prototype.createElement = function createElement(...args) {
+      count++;
+      return orig.apply(this, args);
+    };
+    try {
+      items.set(prev => [...prev]);
+      await Promise.resolve();
+    } finally {
+      Document.prototype.createElement = orig;
+    }
+
+    // The per-row signal still drives its content area even though the row was reused.
+    items.get()[0].label.set('ONE');
+    await Promise.resolve();
+
+    return {
+      count,
+      preserved: Array.from(document.querySelectorAll('#fastpath-signal-content li')).map(el => el._sentinel === true),
+      texts: Array.from(document.querySelectorAll('#fastpath-signal-content li')).map(el => el.textContent),
+    };
+  }, bundle);
+  expect(result.count).toBe(0);
+  expect(result.preserved).toEqual([true, true]);
+  expect(result.texts).toEqual(['ONE', 'two']);
+});
+
+test('snapshot fast path: CommentTag in content forces fallback', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+    const items = signal([{ id: 1, note: 'hi' }]);
+    const rows = computed(() =>
+      // Fresh CommentTag instance each render. Not a ContentTag, falls back to reference
+      // equality, which fails on fresh instances. The fast path declines.
+      items.get().map(item => t.li({ dataKey: item.id }, t.inlineComment(item.note))),
+    );
+    document.body.append(t.ul({ id: 'fastpath-comment' }, rows).toElement());
+
+    const orig = Document.prototype.createElement;
+    let count = 0;
+    Document.prototype.createElement = function createElement(...args) {
+      count++;
+      return orig.apply(this, args);
+    };
+    try {
+      items.set(prev => [...prev]);
+      await Promise.resolve();
+    } finally {
+      Document.prototype.createElement = orig;
+    }
+    return count;
+  }, bundle);
+  expect(result).toBeGreaterThan(0);
+});
+
+test('snapshot fast path: reordering keyed nodes still hits the fast path', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+    const items = signal([
+      { id: 1, label: 'one' },
+      { id: 2, label: 'two' },
+      { id: 3, label: 'three' },
+    ]);
+    const rows = computed(() =>
+      items.get().map(item => t.li({ dataKey: item.id }, item.label)),
+    );
+    document.body.append(t.ul({ id: 'fastpath-reorder' }, rows).toElement());
+    const lis = Array.from(document.querySelectorAll('#fastpath-reorder li'));
+    lis[0]._tag = 'a';
+    lis[1]._tag = 'b';
+    lis[2]._tag = 'c';
+
+    const orig = Document.prototype.createElement;
+    let count = 0;
+    Document.prototype.createElement = function createElement(...args) {
+      count++;
+      return orig.apply(this, args);
+    };
+    try {
+      items.set([items.get()[2], items.get()[0], items.get()[1]]); // reverse-ish
+      await Promise.resolve();
+    } finally {
+      Document.prototype.createElement = orig;
+    }
+
+    const after = Array.from(document.querySelectorAll('#fastpath-reorder li'));
+    return {
+      count,
+      texts: after.map(el => el.textContent),
+      tags: after.map(el => el._tag),
+    };
+  }, bundle);
+  expect(result.count).toBe(0);
+  expect(result.texts).toEqual(['three', 'one', 'two']);
+  expect(result.tags).toEqual(['c', 'a', 'b']);
+});
+
+test('snapshot fast path: class-instance attribute falls back to reference equality', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+    // Date is a class instance with a non-plain prototype. valueEqual rejects it and falls
+    // back to reference equality. A stable reference hits the fast path; a fresh reference
+    // with the same date declines.
+    const stable = new Date(2026, 0, 1);
+    const items = signal([{ id: 1, when: stable }]);
+    const rows = computed(() =>
+      items.get().map(item => t.li({ dataKey: item.id, dataWhen: item.when }, 'x')),
+    );
+    document.body.append(t.ul({ id: 'fastpath-date' }, rows).toElement());
+
+    const orig = Document.prototype.createElement;
+    let stableCount = 0;
+    Document.prototype.createElement = function createElement(...args) {
+      stableCount++;
+      return orig.apply(this, args);
+    };
+    try {
+      items.set([{ id: 1, when: stable }]); // same Date reference
+      await Promise.resolve();
+    } finally {
+      Document.prototype.createElement = orig;
+    }
+
+    let freshCount = 0;
+    Document.prototype.createElement = function createElement(...args) {
+      freshCount++;
+      return orig.apply(this, args);
+    };
+    try {
+      items.set([{ id: 1, when: new Date(2026, 0, 1) }]); // fresh Date, value-equal but different ref
+      await Promise.resolve();
+    } finally {
+      Document.prototype.createElement = orig;
+    }
+    return { stableCount, freshCount };
+  }, bundle);
+  expect(result.stableCount).toBe(0);
+  expect(result.freshCount).toBeGreaterThan(0);
+});
+
 // ─── dom update batching ───────────────────────────────────────────────────
 
 test('multiple set() calls on one signal produce one attribute write', async ({ page, bundle }) => {

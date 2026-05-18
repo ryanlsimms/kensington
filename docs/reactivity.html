@@ -46,6 +46,14 @@
   </ul>
   <div class="sidebar-title">Advanced</div>
   <ul>
+    <li><a href="#when-updates-fire">When updates fire</a>
+      <ul>
+        <li><a href="#immutable-updates">Immutable updates</a></li>
+        <li><a href="#what-does-not-trigger">What doesn&rsquo;t trigger</a></li>
+        <li><a href="#when-the-dom-updates">DOM update sites</a></li>
+        <li><a href="#per-row-signals">Per-row signals</a></li>
+      </ul>
+    </li>
     <li><a href="#signal-value">.value</a></li>
     <li><a href="#signal-transform">.transform()</a></li>
     <li><a href="#signals-cleanup">Cleanup</a></li>
@@ -100,7 +108,7 @@ document.body.append(t.div([
 
     <p><a href="examples.html#counter" class="example-link">Counter example &rarr;</a></p>
 
-    <h3 id="computed">computed()</h3>
+    <h3 id="computed">computed</h3>
 
     <p>A read-only signal derived from others. Re-evaluates automatically when any dependency changes.</p>
 
@@ -111,7 +119,7 @@ const fullName = computed(() =&gt; `${firstName.get()} ${lastName.get()}`);
 // fullName re-evaluates whenever either signal changes
 t.p(fullName).toElement();</code></pre>
 
-    <h3 id="effect">effect()</h3>
+    <h3 id="effect">effect</h3>
 
     <p>Runs immediately and re-runs whenever any signal read via <code>.get()</code> inside it changes. Use for side effects that live outside the DOM: <code>document.title</code>, <code>localStorage</code>, analytics, etc.</p>
 
@@ -220,7 +228,7 @@ t.ul(rows).toElement();</code></pre>
   <!-- ── With .literal() and .inlineComment() ──────────────────── -->
 
   <section id="signals-literal">
-    <h2>With .literal() and .inlineComment()</h2>
+    <h2>With .literal and .inlineComment</h2>
 
     <pre><code class="language-javascript">const html = signal('&lt;b&gt;bold&lt;/b&gt;');
 t.div(t.literal(html)).toElement();
@@ -236,6 +244,166 @@ t.div([t.p('content'), t.inlineComment(note)]).toElement();
     <h1>Advanced Usage</h1>
     <p>The above usage may be enough for many projects, but if you are building a more complex app, you may need these tools.</p>
   </header>
+
+  <!-- ── When updates fire ───────────────────────────────────────── -->
+
+  <section id="when-updates-fire">
+    <h2>When updates fire</h2>
+
+    <p>A signal notifies its subscribers when <code>.set()</code> is called with a value that differs from the current one. The check is reference-style (<code>Object.is</code>), not deep.</p>
+
+    <table>
+      <thead>
+        <tr><th>Value type</th><th>What "differs" means</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>string</code>, <code>number</code>, <code>boolean</code>, <code>null</code>, <code>undefined</code></td>
+          <td>Different value. <code>signal.set(3)</code> when the current value is <code>3</code> is a no-op.</td>
+        </tr>
+        <tr>
+          <td><code>Array</code>, <code>Object</code>, anything else</td>
+          <td>Different reference. Mutating the existing value in place does not count. You must produce a new array or object.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>This is the most common source of "my signal isn't updating" confusion. The fix is to update immutably.</p>
+
+    <h3 id="immutable-updates">Immutable update patterns</h3>
+
+    <p>The same shapes work for any reactive library and all have built-in support in modern JavaScript.</p>
+
+    <pre><code class="language-javascript">// Array: replace one item by id, keep the others
+items.set(prev =&gt; prev.map(it =&gt; it.id === 5 ? { ...it, done: true } : it));
+
+// Array: add an item
+items.set(prev =&gt; [...prev, newItem]);
+
+// Array: remove an item
+items.set(prev =&gt; prev.filter(it =&gt; it.id !== 5));
+
+// Object: change one field
+user.set(prev =&gt; ({ ...prev, name: 'Ada' }));
+
+// Nested object: change a deep field (each level needs a spread)
+state.set(prev =&gt; ({
+  ...prev,
+  profile: { ...prev.profile, name: 'Ada' },
+}));</code></pre>
+
+    <p>If a field needs to update frequently and is deeply nested, give it its own signal rather than reaching for spreads on every level. See <a href="#per-row-signals">Per-row signals</a> below.</p>
+
+    <h3 id="what-does-not-trigger">What does <em>not</em> trigger an update</h3>
+
+    <pre><code class="language-javascript">const items = signal([{ id: 1, label: 'a' }, { id: 2, label: 'b' }]);
+
+// 1. Mutating an element of the array. No update.
+items.get()[0].label = 'changed';
+
+// 2. Setting the signal to the same array reference. No update.
+items.set(items.get());
+
+// 3. Mutating then re-setting with the same reference. Still no update.
+items.get()[0].label = 'changed';
+items.set(items.get());
+
+// 4. In-place array methods like push, pop, shift, unshift, splice, sort, reverse.
+//    All mutate the existing array. The signal isn't notified.
+items.get().push({ id: 3, label: 'c' });
+items.get().splice(0, 1);   // remove the first item
+items.get().sort((a, b) =&gt; a.label.localeCompare(b.label));
+
+// 5. Object.assign on an existing object. The returned value is the same target reference,
+//    so even re-setting after it does nothing.
+Object.assign(items.get()[0], { label: 'changed', done: true });
+
+// 5a. Capturing the array first, mutating, then re-setting doesn't help either. `arr` is
+//     the same reference as items.get(), so signal.set short-circuits via Object.is. The
+//     value returned by Object.assign is also the same target reference.
+const arr = items.get();
+Object.assign(arr[0], { label: 'changed', done: true });
+items.set(arr);                       // no update</code></pre>
+
+    <p>All five patterns leave the DOM stale. The first, fourth, and fifth update internal state but never tell the signal anything happened. The second, third, and 5a get short-circuited because <code>Object.is(items.get(), items.get())</code> is true regardless of whether the value was mutated in between.</p>
+
+    <p>Mutating helpers like <code>splice</code>, <code>sort</code>, and <code>Object.assign</code> are particularly easy to reach for because they look like they "update" the value. They do, but the signal doesn't know. The non-mutating forms work as expected:</p>
+
+    <pre><code class="language-javascript">// Remove an item: filter to a new array
+items.set(prev =&gt; prev.filter((_, i) =&gt; i !== 0));
+
+// Add an item: spread into a new array
+items.set(prev =&gt; [...prev, { id: 3, label: 'c' }]);
+
+// Sort: toSorted returns a new array (ES2023+, or use [...prev].sort())
+items.set(prev =&gt; prev.toSorted((a, b) =&gt; a.label.localeCompare(b.label)));
+
+// Patch fields on an item: spread the item into a new object
+items.set(prev =&gt; prev.map(it =&gt;
+  it.id === 1 ? { ...it, label: 'changed', done: true } : it,
+));</code></pre>
+
+    <h3 id="when-the-dom-updates">When the DOM actually updates</h3>
+
+    <p>Once a signal fires, what happens to the DOM depends on where the signal is used.</p>
+
+    <table>
+      <thead>
+        <tr><th>Use site</th><th>What updates</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>t.div(signal)</code> (signal as content)</td>
+          <td>The text node (or the matching set of child nodes for an array signal) is patched in place. Surrounding content is untouched.</td>
+        </tr>
+        <tr>
+          <td><code>t.input({ value: signal })</code> (signal as attribute)</td>
+          <td>Just that attribute. <code>setAttribute</code> is called. Boolean attributes are added or removed.</td>
+        </tr>
+        <tr>
+          <td><code>t.input({ prop: { value: signal } })</code> (signal as DOM property)</td>
+          <td>Just that property. <code>element[prop] = value</code> is called. Required for things like <code>input.value</code> after the user has typed into the field.</td>
+        </tr>
+        <tr>
+          <td>Inside <code>effect(() =&gt; ...)</code></td>
+          <td>The effect re-runs. Multiple <code>.set()</code> calls in the same synchronous turn coalesce into a single re-run via microtask batching.</td>
+        </tr>
+        <tr>
+          <td>Inside <code>computed(() =&gt; ...)</code></td>
+          <td>The computed re-evaluates synchronously. Its subscribers then update as above.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3 id="per-row-signals">Per-row signals for fine-grained updates</h3>
+
+    <p>For lists where individual rows change often, store a signal on each item rather than reactively re-rendering the entire array.</p>
+
+    <pre><code class="language-javascript">// The whole `items` array doesn't need to re-render when one row's done flag flips.
+const items = signal([
+  { id: 1, label: 'Buy milk', done: signal(false) },
+  { id: 2, label: 'Walk dog', done: signal(true)  },
+]);
+
+function row(item) {
+  return t.li(
+    {
+      dataKey: item.id,
+      class: item.done.transform(d =&gt; d ? 'done' : 'open'),
+    },
+    item.label,
+  );
+}
+
+const list = t.ul(items.transform(arr =&gt; arr.map(row))).toElement();
+
+// Update one row. The parent `items` signal does not fire. Only the affected element's
+// class attribute is rewritten. Adding or removing a row still uses items.set() with a
+// fresh array.
+items.get()[0].done.set(true);</code></pre>
+
+    <p>The keyed reconciler is built for the array-set path (adding, removing, reordering rows). Per-row signals are the right tool when only a row's contents change.</p>
+  </section>
 
   <!-- ── .value ───────────────────────────────────────────────── -->
 
@@ -270,7 +438,7 @@ effect(() =&gt; {
   <!-- ── .transform() ────────────────────────────────────────── -->
 
   <section id="signal-transform">
-    <h2>.transform()</h2>
+    <h2>.transform</h2>
 
     <p>Returns a new read-only signal whose value is derived by passing the source signal's value through a function. Equivalent to <code>computed(() =&gt; fn(source.get()))</code>, but attached directly to the signal.</p>
 

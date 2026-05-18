@@ -270,7 +270,7 @@ const rows = items.transform(list =>
 t.tbody(rows);
 ```
 
-Add `dataKey` whenever items may reorder, be added, or removed. Reused nodes are diffed recursively; signal effects on discarded nodes are stopped automatically.
+Add `dataKey` whenever items may reorder, be added, or removed. Reused nodes are diffed recursively; signal effects on discarded nodes are stopped automatically. Keyed nodes whose attributes and content are structurally unchanged from the previous render are reused as-is without a diff pass, so the naive `arr.map(item => t.tr({ dataKey: item.id }, item.name))` pattern is efficient without memoization. Inline functions, `LiteralTag`, and other non-plain values in attributes or content compare by reference, so prefer stable references (event delegation, signals stored on the item) when row-level reuse matters.
 
 ### Cleanup
 
