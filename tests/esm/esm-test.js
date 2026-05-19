@@ -1316,6 +1316,22 @@ describe('svg tag', () => {
       '<svg>\n  <circle r="5" cx="5" cy="5"></circle>\n</svg>',
     );
   });
+  it('accepts xmlns attribute', () => {
+    assert.strictEqual(
+      t.svg({ xmlns: 'http://www.w3.org/2000/svg' }).toString(),
+      '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
+    );
+  });
+  it('does not throw or warn on xmlns attribute when validationLevel is error', () => {
+    const te = new Kensington({ validationLevel: 'error' });
+    assert.doesNotThrow(() => te.svg({ xmlns: 'http://www.w3.org/2000/svg' }).toString());
+  });
+  it('does not throw or warn on xmlns attribute when validationLevel is warn', () => {
+    let warned = false;
+    const tw = new Kensington({ validationLevel: 'warn', logger: () => { warned = true; } });
+    assert.doesNotThrow(() => tw.svg({ xmlns: 'http://www.w3.org/2000/svg' }).toString());
+    assert.strictEqual(warned, false);
+  });
 });
 
 // ─── math tag ──────────────────────────────────────────────────────────────

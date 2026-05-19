@@ -4872,6 +4872,7 @@ type SvgAttributes = {
   'width'?: number | string;
   'x'?: number | string;
   'xml:space'?: "default" | "preserve";
+  'xmlns'?: string;
   'y'?: number | string;
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 

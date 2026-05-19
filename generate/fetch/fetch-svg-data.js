@@ -129,23 +129,32 @@ export default async function fetchSvgData() {
     ]),
   ].sort();
 
+  const svgElements = [
+    ...animationElements,
+    ...cssMaskingElements,
+    ...embededElements,
+    ...filterElements,
+    ...interactElements,
+    ...linkingElements,
+    ...paintServerElements,
+    ...paintingElements,
+    ...pathElements,
+    ...shapeElements,
+    ...structElements,
+    ...stylingElements,
+    ...textElements,
+  ];
+
+  // xmlns is an XML Namespaces declaration, not defined in the SVG spec, so it never
+  // appears in the scraped data. Add it manually to the root svg element.
+  const svgEl = svgElements.find(el => el.tag === 'svg');
+  if (svgEl && !svgEl.attributes.includes('xmlns')) {
+    svgEl.attributes = [...svgEl.attributes, 'xmlns'].sort();
+  }
+
   return {
     svgAttributes,
-    svgElements: [
-      ...animationElements,
-      ...cssMaskingElements,
-      ...embededElements,
-      ...filterElements,
-      ...interactElements,
-      ...linkingElements,
-      ...paintServerElements,
-      ...paintingElements,
-      ...pathElements,
-      ...shapeElements,
-      ...structElements,
-      ...stylingElements,
-      ...textElements,
-    ],
+    svgElements,
     svgPresentationAttributes,
   };
 }

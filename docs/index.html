@@ -494,6 +494,12 @@ const t = new Kensington({
   logger: msg =&gt; myLogger(msg),              // receives validation warnings, default console.log
 });</code></pre>
 
+    <aside>
+      <p>For standalone <code>.svg</code> files or XML contexts that need <code>xmlns:xlink</code> or other XML namespace declarations, pass <code>'xmlns'</code> as an additional namespace. The root <code>svg</code> element already accepts <code>xmlns</code> itself without any extra configuration.</p>
+      <pre><code class="language-javascript">const t = new Kensington({ additionalNamespaces: 'xmlns' });
+t.svg({ xmlns: 'http://www.w3.org/2000/svg', 'xmlns:xlink': 'http://www.w3.org/1999/xlink' });</code></pre>
+    </aside>
+
     <h3 id="validation">Validation</h3>
 
     <table>
