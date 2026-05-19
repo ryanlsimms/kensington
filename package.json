@@ -16,7 +16,6 @@
     "dist",
     "types.d.ts",
     "attributes.d.ts",
-    "llms.txt",
     "AGENTS.md"
   ],
   "typesVersions": {

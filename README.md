@@ -12,13 +12,6 @@ The goal is to be simple to learn and let developers code in pure JavaScript or 
 
 **[Full documentation →](https://ryanlsimms.github.io/kensington)**
 
-## AI assistants
-
-An `llms.txt` file is included in the package and published to npm. Point your AI assistant at it for accurate help with Kensington:
-
-- **Claude Code / Cursor / Windsurf**: reference `node_modules/kensington/llms.txt` in your conversation or add it to your project's context file.
-- **Any chat interface**: paste the contents directly into the conversation.
-
 ## Installation
 
 ```bash
@@ -34,19 +27,6 @@ Or in a browser without a build step, via CDN:
 <script type="module">
   import Kensington from 'https://cdn.jsdelivr.net/npm/kensington/dist/kensington.min.js';
 </script>
-```
-
-## TypeScript
-
-Tags, attribute names/values, inline style property names, and some nested tags are comprehensively typed against the official HTML/SVG/MathML specs. Typos in attribute names and out-of-range values are caught at compile time. Most IDEs will display TypeScript errors/suggestions in JavaScript files as well.
-
-```typescript
-t.input({ typ: 'checkbox' });
-// TypeScript: Property 'typ' does not exist on type 'InputAttributes'
-
-t.input({ formenctype: 'text' });
-// TypeScript: Type '"text"' is not assignable to type
-// "application/x-www-form-urlencoded" | "multipart/form-data" | "text/plain"
 ```
 
 ## Example
@@ -90,8 +70,28 @@ const page = t.htmlWithDocType({ lang: 'en' }, [
 // or .toElement() in the browser to create a dom node
 ```
 
+## TypeScript
+
+Tags, attribute names/values, inline style property names, and some nested tags are comprehensively typed against the official HTML/SVG/MathML specs. Typos in attribute names and out-of-range values are caught at compile time. Most IDEs will display TypeScript errors/suggestions in JavaScript files as well.
+
+```typescript
+t.input({ typ: 'checkbox' });
+// TypeScript: Property 'typ' does not exist on type 'InputAttributes'
+
+t.input({ formenctype: 'text' });
+// TypeScript: Type '"text"' is not assignable to type
+// "application/x-www-form-urlencoded" | "multipart/form-data" | "text/plain"
+```
+
 ## Dev vs production
 
 In development, set `validationLevel` to `'warn'` or `'error'` to catch invalid attributes at runtime. In production, import from `kensington/dist/slim` for a bundle about 9× smaller (~136 KB to ~15 KB minified). See [Dev vs production](https://ryanlsimms.github.io/kensington#dev-vs-prod) for the Vite, Rollup, esbuild, and Webpack setups that switch builds automatically.
+
+## AI assistants
+
+An `AGENTS.md` file is included in the package and published to npm. Point your AI assistant at it for accurate help with Kensington:
+
+- **Claude Code / Cursor / Windsurf**: reference `node_modules/kensington/AGENTS.md` in your conversation or add it to your project's context file.
+- **Any chat interface**: paste the contents directly into the conversation.
 
 **[Full documentation →](https://ryanlsimms.github.io/kensington)**
