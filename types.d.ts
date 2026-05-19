@@ -4899,6 +4899,7 @@ type SvgAttributes = {
   'width'?: Reactive<number | string>;
   'x'?: Reactive<number | string>;
   'xml:space'?: Reactive<"default" | "preserve">;
+  'xmlns'?: Reactive<string>;
   'y'?: Reactive<number | string>;
   prop?: PropFor<'svg'> | null;
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;

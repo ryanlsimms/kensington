@@ -3850,6 +3850,7 @@ export const svgAttributes = {
   'width': [Number,String],
   'x': [Number,String],
   'xml:space': ['default', 'preserve'],
+  'xmlns': String,
   'y': [Number,String],
 };
 export const switchAttributes = {
