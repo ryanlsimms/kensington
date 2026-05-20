@@ -4,9 +4,13 @@
 [![CI](https://github.com/ryanlsimms/kensington/actions/workflows/ci.yml/badge.svg)](https://github.com/ryanlsimms/kensington/actions/workflows/ci.yml)
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
 
-HTML/SVG/MathML library for JavaScript and TypeScript. Components are plain functions with no JSX, no magic attributes, and no build step. Call `.toString()` for an HTML string, `.toElement()` for a live DOM node in the browser. Comprehensive typing directly from the official specs.
+HTML/SVG/MathML library for JavaScript and TypeScript. Call `.toString()` for an HTML string, `.toElement()` for a live DOM node in the browser.
 
-**[Full documentation →](https://ryanlsimms.github.io/kensington)**
+- Comprehensive typing directly from the official specs.
+- Components are plain functions with no JSX, no build step, and very little to learn.
+- Simple reactive data via built-in signals.
+
+## **[Full documentation →](https://ryansimms.com)**
 
 ## Installation
 
@@ -64,7 +68,7 @@ t.input({ formenctype: 'text' });
 
 ## Reactive data
 
-In the browser, import `signal`, `computed`, and `effect` to build reactive UIs. Pass a signal as content or an option value and the DOM updates in place.
+In the browser, import `signal`, `computed`, and `effect` to build reactive UIs. Pass a signal as content or an option value and the DOM updates in place. 
 
 ```javascript
 import { t, signal, computed, effect } from 'kensington';
@@ -114,4 +118,4 @@ An `AGENTS.md` file is included in the package and published to npm. Point your 
 - **Claude Code / Cursor / Windsurf**: reference `node_modules/kensington/AGENTS.md` in your conversation or add it to your project's context file.
 - **Any chat interface**: paste the contents directly into the conversation.
 
-**[Full documentation →](https://ryanlsimms.github.io/kensington)**
+## **[Full documentation →](https://ryansimms.com)**

@@ -37,6 +37,8 @@
         <li><a href="#ssr">Server-side rendering</a></li>
         <li><a href="#framework-integration">Framework integration</a></li>
         <li><a href="#express-render-helper">Express render helper</a></li>
+        <li><a href="#kensington-express">kensington-express</a></li>
+        <li><a href="#kensington-fastify">kensington-fastify</a></li>
         <li><a href="#form-from-schema">Form from schema</a></li>
         <li><a href="#preformatted">Preformatted blocks</a></li>
       </ul>
@@ -219,6 +221,117 @@ app.get('/users', async (req, res) => {
 });</code></pre>
         </div>
       </div>
+    </section>
+
+    <section id="kensington-express">
+      <h3>kensington-express</h3>
+
+      <p><a href="https://www.npmjs.com/package/kensington-express" target="_blank" rel="noopener">kensington-express</a> is an Express middleware that attaches <code>res.renderView()</code> to each response. It applies a default layout, merges locals, and sets the content-type header automatically.</p>
+
+      <pre><code class="language-bash">npm install kensington-express</code></pre>
+
+      <div class="panels">
+        <div>
+          <div class="panel-label">views/layout.js</div>
+          <pre><code class="language-javascript">import { t } from 'kensington';
+
+export default function layout(locals, page) {
+  return t.htmlWithDocType({ lang: 'en' }, [
+    t.head([
+      t.meta({ charset: 'utf-8' }),
+      t.title(locals.title),
+      t.link({ rel: 'stylesheet', href: '/style.css' }),
+    ]),
+    t.body(page(locals)),
+  ]);
+}</code></pre>
+        </div>
+        <div>
+          <div class="panel-label">views/home.js</div>
+          <pre><code class="language-javascript">import { t } from 'kensington';
+
+export default function homePage({ title, items }) {
+  return t.main([
+    t.h1(title),
+    t.ul(items.map(item => t.li(item))),
+  ]);
+}</code></pre>
+        </div>
+      </div>
+
+      <pre><code class="language-javascript">// app.js
+import express from 'express';
+import kensingtonView from 'kensington-express';
+import layout from './views/layout.js';
+import homePage from './views/home.js';
+
+const app = express();
+app.use(kensingtonView(layout));
+
+app.get('/', (req, res) => {
+  res.renderView(homePage, { title: 'Home', items: ['foo', 'bar'] });
+});</code></pre>
+
+      <p>Locals passed to <code>renderView</code> are merged with <code>req.route</code>, <code>app.locals</code>, and <code>res.locals</code> (later values win). To use a different layout for one route, pass it as <code>layout</code> in the options object. Pass <code>layout: null</code> to skip the layout entirely, which is useful for returning bare HTML fragments for htmx swap targets.</p>
+
+      <pre><code class="language-javascript">// Alternate layout for one route
+app.get('/admin', (req, res) => {
+  res.renderView(adminPage, { layout: adminLayout, title: 'Admin' });
+});
+
+// No layout (bare fragment)
+app.get('/fragment', (req, res) => {
+  res.renderView(myFragment, { layout: null });
+});</code></pre>
+    </section>
+
+    <section id="kensington-fastify">
+      <h3>kensington-fastify</h3>
+
+      <p><a href="https://www.npmjs.com/package/kensington-fastify" target="_blank" rel="noopener">kensington-fastify</a> is a Fastify plugin that attaches <code>reply.renderView()</code> and decorates each reply with <code>reply.locals</code> for per-request data.</p>
+
+      <pre><code class="language-bash">npm install kensington-fastify</code></pre>
+
+      <pre><code class="language-javascript">// server.js
+import Fastify from 'fastify';
+import kensingtonView from 'kensington-fastify';
+import layout from './views/layout.js';
+import homePage from './views/home.js';
+
+const fastify = Fastify();
+
+await fastify.register(kensingtonView, {
+  defaultLayout: layout,
+  defaultContext: { appName: 'My App' },
+});
+
+fastify.get('/', async (request, reply) => {
+  reply.renderView(homePage, { title: 'Home', items: ['foo', 'bar'] });
+});</code></pre>
+
+      <p>Locals are merged in this order (later values win): <code>defaultContext</code>, <code>reply.locals</code>, options passed to <code>renderView</code>. Use <code>reply.locals</code> in a hook to attach per-request data without passing it to every <code>renderView</code> call.</p>
+
+      <pre><code class="language-javascript">// Attach the current user in a hook — available in every page renderer
+fastify.addHook('preHandler', async (request, reply) => {
+  reply.locals.user = await getUserFromSession(request);
+});
+
+fastify.get('/', async (request, reply) => {
+  reply.renderView(homePage, { title: 'Home' });
+  // locals available to the renderer: { appName, user, title }
+});</code></pre>
+
+      <p>To use an alternate layout or skip the layout for one route, pass <code>layout</code> in the options object. Pass <code>layout: null</code> for bare HTML fragments.</p>
+
+      <pre><code class="language-javascript">// Alternate layout
+fastify.get('/admin', async (request, reply) => {
+  reply.renderView(adminPage, { layout: adminLayout, title: 'Admin' });
+});
+
+// No layout (bare fragment, e.g. for htmx)
+fastify.get('/fragment', async (request, reply) => {
+  reply.renderView(myFragment, { layout: null });
+});</code></pre>
     </section>
 
     <section id="form-from-schema">

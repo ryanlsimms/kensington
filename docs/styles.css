@@ -738,6 +738,61 @@ aside p:last-child { margin-bottom: 0; }
 .ide-ts-type  { color: #4ec9b0; }
 .ide-ts-muted { color: #6a9955; }
 
+.ide-squiggly-warn {
+  text-decoration: underline wavy #e2c08d;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
+}
+
+.ide-warn-icon {
+  color: #e2c08d;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.ide-completion {
+  background: #252526;
+  border-top: 1px solid #3c3c3c;
+  font-size: 0.8rem;
+}
+
+.ide-completion-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0.875rem;
+  color: #cccccc;
+  gap: 1.5rem;
+}
+
+.ide-completion-item + .ide-completion-item {
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.ide-completion-selected { background: #094771; }
+
+.ide-completion-source {
+  color: #6a9955;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.ide-cursor {
+  display: inline-block;
+  width: 1px;
+  height: 1em;
+  background: #aeafad;
+  vertical-align: text-bottom;
+  margin-left: 1px;
+  animation: ide-blink 1s step-end infinite;
+}
+
+@keyframes ide-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
 /* ── Responsive ───────────────────────────────────────────── */
 
 @media (max-width: 999px) {
