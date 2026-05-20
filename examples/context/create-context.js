@@ -1,24 +1,27 @@
-import { Signal, signal } from 'kensington';
+import { signal } from 'kensington';
 
 export function createContext(defaultValue) {
-  const _default = signal(defaultValue);
-  const _stack = [];
+  // each nested .provide call pushes a new value onto the stack at the beginning of the content block
+  // and pops it off at the end of the content block
+  const _stack = [signal(defaultValue)];
 
   return {
-    get() {
-      return _stack.length > 0 ? _stack[_stack.length - 1] : _default;
-    },
-
     provide(value, fn) {
-      const ctx = value instanceof Signal ? value : signal(value);
+      const ctx = signal(value);
       _stack.push(ctx);
-      const result = fn(ctx);
-      _stack.pop();
-      return result;
+      try {
+        return fn(ctx);
+      } finally {
+        _stack.pop();
+      }
     },
 
-    set(...args) {
-      return this.get().set(...args);
+    get() {
+      return _stack.at(-1);
+    },
+
+    set(val) {
+      return this.get().set(val);
     },
   };
 }

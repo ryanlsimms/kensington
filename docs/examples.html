@@ -57,6 +57,16 @@
         <li><a href="#spa-router">Single-page app router</a></li>
       </ul>
     </li>
+    <li><a href="#missing-features">&ldquo;Missing&rdquo; features</a>
+      <ul>
+        <li><a href="#create-context">createContext</a></li>
+        <li><a href="#use-reducer">useReducer</a></li>
+        <li><a href="#use-local-storage">useLocalStorage</a></li>
+        <li><a href="#use-debounce">useDebounce</a></li>
+        <li><a href="#use-fetch">useFetch</a></li>
+        <li><a href="#use-id">useId</a></li>
+      </ul>
+    </li>
     <li><a href="#integrations">Integrations</a>
       <ul>
         <li><a href="#htmx">htmx</a></li>
@@ -899,6 +909,334 @@ function notFound() {
     </section>
 
   </section>
+
+  <!-- ── "Missing" features ───────────────────────────────── -->
+
+  <section id="missing-features">
+    <h2>&ldquo;Missing&rdquo; features</h2>
+
+    <p>These patterns from React have no direct equivalent in Kensington, but can be built in a few lines on top of <code>signal</code> and <code>effect</code>.</p>
+
+    <section id="create-context">
+      <h3>createContext</h3>
+
+      <p>React's <code>createContext</code> / <code>useContext</code> pattern can be built on top of a signal stack. Components call <code>context.get()</code> during synchronous construction to get the nearest provider's signal. <code>provide(value, fn)</code> wraps the value in a new signal, pushes it onto the stack, calls <code>fn()</code> to build the subtree, then pops. Consumers hold the signal reference after construction and update reactively through the normal signal subscription mechanism.</p>
+
+      <pre><code class="language-javascript">// create-context.js
+import { signal } from 'kensington';
+
+function createContext(defaultValue) {
+  // each nested .provide call pushes a new value onto the stack at the beginning of the content block
+  // and pops it off at the end of the content block
+  const _stack = [signal(defaultValue)];
+
+  return {
+    get() {
+      return _stack.at(-1);
+    },
+
+    provide(value, fn) {
+      const ctx = signal(value);
+      _stack.push(ctx);
+      try {
+        return fn(ctx);
+      } finally {
+        _stack.pop();
+      }
+    },
+
+    set(val) {
+      return this.get().set(val);
+    },
+  };
+}</code></pre>
+
+      <pre><code class="language-javascript">import { t } from 'kensington';
+import { createContext } from './create-context.js';
+
+const ThemeContext = createContext('light');
+const UserContext = createContext({ name: 'Guest', role: 'viewer' });
+
+function themeCard(title) {
+  const theme = ThemeContext.get(); // signal reference captured at construction time; stays reactive
+  return t.div({ class: theme.transform(v =&gt; `card card--${v}`) }, [
+    t.strong(title),
+    t.small(['theme: ', theme]),
+  ]);
+}
+
+function userBadge() {
+  const user = UserContext.get();
+  return t.span(user.transform(u =&gt; `${u.name} (${u.role})`));
+}
+
+const app = t.div([
+  t.button({
+    type: 'button',
+    onclick: () =&gt; ThemeContext.set(v =&gt; v === 'light' ? 'dark' : 'light'),
+  }, 'Toggle theme'),
+  t.button({
+    type: 'button',
+    onclick: () =&gt; UserContext.set(
+      u =&gt; u.name === 'Guest'
+        ? { name: 'Alice', role: 'admin' }
+        : { name: 'Guest', role: 'viewer' }
+    ),
+  }, 'Toggle login'),
+
+  // No provider. Reads from the default signals.
+  t.section([userBadge(), themeCard('Default')]),
+
+  // Static provide. Always dark regardless of the toggle.
+  ThemeContext.provide('dark', () =&gt;
+    t.section([userBadge(), themeCard('Always dark')]),
+  ),
+
+  // User overridden. The login toggle does not affect this subtree.
+  UserContext.provide({ name: 'Bob', role: 'editor' }, () =&gt;
+    t.section([userBadge(), themeCard('Bob is always the user here')]),
+  ),
+]);
+
+document.body.append(app.toElement());</code></pre>
+    </section>
+
+    <section id="use-reducer">
+      <h3>useReducer</h3>
+
+      <p><code>useReducer</code> centralises state transitions behind a <code>dispatch</code> function. Wrap <code>signal.set</code> with a reducer to get the same pattern: complex state machines stay readable and the call sites only send action objects.</p>
+
+      <pre><code class="language-javascript">// use-reducer.js
+import { signal } from 'kensington';
+
+function useReducer(reducer, initialState) {
+  const state = signal(initialState);
+  function dispatch(action) {
+    state.set(s =&gt; reducer(s, action)); // updater form: reducer always sees the latest state
+  }
+  return { state, dispatch };
+}</code></pre>
+
+      <pre><code class="language-javascript">import { t } from 'kensington';
+import { useReducer } from './use-reducer.js';
+
+function cartReducer(state, action) {
+  switch (action.type) {
+    case 'add':
+      return { items: [...state.items, action.item], total: state.total + action.item.price };
+    case 'remove': {
+      const item = state.items.find(i =&gt; i.id === action.id);
+      return { items: state.items.filter(i =&gt; i.id !== action.id), total: state.total - item.price };
+    }
+    case 'clear':
+      return { items: [], total: 0 };
+    default:
+      return state;
+  }
+}
+
+const { state, dispatch } = useReducer(cartReducer, { items: [], total: 0 });
+
+const products = [
+  { id: 1, name: 'Widget',     price: 9.99  },
+  { id: 2, name: 'Gadget',     price: 24.99 },
+  { id: 3, name: 'Doohickey',  price: 4.99  },
+];
+
+document.body.append(
+  t.div([
+    t.h2('Shop'),
+    t.ul(products.map(p =>
+      t.li([p.name, ' — ', t.button({ type: 'button', onclick: () =&gt; dispatch({ type: 'add', item: p }) }, 'Add')])
+    )),
+    t.h2('Cart'),
+    t.ul(state.transform(s =&gt;
+      s.items.map(item =&gt;
+        t.li({ dataKey: item.id }, [
+          item.name,
+          ' ',
+          t.button({ type: 'button', onclick: () =&gt; dispatch({ type: 'remove', id: item.id }) }, 'Remove'),
+        ])
+      )
+    )),
+    t.p(state.transform(s =&gt; `Total: $${s.total.toFixed(2)}`)),
+    t.button({ type: 'button', onclick: () =&gt; dispatch({ type: 'clear' }) }, 'Clear cart'),
+  ]).toElement()
+);</code></pre>
+    </section>
+
+    <section id="use-local-storage">
+      <h3>useLocalStorage</h3>
+
+      <p>A signal that reads its initial value from <code>localStorage</code> and writes back on every change. The <code>effect</code> handles the sync; the rest of your code just reads and sets the signal normally. Guard the initial read with <code>isBrowser</code> so server-rendered components do not throw.</p>
+
+      <pre><code class="language-javascript">// use-local-storage.js
+import { signal, effect, isBrowser } from 'kensington';
+
+function useLocalStorage(key, defaultValue) {
+  const stored = isBrowser ? localStorage.getItem(key) : null;
+  const s = signal(stored !== null ? JSON.parse(stored) : defaultValue); // !== null: stored could be '0', 'false', etc.
+  effect(() =&gt; {
+    localStorage.setItem(key, JSON.stringify(s.get()));
+  });
+  return s;
+}</code></pre>
+
+      <pre><code class="language-javascript">import { t } from 'kensington';
+import { useLocalStorage } from './use-local-storage.js';
+
+const theme = useLocalStorage('theme', 'light');
+
+document.body.append(
+  t.div([
+    t.p(['Current theme: ', theme]),
+    t.button({
+      type: 'button',
+      onclick: () =&gt; theme.set(v =&gt; v === 'light' ? 'dark' : 'light'),
+    }, theme.transform(v =&gt; `Switch to ${v === 'light' ? 'dark' : 'light'} mode`)),
+  ]).toElement()
+);</code></pre>
+    </section>
+
+    <section id="use-debounce">
+      <h3>useDebounce</h3>
+
+      <p>Returns a derived signal that only updates after the source has been stable for <code>delay</code> milliseconds. Each time the source changes, the pending timeout is cleared and restarted. Because <code>effect</code> does not support a cleanup return value, the timeout ID lives in the enclosing closure.</p>
+
+      <pre><code class="language-javascript">// use-debounce.js
+import { signal, effect } from 'kensington';
+
+function useDebounce(source, delay) {
+  const debounced = signal(source.get());
+  let id;
+  effect(() =&gt; {
+    const value = source.get();
+    clearTimeout(id);
+    id = setTimeout(() =&gt; debounced.set(value), delay);
+  });
+  return debounced;
+}</code></pre>
+
+      <pre><code class="language-javascript">import { signal, effect, t } from 'kensington';
+import { useDebounce } from './use-debounce.js';
+
+const query    = signal('');
+const debounced = useDebounce(query, 300);
+const results  = signal([]);
+
+// fetch fires only after the user pauses, not on every keystroke
+effect(() =&gt; {
+  const q = debounced.get();
+  if (!q) { results.set([]); return; }
+  fetch(`/api/search?q=${encodeURIComponent(q)}`)
+    .then(r =&gt; r.json())
+    .then(data =&gt; results.set(data));
+});
+
+document.body.append(
+  t.div([
+    t.input({
+      type: 'search',
+      placeholder: 'Search...',
+      oninput: e =&gt; query.set(e.target.value),
+    }),
+    t.ul(results.transform(items =&gt; items.map(r =&gt; t.li(r)))),
+  ]).toElement()
+);</code></pre>
+    </section>
+
+    <section id="use-fetch">
+      <h3>useFetch</h3>
+
+      <p>Returns <code>{ data, loading, error }</code> signals that update as the request progresses. When the URL signal changes, the in-flight request is aborted via <code>AbortController</code> before the new one starts. The abort controller lives in the closure for the same reason as the debounce timeout -- <code>effect</code> does not support a cleanup return value.</p>
+
+      <pre><code class="language-javascript">// use-fetch.js
+import { signal, effect } from 'kensington';
+
+function useFetch(urlSignal) {
+  const data    = signal(null);
+  const loading = signal(true);
+  const error   = signal(null);
+  let controller;
+
+  effect(() =&gt; {
+    if (controller) controller.abort(); // cancel any in-flight request before starting a new one
+    controller = new AbortController();
+    loading.set(true);
+    error.set(null);
+
+    fetch(urlSignal.get(), { signal: controller.signal })
+      .then(r =&gt; r.json())
+      .then(json =&gt; { data.set(json); loading.set(false); })
+      .catch(err =&gt; {
+        if (err.name !== 'AbortError') { error.set(err.message); loading.set(false); } // AbortError is expected when we cancel; not a real failure
+      });
+  });
+
+  return { data, loading, error };
+}</code></pre>
+
+      <pre><code class="language-javascript">import { signal, t } from 'kensington';
+import { useFetch } from './use-fetch.js';
+
+const userId = signal(1);
+// derived signal: re-fetches automatically whenever userId changes
+const { data, loading, error } = useFetch(userId.transform(id =&gt; `/api/users/${id}`));
+
+document.body.append(
+  t.div([
+    t.div([
+      t.button({ type: 'button', onclick: () =&gt; userId.set(v =&gt; v - 1) }, 'Prev'),
+      t.span([' User ', userId, ' ']),
+      t.button({ type: 'button', onclick: () =&gt; userId.set(v =&gt; v + 1) }, 'Next'),
+    ]),
+    // signal content can be a tag — switches between loading, error, and data views reactively
+    loading.transform(l =&gt; l
+      ? t.p('Loading...')
+      : error.get()
+        ? t.p({ class: 'error' }, error.get())
+        : t.pre(JSON.stringify(data.get(), null, 2))
+    ),
+  ]).toElement()
+);</code></pre>
+    </section>
+
+    <section id="use-id">
+      <h3>useId</h3>
+
+      <p>Generates a unique, stable ID for pairing form labels with inputs. A module-level counter increments once per call. On the server it produces the same sequence on every request, so IDs in SSR output and client hydration match as long as components are called in the same order.</p>
+
+      <pre><code class="language-javascript">// use-id.js
+let _id = 0;
+
+function useId(prefix = 'k') {
+  return `${prefix}-${++_id}`;
+}</code></pre>
+
+      <pre><code class="language-javascript">import { t } from 'kensington';
+import { useId } from './use-id.js';
+
+function labeledInput(label, type = 'text') {
+  const id = useId();
+  return t.div({ class: 'field' }, [
+    t.label({ for: id }, label),
+    t.input({ id, type }),
+  ]);
+}
+
+document.body.append(
+  t.form([
+    labeledInput('Full name'),
+    labeledInput('Email', 'email'),
+    labeledInput('Password', 'password'),
+    t.button({ type: 'submit' }, 'Sign up'),
+  ]).toElement()
+);</code></pre>
+    </section>
+
+  </section>
+
+  <!-- ── Integrations ──────────────────────────────────────── -->
 
   <section id="integrations">
     <h2>Integrations</h2>

@@ -59,6 +59,7 @@
     <li><a href="#constructor">Constructor options</a></li>
     <li><a href="#validation">Validation</a></li>
     <li><a href="#custom-elements">Custom elements</a></li>
+    <li><a href="#persist">Persist effects</a></li>
     <li><a href="#raw-html">Raw HTML &amp; comments</a></li>
     <li><a href="#cli">HTML &rarr; Kensington</a></li>
     <li><a href="#ai-assistants">AI assistants</a></li>
@@ -715,6 +716,20 @@ t.div({ hxBoost: 'true' });  // now valid</code></pre>
       <a href="examples.html#tailwind" class="example-link">Tailwind example &rarr;</a>
       <a href="examples.html#alpine" class="example-link">Alpine.js example &rarr;</a>
     </p>
+
+    <h3 id="persist">Persist effects</h3>
+
+    <p>By default, <code>.toElement()</code> stops signal effects permanently when an element is removed from the DOM. For elements that will be moved or temporarily removed and re-inserted, add <code>persist: true</code> to the tag options. Effects are paused on removal and resume automatically on re-insertion, across any number of cycles.</p>
+
+    <pre><code class="language-javascript">// Without persist: true, the reconciler's insertBefore moves during drag-reorder
+// trigger dom-tracker to permanently stop the item's signal effects (class, checked, etc.).
+// With persist: true, effects pause on removal and resume when the node is re-inserted.
+const item = t.li({ 'data-key': task.id, class: statusClass, persist: true }, [
+  t.input({ type: 'checkbox', checked: task.done }),
+  t.span(task.text),
+]);</code></pre>
+
+    <p><code>persist: true</code> is silently ignored in <code>.toString()</code> and has no effect on server-side rendering. It only changes behavior when an element created by <code>.toElement()</code> is removed and re-inserted into the DOM.</p>
 
     <h3 id="raw-html">Raw HTML &amp; comments</h3>
 
