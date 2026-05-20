@@ -22,13 +22,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Set up test symlinks
-        run: |
-          mkdir -p tests/esm/node_modules tests/cjs/node_modules tests/typescript/node_modules
-          ln -s "$(pwd)" tests/esm/node_modules/kensington
-          ln -s "$(pwd)" tests/cjs/node_modules/kensington
-          ln -s "$(pwd)" tests/typescript/node_modules/kensington
-
       - name: Install Playwright browsers
         run:  npx playwright install --with-deps
 
