@@ -29,8 +29,8 @@ export default [
   },
   {
     'rules': {
-      '@stylistic/js/array-bracket-newline': 'off',
-      '@stylistic/js/array-element-newline': 'off',
+      '@stylistic/js/array-bracket-newline': ['error', 'consistent'],
+      '@stylistic/js/array-element-newline': ['error', 'consistent'],
       '@stylistic/js/arrow-parens': ['error', 'as-needed'],
       '@stylistic/js/brace-style': 'off',
       '@stylistic/js/comma-dangle': ['error', 'always-multiline'],

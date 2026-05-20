@@ -49,6 +49,19 @@ profileCard('Alice', 'Senior Engineer').toString();
 // </article>
 ```
 
+## TypeScript
+
+Tags, attribute names/values, inline style property names, and some nested tags are comprehensively typed against the official HTML/SVG/MathML specs. Typos in attribute names and out-of-range values are caught at compile time. Most IDEs will display TypeScript errors/suggestions in JavaScript files as well.
+
+```typescript
+t.input({ typ: 'checkbox' });
+// TypeScript: Property 'typ' does not exist on type 'InputAttributes'
+
+t.input({ formenctype: 'text' });
+// TypeScript: Type '"text"' is not assignable to formenctype
+// "application/x-www-form-urlencoded" | "multipart/form-data" | "text/plain"
+```
+
 ## Reactive data
 
 In the browser, import `signal`, `computed`, and `effect` to build reactive UIs. Pass a signal as content or an option value and the DOM updates in place.
@@ -88,19 +101,6 @@ import { registerComponents } from 'kensington';
 import { counter } from './components/counter.js';
 
 registerComponents({ counter });
-```
-
-## TypeScript
-
-Tags, attribute names/values, inline style property names, and some nested tags are comprehensively typed against the official HTML/SVG/MathML specs. Typos in attribute names and out-of-range values are caught at compile time. Most IDEs will display TypeScript errors/suggestions in JavaScript files as well.
-
-```typescript
-t.input({ typ: 'checkbox' });
-// TypeScript: Property 'typ' does not exist on type 'InputAttributes'
-
-t.input({ formenctype: 'text' });
-// TypeScript: Type '"text"' is not assignable to type
-// "application/x-www-form-urlencoded" | "multipart/form-data" | "text/plain"
 ```
 
 ## Dev vs production

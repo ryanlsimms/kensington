@@ -80,6 +80,7 @@ export default class ContentTag {
     this.tagName = options.tagName;
     this.attributes = options.attributes;
     this.prop = options.attributes?.prop ?? null;
+    this.persist = options.attributes?.persist ?? false;
     this.additionalGlobalAttributes = options.additionalGlobalAttributes ?? {};
     this.allowedAttributeMap = options.allowedAttributeMap ?? new Map(); // empty Map fallback. All non-namespace attrs fail has(), so custom tags with no spec reject everything except namespaces
     this.contentIsLiteral = options.contentIsLiteral;
@@ -138,7 +139,8 @@ export default class ContentTag {
     el.replaceWith(this.toElement());
   }
 
-  toElement({ persist = false } = {}) {
+  toElement() {
+    const persist = this.persist;
     if (this.#domElement) {
       if (this.#domElement.parentNode !== null) {
         showInvalid(`toElement() called on a tag instance already in the DOM — the same node will be moved. Call the tag as a function to create a new independent node.`, this.validationLevel, this.logger);

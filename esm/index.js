@@ -1,6 +1,8 @@
 import Kensington from './kensington.js';
 import Signal, { computed, effect } from './lib/reactive/signal.js';
 
+export { Signal };
+
 export default Kensington;
 
 // `@__PURE__` lets bundlers drop the Kensington class for slim consumers who only import

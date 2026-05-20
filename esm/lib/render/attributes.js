@@ -11,7 +11,7 @@ export function attributesArrayFromObject(obj, options = {}) {
     if (!attr.trim()) {
       continue;
     }
-    if (attr === 'on' || attr === 'prop') {
+    if (attr === 'on' || attr === 'prop' || attr === 'persist') {
       continue;
     }
     let val;

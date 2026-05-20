@@ -13,7 +13,7 @@ export function isValidNamespaceAttribute(tag, attr) {
 }
 
 export function attributeIsValid(tag, attr) {
-  if (attr === 'on' || attr === 'prop') { return true; }
+  if (attr === 'on' || attr === 'prop' || attr === 'persist') { return true; }
   return tag.allowedAttributeMap.has(attr) ||
     tag.allowedAttributeMap.has(camelToKebab(attr)) ||
     isValidNamespaceAttribute(tag, attr) ||
@@ -49,6 +49,9 @@ export function validateAttributeByType(type, value) {
 }
 
 export function attributeValueIsValid(tag, attr, value) {
+  if (attr === 'persist') {
+    return value === true || value === false || value === undefined || value === null;
+  }
   if (attr === 'on' || attr === 'prop') {
     if (value === null || value === undefined) { return true; }
     return typeof value === 'object' && !Array.isArray(value) && !(value instanceof Signal);

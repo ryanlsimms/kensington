@@ -20,6 +20,9 @@ export function isSSRMode() {
 const pending = new Set();
 let scheduled = false;
 const stopFns = new WeakMap();
+// sleep/wake hooks for auto-disposing computed signals when subscriber count hits zero.
+const sleepFns = new WeakMap();
+const wakeFns = new WeakMap();
 // Tracks signals created by computed()/transform() so .set() can be blocked on them.
 const derivedSignals = new WeakSet();
 // Counter rather than boolean so nested computed calls don't prematurely re-enable the guard.
@@ -52,6 +55,14 @@ function scheduleRun(fn) {
   }
 }
 
+function wakeForRead(sig) {
+  const wake = wakeFns.get(sig);
+  if (wake !== undefined && wake()) {
+    const sleep = sleepFns.get(sig);
+    if (sleep !== undefined) { sleep(); }
+  }
+}
+
 export default class Signal {
   #value;
   #subscribers = new Set();
@@ -62,14 +73,27 @@ export default class Signal {
 
   get() {
     if (currentEffect !== null && !this.#subscribers.has(currentEffect)) {
+      if (this.#subscribers.size === 0) {
+        const wake = wakeFns.get(this);
+        if (wake !== undefined) { wake(); }
+      }
       this.#subscribers.add(currentEffect);
       const sub = currentEffect;
-      sub._cleanups.push(() => this.#subscribers.delete(sub));
+      sub._cleanups.push(() => {
+        this.#subscribers.delete(sub);
+        if (this.#subscribers.size === 0) {
+          const sleep = sleepFns.get(this);
+          if (sleep !== undefined) { sleep(); }
+        }
+      });
+    } else if (currentEffect === null) {
+      wakeForRead(this);
     }
     return this.#value;
   }
 
   get value() {
+    wakeForRead(this);
     return this.#value;
   }
 
@@ -102,6 +126,7 @@ export default class Signal {
   }
 
   toJSON() {
+    wakeForRead(this);
     return this.#value;
   }
 
@@ -207,20 +232,32 @@ export function computed(fn) {
   }
   update._cleanups = [];
   update();
+  // sleeping is false initially: the computed is active (subscribed to sources) even though
+  // it has no subscribers yet. It becomes true only after losing its last subscriber, at
+  // which point sources are unsubscribed and the value is frozen until a new subscriber wakes it.
+  let sleeping = false;
+  sleepFns.set(s, () => {
+    sleeping = true;
+    for (const cleanup of update._cleanups) {
+      cleanup();
+    }
+    update._cleanups = [];
+  });
+  wakeFns.set(s, () => {
+    if (!sleeping) { return false; }
+    sleeping = false;
+    update();
+    return true;
+  });
   stopFns.set(s, () => {
+    sleepFns.delete(s);
+    wakeFns.delete(s);
     for (const cleanup of update._cleanups) {
       cleanup();
     }
     update._cleanups = [];
   });
   derivedSignals.add(s);
-  // If created inside an effect's run or another computed's update, attach our stop to the
-  // parent's _cleanups so we are torn down when the parent re-runs or is stopped. Without
-  // this, calling computed() in an effect body leaks one update closure per parent run —
-  // each one stays subscribed to its source signals forever.
-  if (currentEffect !== null) {
-    currentEffect._cleanups.push(() => s.stop());
-  }
   return s;
 }
 

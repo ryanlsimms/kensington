@@ -1258,13 +1258,13 @@ test('multiple addConnectedCallback handlers all fire on connect', async ({ page
   expect(result).toEqual(['a', 'b']);
 });
 
-test('addConnectedCallback re-fires on every re-attachment with toElement persist', async ({ page, bundle }) => {
+test('addConnectedCallback re-fires on every re-attachment with persist', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
     const { t } = await import(src);
-    const tag = t.div({ id: 'cc-persist' });
+    const tag = t.div({ id: 'cc-persist', persist: true });
     const calls = [];
     tag.addConnectedCallback(() => { calls.push('connected'); });
-    const el = tag.toElement({ persist: true });
+    const el = tag.toElement();
     document.body.append(el);
     await Promise.resolve();
     el.remove();
@@ -1276,14 +1276,14 @@ test('addConnectedCallback re-fires on every re-attachment with toElement persis
   expect(result).toEqual(['connected', 'connected']);
 });
 
-test('addDisconnectedCallback re-fires on every removal with toElement persist', async ({ page, bundle }) => {
+test('addDisconnectedCallback re-fires on every removal with persist', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
     const { t } = await import(src);
-    const tag = t.div({ id: 'dc-persist' });
+    const tag = t.div({ id: 'dc-persist', persist: true });
     const calls = [];
     tag.addConnectedCallback(() => { calls.push('connected'); });
     tag.addDisconnectedCallback(() => { calls.push('disconnected'); });
-    const el = tag.toElement({ persist: true });
+    const el = tag.toElement();
     document.body.append(el);
     await Promise.resolve();
     el.remove();
@@ -1297,7 +1297,7 @@ test('addDisconnectedCallback re-fires on every removal with toElement persist',
   expect(result).toEqual(['connected', 'disconnected', 'connected', 'disconnected']);
 });
 
-test('addConnectedCallback does not re-fire after removal without toElement persist', async ({ page, bundle }) => {
+test('addConnectedCallback does not re-fire after removal without persist', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
     const { t } = await import(src);
     const tag = t.div({ id: 'cc-no-persist' });
@@ -1432,10 +1432,10 @@ test('addConnectedCallback and addDisconnectedCallback fire in lifecycle order',
 test('addDisconnectedCallback re-fires on every removal with persist, no connect cb', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
     const { t } = await import(src);
-    const tag = t.div({ id: 'dc-persist-solo' });
+    const tag = t.div({ id: 'dc-persist-solo', persist: true });
     const calls = [];
     tag.addDisconnectedCallback(() => { calls.push('disconnected'); });
-    const el = tag.toElement({ persist: true });
+    const el = tag.toElement();
     document.body.append(el);
     el.remove();
     await Promise.resolve();
@@ -1447,15 +1447,15 @@ test('addDisconnectedCallback re-fires on every removal with persist, no connect
   expect(result).toEqual(['disconnected', 'disconnected']);
 });
 
-test('all callbacks re-fire on every cycle with toElement persist', async ({ page, bundle }) => {
+test('all callbacks re-fire on every cycle with persist', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
     const { t } = await import(src);
-    const tag = t.div({ id: 'dc-mixed-persist' });
+    const tag = t.div({ id: 'dc-mixed-persist', persist: true });
     const calls = [];
     tag.addConnectedCallback(() => { calls.push('connected'); });
     tag.addDisconnectedCallback(() => { calls.push('a'); });
     tag.addDisconnectedCallback(() => { calls.push('b'); });
-    const el = tag.toElement({ persist: true });
+    const el = tag.toElement();
     document.body.append(el);
     await Promise.resolve();
     el.remove();
@@ -1471,13 +1471,13 @@ test('all callbacks re-fire on every cycle with toElement persist', async ({ pag
   expect(result.filter(e => e === 'b')).toEqual(['b', 'b']);
 });
 
-test('addDisconnectedCallback receives element on every removal with toElement persist', async ({ page, bundle }) => {
+test('addDisconnectedCallback receives element on every removal with persist', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
     const { t } = await import(src);
-    const tag = t.div({ id: 'dc-persist-arg' });
+    const tag = t.div({ id: 'dc-persist-arg', persist: true });
     const ids = [];
     tag.addDisconnectedCallback(el => { ids.push(el.id); });
-    const el = tag.toElement({ persist: true });
+    const el = tag.toElement();
     document.body.append(el);
     el.remove();
     await Promise.resolve();
@@ -1489,12 +1489,12 @@ test('addDisconnectedCallback receives element on every removal with toElement p
   expect(result).toEqual(['dc-persist-arg', 'dc-persist-arg']);
 });
 
-test('signal attribute stays reactive across remove and re-insert with toElement persist', async ({ page, bundle }) => {
+test('signal attribute stays reactive across remove and re-insert with persist', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
     const { t, signal } = await import(src);
     const cls = signal('a');
-    const tag = t.div({ id: 'sig-resume', class: cls });
-    const el = tag.toElement({ persist: true });
+    const tag = t.div({ id: 'sig-resume', class: cls, persist: true });
+    const el = tag.toElement();
     document.body.append(el);
     el.remove();
     await Promise.resolve();
@@ -1507,12 +1507,12 @@ test('signal attribute stays reactive across remove and re-insert with toElement
   expect(result).toBe('b');
 });
 
-test('signal content stays reactive across remove and re-insert with toElement persist', async ({ page, bundle }) => {
+test('signal content stays reactive across remove and re-insert with persist', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
     const { t, signal } = await import(src);
     const text = signal('before');
-    const tag = t.p({ id: 'sig-content-resume' }, text);
-    const el = tag.toElement({ persist: true });
+    const tag = t.p({ id: 'sig-content-resume', persist: true }, text);
+    const el = tag.toElement();
     document.body.append(el);
     el.remove();
     await Promise.resolve();
@@ -1529,8 +1529,8 @@ test('signal effects stop again when a resumed element is removed a second time'
   const result = await page.evaluate(async src => {
     const { t, signal } = await import(src);
     const cls = signal('a');
-    const tag = t.div({ id: 'sig-restop', class: cls });
-    const el = tag.toElement({ persist: true });
+    const tag = t.div({ id: 'sig-restop', class: cls, persist: true });
+    const el = tag.toElement();
     document.body.append(el);
     el.remove();
     await Promise.resolve();
@@ -1549,8 +1549,8 @@ test('signal effects resume and stop correctly across three removal cycles', asy
   const result = await page.evaluate(async src => {
     const { t, signal } = await import(src);
     const cls = signal('a');
-    const tag = t.div({ id: 'sig-three-cycles', class: cls });
-    const el = tag.toElement({ persist: true });
+    const tag = t.div({ id: 'sig-three-cycles', class: cls, persist: true });
+    const el = tag.toElement();
     const snapshot = [];
 
     for (let i = 0; i < 3; i++) {
@@ -1571,11 +1571,39 @@ test('signal effects resume and stop correctly across three removal cycles', asy
   expect(result).toEqual(['1', '1', '2', '2', '3', '3']);
 });
 
+test('signal effects survive insertBefore reorder within same parent with persist', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const clsA = signal('a');
+    const clsB = signal('b');
+    const tagA = t.li({ id: 'li-a', class: clsA, persist: true });
+    const tagB = t.li({ id: 'li-b', class: clsB, persist: true });
+    const elA = tagA.toElement();
+    const elB = tagB.toElement();
+    const ul = document.createElement('ul');
+    ul.append(elA, elB);
+    document.body.append(ul);
+    await Promise.resolve();
+
+    // insertBefore moves elB before elA: fires removedNodes then addedNodes in same record
+    ul.insertBefore(elB, elA);
+    await Promise.resolve();
+
+    // Both signal effects must still be live after the reorder
+    clsA.set('a2');
+    clsB.set('b2');
+    await Promise.resolve();
+
+    return [document.getElementById('li-a').className, document.getElementById('li-b').className];
+  }, bundle);
+  expect(result).toEqual(['a2', 'b2']);
+});
+
 test('getDomElement() returns the live element after reconnection in persist scenario', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
     const { t } = await import(src);
-    const tag = t.div({ id: 'gde-reconnect' });
-    const el = tag.toElement({ persist: true });
+    const tag = t.div({ id: 'gde-reconnect', persist: true });
+    const el = tag.toElement();
     document.body.append(el);
     await Promise.resolve();
     el.remove();
@@ -1590,11 +1618,11 @@ test('getDomElement() returns the live element after reconnection in persist sce
 test('disconnect callbacks fire in order on every removal with toElement persist', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
     const { t } = await import(src);
-    const tag = t.div({ id: 'dc-order' });
+    const tag = t.div({ id: 'dc-order', persist: true });
     const calls = [];
     tag.addDisconnectedCallback(() => { calls.push('first'); });
     tag.addDisconnectedCallback(() => { calls.push('second'); });
-    const el = tag.toElement({ persist: true });
+    const el = tag.toElement();
     document.body.append(el);
     await Promise.resolve();
     el.remove();

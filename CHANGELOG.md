@@ -6,8 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- `Signal` is now a named export. Import it for `instanceof` checks or JSDoc type annotations alongside `signal`, `computed`, and `effect`.
+- `persist: true` tag option. Add `persist: true` to any element's attributes to pause its signal effects on DOM removal instead of stopping them permanently. Effects resume automatically on re-insertion. The primary use case is items in a drag-and-drop sortable list, where the reconciler reorders nodes via `insertBefore`. Silently ignored in `.toString()`.
+
 ### Changed
 - Keyed list reconciliation now skips rebuilding the DOM when a tag's attributes and content are structurally equal to the previous render.
+- `toElement()` no longer accepts a `persist` option. Set `persist: true` in the tag's attributes instead.
+- `computed()` and `transform()` signals now auto-dispose: when the last subscriber (a DOM effect or another computed) is removed, the computed unsubscribes from all its source signals and freezes its value. It revives automatically when a new subscriber reads it inside a reactive context (`effect` or another `computed`), re-running its function and re-subscribing. Reading a sleeping computed via `.get()` outside a reactive context also returns a fresh value by waking briefly and sleeping again, leaving no subscription behind. Previously, computeds remained subscribed to their sources indefinitely regardless of whether anything was reading them.
 
 ### Fixed
 - `literal()` with a `Signal` now stops its reactive effect when the host subtree is removed from the DOM. Previously the effect ran on detached nodes for every signal change and the subscription was retained indefinitely.

@@ -14,6 +14,7 @@
     "esm",
     "cjs",
     "dist",
+    "scripts",
     "types.d.ts",
     "attributes.d.ts",
     "AGENTS.md"
@@ -66,6 +67,7 @@
   },
   "scripts": {
     "prepare": "simple-git-hooks",
+    "postinstall": "node scripts/postinstall.js",
     "prepack": "node generate/bin/build-cjs.js && node generate/bin/build-browser.js",
     "build": "(cd generate/bin && node write-code-files.js) && eslint esm/kensington.js esm/attributes.js",
     "lint": "eslint .",

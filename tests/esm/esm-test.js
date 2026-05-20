@@ -898,6 +898,23 @@ describe('prop key', () => {
   });
 });
 
+// ─── persist key ───────────────────────────────────────────────────────────
+
+describe('persist key', () => {
+  it('is silently omitted from toString() output', () => {
+    assert.strictEqual(t.div({ persist: true }).toString(), '<div></div>');
+  });
+  it('accepts true and false at all validation levels', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.doesNotThrow(() => tt.div({ persist: true }));
+    assert.doesNotThrow(() => tt.div({ persist: false }));
+  });
+  it('throws when given a non-boolean value with validationLevel error', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => tt.div({ persist: 'yes' }), /invalid attribute/);
+  });
+});
+
 // ─── namespaces ────────────────────────────────────────────────────────────
 
 describe('namespaces', () => {
@@ -1563,14 +1580,17 @@ describe('signal.transform', () => {
     s.set(5);
     assert.strictEqual(doubled.get(), 2);
   });
-  it('stop() on a chained transform unsubscribes from the intermediate but leaves it live', () => {
+  it('stop() on a chained transform sleeps the intermediate; direct .get() still returns fresh value', () => {
+    // final was the only subscriber of intermediate. stopping final drops intermediate
+    // to zero subscribers so it sleeps. direct .get() outside a reactive context wakes it,
+    // re-runs fn, then sleeps again — no subscription leak.
     const s = signal(2);
     const intermediate = s.transform(v => v * 3);
     const final = intermediate.transform(v => v + 1);
     final.stop();
     s.set(4);
     assert.strictEqual(final.get(), 7);
-    assert.strictEqual(intermediate.get(), 12);
+    assert.strictEqual(intermediate.get(), 12); // wakes for the read, gets fresh value
   });
   it('throws when .set() is called on a transform result', () => {
     const s = signal(1);
@@ -1658,6 +1678,137 @@ describe('computed signal', () => {
       `computed inside effect leaked: ${computeCalls} compute calls after 10 sets`,
     );
     fx.stop();
+  });
+});
+
+// ─── computed auto-dispose ──────────────────────────────────────────────────
+
+describe('computed auto-dispose', () => {
+  it('unsubscribes from source when its last subscriber stops', async () => {
+    const src = signal(1);
+    let runs = 0;
+    const c = computed(() => { runs++; return src.get() * 2; });
+    runs = 0; // reset after initial run
+    const fx = effect(() => { c.get(); });
+    fx.stop();
+    const runsBefore = runs;
+    src.set(99);
+    await Promise.resolve();
+    assert.strictEqual(runs, runsBefore); // c did not re-run after sleep
+  });
+
+  it('.get(), .value, and .toJSON() all return fresh values while sleeping', () => {
+    const src = signal(2);
+    const c = computed(() => src.get() * 3);
+    const fx = effect(() => { c.get(); });
+    fx.stop();
+    src.set(10);
+    assert.strictEqual(c.get(), 30);
+    assert.strictEqual(c.value, 30);
+    assert.strictEqual(c.toJSON(), 30);
+    assert.strictEqual(JSON.stringify({ c }), '{"c":30}');
+  });
+
+  it('wakes and returns fresh value when a new subscriber reads it', async () => {
+    const src = signal(2);
+    const c = computed(() => src.get() * 3);
+    const fx = effect(() => { c.get(); });
+    fx.stop();
+    src.set(10);
+    let seen;
+    const fx2 = effect(() => { seen = c.get(); });
+    await Promise.resolve();
+    assert.strictEqual(seen, 30); // woke up, re-ran fn, got fresh value
+    fx2.stop();
+  });
+
+  it('resumes tracking source after wake', async () => {
+    const src = signal(1);
+    const c = computed(() => src.get() + 1);
+    const fx = effect(() => { c.get(); });
+    fx.stop();
+    src.set(5);
+    const results = [];
+    const fx2 = effect(() => { results.push(c.get()); });
+    src.set(10);
+    await Promise.resolve();
+    assert.deepStrictEqual(results, [6, 11]); // woke at 6, then tracked 10+1=11
+    fx2.stop();
+  });
+
+  it('cascades sleep through a computed chain', async () => {
+    const src = signal(2);
+    let bRuns = 0;
+    let cRuns = 0;
+    const b = computed(() => { bRuns++; return src.get() * 2; });
+    const c = computed(() => { cRuns++; return b.get() + 1; });
+    bRuns = 0;
+    cRuns = 0;
+    const fx = effect(() => { c.get(); });
+    fx.stop();
+    src.set(99);
+    await Promise.resolve();
+    assert.strictEqual(bRuns, 0); // b also slept — did not re-run
+    assert.strictEqual(cRuns, 0);
+  });
+
+  it('explicit .stop() prevents wake', () => {
+    const src = signal(1);
+    const c = computed(() => src.get() * 2);
+    const fx = effect(() => { c.get(); });
+    fx.stop();
+    c.stop(); // permanent stop
+    src.set(5);
+    let seen;
+    effect(() => { seen = c.get(); });
+    assert.strictEqual(seen, 2); // stopped: stays frozen regardless of new subscribers
+  });
+
+  it('direct .get() and .value while effect is paused return fresh values without leaking a subscription', () => {
+    const src = signal(1);
+    let runs = 0;
+    const c = computed(() => { runs++; return src.get() * 2; });
+    const fx = effect(() => { c.get(); });
+    fx.pause(); // c sleeps
+    runs = 0;
+    // non-reactive reads each wake-and-sleep: one fn() call per read, no persistent subscription
+    assert.strictEqual(c.get(), 2);
+    assert.strictEqual(runs, 1);
+    assert.strictEqual(c.value, 2);
+    assert.strictEqual(runs, 2);
+    src.set(5);
+    // src has no persistent subscribers from c — runs stays at 2
+    assert.strictEqual(runs, 2);
+    // next non-reactive read returns fresh value
+    assert.strictEqual(c.get(), 10);
+    assert.strictEqual(runs, 3);
+    fx.stop();
+  });
+
+  it('paused effect lets computed sleep; resume re-establishes tracking with fresh value', async () => {
+    const src = signal(1);
+    const c = computed(() => src.get() * 2);
+    const results = [];
+    const fx = effect(() => { results.push(c.get()); });
+    fx.pause();
+    src.set(5); // c still tracks, updates to 10
+    fx.resume();
+    await Promise.resolve();
+    assert.deepStrictEqual(results, [2, 10]); // initial + resumed run sees fresh value
+    fx.stop();
+  });
+
+  it('transform chain auto-disposes when effect stops', async () => {
+    const src = signal(3);
+    let runs = 0;
+    const doubled = src.transform(v => { runs++; return v * 2; });
+    const plusOne = doubled.transform(v => v + 1);
+    runs = 0;
+    const fx = effect(() => { plusOne.get(); });
+    fx.stop();
+    src.set(99);
+    await Promise.resolve();
+    assert.strictEqual(runs, 0);
   });
 });
 

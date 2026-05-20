@@ -479,6 +479,10 @@ cls.set('active');         // DOM updates immediately</code></pre>
     <p>For effects that run outside of any element, call <code>e.pause()</code> to temporarily unsubscribe and <code>e.resume()</code> to restart. Call <code>e.stop()</code> when the effect is no longer needed. It permanently destroys it and <code>resume()</code> becomes a no-op. To tie an effect to a component's lifetime without manual bookkeeping, use <code>addDisconnectedCallback</code>. See <a href="#lifecycle">Lifecycle</a> below.</p>
 
     <aside>
+      <p><strong>Computed signals auto-dispose.</strong> When a <code>computed()</code> loses its last subscriber, it automatically unsubscribes from all its source signals and freezes its value. It wakes again the next time it is read inside a reactive context (<code>effect()</code> or another <code>computed()</code>), re-runs its function, and re-subscribes to sources.</p>
+    </aside>
+
+    <aside>
       <p><strong>Why effects have <code>pause()</code> but signals and computed do not:</strong> <code>signal.stop()</code> and <code>computed().stop()</code> are permanently destructive: stopping a signal clears its subscribers; stopping a computed tears down the derived computation entirely. There is no state left to resume from. Effects are different. The callback closure is preserved after <code>pause()</code>, so <code>resume()</code> can re-run it and re-establish subscriptions from scratch. <code>effect.stop()</code> is the permanent equivalent, matching the semantics of signal and computed <code>stop()</code>.</p>
     </aside>
 
@@ -599,6 +603,7 @@ export function counter({ count: initial }) {
       <li><strong>One tag, one element.</strong> Each tag instance maps to exactly one DOM node. Passing the same instance as a child of two different parents moves it rather than cloning it. Create separate tag instances if you need the same structure in two places.</li>
       <li><strong>Signal-driven <code>.literal()</code> does a full DOM replacement on each change.</strong> The entire HTML subtree between the anchor comments is torn down and re-parsed on every signal update. There is no patching. Avoid using a frequently-changing signal with large <code>.literal()</code> content.</li>
       <li><strong>Reactive element reset after removal is asynchronous.</strong> When a reactive element is removed from the DOM, its effects are stopped and the internal reference is cleared via MutationObserver. Calling <code>.toElement()</code> immediately after removal in synchronous code still returns the old element. Awaiting a tick (<code>await Promise.resolve()</code>) before the next <code>.toElement()</code> call ensures the reset has completed. Non-reactive elements are not affected: <code>.toElement()</code> returns the same node after removal and it can be re-inserted directly.</li>
+      <li><strong>Module-level compute calls that are never subscribed to retain their source subscriptions indefinitely.</strong> <code>computed()</code> auto-disposes when its last subscriber unsubscribes, but a computed that never gains a subscriber never enters that cycle. Its internal update function stays subscribed to its source signals for the lifetime of the module. Call <code>.stop()</code> explicitly on such a computed when it is no longer needed.</li>
     </ul>
 
     <p>

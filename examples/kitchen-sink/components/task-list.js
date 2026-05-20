@@ -7,7 +7,10 @@ function taskItem(tasks, { id, text, done }) {
   // to set up a live effect: the attribute updates whenever the signal changes,
   // with no re-render of the surrounding list.
   const itemClass = done.transform(d => d ? 'task-item done' : 'task-item');
-  return t.li({ 'data-key': id, class: itemClass }, [
+  // persist: true so signal effects survive the insertBefore moves during drag-reorder.
+  // Without it, dom-tracker permanently stops this item's effects when it sees the
+  // node in removedNodes, breaking the done signal's class and checkbox bindings.
+  return t.li({ 'data-key': id, class: itemClass, persist: true }, [
     t.label({ class: 'task-label' }, [
       t.input({
         type: 'checkbox',
@@ -23,7 +26,6 @@ function taskItem(tasks, { id, text, done }) {
       class: 'remove-btn',
       aria: { label: `Delete task: ${text}` },
       onclick: () => tasks.set(ts => ts.filter(task => task.id !== id)),
-      onnonevent: e => console.log(e),
     }, '×'),
   ]);
 }

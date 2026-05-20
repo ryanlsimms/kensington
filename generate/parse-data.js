@@ -19,9 +19,16 @@ const CHILDREN_ALIASES = {
 // Category keywords that represent open content models — any element containing one of these
 // cannot have its children narrowed to a finite TypeScript union.
 const OPEN_CATEGORIES = new Set([
-  'flow', 'phrasing', 'heading content', 'metadata content',
-  'transparent', 'text', 'per [MATHML]', 'per [SVG]',
-  'script, data, or script documentation', 'option element inner content elements',
+  'flow',
+  'phrasing',
+  'heading content',
+  'metadata content',
+  'transparent',
+  'text',
+  'per [MATHML]',
+  'per [SVG]',
+  'script, data, or script documentation',
+  'option element inner content elements',
   'varies', // noscript: content model is context-dependent
 ]);
 

@@ -167,7 +167,7 @@ t.form({ hxPost: '/api/submit', hxSwap: 'outerHTML' });
 Signals and `computed` work in any JavaScript environment. `.toElement()` and DOM-mutating effects require a browser. During `renderForHydration`, `effect()` is suppressed entirely — browser-only code inside an `effect()` is safe to call on the server.
 
 ```javascript
-import { t, signal, computed, effect, isBrowser } from 'kensington';
+import { t, signal, computed, effect, isBrowser, Signal } from 'kensington';
 import { renderForHydration, registerComponents } from 'kensington';
 ```
 
@@ -185,6 +185,16 @@ n.toString()              // returns String(this.get()); works in template liter
 
 const double = n.transform(v => v * 2)                       // derived; chainable
 const label  = computed(() => n.get() === 1 ? 'item' : 'items')  // read multiple signals
+```
+
+`Signal` is exported as a named export so callers can use `instanceof Signal` instead of duck-typing:
+
+```javascript
+import { Signal, signal } from 'kensington';
+
+function maybeSignal(value) {
+  return value instanceof Signal ? value : signal(value);
+}
 ```
 
 Use `.value` instead of `.get()` when you need the current value inside an `effect` or `computed` but do not want that signal to be a dependency. The most important case is when the same signal is written to later in the same async flow. Using `.get()` would subscribe the effect to it, and the subsequent `.set()` would re-trigger the effect.
@@ -254,8 +264,9 @@ const e = effect(() => {
   document.title = count.get() === 0 ? 'Home' : `(${count.get()}) Home`;
 });
 
-e.stop();    // unsubscribe; no further runs
+e.pause();   // temporarily unsubscribe; no runs while paused
 e.resume();  // restart: re-runs the callback and re-establishes all signal subscriptions
+e.stop();    // permanently destroy; resume() becomes a no-op after this
 ```
 
 ### Keyed lists
@@ -272,9 +283,22 @@ t.tbody(rows);
 
 Add `dataKey` whenever items may reorder, be added, or removed. Reused nodes are diffed recursively; signal effects on discarded nodes are stopped automatically. Keyed nodes whose attributes and content are structurally unchanged from the previous render are reused as-is without a diff pass, so the naive `arr.map(item => t.tr({ dataKey: item.id }, item.name))` pattern is efficient without memoization. Inline functions, `LiteralTag`, and other non-plain values in attributes or content compare by reference, so prefer stable references (event delegation, signals stored on the item) when row-level reuse matters.
 
+For drag-and-drop sortable lists where DOM nodes are moved via `insertBefore`, add `persist: true` to each item tag so signal effects survive the move. See **Cleanup** below.
+
 ### Cleanup
 
-`.toElement()` stops reactive effects automatically when the element is removed from the DOM. Pass `{ persist: true }` to pause effects instead — they resume automatically on re-insertion and can cycle through unlimited remove/re-insert.
+`computed()` and `transform()` signals auto-dispose: when the last subscriber (a DOM effect or a downstream computed) is removed, the computed unsubscribes from its source signals and freezes its value. When something reads it inside a reactive context again, it revives and re-subscribes. This means computed chains used to build a DOM subtree clean themselves up automatically when that subtree is removed — no manual teardown needed.
+
+`.get()`, `.value`, and `.toJSON()` on a sleeping computed always return a fresh value even outside a reactive context — the computed wakes briefly, re-runs its function, and sleeps again without leaving a subscription behind.
+
+`.toElement()` stops reactive effects automatically when the element is removed from the DOM. For elements that will be moved or temporarily removed and re-inserted, add `persist: true` to the tag options. Effects pause on removal and resume on re-insertion, across any number of cycles. The main use case is items in a drag-and-drop sortable list, where the reconciler reorders nodes via `insertBefore`:
+
+```javascript
+// signal effects on this item (class, checked, etc.) survive drag-reorder moves
+const item = t.li({ 'data-key': task.id, persist: true }, content);
+```
+
+`persist: true` is silently ignored in `.toString()` and has no effect server-side.
 
 For standalone `effect()` calls, stop manually:
 
@@ -401,6 +425,8 @@ These are deliberate simplicity tradeoffs, not bugs.
 
 **`fn.name` is fragile under aggressive minification.** Server code is typically not minified, so `fn.name` is reliable in practice. If server code is bundled and minified, pass an explicit name as the third argument.
 
+**Module-level computeds that are never subscribed to retain their source subscriptions indefinitely.** `computed()` auto-disposes when its last subscriber is removed, but a computed that never gains a subscriber never enters that cycle. Its internal `update` function stays subscribed to its source signals for the lifetime of the module. This is only a concern for computeds declared at module scope that are intentionally read outside a reactive context (e.g. in route handlers or CLI scripts). The fix is to call `.stop()` explicitly when the computed is no longer needed.
+
 ## Validation and error policy
 
 `validationLevel` controls how invalid input is handled: `'off'` silently renders nothing (no errors, no warnings), `'warn'` logs via `logger` and renders nothing, `'error'` throws. Never throw when `validationLevel` is `'off'`. Production deployments use `'off'` for performance, and an unexpected throw can crash a server or break a user-facing page. Invalid input at `'off'` must be silently skipped. This applies to invalid attribute values, invalid content items, bad `literal()` input, bad `inlineComment()` input, and any other runtime validation.
@@ -412,6 +438,7 @@ These are deliberate simplicity tradeoffs, not bugs.
 - Do not import `t` as a default import — `t` is a named export; the default export is the `Kensington` class
 - Do not skip `.toString()` when passing to HTTP framework response methods
 - Do not use `onclick="string"` for DOM usage — pass a function; string handlers only serialize in `.toString()`
+- For drag-and-drop sortable lists: add `persist: true` to the item tag, not the container. Without it, `insertBefore` reorders fire a remove event that permanently stops the item's signal effects (class updates, checked state, etc. all break silently after the first drag). `persist: true` causes effects to pause on removal and resume on re-insertion instead.
 
 ## HTML to Kensington CLI
 
@@ -1623,6 +1650,73 @@ document.body.append(
     t.tbody(rows),
   ]).toElement()
 );
+```
+
+### Reactive data — context
+
+The `createContext` pattern builds a signal stack so components read the nearest provider's value during synchronous construction. Consumers hold the signal reference and update reactively. `provide()` always wraps its argument in a new signal.
+
+```javascript
+import { signal, t } from 'kensington';
+
+function createContext(defaultValue) {
+  // each nested .provide call pushes a new value onto the stack at the beginning of the content block
+  // and pops it off at the end of the content block
+  const _stack = [signal(defaultValue)];
+
+  return {
+    get() {
+      return _stack.at(-1);
+    },
+
+    provide(value, fn) {
+      const ctx = signal(value);
+      _stack.push(ctx);
+      try {
+        return fn(ctx);
+      } finally {
+        _stack.pop();
+      }
+    },
+
+    set(val) {
+      return this.get().set(val);
+    },
+  };
+}
+
+const ThemeContext = createContext('light');
+const UserContext  = createContext({ name: 'Guest', role: 'viewer' });
+
+function card() {
+  const theme = ThemeContext.get();
+  const user  = UserContext.get();
+  return t.div({ class: theme.transform(v => `card card--${v}`) }, [
+    t.p(user.transform(u => `${u.name} (${u.role})`)),
+    t.small(theme),
+  ]);
+}
+
+const app = t.div([
+  t.button({
+    type: 'button',
+    onclick: () => ThemeContext.set(v => v === 'light' ? 'dark' : 'light'),
+  }, 'Toggle theme'),
+
+  card(), // reads default context
+
+  ThemeContext.provide('dark', () =>
+    card(), // pinned to dark regardless of toggle
+  ),
+
+  UserContext.provide({ name: 'Alice', role: 'admin' }, () =>
+    ThemeContext.provide('dark', () =>
+      card(), // both contexts overridden
+    ),
+  ),
+]);
+
+document.body.append(app.toElement());
 ```
 
 ## Key types

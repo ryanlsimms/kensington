@@ -1,6 +1,13 @@
 const NUMERIC_TYPES = new Set([
-  'number', 'integer', 'length', 'length-percentage', 'percentage',
-  'opacity-value', 'alpha-value', 'line-width', 'angle-percentage',
+  'number',
+  'integer',
+  'length',
+  'length-percentage',
+  'percentage',
+  'opacity-value',
+  'alpha-value',
+  'line-width',
+  'angle-percentage',
   'font-weight-absolute',
 ]);
 

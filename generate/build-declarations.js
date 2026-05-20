@@ -47,7 +47,7 @@ function attrType(name, type) {
 }
 
 function attributesType({ attributes = [], globalTypes, tag }) {
-  const propField = `prop?: PropFor<'${tag}'> | null;`;
+  const propField = `prop?: PropFor<'${tag}'> | null; persist?: boolean;`;
   if (!attributes.length) {
     return [`{ ${propField} }`, ...globalTypes].join(' & ');
   }
@@ -66,7 +66,7 @@ function attributesType({ attributes = [], globalTypes, tag }) {
 }
 
 function svgAttributesType({ attributes = [], globalTypes, tag }) {
-  const propField = `prop?: PropFor<'${tag}'> | null;`;
+  const propField = `prop?: PropFor<'${tag}'> | null; persist?: boolean;`;
   const ownTypes = attributes.length
     ? [`{\n  ${attributes.flatMap(a => {
       const lines = [`'${a.name}'?: ${attrType(a.name, a.type)};`];
