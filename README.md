@@ -87,6 +87,35 @@ t.input({ formenctype: 'text' });
 
 In development, set `validationLevel` to `'warn'` or `'error'` to catch invalid attributes at runtime. In production, import from `kensington/dist/slim` for a bundle about 9× smaller (~136 KB to ~15 KB minified). See [Dev vs production](https://ryanlsimms.github.io/kensington#dev-vs-prod) for the Vite, Rollup, esbuild, and Webpack setups that switch builds automatically.
 
+## Ecosystem
+
+### Server integrations
+
+| Package | Description |
+|---|---|
+| [kensington-express](https://www.npmjs.com/package/kensington-express) | Express middleware adding `res.renderView()` for function-based view rendering |
+| [kensington-fastify](https://www.npmjs.com/package/kensington-fastify) | Fastify plugin adding `reply.renderView()` for function-based view rendering |
+
+### IDE plugins
+
+Available for [VS Code](https://marketplace.visualstudio.com/items?itemName=ryan-lee-simms.kensington) and [JetBrains](https://plugins.jetbrains.com/plugin/31827-kensington) IDEs.
+
+Both plugins read your local stylesheets and any CDN stylesheets linked in your project to provide completions and diagnostics inside Kensington `class` strings:
+
+```js
+t.main({ class: 'mob' })
+//                ↑ completions
+//  mobile-container   containers.css
+//  modal-body         CDN
+//  modal-backdrop     CDN
+
+t.main({ class: 'contaner' })
+//               ~~~~~~~~~
+//               Unknown CSS class 'contaner'
+```
+
+Both plugins also wire up Go to Definition and Find Usages between CSS selectors and Kensington templates.
+
 ## AI assistants
 
 An `AGENTS.md` file is included in the package and published to npm. Point your AI assistant at it for accurate help with Kensington:

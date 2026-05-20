@@ -60,6 +60,8 @@
     <li><a href="#tooling">Tooling</a>
       <ul>
         <li><a href="#cli">HTML &rarr; Kensington</a></li>
+        <li><a href="#ide-plugins">IDE plugins</a></li>
+        <li><a href="#server-packages">Server packages</a></li>
         <li><a href="#ai-assistants">AI assistants</a></li>
       </ul>
     </li>
@@ -652,6 +654,85 @@ import type { NameSpaceAttributes, GlobalAttributes, GlobalEvents, UniversalAttr
     </table>
 
     <p>If ESLint or Prettier is present in the working directory, the converter runs the formatter over the output.</p>
+
+    <h3 id="ide-plugins">IDE plugins</h3>
+
+    <p>CSS class completions and diagnostics inside Kensington <code>class</code> strings. Both plugins read your local stylesheets and any CDN stylesheets linked via <code>t.link</code> in your project.</p>
+
+    <div class="panels">
+      <div>
+        <div class="panel-label">Completions</div>
+        <div class="ide-mock" aria-hidden="true">
+          <div class="ide-titlebar">
+            <span class="ide-dot ide-dot-red"></span>
+            <span class="ide-dot ide-dot-yellow"></span>
+            <span class="ide-dot ide-dot-green"></span>
+            <span class="ide-filename">index.js</span>
+          </div>
+          <div class="ide-editor">
+            <div class="ide-line"><span class="ide-ln">21</span><span>t</span><span>.</span><span class="ide-t-fn">main</span><span>({</span> <span class="ide-t-prop">class</span><span>:</span> <span class="ide-t-str">'mob<span class="ide-cursor"></span>'</span> <span>})</span></div>
+          </div>
+          <div class="ide-completion">
+            <div class="ide-completion-item ide-completion-selected">
+              <span>mobile-container</span>
+              <span class="ide-completion-source">containers.css</span>
+            </div>
+            <div class="ide-completion-item">
+              <span>modal-body</span>
+              <span class="ide-completion-source">CDN</span>
+            </div>
+            <div class="ide-completion-item">
+              <span>modal-backdrop</span>
+              <span class="ide-completion-source">CDN</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="panel-label">Diagnostics</div>
+        <div class="ide-mock" aria-hidden="true">
+          <div class="ide-titlebar">
+            <span class="ide-dot ide-dot-red"></span>
+            <span class="ide-dot ide-dot-yellow"></span>
+            <span class="ide-dot ide-dot-green"></span>
+            <span class="ide-filename">index.js</span>
+          </div>
+          <div class="ide-editor">
+            <div class="ide-line"><span class="ide-ln">21</span><span>t</span><span>.</span><span class="ide-t-fn">main</span><span>({</span> <span class="ide-t-prop">class</span><span>:</span> <span class="ide-squiggly-warn"><span class="ide-t-str">'contaner<span class="ide-cursor"></span>'</span></span> <span>})</span></div>
+          </div>
+          <div class="ide-popup">
+            <div class="ide-popup-msg">
+              <span class="ide-warn-icon">
+                <svg viewBox="0 0 16 16" width="13" height="13" fill="none" aria-hidden="true"><path d="M8 1.5L1 14.5h14L8 1.5z" stroke="#e2c08d" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 6v3.5M8 11.5v.5" stroke="#e2c08d" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </span>
+              <span>Unknown CSS class <span class="ide-t-str">'contaner'</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p>Available for <a href="https://marketplace.visualstudio.com/items?itemName=ryan-lee-simms.kensington" target="_blank" rel="noopener">VS Code</a> and <a href="https://plugins.jetbrains.com/plugin/31827-kensington" target="_blank" rel="noopener">JetBrains</a> IDEs. Both plugins also wire up Go to Definition and Find Usages between CSS selectors and Kensington templates.</p>
+
+    <h3 id="server-packages">Server packages</h3>
+
+    <p>Drop-in view rendering for Express and Fastify. Each package attaches a <code>renderView()</code> method to the response that applies a layout, merges locals, and sends the HTML string. See the <a href="examples.html#kensington-express">kensington-express</a> and <a href="examples.html#kensington-fastify">kensington-fastify</a> examples for full usage.</p>
+
+    <table>
+      <thead>
+        <tr><th>Package</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td data-label="Package"><a href="https://www.npmjs.com/package/kensington-express" target="_blank" rel="noopener">kensington-express</a></td>
+          <td data-label="Description">Express middleware adding <code>res.renderView(pageRenderer, options?)</code></td>
+        </tr>
+        <tr>
+          <td data-label="Package"><a href="https://www.npmjs.com/package/kensington-fastify" target="_blank" rel="noopener">kensington-fastify</a></td>
+          <td data-label="Description">Fastify plugin adding <code>reply.renderView(pageRenderer, options?)</code></td>
+        </tr>
+      </tbody>
+    </table>
 
     <h3 id="ai-assistants">AI assistants</h3>
 
