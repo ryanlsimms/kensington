@@ -59,7 +59,7 @@ function visit(node, fn) {
   }
 }
 
-function stopRemoved(node) {
+export function stopRemoved(node) {
   visit(node, (el, entry) => {
     if (entry.stop === undefined) { return; }
     const stop = entry.stop;

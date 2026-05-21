@@ -1919,7 +1919,141 @@ describe('effect', () => {
   });
 });
 
-// ─── renderForHydration ────────────────────────────────────────────────────
+// ─── reactive loop guards ─────────────────────────────────────────────────────
+
+describe('reactive loop guards', () => {
+  it('warns when the same signal is read and written in the same effect run', () => {
+    const errors = [];
+    const origError = console.error;
+    console.error = msg => errors.push(msg);
+    const x = signal(0);
+    effect(() => { x.get(); x.set(1); });
+    console.error = origError;
+    assert.ok(errors.some(e => e.includes('read via .get() and written via .set()')));
+  });
+
+  it('does not warn when different signals are read and written in the same effect run', () => {
+    const errors = [];
+    const origError = console.error;
+    console.error = msg => errors.push(msg);
+    const a = signal(0);
+    const b = signal(0);
+    effect(() => { b.set(a.get() + 1); });
+    console.error = origError;
+    assert.strictEqual(errors.length, 0);
+  });
+
+  it('does not warn when a signal is read via .value and then written in the same effect run', () => {
+    const errors = [];
+    const origError = console.error;
+    console.error = msg => errors.push(msg);
+    const x = signal(5);
+    const trigger = signal(0);
+    effect(() => { trigger.get(); if (x.value > 10) { x.set(0); } });
+    console.error = origError;
+    assert.strictEqual(errors.length, 0);
+  });
+
+  it('warns when .set() is called inside a computed body', () => {
+    const errors = [];
+    const origError = console.error;
+    console.error = msg => errors.push(msg);
+    const x = signal(0);
+    const y = signal(0);
+    computed(() => { y.set(1); return x.get(); });
+    console.error = origError;
+    assert.ok(errors.some(e => e.includes('.set() called inside a computed')));
+  });
+
+  it('warns when the same signal is read and written in the same computed run', () => {
+    const errors = [];
+    const origError = console.error;
+    console.error = msg => errors.push(msg);
+    const x = signal(0);
+    computed(() => { x.get(); x.set(1); return x.value; });
+    console.error = origError;
+    assert.ok(errors.some(e => e.includes('read via .get() and written via .set()')));
+    assert.ok(errors.some(e => e.includes('.set() called inside a computed')));
+  });
+
+  it('does not warn for .set() called inside an effect', () => {
+    const errors = [];
+    const origError = console.error;
+    console.error = msg => errors.push(msg);
+    const a = signal(0);
+    const b = signal(0);
+    effect(() => { b.set(a.get() + 1); });
+    console.error = origError;
+    assert.ok(!errors.some(e => e.includes('.set() called inside a computed')));
+  });
+
+  it('inComputedFn flag is correctly restored after a nested computed is created inside a computed', () => {
+    const errors = [];
+    const origError = console.error;
+    console.error = msg => errors.push(msg);
+    const x = signal(0);
+    const y = signal(0);
+    computed(() => {
+      computed(() => x.get() * 2); // inner computed — resets inComputedFn without save/restore
+      y.set(1); // should still be flagged as inside the outer computed
+      return x.get();
+    });
+    console.error = origError;
+    assert.ok(errors.some(e => e.includes('.set() called inside a computed')));
+  });
+
+  it('does not warn for .set() in an effect that runs after a computed was created', () => {
+    const errors = [];
+    const origError = console.error;
+    console.error = msg => errors.push(msg);
+    const x = signal(0);
+    const c = computed(() => x.get() * 2);
+    const y = signal(0);
+    effect(() => { y.set(c.get() + 1); });
+    console.error = origError;
+    assert.ok(!errors.some(e => e.includes('.set() called inside a computed')));
+  });
+
+  it('loop counter fires and stops an infinite two-effect ping-pong', async () => {
+    const errors = [];
+    const origError = console.error;
+    console.error = msg => errors.push(msg);
+    const a = signal(0);
+    const b = signal(0);
+    effect(() => { b.set(a.get() + 1); });
+    effect(() => { a.set(b.get() + 1); });
+    await new Promise(r => { setTimeout(r, 0); });
+    console.error = origError;
+    assert.ok(errors.some(e => e.includes('reactive loop detected')));
+  });
+
+  it('loop counter stops the loop and signals remain usable afterwards', async () => {
+    const errors = [];
+    const origError = console.error;
+    console.error = msg => errors.push(msg);
+    const a = signal(0);
+    const b = signal(0);
+    effect(() => { b.set(a.get() + 1); });
+    effect(() => { a.set(b.get() + 1); });
+    await new Promise(r => { setTimeout(r, 0); });
+    console.error = origError;
+    a.set(999);
+    assert.strictEqual(a.value, 999);
+  });
+
+  it('converging two-effect loop does not trigger the loop counter', async () => {
+    const errors = [];
+    const origError = console.error;
+    console.error = msg => errors.push(msg);
+    const a = signal(3);
+    const b = signal(0);
+    effect(() => { if (a.get() > 0) { b.set(a.get() - 1); } });
+    effect(() => { if (b.get() > 0) { a.set(b.get() - 1); } });
+    await new Promise(r => { setTimeout(r, 0); });
+    console.error = origError;
+    assert.ok(!errors.some(e => e.includes('reactive loop detected')));
+  });
+});
 
 describe('renderForHydration', () => {
   function comp() {

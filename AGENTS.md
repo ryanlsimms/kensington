@@ -440,6 +440,77 @@ These are deliberate simplicity tradeoffs, not bugs.
 - Do not use `onclick="string"` for DOM usage — pass a function; string handlers only serialize in `.toString()`
 - For drag-and-drop sortable lists: add `persist: true` to the item tag, not the container. Without it, `insertBefore` reorders fire a remove event that permanently stops the item's signal effects (class updates, checked state, etc. all break silently after the first drag). `persist: true` causes effects to pause on removal and resume on re-insertion instead.
 
+## Reactive pitfalls
+
+### Do not read and write the same signal in the same effect or computed run
+
+Calling `.get()` on a signal creates a subscription. If the same run then calls `.set()` on the same signal, the write re-triggers the run, which writes again, creating an infinite loop. Use `.value` when you need the current value without subscribing.
+
+```javascript
+// Wrong — .get() subscribes, then .set() re-triggers the effect
+effect(() => {
+  if (counter.get() > 10) {
+    counter.set(0); // re-triggers this effect every time counter changes
+  }
+});
+
+// Correct — .value reads without subscribing
+effect(() => {
+  if (someOtherSignal.get() && counter.value > 10) {
+    counter.set(0); // safe — counter is not a dependency of this effect
+  }
+});
+```
+
+### Do not call `.set()` inside a `computed` body
+
+Computeds must be pure derivations. Any `.set()` call inside a computed is a side effect that corrupts the dependency graph. Move write logic into a separate `effect`.
+
+```javascript
+// Wrong
+const rows = computed(() => {
+  const visible = items.get().filter(isActive);
+  if (!visible.length) { selectedId.set(null); } // side effect in a computed
+  return visible.map(item => t.li(item.name));
+});
+
+// Correct — pure computed for the UI, separate effect for the side effect
+const visibleItems = computed(() => items.get().filter(isActive));
+
+effect(() => {
+  if (!visibleItems.get().length) { selectedId.set(null); }
+});
+```
+
+### Do not use `queueMicrotask` to defer a `.set()` inside an effect or computed
+
+If the surrounding effect or computed reads the signal via `.get()`, it is subscribed. The deferred write re-triggers the run, which queues another microtask, which writes again — an infinite chain that freezes the browser tab. Use `.value` for reads that should not create a dependency, and write directly without the deferral.
+
+The canonical case is auto-selecting the first item when a filtered list changes:
+
+```javascript
+// Wrong — .get() subscribes, queueMicrotask fires after the flush and re-triggers
+computed(() => {
+  const visible = items.get().filter(isActive);
+  if (!selectedId.get() || !visible.some(i => i.id === selectedId.get())) {
+    queueMicrotask(() => selectedId.set(visible[0]?.id ?? null));
+  }
+  return visible.map(item => t.li({ dataKey: item.id }, item.name));
+});
+
+// Correct — dedicated effect, .value avoids subscribing to selectedId
+effect(() => {
+  const visible = items.get().filter(isActive);
+  if (!selectedId.value || !visible.some(i => i.id === selectedId.value)) {
+    selectedId.set(visible[0]?.id ?? null);
+  }
+});
+```
+
+### Do not use `setTimeout(() => {}, 0)` to defer `.set()` calls
+
+`setTimeout` is a macrotask. It fires after the browser renders, so the UI shows a frame of incorrect state before correcting itself. It also signals that the dependency graph is not quite right. Restructure with `.value` or a separate `effect` instead.
+
 ## HTML to Kensington CLI
 
 `npx kensington` converts HTML to Kensington code.

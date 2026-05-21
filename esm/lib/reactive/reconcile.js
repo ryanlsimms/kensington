@@ -4,7 +4,7 @@
 // `reconcile()` is called. Rollup emits a CIRCULAR_DEPENDENCY warning that's informational
 // only. See content-tag.js for the other half of the cycle.
 import ContentTag from '../../tag-classes/content-tag.js';
-import { isContentTracked, isTracked, stopTracked } from './dom-tracker.js';
+import { isContentTracked, isTracked, stopRemoved, stopTracked } from './dom-tracker.js';
 
 // Snapshot of a tag's (attributes, content) after the render that produced the keyed DOM
 // node. The next reconcile pass compares the new tag against this snapshot by value, not by
@@ -179,10 +179,12 @@ export function reconcile(parent, startAnchor, endAnchor, newItems) {
   while (leftover !== endAnchor) {
     const next = leftover.nextSibling;
     leftover.remove();
+    stopRemoved(leftover);
     leftover = next;
   }
 
   for (const old of oldNodes.values()) {
     old.remove();
+    stopRemoved(old);
   }
 }

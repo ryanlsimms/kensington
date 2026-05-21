@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Fixed
+- Signal effects on nodes removed by the reconciler are now stopped synchronously at removal. Previously there was a brief window before the `MutationObserver` cleanup fired where a removed node's effects could still respond to signal changes, causing incorrect mutations in applications with adjacent reactive lists.
+
 ## [2.0.0-signals.9] - 2026-05-20
 
 ### Added

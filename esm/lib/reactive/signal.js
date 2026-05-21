@@ -18,7 +18,13 @@ export function isSSRMode() {
   return ssrDepth > 0;
 }
 const pending = new Set();
+const runCounts = new Map();
+const MAX_EFFECT_LOOPS = 100;
+const MAX_FLUSHES = 500;
 let scheduled = false;
+let flushCount = 0;
+let flushResetScheduled = false;
+let inComputedFn = false;
 const stopFns = new WeakMap();
 // sleep/wake hooks for auto-disposing computed signals when subscriber count hits zero.
 const sleepFns = new WeakMap();
@@ -34,10 +40,35 @@ function rethrowAsync(err) {
 
 function flush() {
   scheduled = false;
+  flushCount++;
+  if (!flushResetScheduled) {
+    flushResetScheduled = true;
+    setTimeout(() => { flushCount = 0; flushResetScheduled = false; }, 0);
+  }
+  if (flushCount > MAX_FLUSHES) {
+    console.error(
+      `kensington: async reactive loop detected. flush() was called ${flushCount} times without a macrotask turn. ` +
+      'An effect is likely setting a signal inside a queueMicrotask or Promise callback in a cycle. ' +
+      'Guard the write with a condition check to confirm the update is still needed before calling .set().',
+    );
+    pending.clear();
+    return;
+  }
+  runCounts.clear();
   while (pending.size > 0) {
     const batch = [...pending];
     pending.clear();
     for (const fn of batch) {
+      const count = (runCounts.get(fn) ?? 0) + 1;
+      runCounts.set(fn, count);
+      if (count > MAX_EFFECT_LOOPS) {
+        console.error(
+          `kensington: reactive loop detected. The same effect was re-queued ${count} times in a single flush. ` +
+          'Check for an effect that writes to a signal it also reads, or two effects that write to each other\'s signal dependencies. ' +
+          'For effects with async callbacks (queueMicrotask, setTimeout, fetch), guard the write with a condition check to confirm the update is still needed before calling .set().',
+        );
+        continue;
+      }
       try {
         fn();
       } catch (err) {
@@ -45,6 +76,7 @@ function flush() {
       }
     }
   }
+  runCounts.clear();
 }
 
 function scheduleRun(fn) {
@@ -78,6 +110,7 @@ export default class Signal {
         if (wake !== undefined) { wake(); }
       }
       this.#subscribers.add(currentEffect);
+      currentEffect._reads.add(this);
       const sub = currentEffect;
       sub._cleanups.push(() => {
         this.#subscribers.delete(sub);
@@ -105,6 +138,19 @@ export default class Signal {
     const next = typeof valueOrFn === 'function' ? valueOrFn(this.#value) : valueOrFn;
     if (Object.is(next, this.#value)) {
       return;
+    }
+    if (currentEffect !== null && currentEffect._reads.has(this)) {
+      console.error(
+        'kensington: a signal was read via .get() and written via .set() in the same effect or computed run. ' +
+        'This creates a reactive loop — the write re-triggers the run, which writes again. ' +
+        'Use .value instead of .get() if you need the current value without subscribing.',
+      );
+    }
+    if (inComputedFn) {
+      console.error(
+        'kensington: .set() called inside a computed function. ' +
+        'Computeds must be pure derivations. Move the write into a separate effect() instead.',
+      );
     }
     this.#value = next;
     for (const fn of [...this.#subscribers]) {
@@ -140,6 +186,7 @@ function track(run, fn) {
     cleanup();
   }
   run._cleanups = [];
+  run._reads = new Set();
   const prev = currentEffect;
   currentEffect = run;
   try {
@@ -220,9 +267,20 @@ export function computed(fn) {
   const s = new Signal(undefined);
   function update() {
     track(update, () => {
+      let result;
+      const prevInComputedFn = inComputedFn;
+      inComputedFn = true;
+      try {
+        result = fn();
+      } catch (err) {
+        rethrowAsync(err);
+        return;
+      } finally {
+        inComputedFn = prevInComputedFn;
+      }
       derivedWriteDepth++;
       try {
-        s.set(fn());
+        s.set(result);
       } catch (err) {
         rethrowAsync(err);
       } finally {

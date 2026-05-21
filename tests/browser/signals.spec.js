@@ -1672,3 +1672,137 @@ test('literal(signal) stops its effect when the host element is removed', async 
   expect(result.templates).toBe(0);
 });
 
+// ─── reactive loop guards ─────────────────────────────────────────────────
+
+test('warns when the same signal is read and written in the same effect run', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { signal, effect } = await import(src);
+    const errors = [];
+    const orig = console.error;
+    console.error = msg => errors.push(msg);
+    const x = signal(0);
+    effect(() => { x.get(); x.set(1); });
+    console.error = orig;
+    return errors;
+  }, bundle);
+  expect(result.some(e => e.includes('read via .get() and written via .set()'))).toBe(true);
+});
+
+test('warns when .set() is called inside a computed body', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { signal, computed } = await import(src);
+    const errors = [];
+    const orig = console.error;
+    console.error = msg => errors.push(msg);
+    const x = signal(0);
+    const y = signal(0);
+    computed(() => { y.set(1); return x.get(); });
+    console.error = orig;
+    return errors;
+  }, bundle);
+  expect(result.some(e => e.includes('.set() called inside a computed'))).toBe(true);
+});
+
+test('loop counter fires and stops an infinite two-effect ping-pong', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { signal, effect } = await import(src);
+    const errors = [];
+    const orig = console.error;
+    console.error = msg => errors.push(msg);
+    const a = signal(0);
+    const b = signal(0);
+    effect(() => { b.set(a.get() + 1); });
+    effect(() => { a.set(b.get() + 1); });
+    await new Promise(r => { setTimeout(r, 0); });
+    console.error = orig;
+    return { errors, aVal: a.value, writable: (() => { a.set(999); return a.value; })() };
+  }, bundle);
+  expect(result.errors.some(e => e.includes('reactive loop detected'))).toBe(true);
+  expect(result.writable).toBe(999);
+});
+
+test('converging two-effect loop does not trigger the loop counter', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { signal, effect } = await import(src);
+    const errors = [];
+    const orig = console.error;
+    console.error = msg => errors.push(msg);
+    const a = signal(3);
+    const b = signal(0);
+    effect(() => { if (a.get() > 0) { b.set(a.get() - 1); } });
+    effect(() => { if (b.get() > 0) { a.set(b.get() - 1); } });
+    await new Promise(r => { setTimeout(r, 0); });
+    console.error = orig;
+    return errors;
+  }, bundle);
+  expect(result.some(e => e.includes('reactive loop detected'))).toBe(false);
+});
+
+test('inComputedFn flag is correctly restored after a nested computed inside a computed', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { signal, computed } = await import(src);
+    const errors = [];
+    const orig = console.error;
+    console.error = msg => errors.push(msg);
+    const x = signal(0);
+    const y = signal(0);
+    computed(() => {
+      computed(() => x.get() * 2);
+      y.set(1);
+      return x.get();
+    });
+    console.error = orig;
+    return errors;
+  }, bundle);
+  expect(result.some(e => e.includes('.set() called inside a computed'))).toBe(true);
+});
+
+test(`requestAnimationFrame loop bypasses the flush counter and runs indefinitely without detection`, async ({ page, bundle }) => {
+  // The flush counter resets via setTimeout after each macrotask. requestAnimationFrame also
+  // fires as a macrotask, so flushCount is always 0 when each rAF callback runs. No guard
+  // fires — the loop runs at ~60 fps forever with no warning. This is a known limitation:
+  // kensington cannot distinguish an effect scheduling its own writes via rAF from an
+  // external animation driver updating the same signal at high frequency.
+  const result = await page.evaluate(async src => {
+    const { signal, effect } = await import(src);
+    const errors = [];
+    const orig = console.error;
+    console.error = msg => errors.push(msg);
+    const x = signal(0);
+    let lastId;
+    const ctrl = effect(() => {
+      x.get();
+      lastId = requestAnimationFrame(() => x.set(v => v + 1));
+    });
+    await new Promise(r => { setTimeout(r, 100); });
+    cancelAnimationFrame(lastId);
+    ctrl.stop();
+    console.error = orig;
+    return { errors, x: x.value };
+  }, bundle);
+  expect(result.errors.some(e => e.includes('reactive loop'))).toBe(false);
+  expect(result.x).toBeGreaterThan(0);
+});
+
+test('async queueMicrotask loop is halted by the flush counter and page stays responsive', async ({ page, bundle }) => {
+  // Without the async flush counter, reading x via .get() subscribes the effect; the
+  // unconditional queueMicrotask write re-triggers it on every microtask turn, creating
+  // an infinite chain that freezes the tab. If page.evaluate() returns, the guard worked.
+  const result = await page.evaluate(async src => {
+    const { signal, effect } = await import(src);
+    const errors = [];
+    const orig = console.error;
+    console.error = msg => errors.push(msg);
+    const x = signal(0);
+    effect(() => {
+      x.get();
+      queueMicrotask(() => x.set(v => v + 1));
+    });
+    await new Promise(r => { setTimeout(r, 0); });
+    console.error = orig;
+    return { errors, x: x.value };
+  }, bundle);
+  expect(result.errors.some(e => e.includes('async reactive loop detected'))).toBe(true);
+  expect(result.x).toBeGreaterThan(0);
+});
+
