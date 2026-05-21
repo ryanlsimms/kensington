@@ -58,6 +58,7 @@
   <ul>
     <li><a href="#cli">HTML &rarr; Kensington</a></li>
     <li><a href="#ide-plugins">IDE plugins</a></li>
+    <li><a href="#eslint-plugin">ESLint plugin</a></li>
     <li><a href="#server-packages">Server packages</a></li>
     <li><a href="#ai-assistants">AI assistants</a></li>
   </ul>
@@ -855,6 +856,44 @@ t.inlineComment('line 1\nline 2');       // &lt;!--\n  line 1\n  line 2\n--&gt;<
     </div>
 
     <p>Available for <a href="https://marketplace.visualstudio.com/items?itemName=ryan-lee-simms.kensington" target="_blank" rel="noopener">VS Code</a> and <a href="https://plugins.jetbrains.com/plugin/31827-kensington" target="_blank" rel="noopener">JetBrains</a> IDEs. Both plugins also wire up Go to Definition and Find Usages between CSS selectors and Kensington templates.</p>
+
+    <h3 id="eslint-plugin">ESLint plugin</h3>
+
+    <p><a href="https://www.npmjs.com/package/kensington-eslint-plugin" target="_blank" rel="noopener">kensington-eslint-plugin</a> catches common signal mistakes at lint time rather than at runtime. It flags read/write loops, writes inside computed derivations, orphaned effects, async subscription pitfalls, and more. Requires ESLint 9+ and Node 18+.</p>
+
+    <pre><code class="language-sh">npm install --save-dev kensington-eslint-plugin</code></pre>
+
+    <p>Add the recommended config to your <code>eslint.config.js</code>:</p>
+
+    <pre><code class="language-javascript">import kensington from 'kensington-eslint-plugin';
+
+export default [
+  kensington.configs.recommended,
+  // ...your other configs
+];</code></pre>
+
+    <table>
+      <thead>
+        <tr><th>Rule</th><th>Description</th><th>Default</th></tr>
+      </thead>
+      <tbody>
+        <tr><td data-label="Rule"><code>no-set-in-computed</code></td><td data-label="Description">Disallow <code>.set()</code> inside a <code>computed()</code> body</td><td data-label="Default">error</td></tr>
+        <tr><td data-label="Rule"><code>no-self-read-write</code></td><td data-label="Description">Disallow reading and writing the same signal in the same reactive run</td><td data-label="Default">error</td></tr>
+        <tr><td data-label="Rule"><code>no-set-on-computed</code></td><td data-label="Description">Disallow <code>.set()</code> on a computed signal</td><td data-label="Default">error</td></tr>
+        <tr><td data-label="Rule"><code>no-new-signal-in-effect</code></td><td data-label="Description">Disallow creating a new <code>signal()</code> inside an <code>effect()</code> body</td><td data-label="Default">error</td></tr>
+        <tr><td data-label="Rule"><code>no-effect-in-computed</code></td><td data-label="Description">Disallow calling <code>effect()</code> inside a <code>computed()</code> body</td><td data-label="Default">error</td></tr>
+        <tr><td data-label="Rule"><code>no-signal-async-write</code></td><td data-label="Description">Disallow writing a signal in an async callback when it was read in the enclosing <code>effect()</code></td><td data-label="Default">warn</td></tr>
+        <tr><td data-label="Rule"><code>no-ignored-effect-return</code></td><td data-label="Description">Require capturing the return value of <code>effect()</code> inside a function</td><td data-label="Default">warn</td></tr>
+        <tr><td data-label="Rule"><code>prefer-value-in-async</code></td><td data-label="Description">Prefer <code>.value</code> over <code>.get()</code> inside async callbacks within an <code>effect()</code></td><td data-label="Default">warn</td></tr>
+        <tr><td data-label="Rule"><code>no-new-computed-in-effect</code></td><td data-label="Description">Disallow creating a new <code>computed()</code> inside an <code>effect()</code> body</td><td data-label="Default">error</td></tr>
+        <tr><td data-label="Rule"><code>no-new-signal-in-computed</code></td><td data-label="Description">Disallow creating a new <code>signal()</code> inside a <code>computed()</code> body</td><td data-label="Default">error</td></tr>
+        <tr><td data-label="Rule"><code>no-unsafe-literal</code></td><td data-label="Description">Disallow <code>.unsafeLiteral()</code> calls that bypass XSS protection</td><td data-label="Default">error</td></tr>
+        <tr><td data-label="Rule"><code>no-new-computed-in-computed</code></td><td data-label="Description">Disallow creating a new <code>computed()</code> inside a <code>computed()</code> body</td><td data-label="Default">error</td></tr>
+        <tr><td data-label="Rule"><code>no-effect-in-effect</code></td><td data-label="Description">Disallow creating a new <code>effect()</code> inside an <code>effect()</code> body</td><td data-label="Default">error</td></tr>
+        <tr><td data-label="Rule"><code>no-async-effect</code></td><td data-label="Description">Disallow async callbacks passed to <code>effect()</code></td><td data-label="Default">error</td></tr>
+        <tr><td data-label="Rule"><code>no-async-computed</code></td><td data-label="Description">Disallow async callbacks passed to <code>computed()</code></td><td data-label="Default">error</td></tr>
+      </tbody>
+    </table>
 
     <h3 id="server-packages">Server packages</h3>
 

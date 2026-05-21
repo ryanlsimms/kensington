@@ -17,10 +17,10 @@ esm/                          ESM source (the authoritative one — cjs/ and dis
     comment-tag.js            Inline HTML comments (.inlineComment()). Strips `--` and updates nodeValue on signal change
   lib/
     reactive/                 Signals + DOM lifecycle. The reactive runtime
-      signal.js               Signal class, signal(), computed(), effect(). Microtask batching, SSR mode counter
+      signal.js               Signal class, signal(), computed(), effect(). Microtask batching, SSR mode counter. Reactive loop guards: per-effect run counter (sync) and flush counter (async). Warns on same-run read/write and .set() inside computed
       lifecycle.js            Per-element effect/callback orchestrator. Owns the persist mechanism end-to-end
       dom-tracker.js          Shared MutationObserver. Stops effects on removal, fires connect callbacks on insertion
-      reconcile.js            Array reconciler. Keyed by data-key. Recursive node patching with tracker-aware guards
+      reconcile.js            Array reconciler. Keyed by data-key. Recursive node patching with tracker-aware guards. Calls stopRemoved synchronously on removed nodes so effects stop before the MutationObserver fires
     render/                   Turning tag instances into output (HTML strings or DOM elements)
       validate.js             Attribute name and value checks. Uses showInvalid for the on/warn/error contract
       serialize.js            toString() pipeline. Short-content fast path, indentation, literal handling, encoding
@@ -107,5 +107,6 @@ A user calls `t.div(...)`. That call chain:
 - **`validationLevel: 'off'` must never throw.** All runtime validation goes through `showInvalid`, which silently skips at `'off'`. Hard invariants (bad constructor input) can still throw at the boundary.
 - **`Signal` values are accepted everywhere a plain value is accepted.** `attributeValueIsValid` returns true for Signals unconditionally. Resolution happens at render time.
 - **The `persist` mechanism lives entirely in `lifecycle.js`.** It pauses effects on removal and resumes them on reconnection, rebuilds the disconnect-callback chain on every cycle, and restores `#domElement` via the `onReconnect` callback. No other file should know about pause-vs-stop selection.
-- **`reconcile.js` uses two guards.** `isTracked(existing)` skips attribute removal on signal-managed elements. `isContentTracked(existing)` skips child patching on elements that hold signal-content comment anchors.
+- **`reconcile.js` uses two patching guards and one removal guard.** `isTracked(existing)` skips attribute removal on signal-managed elements. `isContentTracked(existing)` skips child patching on elements that hold signal-content comment anchors. `stopRemoved` is called synchronously on every node the reconciler removes so effects stop immediately, before the MutationObserver fires.
+- **`_reads` tracks which signals were read via `.get()` in the current reactive run.** `track()` resets the set at the start of each run. `Signal.set()` checks `currentEffect._reads` to warn on same-run read/write cycles, and checks `inComputedFn` to warn on writes inside a `computed()` body. Both are `console.error` warnings, not throws.
 - **`.value` and `.toJSON()` do NOT subscribe.** Only `.get()` and `.toString()` register reactive dependencies. This is intentional — see the docstring in `signal.js`.

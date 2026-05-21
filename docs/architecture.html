@@ -485,7 +485,7 @@
         </tr>
         <tr>
           <td><span class="term">Reconciler</span></td>
-          <td>Patches DOM in place when a signal&rsquo;s value is an array. Matches by <code>data-key</code>, recursive sync, two guards for signal-managed elements.</td>
+          <td>Patches DOM in place when a signal&rsquo;s value is an array. Matches by <code>data-key</code>, recursive sync, guards for signal-managed elements.</td>
           <td><a class="loc" href="../esm/lib/reactive/reconcile.js">reconcile.js</a></td>
         </tr>
         <tr>
@@ -1085,6 +1085,13 @@ sequenceDiagram
         <div class="callout-title">Error isolation in batches</div>
         <p><code>flush()</code> wraps each effect run in <code>try/catch</code> and re-throws via <code>queueMicrotask</code>. This prevents one effect&rsquo;s thrown error from aborting the batch. Every queued effect still runs. See <a class="loc" href="../esm/lib/reactive/signal.js">signal.js<span class="ln">:32</span></a>.</p>
       </div>
+
+      <div class="callout warn">
+        <div class="callout-title">Loop guards</div>
+        <p><code>flush()</code> tracks how many times each effect function has been re-queued within a single flush pass via a <code>runCounts</code> Map. If the same effect is re-queued 100 times (<code>MAX_EFFECT_LOOPS = 100</code>), <code>flush()</code> fires <code>console.error</code> and stops re-running that effect for the remainder of the pass. This catches write cycles where an effect keeps re-queuing itself.</p>
+        <p>A separate counter, <code>flushCount</code>, tracks consecutive <code>flush()</code> calls within the same macrotask turn. After 500 flushes (<code>MAX_FLUSHES = 500</code>), <code>flush()</code> fires <code>console.error</code> and calls <code>pending.clear()</code> to break the async loop.</p>
+        <p><code>Signal.set()</code> also performs two immediate checks before notifying subscribers. If <code>currentEffect._reads.has(this)</code> is true, the signal being written was already read in the current effect run. This is a same-run read/write cycle and <code>console.error</code> fires. If <code>inComputedFn</code> is true, a write is being attempted inside a <code>computed()</code> body, which is also flagged. Both checks fire <code>console.error</code> and continue. Signals remain writable and no exception is thrown.</p>
+      </div>
     </section>
 
     <section id="signal-effect">
@@ -1139,7 +1146,7 @@ sequenceDiagram
 
       <p><code>stop()</code> calls <code>pause()</code> and sets <code>destroyed = true</code>, making <code>resume()</code> a permanent no-op. This is the cleanup path when an element is removed without <code>persist</code>.</p>
 
-      <p>The <code>track()</code> helper at <a class="loc" href="../esm/lib/reactive/signal.js">signal.js<span class="ln">:113</span></a> is what sets <code>currentEffect</code> for the duration of a run, ensuring any <code>.get()</code> calls inside subscribe back. It also clears stale subscriptions from the previous run. If an effect reads <code>signalA</code> on one run and not on the next, the subscription to <code>signalA</code> is severed automatically.</p>
+      <p>The <code>track()</code> helper at <a class="loc" href="../esm/lib/reactive/signal.js">signal.js<span class="ln">:113</span></a> is what sets <code>currentEffect</code> for the duration of a run, ensuring any <code>.get()</code> calls inside subscribe back. It also clears stale subscriptions from the previous run. If an effect reads <code>signalA</code> on one run and not on the next, the subscription to <code>signalA</code> is severed automatically. It also resets <code>run._reads</code> to a fresh <code>Set</code> at the start of each run, enabling the same-run read/write detection in <code>Signal.set()</code>.</p>
     </section>
 
     <section id="signal-computed">
@@ -1154,28 +1161,30 @@ sequenceDiagram
     return s;
   }
   const s = new Signal(undefined);
+  let sleeping = false;
   function update() {
-    track(update, () =&gt; {
+    track(update, () => {
+      let result;
+      const prevInComputedFn = inComputedFn;
+      inComputedFn = true;
+      try {
+        result = fn();
+      } catch (err) { rethrowAsync(err); return; }
+      finally { inComputedFn = prevInComputedFn; }
       derivedWriteDepth++;
       try {
-        s.set(fn());
-      } catch (err) {
-        rethrowAsync(err);
-      } finally {
-        derivedWriteDepth--;
-      }
+        s.set(result);
+      } catch (err) { rethrowAsync(err); }
+      finally { derivedWriteDepth--; }
     });
   }
   update._cleanups = [];
   update();
-  stopFns.set(s, () =&gt; {
-    for (const cleanup of update._cleanups) { cleanup(); }
-    update._cleanups = [];
-  });
+  // Auto-dispose: sleep when last subscriber leaves, wake on next reactive read.
+  sleepFns.set(s, () => { sleeping = true; for (const c of update._cleanups) { c(); } update._cleanups = []; });
+  wakeFns.set(s, () => { if (!sleeping) { return false; } sleeping = false; update(); return true; });
+  stopFns.set(s, () => { sleepFns.delete(s); wakeFns.delete(s); /* ... tears down update ... */ });
   derivedSignals.add(s);
-  if (currentEffect !== null) {
-    currentEffect._cleanups.push(() =&gt; s.stop());
-  }
   return s;
 }</code></pre>
 
@@ -1183,10 +1192,10 @@ sequenceDiagram
 
       <ol>
         <li><strong>SSR bypass.</strong> Inside <code>renderForHydration</code>, <code>fn()</code> runs once with no <code>currentEffect</code> set, so source <code>.get()</code> calls do not register a subscription. The returned Signal carries the snapshot value and never updates. This prevents per-request <code>computed</code>/<code>transform</code> calls from leaking subscribers onto module-level signals that outlive the request.</li>
-        <li><code>derivedWriteDepth</code> is incremented before the <code>fn()</code> call so that <code>s.set()</code> can succeed even though <code>s</code> is in the <code>derivedSignals</code> WeakSet (which normally blocks external writes).</li>
+        <li><code>derivedWriteDepth</code> is incremented before <code>s.set()</code> is called so that the write can succeed even though <code>s</code> is in the <code>derivedSignals</code> WeakSet (which normally blocks external writes). <code>fn()</code> runs first, with <code>inComputedFn = true</code>, to separate the read phase from the write phase.</li>
         <li>Errors are caught and re-thrown asynchronously via <code>rethrowAsync</code> so that a throw in one computed doesn&rsquo;t corrupt other parts of the dependency graph.</li>
         <li><code>stopFns.set(s, &hellip;)</code> stores a cleanup closure keyed by the Signal. <code>Signal.stop()</code> at <a class="loc" href="../esm/lib/reactive/signal.js">signal.js<span class="ln">:95</span></a> retrieves and runs it, properly tearing down the derived computation.</li>
-        <li><strong>Parent auto-stop.</strong> If <code>computed</code> is called while another effect&rsquo;s <code>run</code> or computed&rsquo;s <code>update</code> is on the stack, this computed&rsquo;s <code>stop()</code> is pushed onto the parent&rsquo;s <code>_cleanups</code>. When the parent re-runs (or is stopped), this computed is torn down. Without this, calling <code>computed()</code> in an <code>effect()</code> body grows the source signal&rsquo;s subscriber set by one per parent re-run.</li>
+        <li><strong>Auto-dispose.</strong> When a computed&rsquo;s last subscriber is removed (for example, the parent effect re-runs and drains its <code>_cleanups</code>), <code>sleepFns</code> fires: the computed unsubscribes from all source signals and freezes its value. On the next <code>.get()</code> call inside a reactive context, <code>wakeFns</code> fires: the computed re-runs <code>fn()</code>, re-subscribes to sources, and returns a fresh value. This replaces the old <code>_cleanups.push(() => s.stop())</code> pattern. No explicit teardown is needed.</li>
       </ol>
 
       <p><code>Signal.prototype.transform = fn =&gt; computed(() =&gt; fn(this.get()))</code> at <a class="loc" href="../esm/lib/reactive/signal.js">signal.js<span class="ln">:213</span></a> is just sugar for the same pattern. It&rsquo;s defined on the prototype after <code>computed</code> is in scope to avoid a forward reference.</p>
@@ -1663,7 +1672,7 @@ if (snapshotMatches(snapshots.get(old), item)) {
       <li>Recursively syncNode each child pair.</li>
     </ol>
 
-    <h3>The two guards</h3>
+    <h3>The guards</h3>
 
     <div class="callout key">
       <div class="callout-title">Why guards are needed</div>
@@ -1692,6 +1701,8 @@ if (!isContentTracked(existing)) {
 
     <p>After patching, <code>stopTracked(fresh)</code> tears down the discarded fresh node&rsquo;s effects so they don&rsquo;t leak.</p>
 
+    <p>After patching is complete, the reconciler also explicitly tears down removed nodes without waiting for the MutationObserver. Both removal sweeps (leftover nodes between <code>cursor</code> and <code>endAnchor</code>, and keyed nodes whose key was absent from <code>newItems</code>) call <code>stopRemoved(node)</code> immediately after <code>.remove()</code>. This closes the window where a node that just left the DOM could still respond to signal changes before the observer fires.</p>
+
     <h3>Insertion, reuse, leftover cleanup</h3>
 
     <p>Back in <code>reconcile()</code> itself, the main loop walks <code>newItems</code> in order. For each item:</p>
@@ -1701,8 +1712,8 @@ if (!isContentTracked(existing)) {
       <li>If the item has a key and matches an existing keyed node, call <code>syncNode(old, itemToNode(item))</code>. The result is either the patched <code>existing</code> or the <code>fresh</code> node if types diverged.</li>
       <li>If no match (or no key), build a brand-new node via <code>itemToNode(item)</code>.</li>
       <li>If <code>cursor === targetNode</code>, advance. The node is already in position. Otherwise <code>parent.insertBefore(targetNode, cursor)</code> to slide it into place.</li>
-      <li>After the loop, every node between <code>cursor</code> and <code>endAnchor</code> is leftover from the previous render. Remove them.</li>
-      <li>Every entry remaining in the <code>oldNodes</code> map is a keyed node whose key was not in <code>newItems</code>. Remove them too.</li>
+      <li>After the loop, every node between <code>cursor</code> and <code>endAnchor</code> is leftover from the previous render. Remove them and call <code>stopRemoved</code> to synchronously stop their signal effects.</li>
+      <li>Every entry remaining in the <code>oldNodes</code> map is a keyed node whose key was not in <code>newItems</code>. Remove them too, and call <code>stopRemoved</code> to synchronously stop their signal effects.</li>
     </ol>
   </section>
 
@@ -1772,13 +1783,15 @@ export function computed(fn) {
 
       <li><strong>The persist mechanism lives entirely in <a class="loc" href="../esm/lib/reactive/lifecycle.js">lifecycle.js</a>.</strong> No other file decides between <code>pause()</code> and <code>stop()</code>. The <code>dom-tracker</code> knows about <code>persist</code> only to decide whether to preserve the <code>connect</code>/<code>persist</code> entry fields across stop-cleanup.</li>
 
-      <li><strong>The two reconcile guards must never be bypassed.</strong> <code>isTracked</code> prevents attribute-strip on signal-managed elements. <code>isContentTracked</code> prevents child-patch on elements holding signal-content anchors. See <a class="loc" href="../esm/lib/reactive/reconcile.js">reconcile.js<span class="ln">:43</span></a>.</li>
+      <li><strong>The reconcile guards must never be bypassed.</strong> <code>isTracked</code> prevents attribute-strip on signal-managed elements. <code>isContentTracked</code> prevents child-patch on elements holding signal-content anchors. See <a class="loc" href="../esm/lib/reactive/reconcile.js">reconcile.js<span class="ln">:43</span></a>. A third guard, <code>stopRemoved</code>, is called synchronously after every <code>.remove()</code> in the reconciler so effects stop before the MutationObserver fires.</li>
 
       <li><strong>Effects batch via microtasks; computed updates are synchronous.</strong> Multiple <code>.set()</code> calls in the same turn coalesce into one effect re-run. Computed signals see consistent inputs because their updates happen inline with the write.</li>
 
       <li><strong>The DOM tracker has exactly one observer for the whole document.</strong> Not one per tracked element. It&rsquo;s built lazily on the first <code>trackForStop</code> or <code>trackForConnect</code> call.</li>
 
       <li><strong><code>WeakRef</code> is the GC safety net for signal effects on detached elements.</strong> If an element is never inserted into the DOM and is garbage-collected, the next signal write triggers an effect that finds <code>ref.deref()</code> returning undefined and self-stops.</li>
+
+      <li><strong><code>_reads</code> and <code>inComputedFn</code> are loop-detection helpers, not runtime invariants.</strong> <code>track()</code> resets <code>run._reads</code> to a fresh <code>Set</code> at the start of every run. <code>Signal.set()</code> consults them to detect same-run read/write cycles and writes inside <code>computed()</code> bodies. Both conditions fire <code>console.error</code> and continue. They are developer warnings, not enforced constraints.</li>
     </ol>
   </section>
 
@@ -1824,7 +1837,7 @@ export function computed(fn) {
         </tr>
         <tr>
           <td>Signal-array DOM patching</td>
-          <td><a class="loc" href="../esm/lib/reactive/reconcile.js">reconcile.js</a>. Particularly <code>syncNode</code> and the two guards</td>
+          <td><a class="loc" href="../esm/lib/reactive/reconcile.js">reconcile.js</a>. Particularly <code>syncNode</code> and the guards</td>
         </tr>
         <tr>
           <td>SSR or hydration behavior</td>
