@@ -30,6 +30,8 @@ export function examplesSidebar(t) {
           t.li(t.a({ href: '#character-counter' }, 'Character counter')),
           t.li(t.a({ href: '#incremental-search' }, 'Incremental search')),
           t.li(t.a({ href: '#sortable-table' }, 'Sortable table')),
+          t.li(t.a({ href: '#static-tab-switcher' }, 'Static tab switcher')),
+          t.li(t.a({ href: '#static-accordion' }, 'Static accordion')),
           t.li(t.a({ href: '#hydrated-like-button' }, 'Hydrated component')),
           t.li(t.a({ href: '#hydrated-form-validation' }, 'Form validation')),
           t.li(t.a({ href: '#lifecycle-widget' }, 'Lifecycle widget')),

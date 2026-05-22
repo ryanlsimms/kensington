@@ -1723,6 +1723,55 @@ document.body.append(
 );
 ```
 
+### Reactive data — making static HTML elements reactive
+
+When most of a page is static HTML, use `effect()` directly against existing DOM elements rather than rebuilding markup with `.toElement()`. A signal holds the shared state; each element gets its own `effect` that reads the signal and updates the DOM.
+
+```javascript
+import { signal, effect } from 'kensington';
+
+// Tab switcher — read initial state from the HTML so the page works before JS runs
+const activeTab = signal(
+  document.querySelector('.tab--active')?.dataset.tab ?? 'overview'
+);
+
+document.querySelectorAll('[data-tab]').forEach(btn => {
+  btn.addEventListener('click', () => activeTab.set(btn.dataset.tab));
+  effect(() => {
+    btn.classList.toggle('tab--active', btn.dataset.tab === activeTab.get());
+  });
+});
+
+document.querySelectorAll('[data-panel]').forEach(panel => {
+  effect(() => {
+    panel.classList.toggle('panel--hidden', panel.dataset.panel !== activeTab.get());
+  });
+});
+```
+
+Effects created this way are not auto-stopped when the element is removed from the DOM. For page-lifetime effects that is fine. If cleanup is needed, store the return value and call `.stop()` manually, or use `addDisconnectedCallback` on a Kensington-created ancestor.
+
+### Reactive data — accordion with per-element signals
+
+Each accordion item gets its own signal, seeded from its `aria-expanded` attribute so the HTML is the source of truth. An `effect` keeps `aria-expanded` and the `hidden` property in sync on every change.
+
+```javascript
+import { signal, effect } from 'kensington';
+
+document.querySelectorAll('.accordion-toggle').forEach(btn => {
+  const panel = document.getElementById(btn.getAttribute('aria-controls'));
+  const open = signal(btn.getAttribute('aria-expanded') === 'true');
+
+  btn.addEventListener('click', () => open.set(v => !v));
+
+  effect(() => {
+    const isOpen = open.get();
+    btn.setAttribute('aria-expanded', String(isOpen));
+    panel.hidden = !isOpen;
+  });
+});
+```
+
 ### Reactive data — context
 
 The `createContext` pattern builds a signal stack so components read the nearest provider's value during synchronous construction. Consumers hold the signal reference and update reactively. `provide()` always wraps its argument in a new signal.

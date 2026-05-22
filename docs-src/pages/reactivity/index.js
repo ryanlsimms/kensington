@@ -23,6 +23,7 @@ export function reactivitySidebar(t) {
       t.li(t.a({ href: '#signals-dom-props' }, 'DOM properties')),
       t.li(t.a({ href: '#signals-keyed-lists' }, 'Keyed lists')),
       t.li(t.a({ href: '#signals-literal' }, '.literal() & comments')),
+      t.li(t.a({ href: '#signals-existing-elements' }, 'Existing elements')),
     ]),
     t.div({ class: 'sidebar-title' }, 'Advanced'),
     t.ul([

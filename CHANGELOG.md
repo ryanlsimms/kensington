@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Fixed
+- `.toString()` output no longer adds spurious indentation to lines inside `<pre>` elements when the opening `<pre>` tag shares a line with a preceding element (such as a wrapping `<div>`). Previously only a `<pre>` that began a line triggered the indentation guard.
+- The "`.set()` called inside a computed" warning no longer fires a false positive when a computed signal updates its own value in a callback.
+
 ## [2.0.0-signals.10] - 2026-05-21
 
 ### Fixed

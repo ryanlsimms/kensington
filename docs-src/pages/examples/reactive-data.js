@@ -331,6 +331,105 @@ document.body.append(
 );`),
     ]),
 
+    t.section({ id: 'static-tab-switcher' }, [
+      t.h3('Static HTML tab switcher'),
+      t.p([
+        'When the page is mostly static HTML, a signal and a few ',
+        t.code('effect()'),
+        ' calls are enough to add interactivity without rebuilding the markup with Kensington. Here a signal holds the active tab key, and each tab button and content panel reads the signal in its own ',
+        t.code('effect'),
+        ' to update its class. The initial active tab is read from the HTML itself so the page works before JavaScript runs.',
+      ]),
+      panels(t, [
+        {
+          label: 'HTML',
+          content: code(t, 'html', `<nav class="tabs">
+  <button class="tab tab--active" data-tab="overview">Overview</button>
+  <button class="tab" data-tab="install">Install</button>
+  <button class="tab" data-tab="api">API</button>
+</nav>
+<div class="panel" data-panel="overview">Overview content...</div>
+<div class="panel panel--hidden" data-panel="install">Install content...</div>
+<div class="panel panel--hidden" data-panel="api">API content...</div>`),
+        },
+        {
+          label: 'JavaScript',
+          content: code(t, 'javascript', `import { signal, effect } from 'kensington';
+
+// Read the initial active tab from the DOM so the page is valid before JS runs.
+const activeTab = signal(
+  document.querySelector('.tab--active')?.dataset.tab ?? 'overview'
+);
+
+document.querySelectorAll('[data-tab]').forEach(btn => {
+  btn.addEventListener('click', () => activeTab.set(btn.dataset.tab));
+  effect(() => {
+    btn.classList.toggle('tab--active', btn.dataset.tab === activeTab.get());
+  });
+});
+
+document.querySelectorAll('[data-panel]').forEach(panel => {
+  effect(() => {
+    panel.classList.toggle('panel--hidden', panel.dataset.panel !== activeTab.get());
+  });
+});`),
+        },
+      ]),
+    ]),
+
+    t.section({ id: 'static-accordion' }, [
+      t.h3('Static HTML accordion'),
+      t.p([
+        'Each accordion item gets its own ',
+        t.code('signal'),
+        ', created from its initial ',
+        t.code('aria-expanded'),
+        ' attribute. An ',
+        t.code('effect'),
+        ' keeps the attribute and the ',
+        t.code('hidden'),
+        ' property on the panel in sync as the signal changes. The pattern scales to any number of items with no shared state.',
+      ]),
+      panels(t, [
+        {
+          label: 'HTML',
+          content: code(t, 'html', `<div class="accordion">
+  <button class="accordion-toggle"
+    aria-expanded="false"
+    aria-controls="panel-1">What is Kensington?</button>
+  <div id="panel-1" class="accordion-panel" hidden>
+    An HTML library for Node and the browser.
+  </div>
+</div>
+<div class="accordion">
+  <button class="accordion-toggle"
+    aria-expanded="true"
+    aria-controls="panel-2">Does it require a build step?</button>
+  <div id="panel-2" class="accordion-panel">
+    No. Import it directly from npm or a CDN.
+  </div>
+</div>`),
+        },
+        {
+          label: 'JavaScript',
+          content: code(t, 'javascript', `import { signal, effect } from 'kensington';
+
+document.querySelectorAll('.accordion-toggle').forEach(btn => {
+  const panel = document.getElementById(btn.getAttribute('aria-controls'));
+  const open = signal(btn.getAttribute('aria-expanded') === 'true');
+
+  btn.addEventListener('click', () => open.set(v => !v));
+
+  effect(() => {
+    const isOpen = open.get();
+    btn.setAttribute('aria-expanded', String(isOpen));
+    panel.hidden = !isOpen;
+  });
+});`),
+        },
+      ]),
+    ]),
+
     t.section({ id: 'hydrated-like-button' }, [
       t.h3('Hydrated component'),
       t.p([

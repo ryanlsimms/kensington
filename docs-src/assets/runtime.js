@@ -17,8 +17,7 @@ const toggle = document.getElementById('menu-toggle');
 
 // ── Page switching ────────────────────────────────────────────────
 
-effect(() => {
-  const id = currentPage.get();
+function handlePageSwitch(id) {
   history.pushState({}, '', id === 'basics' ? location.pathname : `?page=${id}`);
   pageContents.forEach(el => el.classList.toggle('page-inactive', el.dataset.pageContent !== id));
   pageNavs.forEach(el => el.classList.toggle('page-inactive', el.dataset.pageNav !== id));
@@ -26,18 +25,26 @@ effect(() => {
   activeSection.set(null);
   initScrollspy();
   if (toggle) { toggle.checked = false; }
+}
+
+function navigateTo(id) {
+  if (toggle) { toggle.checked = false; }
+  const target = document.getElementById(id.slice(1));
+  if (target) {
+    target.scrollIntoView();
+    history.replaceState(null, '', id);
+  }
+}
+
+effect(() => {
+  handlePageSwitch(currentPage.get())
 });
 
 // ── Sidebar nav links ─────────────────────────────────────────────
 
 nav.querySelectorAll('a[href^="#"]').forEach(l => l.addEventListener('click', e => {
   e.preventDefault();
-  if (toggle) { toggle.checked = false; }
-  const target = document.getElementById(l.getAttribute('href').slice(1));
-  if (target) {
-    target.scrollIntoView();
-    history.replaceState(null, '', l.getAttribute('href'));
-  }
+  navigateTo(l.getAttribute('href'))
 }));
 
 // ── Components ────────────────────────────────────────────────────
