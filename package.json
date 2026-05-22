@@ -84,7 +84,9 @@
     "test-cli": "node --test \"./tests/html-to-kensington-test.js\"",
     "test-treeshake": "node --test \"./tests/treeshake/treeshake-test.js\"",
     "benchmark": "node tests/benchmark.js",
-    "dom-server": "node --watch-path=./tests/browser/pages --watch-path=./esm ./tests/browser/server/html-server.js"
+    "dom-server": "node --watch-path=./tests/browser/pages --watch-path=./esm ./tests/browser/server/html-server.js",
+    "docs": "vite",
+    "docs-build": "vite build"
   },
   "engines": {
     "node": ">=18"
@@ -114,10 +116,13 @@
     "globals": "^17.3.0",
     "html-validate": "^9.4.1",
     "jsdom": "^26.0.0",
+    "kensington-eslint-plugin": "^0.2.1",
     "lint-staged": "^16.2.7",
     "rollup": "^4.35.0",
     "simple-git-hooks": "^2.13.1",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vite": "^6.0.0",
+    "vite-plugin-singlefile": "^2.3.0"
   },
   "dependencies": {
     "csstype": "^3.2.3",

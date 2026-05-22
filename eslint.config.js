@@ -2,11 +2,14 @@ import pluginJs from '@eslint/js';
 import stylistic from '@stylistic/eslint-plugin';
 import simpleImportSort from 'eslint-plugin-simple-import-sort';
 import globals from 'globals';
+import kensington from 'kensington-eslint-plugin';
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
+  kensington.configs.recommended,
   {
     'languageOptions': {
+      'ecmaVersion': 'latest',
       'globals': {
         ...globals.browser,
         ...globals.node,
@@ -18,6 +21,7 @@ export default [
     'ignores': [
       'cjs/**',
       'dist/**',
+      'docs-src/**',
       '**/node_modules/**',
     ],
   },
@@ -89,6 +93,7 @@ export default [
       ],
       'id-length': 'off',
       'init-declarations': 'off',
+      'kensington/no-ignored-effect-return': 'off',
       'max-classes-per-file': 'off',
       'max-lines': 'off',
       'max-lines-per-function': 'off',
@@ -130,5 +135,11 @@ export default [
       'sort-keys': 'off',
       'sort-vars': 'off',
     },
+  },
+  {
+    files: ['tests/**'],
+    rules: Object.fromEntries(
+      Object.keys(kensington.rules ?? {}).map(rule => [`kensington/${rule}`, 'off']),
+    ),
   },
 ];

@@ -146,7 +146,7 @@ export default class Signal {
         'Use .value instead of .get() if you need the current value without subscribing.',
       );
     }
-    if (inComputedFn) {
+    if (inComputedFn && derivedWriteDepth === 0) {
       console.error(
         'kensington: .set() called inside a computed function. ' +
         'Computeds must be pure derivations. Move the write into a separate effect() instead.',

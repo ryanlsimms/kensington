@@ -1,0 +1,17 @@
+import Kensington from '../esm/index.js';
+import { basicsSidebar, basicsContent } from './pages/basics/index.js';
+import { reactivitySidebar, reactivityContent } from './pages/reactivity/index.js';
+import { examplesSidebar, examplesContent } from './pages/examples/index.js';
+import { apiSidebar, apiContent } from './pages/api/index.js';
+import { layout } from './layout.js';
+
+const pages = [
+  { id: 'basics',     label: 'Kensington',   sidebar: basicsSidebar,     content: basicsContent },
+  { id: 'reactivity', label: 'Reactive data', sidebar: reactivitySidebar, content: reactivityContent },
+  { id: 'examples',   label: 'Examples',      sidebar: examplesSidebar,   content: examplesContent },
+  { id: 'api',        label: 'API',           sidebar: apiSidebar,        content: apiContent },
+];
+
+export function generateHtml() {
+  return layout(new Kensington(), pages);
+}
