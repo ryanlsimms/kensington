@@ -2,7 +2,6 @@ import { renderForHydration } from '../esm/index.js';
 import { menuIcon, closeMenuIcon } from './components/ui.js';
 import { searchDocs } from './components/search.js';
 import { pageTabs } from './components/page-tabs.js';
-import { topbarTitle } from './components/topbar-title.js';
 
 export function layout(t, pages) {
   return t.htmlWithDocType({ lang: 'en' }, [
@@ -10,8 +9,10 @@ export function layout(t, pages) {
       t.meta({ charset: 'utf-8' }),
       t.meta({ name: 'viewport', content: 'width=device-width, initial-scale=1' }),
       t.title('Kensington'),
-      t.link({ href: 'https://api.fontshare.com/v2/css?f[]=supreme@1,900,700,500,400,300&display=swap', rel: 'stylesheet' }),
-      t.link({ href: 'https://api.fontshare.com/v2/css?f[]=tanker@400&display=swap', rel: 'stylesheet' }),
+      t.link({ rel: 'preconnect', href: 'https://fonts.googleapis.com' }),
+      t.link({ rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }),
+      t.link({ href: 'https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;1,400&family=Barlow+Condensed:wght@500;600;700&display=swap', rel: 'stylesheet' }),
+      t.link({ href: 'https://db.onlinewebfonts.com/c/63a0282b9ba584ecf321c6e87443e863?family=Draft+B', rel: 'stylesheet' }),
       t.link({ rel: 'stylesheet', href: 'https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css' }),
       t.link({ rel: 'stylesheet', href: '/assets/styles.css' }),
     ]),
@@ -24,7 +25,7 @@ export function layout(t, pages) {
           menuIcon(t),
           closeMenuIcon(t),
         ]),
-        renderForHydration(topbarTitle, {}),
+        t.span({ class: 'topbar-title' }, 'Kensington'),
         renderForHydration(searchDocs, {}),
       ]),
 

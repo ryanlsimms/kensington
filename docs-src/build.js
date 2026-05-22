@@ -6,7 +6,7 @@ import { apiSidebar, apiContent } from './pages/api/index.js';
 import { layout } from './layout.js';
 
 const pages = [
-  { id: 'basics',     label: 'Kensington',   sidebar: basicsSidebar,     content: basicsContent },
+  { id: 'basics',     label: 'Basics',   sidebar: basicsSidebar,     content: basicsContent },
   { id: 'reactivity', label: 'Reactive data', sidebar: reactivitySidebar, content: reactivityContent },
   { id: 'examples',   label: 'Examples',      sidebar: examplesSidebar,   content: examplesContent },
   { id: 'api',        label: 'API',           sidebar: apiSidebar,        content: apiContent },

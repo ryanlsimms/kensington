@@ -5,7 +5,6 @@ import { signalDemo } from '../components/signal-demo.js';
 import { searchDocs } from '../components/search.js';
 import { copyButton } from '../components/copy-button.js';
 import { pageTabs } from '../components/page-tabs.js';
-import { topbarTitle } from '../components/topbar-title.js';
 import { comparisonsModal } from '../pages/basics/modals.js';
 
 // ── DOM refs ──────────────────────────────────────────────────────
@@ -49,4 +48,4 @@ nav.querySelectorAll('a[href^="#"]').forEach(l => l.addEventListener('click', e 
 
 // ── Components ────────────────────────────────────────────────────
 
-registerComponents({ signalDemo, searchDocs, copyButton, pageTabs, topbarTitle, comparisonsModal });
+registerComponents({ signalDemo, searchDocs, copyButton, pageTabs, comparisonsModal });
