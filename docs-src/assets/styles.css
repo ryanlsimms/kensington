@@ -25,6 +25,10 @@
   --color-toolbar: #e0e2e5;
   --color-tab-active: #ffffff;
   --color-tab-inactive: #d5d8db;
+
+  --main-x-padding: 2em;
+  --section-x-padding: 0em;
+  --topbar-height: 44px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -69,7 +73,7 @@ body {
   line-height: 1.6;
   display: flex;
   min-height: 100vh;
-  padding-top: 44px;
+  padding-top: var(--topbar-height);
 }
 
 /* ── Layout ───────────────────────────────────────────────── */
@@ -77,7 +81,7 @@ body {
 main {
   flex: 1;
   min-width: 0;
-  padding: 2em;
+  padding: 2em var(--main-x-padding);
   max-width: 1500px;
 }
 
@@ -85,8 +89,8 @@ main {
 
 nav#sidebar {
   position: sticky;
-  top: 44px;
-  height: calc(100vh - 44px);
+  top: var(--topbar-height);
+  height: calc(100vh - var(--topbar-height));
   width: var(--sidebar-width);
   flex-shrink: 0;
   overflow-y: auto;
@@ -209,7 +213,7 @@ nav#sidebar .sidebar-footer a:hover {
   left: 0;
   right: 0;
   z-index: 150;
-  height: 44px;
+  height: var(--topbar-height);
   background: var(--color-toolbar);
   border-bottom: 1px solid var(--color-border);
   padding: 0 1rem;
@@ -335,6 +339,8 @@ header {
   border-bottom: 1px solid var(--color-border);
 }
 
+main > header, main > section { padding-inline: var(--section-x-padding); }
+
 section + header {
   margin-top: 12rem;
   padding-top: 1.5rem;
@@ -387,6 +393,7 @@ header p {
 
 section {
   margin-bottom: 3rem;
+  scroll-margin-top: calc((var(--topbar-height) + var(--main-x-padding) + var(--section-x-padding)) * 0.93);
 }
 
 section > section {
@@ -1312,7 +1319,11 @@ pre[class*="language-"] {
 }
 
 @media (max-width: 768px) {
-  body { flex-direction: column; padding-top: 44px; }
+  :root {
+    --main-x-padding: 0em;
+    --section-x-padding: 1.5em;
+  }
+  body { flex-direction: column; padding-top: var(--topbar-height); }
 
   pre[class*="language-"],
   .panel-label + .code-wrap pre[class*="language-"],
@@ -1375,9 +1386,7 @@ pre[class*="language-"] {
   #menu-toggle:checked ~ nav#sidebar { display: block; }
   #menu-toggle:checked ~ #menu-backdrop { display: block; }
 
-  main { padding: 1.5rem 0 3rem; }
-
-  main > header, main > section { padding-left: 1.25rem; padding-right: 1.25rem; }
+  main { padding-top: 1.5rem; padding-bottom: 3rem; }
 
   .header-github { display: none; }
 
