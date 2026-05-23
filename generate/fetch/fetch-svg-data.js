@@ -57,23 +57,15 @@ async function getPresentationAttributes(url) {
   const dom = await fetchAsDom(url);
   const names = new Set();
 
-  // bikeshed standard: <dfn data-dfn-type="property">property-name</dfn>
-  for (const dfn of dom.querySelectorAll('dfn[data-dfn-type="property"]')) {
-    const name = dfn.textContent.trim().toLowerCase();
-    if (name && /^[a-z][a-z0-9-]*$/.test(name)) {
-      names.add(name);
-    }
+  for (const a of dom.querySelectorAll('table.vert a.property')) {
+    // Properties linking to geometry.html or paths.html only apply to designated
+    // elements, not all SVG elements, so they are excluded.
+    if (a.href.includes('geometry.html') || a.href.includes('paths.html')) { continue; }
+    const name = a.textContent.trim().toLowerCase();
+    if (name) { names.add(name); }
   }
 
-  // older bikeshed format: <table id="propdef-stroke-width">
-  for (const table of dom.querySelectorAll('table[id^="propdef-"]')) {
-    const name = table.id.slice('propdef-'.length);
-    if (name && /^[a-z][a-z0-9-]*$/.test(name)) {
-      names.add(name);
-    }
-  }
-
-  return [...names];
+  return [...names].sort();
 }
 
 export default async function fetchSvgData() {
@@ -92,11 +84,7 @@ export default async function fetchSvgData() {
     stylingElements,
     textElements,
     svgAttributes,
-    paintingAttributes,
-    pserverAttributes,
-    textAttributes,
-    maskingAttributes,
-    filterAttributes,
+    svgPresentationAttributes,
   ] = await Promise.all([
     getElements('https://svgwg.org/specs/animations'),
     getDraftElements('https://drafts.csswg.org/css-masking-1/'),
@@ -112,22 +100,8 @@ export default async function fetchSvgData() {
     getElements('https://svgwg.org/svg2-draft/styling.html'),
     getElements('https://svgwg.org/svg2-draft/text.html'),
     getAttributes('https://www.w3.org/TR/SVGTiny12/attributeTable.html'),
-    getPresentationAttributes('https://svgwg.org/svg2-draft/painting.html'),
-    getPresentationAttributes('https://svgwg.org/svg2-draft/pservers.html'),
-    getPresentationAttributes('https://svgwg.org/svg2-draft/text.html'),
-    getPresentationAttributes('https://drafts.csswg.org/css-masking-1/'),
-    getPresentationAttributes('https://drafts.csswg.org/filter-effects/'),
+    getPresentationAttributes('https://svgwg.org/svg2-draft/styling.html'),
   ]);
-
-  const svgPresentationAttributes = [
-    ...new Set([
-      ...paintingAttributes,
-      ...pserverAttributes,
-      ...textAttributes,
-      ...maskingAttributes,
-      ...filterAttributes,
-    ]),
-  ].sort();
 
   const svgElements = [
     ...animationElements,

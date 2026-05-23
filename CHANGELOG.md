@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 - Validation warnings now pass the full stack trace to the logger as a single call. Previously the logger was called twice per warning, once with the plain message and once with the stack. Stack frames internal to Kensington are stripped so the trace points to the caller's code.
+- SVG presentation attributes now match the properties defined as presentation attributes in the SVG spec. Previously all standard CSS properties were accepted as valid SVG attributes. The `style` attribute continues to accept any CSS property.
 
 ## [1.0.0-rc.1] - 2026-05-20
 
