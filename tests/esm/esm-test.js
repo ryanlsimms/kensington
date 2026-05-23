@@ -2087,6 +2087,28 @@ describe('renderForHydration', () => {
     );
   });
 
+  it('throws when called in a browser context without an explicit name', () => {
+    globalThis.window = {};
+    try {
+      assert.throws(
+        () => renderForHydration(comp, {}),
+        /pass an explicit name as the third argument when calling in the browser/,
+      );
+    } finally {
+      delete globalThis.window;
+    }
+  });
+
+  it('accepts explicit name in a browser context', () => {
+    globalThis.window = {};
+    try {
+      const html = renderForHydration(comp, {}, 'myComp').toString();
+      assert.match(html, /data-k-component="myComp"/);
+    } finally {
+      delete globalThis.window;
+    }
+  });
+
   it('does not embed a style block (style is injected into head by registerComponents)', () => {
     const html = renderForHydration(comp, {}).toString();
     assert.doesNotMatch(html, /<style>/);

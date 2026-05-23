@@ -1,0 +1,188 @@
+/* ── Variables ──────────────────────────────────────────────── */
+
+:root {
+  --sidebar-width: 230px;
+
+  /* Main theme — light (drafting paper) */
+  --color-accent: hsl(221, 64%, 29%);
+  --color-text: hsl(0, 0%, 11%);
+  --color-muted: hsl(37, 11%, 37%);
+  --color-border: hsl(31, 9%, 21%);
+  --color-bg: hsl(40, 52%, 98%);
+  --color-sidebar-bg: hsl(43, 15%, 90%);
+  --color-panel-bg: hsl(0, 0%, 100%);
+  --color-link: hsl(221, 64%, 29%);
+  --color-link-hover: hsl(225, 73%, 22%);
+  --color-heading: hsl(0, 0%, 3%);
+  --color-badge-bg: hsl(39, 14%, 88%);
+  --color-table-head: hsl(41, 12%, 85%);
+  --color-inline-code-bg: hsla(30, 50%, 8%, 0.07);
+  --color-toolbar: hsl(41, 12%, 85%);
+  --color-tab-active: hsl(0, 0%, 100%);
+  --color-tab-inactive: hsl(42, 9%, 78%);
+
+  /* Overlays & chrome */
+  --color-grid: hsla(35, 28%, 25%, 0.05);
+  --color-backdrop: hsla(0, 0%, 0%, 0.4);
+  --color-modal-backdrop: hsla(0, 0%, 0%, 0.5);
+  --color-shadow: hsla(0, 0%, 0%, 0.15);
+  --color-nav-hover: hsla(0, 0%, 0%, 0.04);
+  --color-sidebar-tab-hover: var(--color-tab-active);
+  --color-search-input-bg: hsla(0, 0%, 0%, 0.1);
+
+  /* Copy button (sits on code blocks) */
+  --color-copy-btn-bg: hsla(0, 0%, 0%, 0.06);
+  --color-copy-btn-border: hsla(0, 0%, 0%, 0.12);
+  --color-copy-btn-text: hsl(0, 0%, 40%);
+  --color-copy-btn-hover-bg: hsla(0, 0%, 0%, 0.12);
+  --color-copy-btn-hover-text: hsl(0, 0%, 11%);
+  --color-copy-btn-copied: hsl(144, 49%, 32%);
+  --color-copy-btn-copied-border: hsla(144, 49%, 32%, 0.3);
+
+  /* Callouts */
+  --color-callout-note-bg: hsl(218, 57%, 96%);
+  --color-callout-note-border: hsl(221, 64%, 29%);
+  --color-callout-warn-bg: hsl(47, 65%, 95%);
+  --color-callout-warn-border: hsl(45, 100%, 27%);
+  --color-callout-tip-bg: hsl(120, 36%, 96%);
+  --color-callout-tip-border: hsl(135, 56%, 23%);
+  --color-callout-key-bg: hsl(30, 22%, 96%);
+  --color-callout-key-border: hsl(31, 9%, 21%);
+
+  /* Syntax highlighting — IntelliJ Light */
+  --color-syn-bg: hsl(0, 0%, 100%);
+  --color-syn-base: hsl(230, 6%, 16%);
+  --color-syn-comment: hsl(230, 4%, 58%);
+  --color-syn-tag: hsl(208, 82%, 38%);
+  --color-syn-keyword: hsl(300, 62%, 38%);
+  --color-syn-fn: hsl(36, 80%, 31%);
+  --color-syn-number: hsl(175, 72%, 26%);
+  --color-syn-property: hsl(208, 82%, 38%);
+  --color-syn-string: hsl(4, 65%, 43%);
+  --color-syn-inserted: hsl(122, 48%, 33%);
+
+  /* IDE mock widget — Darcula dark (default) */
+  --color-ide-border: hsl(225, 5%, 17%);
+  --color-ide-shadow: hsla(0, 0%, 0%, 0.35);
+  --color-ide-text: hsl(225, 6%, 75%);
+  --color-ide-popup-text: hsl(225, 6%, 75%);
+  --color-ide-titlebar: hsl(204, 4%, 25%);
+  --color-ide-titlebar-border: hsl(225, 5%, 17%);
+  --color-ide-dot-red: hsl(3, 100%, 67%);
+  --color-ide-dot-yellow: hsl(41, 99%, 59%);
+  --color-ide-dot-green: hsl(129, 67%, 47%);
+  --color-ide-filename: hsl(211, 20%, 72%);
+  --color-ide-editor: hsl(220, 6%, 10%);
+  --color-ide-ln: hsl(210, 3%, 39%);
+  --color-ide-fn: hsl(209, 89%, 65%);
+  --color-ide-prop: hsl(310, 40%, 64%);
+  --color-ide-str: hsl(128, 28%, 54%);
+  --color-ide-popup-bg: hsl(219, 6%, 18%);
+  --color-ide-popup-border: hsl(219, 5%, 32%);
+  --color-ide-error: hsl(354, 94%, 69%);
+  --color-ide-warn: hsl(42, 85%, 66%);
+  --color-ide-ts-code: hsl(34, 76%, 63%);
+  --color-ide-popup-type-bg: hsl(225, 6%, 13%);
+  --color-ide-popup-type-border: hsl(219, 5%, 32%);
+  --color-ide-ts-str: hsl(98, 21%, 44%);
+  --color-ide-ts-type: hsl(168, 53%, 55%);
+  --color-ide-ts-muted: hsl(0, 0%, 50%);
+  --color-ide-completion-selected: hsl(212, 74%, 25%);
+  --color-ide-completion-divider: hsla(0, 0%, 100%, 0.04);
+  --color-ide-cursor: hsl(90, 1%, 68%);
+
+  --main-x-padding: 2em;
+  --section-x-padding: 0em;
+  --topbar-height: 44px;
+}
+
+/* IDE mock widget — IntelliJ Light (when page is in light mode) */
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-ide-border: hsl(221, 9%, 75%);
+    --color-ide-shadow: hsla(0, 0%, 0%, 0.12);
+    --color-ide-text: hsl(0, 0%, 12%);
+    --color-ide-popup-text: hsl(0, 0%, 3%);
+    --color-ide-titlebar: hsl(216, 9%, 89%);
+    --color-ide-titlebar-border: hsl(226, 14%, 81%);
+    --color-ide-filename: hsl(229, 9%, 39%);
+    --color-ide-editor: hsl(0, 0%, 100%);
+    --color-ide-ln: hsl(225, 14%, 72%);
+    --color-ide-fn: hsl(192, 100%, 24%);
+    --color-ide-prop: hsl(294, 81%, 32%);
+    --color-ide-str: hsl(129, 91%, 26%);
+    --color-ide-popup-bg: hsl(0, 0%, 100%);
+    --color-ide-popup-border: hsl(223, 11%, 89%);
+    --color-ide-error: hsl(0, 100%, 40%);
+    --color-ide-warn: hsl(42, 50%, 53%);
+    --color-ide-ts-code: hsl(221, 64%, 29%);
+    --color-ide-popup-type-bg: hsl(240, 8%, 97%);
+    --color-ide-popup-type-border: hsl(231, 15%, 93%);
+    --color-ide-ts-str: hsl(129, 91%, 26%);
+    --color-ide-ts-type: hsl(240, 100%, 27%);
+    --color-ide-ts-muted: hsl(0, 0%, 55%);
+    --color-ide-completion-selected: hsl(210, 100%, 83%);
+    --color-ide-completion-divider: hsla(0, 0%, 0%, 0.06);
+    --color-ide-cursor: hsl(0, 0%, 3%);
+  }
+}
+
+/* Dark mode overrides */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Main theme */
+    --color-accent: hsl(216, 100%, 66%);
+    --color-text: hsl(0, 0%, 78%);
+    --color-muted: hsl(0, 0%, 47%);
+    --color-border: hsl(0, 0%, 20%);
+    --color-bg: hsl(0, 0%, 9%);
+    --color-sidebar-bg: hsl(0, 0%, 10%);
+    --color-panel-bg: hsl(0, 0%, 13%);
+    --color-link: hsl(216, 100%, 66%);
+    --color-link-hover: hsl(214, 100%, 75%);
+    --color-heading: hsl(0, 0%, 91%);
+    --color-badge-bg: hsl(0, 0%, 13%);
+    --color-table-head: hsl(0, 0%, 10%);
+    --color-inline-code-bg: hsla(0, 0%, 100%, 0.07);
+    --color-toolbar: hsl(0, 0%, 10%);
+    --color-tab-active: hsl(0, 0%, 13%);
+    --color-tab-inactive: hsl(0, 0%, 7%);
+
+    /* Overlays & chrome */
+    --color-grid: hsla(0, 0%, 100%, 0.008);
+    --color-nav-hover: hsla(216, 100%, 66%, 0.08);
+    --color-sidebar-tab-hover: hsla(216, 100%, 66%, 0.12);
+    --color-search-input-bg: hsla(0, 0%, 100%, 0.06);
+
+    /* Copy button */
+    --color-copy-btn-bg: hsla(0, 0%, 100%, 0.07);
+    --color-copy-btn-border: hsla(0, 0%, 100%, 0.15);
+    --color-copy-btn-text: hsl(219, 13%, 66%);
+    --color-copy-btn-hover-bg: hsla(0, 0%, 100%, 0.13);
+    --color-copy-btn-hover-text: hsl(0, 0%, 100%);
+    --color-copy-btn-copied: hsl(148, 40%, 64%);
+    --color-copy-btn-copied-border: hsla(148, 40%, 64%, 0.3);
+
+    /* Callouts */
+    --color-callout-note-bg: hsl(214, 20%, 12%);
+    --color-callout-note-border: hsl(218, 100%, 65%);
+    --color-callout-warn-bg: hsl(47, 43%, 8%);
+    --color-callout-warn-border: hsl(45, 100%, 38%);
+    --color-callout-tip-bg: hsl(127, 21%, 8%);
+    --color-callout-tip-border: hsl(137, 57%, 41%);
+    --color-callout-key-bg: hsl(0, 0%, 11%);
+    --color-callout-key-border: hsl(0, 0%, 53%);
+
+    /* Syntax highlighting — dark */
+    --color-syn-bg: hsl(240, 4%, 11%);
+    --color-syn-base: hsl(0, 0%, 78%);
+    --color-syn-comment: hsl(218, 4%, 50%);
+    --color-syn-tag: hsl(41, 53%, 65%);
+    --color-syn-keyword: hsl(20, 51%, 62%);
+    --color-syn-fn: hsl(209, 89%, 65%);
+    --color-syn-number: hsl(185, 63%, 44%);
+    --color-syn-property: hsl(310, 40%, 64%);
+    --color-syn-string: hsl(128, 28%, 54%);
+    --color-syn-inserted: hsl(128, 28%, 54%);
+  }
+}

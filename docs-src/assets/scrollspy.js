@@ -5,8 +5,10 @@ const nav = document.getElementById('sidebar');
 
 let lastActiveLinks = [];
 let lastTargets = [];
+let userHasScrolled = false;
 
 export function initScrollspy() {
+  userHasScrolled = false;
   const visibleNav = nav.querySelector('[data-page-nav]:not(.page-inactive)');
   lastActiveLinks = visibleNav ? Array.from(visibleNav.querySelectorAll('ul a[href^="#"]')) : [];
   const linkIds = new Set(lastActiveLinks.map(l => l.getAttribute('href').slice(1)));
@@ -39,6 +41,9 @@ effect(() => {
       link.classList.add('active');
       scrollNavToActive(link);
     }
+    if (userHasScrolled) {
+      history.replaceState(null, '', '#' + active);
+    }
   }
 });
 
@@ -50,10 +55,13 @@ function updateScrollspy() {
     active = lastTargets[lastTargets.length - 1];
   } else {
     for (const el of lastTargets) {
-      if (el.getBoundingClientRect().top <= 80) { active = el; }
+      if (el.getBoundingClientRect().top <= 160) { active = el; }
     }
   }
   activeSection.set(active ? active.id : null);
 }
 
-window.addEventListener('scroll', updateScrollspy, { passive: true });
+window.addEventListener('scroll', () => {
+  userHasScrolled = true;
+  updateScrollspy();
+}, { passive: true });

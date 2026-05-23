@@ -4,15 +4,27 @@ import { searchDocs } from './components/search.js';
 import { pageTabs } from './components/page-tabs.js';
 
 export function layout(t, pages) {
+  const defaultId = pages[0].id;
+  const otherIds = pages.slice(1).map(p => p.id);
+  const initScript = `(function(){` +
+    `var v={${otherIds.map(id => `"${id}":1`).join(',')}};` +
+    `var p=new URLSearchParams(location.search).get('page');` +
+    `if(!p||!v[p])return;` +
+    `var s=document.createElement('style');` +
+    `s.id='page-init';` +
+    `s.textContent=` +
+      `'[data-page-content="${defaultId}"],[data-page-nav="${defaultId}"]{display:none!important}'` +
+      `+'[data-page-content="'+p+'"].page-inactive{display:block!important}'` +
+      `+'[data-page-nav="'+p+'"].page-inactive{display:contents!important}'` +
+      `+'[data-page-tab="${defaultId}"].active{color:var(--color-muted)!important;background:var(--color-tab-inactive)!important;border-bottom-color:transparent!important}'` +
+      `+'[data-page-tab="'+p+'"]{color:var(--color-heading)!important;background:var(--color-sidebar-tab-hover)!important;border-bottom-color:var(--color-accent)!important}';` +
+    `document.head.appendChild(s)` +
+    `})()`;
   return t.htmlWithDocType({ lang: 'en' }, [
     t.head([
       t.meta({ charset: 'utf-8' }),
       t.meta({ name: 'viewport', content: 'width=device-width, initial-scale=1' }),
       t.title('Kensington'),
-      t.link({ rel: 'preconnect', href: 'https://fonts.googleapis.com' }),
-      t.link({ rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }),
-      t.link({ href: 'https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;1,400&family=Barlow+Condensed:wght@500;600;700&display=swap', rel: 'stylesheet' }),
-      t.link({ href: 'https://db.onlinewebfonts.com/c/63a0282b9ba584ecf321c6e87443e863?family=Draft+B', rel: 'stylesheet' }),
       t.link({ rel: 'stylesheet', href: 'https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css' }),
       t.link({ rel: 'stylesheet', href: '/assets/styles.css' }),
     ]),
@@ -31,13 +43,13 @@ export function layout(t, pages) {
 
       t.nav({ id: 'sidebar' }, [
         renderForHydration(pageTabs, { pages: pages.map(p => ({ id: p.id, label: p.label })) }),
-        ...pages.map(p =>
-          t.div({ dataPageNav: p.id }, p.sidebar(t))
+        ...pages.map((p, i) =>
+          t.div({ dataPageNav: p.id, class: i > 0 ? 'page-inactive' : '' }, p.sidebar(t))
         ),
       ]),
 
-      ...pages.map(p =>
-        t.main({ dataPageContent: p.id }, p.content(t))
+      ...pages.map((p, i) =>
+        t.main({ dataPageContent: p.id, class: i > 0 ? 'page-inactive' : '' }, p.content(t))
       ),
 
       t.script({ src: 'https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-core.min.js' }),
@@ -47,5 +59,5 @@ export function layout(t, pages) {
       }),
       t.script({ type: 'module', src: '/assets/runtime.js' }),
     ]),
-  ]).toString();
+  ]).toString().replace('</head>', `<script>${initScript}</script></head>`);
 }

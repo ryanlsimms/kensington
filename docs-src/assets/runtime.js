@@ -6,6 +6,7 @@ import { searchDocs } from '../components/search.js';
 import { copyButton } from '../components/copy-button.js';
 import { pageTabs } from '../components/page-tabs.js';
 import { comparisonsModal } from '../pages/basics/modals.js';
+import './scroll-bar.js';
 
 // ── DOM refs ──────────────────────────────────────────────────────
 
@@ -13,14 +14,32 @@ const pageContents = Array.from(document.querySelectorAll('[data-page-content]')
 const pageNavs = Array.from(document.querySelectorAll('[data-page-nav]'));
 const nav = document.getElementById('sidebar');
 const toggle = document.getElementById('menu-toggle');
+const initStyle = document.getElementById('page-init');
+
+// ── Custom scrollbars ─────────────────────────────────────────────
+
+customElements.whenDefined('scroll-bar').then(() => {
+  document.querySelectorAll('.code-wrap').forEach(wrap => {
+    const pre = wrap.querySelector('pre[class*="language-"]');
+    if (!pre) { return; }
+    const bar = document.createElement('scroll-bar');
+    wrap.appendChild(bar);
+    bar.attach(pre);
+  });
+});
 
 // ── Page switching ────────────────────────────────────────────────
 
+let isFirstPageSwitch = true;
+
 function handlePageSwitch(id) {
-  history.pushState({}, '', id === 'basics' ? location.pathname : `?page=${id}`);
+  if (!isFirstPageSwitch) {
+    history.pushState({}, '', id === 'basics' ? location.pathname : `?page=${id}`);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }
+  isFirstPageSwitch = false;
   pageContents.forEach(el => el.classList.toggle('page-inactive', el.dataset.pageContent !== id));
   pageNavs.forEach(el => el.classList.toggle('page-inactive', el.dataset.pageNav !== id));
-  window.scrollTo({ top: 0, behavior: 'instant' });
   activeSection.set(null);
   initScrollspy();
   if (toggle) { toggle.checked = false; }
@@ -36,8 +55,14 @@ function navigateTo(id) {
 }
 
 effect(() => {
-  handlePageSwitch(currentPage.get())
+  handlePageSwitch(currentPage.get());
+  initStyle?.remove();
 });
+
+if (location.hash) {
+  const el = document.getElementById(location.hash.slice(1));
+  if (el) { el.scrollIntoView(); }
+}
 
 // ── Sidebar nav links ─────────────────────────────────────────────
 

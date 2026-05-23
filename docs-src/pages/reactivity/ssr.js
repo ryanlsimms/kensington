@@ -56,9 +56,9 @@ export function counter({ count: initial }) {
         [
           'Renders the component to HTML and embeds state as a JSON script block. Uses ',
           t.code('fn.name'),
-          ' by default or pass an explicit ',
+          ' by default server-side. Pass an explicit ',
           t.code('name'),
-          ' for anonymous functions. ',
+          ' for anonymous functions and when calling in the browser. Function names are not safe after minification. ',
           t.code('name'),
           ' must match what is used in ',
           t.code('registerComponents'),

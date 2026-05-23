@@ -1,0 +1,189 @@
+/* ── Code blocks ────────────────────────────────────────────── */
+
+.code-wrap {
+  position: relative;
+  margin: 0.75rem 0 1rem;
+  max-width: 900px;
+}
+
+pre[class*="language-"] {
+  position: relative;
+  margin: 0;
+  border-radius: 0;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  overflow-x: auto;
+  border: 1px dashed var(--color-border);
+  scrollbar-width: none;
+}
+
+pre[class*="language-"]::-webkit-scrollbar { display: none; }
+
+/* Remove pre's bottom border when scroll-bar component is visible, so they connect */
+.code-wrap:has(scroll-bar:not(.hidden)) pre[class*="language-"] {
+  border-bottom: none;
+}
+
+.code-wrap scroll-bar {
+  border: 1px dashed var(--color-border);
+  border-top: none;
+}
+
+/* When a panel-label tab sits above a code block, merge them visually */
+.panel-label + .code-wrap {
+  margin-top: 0;
+}
+
+.panel-label + .code-wrap pre[class*="language-"] {
+  border-top: none;
+  border-radius: 0;
+}
+
+.panel-label + pre[class*="language-"] {
+  border-top: none;
+  border-radius: 0;
+  margin-top: 0;
+}
+
+p, pre, .code-wrap, table {
+  max-width: 900px;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: var(--color-copy-btn-bg);
+  border: 1px solid var(--color-copy-btn-border);
+  border-radius: 0;
+  color: var(--color-copy-btn-text);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s, color 0.12s;
+  line-height: 1.5;
+  user-select: none;
+}
+
+.code-wrap:hover .copy-btn,
+pre[class*="language-"]:hover .copy-btn { opacity: 1; }
+.copy-btn:hover { background: var(--color-copy-btn-hover-bg); color: var(--color-copy-btn-hover-text); }
+.copy-btn.copied { color: var(--color-copy-btn-copied); border-color: var(--color-copy-btn-copied-border); }
+
+/* ── Panels ─────────────────────────────────────────────────── */
+
+.panels {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  margin: 0.75rem calc(-1 * var(--main-x-padding)) 1rem;
+  overflow-x: auto;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  padding: 1rem var(--main-x-padding);
+  background-color: var(--color-bg);
+  box-shadow: inset 4px 4px 0 var(--color-ide-shadow);
+}
+
+.panels > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.panels > div .code-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+.panels > div pre {
+  flex: 1;
+}
+
+.panel-label:has(+ .ide-mock) {
+  border: none;
+  position: relative;
+  top: 0.75rem;
+}
+
+/* Editor-tab style panel label */
+.panel-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-family: var(--font-heading);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  background: var(--color-toolbar);
+  border: 1px dashed var(--color-border);
+  border-bottom: none;
+  border-radius: 0;
+  padding: 0.3rem 0.7rem;
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Syntax highlighting ────────────────────────────────────── */
+
+code[class*="language-"],
+pre[class*="language-"] {
+  color: var(--color-syn-base);
+  background: var(--color-syn-bg);
+  text-shadow: none;
+}
+
+.token.comment,
+.token.block-comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+  color: var(--color-syn-comment);
+  font-style: italic;
+}
+
+.token.punctuation { color: var(--color-syn-base); }
+
+.token.tag,
+.token.deleted { color: var(--color-syn-tag); }
+
+.token.attr-name,
+.token.namespace { color: var(--color-syn-base); }
+
+.token.function-name,
+.token.function { color: var(--color-syn-fn); }
+
+.token.boolean,
+.token.number { color: var(--color-syn-number); }
+
+.token.property,
+.token.class-name,
+.token.constant,
+.token.symbol { color: var(--color-syn-property); }
+
+.token.selector,
+.token.atrule,
+.token.keyword,
+.token.builtin { color: var(--color-syn-keyword); font-style: normal; }
+
+.token.string,
+.token.char,
+.token.attr-value,
+.token.regex,
+.token.variable { color: var(--color-syn-string); }
+
+.token.operator,
+.token.entity,
+.token.url { color: var(--color-syn-base); }
+
+.token.important,
+.token.bold { font-weight: bold; }
+.token.italic { font-style: italic; }
+.token.entity { cursor: help; }
+.token.inserted { color: var(--color-syn-inserted); }

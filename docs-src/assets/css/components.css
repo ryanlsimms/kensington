@@ -1,0 +1,408 @@
+/* ── Tables ─────────────────────────────────────────────────── */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+thead th {
+  background: var(--color-toolbar);
+  font-weight: 700;
+  font-family: var(--font-heading);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border);
+  color: var(--color-muted);
+}
+
+tbody td {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border);
+  vertical-align: top;
+  background: var(--color-panel-bg);
+}
+
+tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--color-panel-bg) 50%, var(--color-sidebar-bg)); }
+
+table td:first-child {
+  width: 13em;
+}
+
+/* ── Option table ───────────────────────────────────────────── */
+
+.option-table td:first-child {
+  width: 1px;
+  white-space: nowrap;
+}
+
+.option-table thead th,
+.option-table tbody td {
+  border-left: none;
+  border-right: none;
+}
+
+.option-table tbody tr:nth-child(even) td {
+  background: none;
+}
+
+/* ── Aside ──────────────────────────────────────────────────── */
+
+aside {
+  border-left: 3px solid var(--color-accent);
+  padding: 0.4rem 0.75rem 0.4rem 1rem;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  margin: 0.5rem 0 1rem;
+  max-width: 900px;
+  border-radius: 0;
+  background: color-mix(in srgb, var(--color-accent) 3%, var(--color-panel-bg));
+}
+
+aside p:last-child { margin-bottom: 0; }
+
+/* ── Feature list ───────────────────────────────────────────── */
+
+.feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.feature-list li {
+  font-size: 0.875rem;
+  /*color: var(--color-muted);*/
+  margin-bottom: 0;
+}
+
+.feature-list li::before {
+  content: '→';
+  color: var(--color-accent);
+  font-weight: 600;
+  margin-right: 0.4em;
+}
+
+/* ── Example link ───────────────────────────────────────────── */
+
+.example-link {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: 'Draft B', var(--font-heading);
+  letter-spacing: 0.08em;
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 7%, var(--color-bg));
+  border: 1px solid color-mix(in srgb, var(--color-accent) 35%, transparent);
+  border-radius: 0;
+  padding: 0.15rem 0.55rem;
+  text-decoration: none;
+  transform: translateY(0);
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.2s, transform 0.2s;
+  box-shadow: 0 0 0 var(--color-shadow);
+}
+
+.example-link:hover {
+  background: color-mix(in srgb, var(--color-accent) 5%, var(--color-bg));
+  border-color: color-mix(in srgb, var(--color-accent) 100%, transparent);
+  text-decoration: none;
+  color: var(--color-accent);
+  transform: translateY(-2px);
+  box-shadow: 4px 4px 0 var(--color-shadow);
+}
+
+/* ── Compare button ─────────────────────────────────────────── */
+
+.compare-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 0.85rem;
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 7%, var(--color-bg));
+  border: 1px dashed color-mix(in srgb, var(--color-accent) 45%, transparent);
+  border-radius: 0;
+  cursor: pointer;
+  margin-bottom: 0.9rem;
+  transform: translateY(0);
+  box-shadow: 0 0 0 var(--color-shadow);
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.2s, transform 0.2s;
+}
+
+.compare-btn:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 100%, transparent);
+  transform: translateY(-2px);
+  box-shadow: 4px 4px 0 var(--color-shadow);
+}
+
+.subtle-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  color: color-mix(in srgb, var(--color-accent) 18%, var(--color-text));
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--color-accent) 18%, var(--color-border));
+  text-underline-offset: 2px;
+  transition: color 0.12s, text-decoration-color 0.12s;
+}
+
+.subtle-link:hover {
+  color: var(--color-accent);
+  text-decoration-color: var(--color-accent);
+}
+
+/* ── Modals ─────────────────────────────────────────────────── */
+
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: var(--color-modal-backdrop);
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.modal.open { display: flex; }
+
+.modal-box {
+  background: var(--color-panel-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+  padding: 1.75rem;
+  max-width: 860px;
+  width: 100%;
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 6px 6px 0 var(--color-shadow);
+}
+
+.modal-box h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-family: var(--font-heading);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.modal-box h4 {
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-heading);
+  margin: 1.5rem 0 0.5rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.modal-box h4:first-of-type { margin-top: 0.5rem; }
+
+.modal-box p { max-width: none; }
+
+.modal-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--color-muted);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0;
+  transition: color 0.12s, background 0.12s;
+}
+
+.modal-close:hover {
+  color: var(--color-text);
+  background: var(--color-inline-code-bg);
+}
+
+/* ── Callout boxes ──────────────────────────────────────────── */
+
+.callout {
+  border-left: 3px solid;
+  padding: 0.7rem 1rem;
+  margin: 1rem 0;
+  border-radius: 0;
+  max-width: 900px;
+}
+.callout p:last-child { margin-bottom: 0; }
+.callout .callout-title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 0.3rem;
+}
+.callout.note  { background: var(--color-callout-note-bg); border-color: var(--color-callout-note-border); }
+.callout.warn  { background: var(--color-callout-warn-bg); border-color: var(--color-callout-warn-border); }
+.callout.tip   { background: var(--color-callout-tip-bg);  border-color: var(--color-callout-tip-border); box-shadow: 4px 4px 0 var(--color-ide-shadow); }
+.callout.key   { background: var(--color-callout-key-bg);  border-color: var(--color-callout-key-border);  }
+.callout.note  .callout-title { color: var(--color-callout-note-border); }
+.callout.warn  .callout-title { color: var(--color-callout-warn-border); }
+.callout.tip   .callout-title { color: var(--color-callout-tip-border);  }
+.callout.key   .callout-title { color: var(--color-callout-key-border);  }
+
+/* ── Concept cards ──────────────────────────────────────────── */
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0;
+  margin: 1rem 0;
+  max-width: 900px;
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.card {
+  background: var(--color-panel-bg);
+  border-right: 1px solid var(--color-border);
+  border-radius: 0;
+  padding: 1rem 1.1rem;
+}
+
+.card:last-child {
+  border-right: none;
+}
+
+.card-title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 0.45rem;
+  color: var(--color-heading);
+}
+
+.card-body {
+  font-size: 0.83rem;
+  color: var(--color-muted);
+  line-height: 1.45;
+}
+
+.card-body code { font-size: 0.8em; }
+.card.accent { border-top: 2px solid var(--color-accent); }
+
+/* ── Live demo ──────────────────────────────────────────────── */
+
+.live-demo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+  overflow: hidden;
+  margin: 1.5rem 0;
+  max-width: 900px;
+}
+
+.live-demo-code .code-wrap,
+.live-demo-code pre[class*="language-"] {
+  margin: 0;
+  border: none;
+  border-right: 1px solid var(--color-border);
+  border-radius: 0;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+.live-demo-result {
+  background: var(--color-panel-bg);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.live-demo-label {
+  font-size: 0.62rem;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-muted);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.live-demo-label::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 0;
+  background: var(--color-accent);
+  flex-shrink: 0;
+}
+
+.demo-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.75rem;
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text);
+  background: var(--color-toolbar);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+  cursor: pointer;
+  transform: translateY(0);
+  box-shadow: 0 0 0 var(--color-shadow);
+  transition: background 0.12s, box-shadow 0.2s, transform 0.2s;
+}
+
+.demo-btn:hover {
+  background: var(--color-border);
+  color: var(--color-bg);
+  transform: translateY(-2px);
+  box-shadow: 4px 4px 0 var(--color-shadow);
+}
+
+.section-cta {
+  margin: 1.25rem 0 0;
+}
+
+.section-cta a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.section-cta a:hover {
+  text-decoration: underline;
+}

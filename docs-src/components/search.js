@@ -113,7 +113,13 @@ export function searchDocs() {
     });
   }
 
+  const searchIcon = t.svg({ class: 'search-icon', width: '13', height: '13', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '2.5', strokeLinecap: 'round', ariaHidden: 'true' }, [
+    t.circle({ cx: '11', cy: '11', r: '8' }),
+    t.line({ x1: '21', y1: '21', x2: '16.65', y2: '16.65' }),
+  ]);
+
   return t.div({ class: 'search-wrap' }, [
+    searchIcon,
     searchInput,
     searchResults,
   ]);

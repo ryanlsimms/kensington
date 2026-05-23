@@ -1,6 +1,7 @@
 import LiteralTag from '../../tag-classes/literal-tag.js';
 import { _enterSSRMode, _exitSSRMode } from '../reactive/signal.js';
 
+const NAME_UNSET = Symbol('unset');
 const SCRIPT_CLOSE_RE = /<\/script>/gi;
 
 const LOSSY_CHECKS = [
@@ -179,13 +180,19 @@ function hydrateAll(registry) {
  *
  * @param {function} fn - Component function. Must be a named function.
  * @param {Record<string, *>} state - Plain serializable state object.
- * @param {string} [name] - Component name. Defaults to fn.name. Required for anonymous functions.
+ * @param {string} [name] - Component name. Required when called in the browser (function names are not safe after minification). Defaults to fn.name server-side.
  * @returns {LiteralTag}
  * @throws if the component name cannot be determined
  * @throws if the component function is async
  * @throws if the component returns a non-element value (string, number, etc.)
  */
-export function renderForHydration(fn, state, name = fn.name) {
+export function renderForHydration(fn, state, name = NAME_UNSET) {
+  if (name === NAME_UNSET) {
+    if (typeof window !== 'undefined') {
+      throw new Error(`renderForHydration: pass an explicit name as the third argument when calling in the browser. Function names are not safe after minification`);
+    }
+    name = fn.name;
+  }
   if (!name) {
     throw new Error('renderForHydration: component function must be named, or pass a name as the third argument');
   }

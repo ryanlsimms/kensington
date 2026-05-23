@@ -7,7 +7,13 @@ export function pageTabs(state) {
       t.button({
         dataPageTab: p.id,
         class: computed(() => currentPage.get() === p.id ? 'active' : ''),
-        onclick: () => { currentPage.set(p.id); },
+        onclick: () => {
+          if (currentPage.get() === p.id) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          } else {
+            currentPage.set(p.id);
+          }
+        },
       }, p.label)
     )
   );

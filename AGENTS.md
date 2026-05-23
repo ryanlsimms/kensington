@@ -387,7 +387,7 @@ import { commentCount } from './components/comment-count.js';
 registerComponents({ commentCount });
 ```
 
-The key in `registerComponents` must match the function name passed to `renderForHydration`. Pass an explicit third argument when using anonymous functions or aliased imports: `renderForHydration(fn, state, 'myName')`.
+The key in `registerComponents` must match the name passed to `renderForHydration`. Pass an explicit third argument whenever the call site may be reached by the browser (component functions are renamed by minifiers) or when using anonymous functions or aliased imports: `renderForHydration(fn, state, 'myName')`. Server-side calls where the code is never minified can rely on `fn.name`, but the explicit form is always safe.
 
 #### Component authoring rules
 

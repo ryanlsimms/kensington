@@ -40,7 +40,8 @@ function docsPlugin() {
 
       return () => {
         server.middlewares.use(async (req, res, next) => {
-          if (req.url !== '/' && req.url !== '/index.html') { return next(); }
+          const urlPath = req.url.split('?')[0];
+          if (urlPath !== '/' && urlPath !== '/index.html') { return next(); }
           try {
             const transformed = await server.transformIndexHtml(req.url, html);
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -54,8 +55,11 @@ function docsPlugin() {
   };
 }
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   root: 'docs-src',
+  resolve: {
+    alias: command === 'build' ? { 'kensington': join(__dirname, 'dist/kensington.slim.min.js') } : {},
+  },
   server: {
     port: 4000,
   },
@@ -67,4 +71,4 @@ export default defineConfig({
     docsPlugin(),
     viteSingleFile({ removeViteModuleLoader: true }),
   ],
-});
+}));

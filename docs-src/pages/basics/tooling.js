@@ -110,7 +110,7 @@ export default [
           filename: 'counter.js',
           lines: [
             `<span>const total = </span><span class="ide-t-fn">computed</span><span>(() => {</span>`,
-            `<span>  </span><span class="ide-squiggly"><span>count.</span><span class="ide-t-fn">set</span><span>(count.</span><span class="ide-t-fn">get</span><span>() + 1)</span></span>`,
+            `<span>&nbsp;&nbsp;</span><span class="ide-squiggly"><span>count.</span><span class="ide-t-fn">set</span><span>(count.</span><span class="ide-t-fn">get</span><span>() + 1)</span></span>`,
             `<span>})</span>`,
           ],
           popup: {
@@ -127,7 +127,7 @@ export default [
           filename: 'setup.js',
           lines: [
             `<span>function </span><span class="ide-t-fn">setup</span><span>() {</span>`,
-            `<span>  </span><span class="ide-squiggly-warn"><span class="ide-t-fn">effect</span><span>(() => render(count.</span><span class="ide-t-fn">get</span><span>()))</span></span>`,
+            `<span>&nbsp;&nbsp;</span><span class="ide-squiggly-warn"><span class="ide-t-fn">effect</span><span>(() => render(count.</span><span class="ide-t-fn">get</span><span>()))</span></span>`,
             `<span>}</span>`,
           ],
           popup: {

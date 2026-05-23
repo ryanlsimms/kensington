@@ -1,0 +1,19 @@
+/* ── Base ───────────────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 16px; scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  background-image:
+    linear-gradient(var(--color-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-grid) 1px, transparent 1px);
+  background-size: 28px 28px;
+  line-height: 1.6;
+  display: flex;
+  min-height: 100vh;
+  padding-top: var(--topbar-height);
+}

@@ -40,7 +40,7 @@ export function code(t, lang, src) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
-  const btn = renderForHydration(copyButton, {}).toString();
+  const btn = renderForHydration(copyButton, {}, 'copyButton').toString();
   return t.unsafeLiteral(
     `<div class="code-wrap"><pre class="language-${lang}"><code class="language-${lang}">${escaped}</code></pre>${btn}</div>`
   );
@@ -100,7 +100,7 @@ export function ideMock(t, opts) {
         t.span({ class: 'ide-ts-code' }, popup.code),
         t.span(t.literal(popup.message)),
       ]),
-      popup.type ? t.div({ class: 'ide-popup-type' }, t.literal(popup.typeContent)) : null,
+      popup.typeContent ? t.div({ class: 'ide-popup-type' }, t.literal(popup.typeContent)) : null,
     ]) : null,
     completion ? t.div({ class: 'ide-completion' },
       completion.map((item, i) => t.div({
