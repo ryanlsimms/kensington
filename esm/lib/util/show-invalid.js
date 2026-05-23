@@ -1,12 +1,17 @@
+// Absolute path to kensington's own source, used to strip internal frames from
+// stacks so errors and warnings point to the caller's code, not library internals.
+const KENSINGTON_SRC = new URL('../../', import.meta.url).pathname;
+
 export default function showInvalid(message, validationLevel, logger) {
   const error = new Error(message);
-  // strip library frames so the stack points to the caller's code
-  error.stack = error.stack.split('\n').filter(row => !row.includes('node_modules')).join('\n');
+  if (error.stack) {
+    const [head, ...frames] = error.stack.split('\n');
+    error.stack = [head, ...frames.filter(f => !f.includes(KENSINGTON_SRC))].join('\n');
+  }
   if (validationLevel === 'error') {
     throw error;
   }
   if (validationLevel === 'warn') {
-    logger(message);
     logger(error.stack);
   }
 }

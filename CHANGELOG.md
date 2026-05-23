@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 - `renderForHydration` now throws if called in a browser context without an explicit `name` argument. Function names are not reliable after minification, so `fn.name` is no longer used as a fallback in the browser. Server-side calls (where code is not minified) continue to use `fn.name` as the default.
 - warnings for potential `.set()` inside of `computed` are throttled
+- Validation warnings now pass the full stack trace to the logger as a single call. Previously the logger was called twice per warning, once with the plain message and once with the stack. Stack frames internal to Kensington are stripped so the trace points to the caller's code.
 
 ## [2.0.0-signals.11] - 2026-05-22
 
