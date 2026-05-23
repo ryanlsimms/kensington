@@ -386,19 +386,13 @@ describe('attributes', () => {
       const tt = new Kensington({ validationLevel: 'error' });
       assert.throws(() => tt.div({ style: { color: true, fontWeight: 'bold' } }).toString());
     });
-    it('warns on true value when validationLevel is warn', (test, done) => {
+    it('warns on true value when validationLevel is warn', () => {
       const expectedMessage = 'invalid attribute `style="color: true"` given for element `div`';
-      let callCount = 0;
-      const logger = message => {
-        if (++callCount === 2) {
-          assert.ok(message.startsWith(`Error: ${expectedMessage}\n`));
-          done();
-        } else {
-          assert.strictEqual(message, expectedMessage);
-        }
-      };
+      let received;
+      const logger = message => { received = message; };
       const tt = new Kensington({ validationLevel: 'warn', logger });
       assert.doesNotThrow(() => tt.div({ style: { color: true, fontWeight: 'bold' } }).toString());
+      assert.ok(received.startsWith(`Error: ${expectedMessage}\n`));
     });
     it('does not throw on valid style object when validationLevel is error', () => {
       const tt = new Kensington({ validationLevel: 'error' });
@@ -992,19 +986,13 @@ describe('other', () => {
   it('inlineComment().toElement() throws with helpful message in non-browser environment', () => {
     assert.throws(() => t.inlineComment('test').toElement(), { message: 'toElement only supported in browser' });
   });
-  it('warn validation level calls logger with message and stack', (test, done) => {
-    let callCount = 0;
+  it('warn validation level calls logger with message and stack', () => {
     const errorMessage = 'invalid attribute `id="123-abc"` given for element `div`';
-    const logger = message => {
-      if (++callCount === 2) {
-        assert.ok(message.startsWith(`Error: ${errorMessage}\n`));
-        done();
-      } else {
-        assert.strictEqual(message, errorMessage);
-      }
-    };
+    let received;
+    const logger = message => { received = message; };
     const tt = new Kensington({ validationLevel: 'warn', logger });
     assert.doesNotThrow(() => tt.div({ id: '123-abc' }).toString());
+    assert.ok(received.startsWith(`Error: ${errorMessage}\n`));
   });
 });
 

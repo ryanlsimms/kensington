@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Changed
+- Validation warnings now pass the full stack trace to the logger as a single call. Previously the logger was called twice per warning, once with the plain message and once with the stack. Stack frames internal to Kensington are stripped so the trace points to the caller's code.
+
 ## [1.0.0-rc.1] - 2026-05-20
 
 ### Changed
