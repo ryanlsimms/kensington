@@ -15,6 +15,7 @@ const EXAMPLES = [
   { id: 'use-id', title: 'useId' },
   { id: 'exit-animation', title: 'Exit animation' },
   { id: 'portal', title: 'Portal' },
+  { id: 'react-adapter', title: 'React adapter' },
 ];
 
 const MIME = {
