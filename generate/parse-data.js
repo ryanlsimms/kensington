@@ -95,7 +95,7 @@ export default function parseData(htmlData, svgData, mathData, { cssPropertyType
   });
 
   const svgPresentationAttrTypes = cssPropertyNames
-    ? [...cssPropertyNames].sort().map(name => {
+    ? (svgData.svgPresentationAttributes ?? []).map(name => {
       const cssType = cssPropertyTypes?.get(name);
       return cssType ? { name, ...cssType } : { name, type: 'string', value: 'String' };
     })
