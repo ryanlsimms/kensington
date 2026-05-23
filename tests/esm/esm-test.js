@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { before, describe, it } from 'node:test';
+import { before, beforeEach, describe, it } from 'node:test';
 
 import Kensington, { computed, effect, isBrowser, renderForHydration, signal, t } from 'kensington';
 
+import { _resetWarningThrottle } from '../../esm/lib/reactive/signal.js';
 import { attributesArrayFromObject } from '../../esm/lib/render/attributes.js';
 
 // ─── content tag ───────────────────────────────────────────────────────────
@@ -1922,6 +1923,8 @@ describe('effect', () => {
 // ─── reactive loop guards ─────────────────────────────────────────────────────
 
 describe('reactive loop guards', () => {
+  beforeEach(() => { _resetWarningThrottle(); });
+
   it('warns when the same signal is read and written in the same effect run', () => {
     const errors = [];
     const origError = console.error;

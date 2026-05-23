@@ -33,6 +33,20 @@ const wakeFns = new WeakMap();
 const derivedSignals = new WeakSet();
 // Counter rather than boolean so nested computed calls don't prematurely re-enable the guard.
 let derivedWriteDepth = 0;
+const warnLastSeen = new Map();
+const WARN_THROTTLE_MS = 1000;
+
+function throttledError(key, msg) {
+  const now = Date.now();
+  if (now - (warnLastSeen.get(key) ?? 0) >= WARN_THROTTLE_MS) {
+    warnLastSeen.set(key, now);
+    console.error(msg);
+  }
+}
+
+export function _resetWarningThrottle() {
+  warnLastSeen.clear();
+}
 
 function rethrowAsync(err) {
   queueMicrotask(() => { throw err; });
@@ -46,7 +60,8 @@ function flush() {
     setTimeout(() => { flushCount = 0; flushResetScheduled = false; }, 0);
   }
   if (flushCount > MAX_FLUSHES) {
-    console.error(
+    throttledError(
+      'async-loop',
       `kensington: async reactive loop detected. flush() was called ${flushCount} times without a macrotask turn. ` +
       'An effect is likely setting a signal inside a queueMicrotask or Promise callback in a cycle. ' +
       'Guard the write with a condition check to confirm the update is still needed before calling .set().',
@@ -62,7 +77,8 @@ function flush() {
       const count = (runCounts.get(fn) ?? 0) + 1;
       runCounts.set(fn, count);
       if (count > MAX_EFFECT_LOOPS) {
-        console.error(
+        throttledError(
+          'sync-loop',
           `kensington: reactive loop detected. The same effect was re-queued ${count} times in a single flush. ` +
           'Check for an effect that writes to a signal it also reads, or two effects that write to each other\'s signal dependencies. ' +
           'For effects with async callbacks (queueMicrotask, setTimeout, fetch), guard the write with a condition check to confirm the update is still needed before calling .set().',
@@ -140,14 +156,16 @@ export default class Signal {
       return;
     }
     if (currentEffect !== null && currentEffect._reads.has(this)) {
-      console.error(
+      throttledError(
+        'set-in-effect',
         'kensington: a signal was read via .get() and written via .set() in the same effect or computed run. ' +
         'This creates a reactive loop — the write re-triggers the run, which writes again. ' +
         'Use .value instead of .get() if you need the current value without subscribing.',
       );
     }
     if (inComputedFn && derivedWriteDepth === 0) {
-      console.error(
+      throttledError(
+        'set-in-computed',
         'kensington: .set() called inside a computed function. ' +
         'Computeds must be pure derivations. Move the write into a separate effect() instead.',
       );

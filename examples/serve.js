@@ -13,6 +13,8 @@ const EXAMPLES = [
   { id: 'use-debounce', title: 'useDebounce' },
   { id: 'use-fetch', title: 'useFetch' },
   { id: 'use-id', title: 'useId' },
+  { id: 'exit-animation', title: 'Exit animation' },
+  { id: 'portal', title: 'Portal' },
 ];
 
 const MIME = {
