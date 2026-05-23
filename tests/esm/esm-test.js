@@ -167,6 +167,12 @@ describe('literal content', () => {
       `<div>\n  <div>\n    <pre>line1\nline2</pre>\n  </div>\n</div>`,
     );
   });
+  it('resumes indentation after textarea', () => {
+    assert.strictEqual(
+      t.div([t.textarea('line1\nline2'), t.p('after')]).toString(),
+      `<div>\n  <textarea>line1\nline2</textarea>\n  <p>after</p>\n</div>`,
+    );
+  });
   it('does not escape style tag content', () => {
     assert.strictEqual(
       t.style('td:nth-of-type(1):before { content: "Date"; }').toString(),

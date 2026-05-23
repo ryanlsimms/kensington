@@ -11,15 +11,14 @@ export default function indent(str, level = 2) {
     if (result) { result += '\n'; }
     result += inPre || inTextarea ? line : pad + line; // append before tag-detection: <pre> opening line gets indented. Content inside it doesn't
 
-    const trimmed = line.trim(); // trim for tag detection only. line (untrimmed) is appended above to preserve leading whitespace inside pre/textarea
-    if (trimmed.startsWith('<pre')) {
+    if (/<pre[\s>]/.test(line)) {
       inPre = true;
-    } else if (trimmed.startsWith('<textarea')) {
+    } else if (/<textarea[\s>]/.test(line)) {
       inTextarea = true;
     }
-    if (trimmed.endsWith('</pre>')) {
+    if (/<\/pre>/.test(line)) {
       inPre = false;
-    } else if (trimmed.endsWith('</textarea>')) {
+    } else if (/<\/textarea>/.test(line)) {
       inTextarea = false;
     }
   }
