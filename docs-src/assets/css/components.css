@@ -38,6 +38,8 @@ table td:first-child {
 .option-table td:first-child {
   width: 1px;
   white-space: nowrap;
+  color: var(--color-heading);
+  font-weight: 600;
 }
 
 .option-table thead th,
@@ -264,6 +266,7 @@ aside p:last-child { margin-bottom: 0; }
 .callout.warn  .callout-title { color: var(--color-callout-warn-border); }
 .callout.tip   .callout-title { color: var(--color-callout-tip-border);  }
 .callout.key   .callout-title { color: var(--color-callout-key-border);  }
+
 
 /* ── Concept cards ──────────────────────────────────────────── */
 

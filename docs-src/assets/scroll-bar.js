@@ -1,25 +1,39 @@
 const STYLES = `
   :host {
     display: block;
-    height: 6px;
-    background: color-mix(in srgb, var(--color-border) 25%, var(--color-syn-bg));
     cursor: pointer;
     position: relative;
+    background: color-mix(in srgb, var(--color-border) 25%, var(--color-syn-bg));
+  }
+  :host(:not([vertical])) {
+    height: 6px;
+  }
+  :host([vertical]) {
+    width: 6px;
+    height: 100%;
   }
   :host(.hidden) { display: none; }
   .thumb {
     position: absolute;
-    top: 0;
-    height: 100%;
     background: var(--color-border);
     cursor: grab;
+  }
+  :host(:not([vertical])) .thumb {
+    top: 0;
+    height: 100%;
     min-width: 24px;
+  }
+  :host([vertical]) .thumb {
+    left: 0;
+    width: 100%;
+    min-height: 24px;
   }
   :host(.dragging) .thumb { cursor: grabbing; }
 `;
 
 class ScrollBar extends HTMLElement {
-  #pre = null;
+  #el = null;
+  #axis = 'x';
   #thumb = null;
   #ro = null;
   #dragged = false;
@@ -37,23 +51,36 @@ class ScrollBar extends HTMLElement {
     this.#initTrackClick();
   }
 
-  attach(pre) {
-    this.#pre = pre;
-    pre.addEventListener('scroll', () => this.#update(), { passive: true });
+  attach(el, { axis = 'x' } = {}) {
+    this.#el = el;
+    this.#axis = axis;
+    if (axis === 'y') {
+      this.setAttribute('vertical', '');
+    }
+    el.addEventListener('scroll', () => this.#update(), { passive: true });
     this.#ro = new ResizeObserver(() => this.#update());
-    this.#ro.observe(pre);
+    this.#ro.observe(el);
     this.#update();
   }
 
   #update() {
-    const pre = this.#pre;
-    if (!pre || !this.#thumb) { return; }
-    const { clientWidth, scrollWidth, scrollLeft } = pre;
-    const overflow = scrollWidth > clientWidth;
-    this.classList.toggle('hidden', !overflow);
-    if (!overflow) { return; }
-    this.#thumb.style.width = (clientWidth / scrollWidth * 100) + '%';
-    this.#thumb.style.left = (scrollLeft / scrollWidth * 100) + '%';
+    const el = this.#el;
+    if (!el || !this.#thumb) { return; }
+    if (this.#axis === 'y') {
+      const { clientHeight, scrollHeight, scrollTop } = el;
+      const overflow = scrollHeight > clientHeight;
+      this.classList.toggle('hidden', !overflow);
+      if (!overflow) { return; }
+      this.#thumb.style.height = (clientHeight / scrollHeight * 100) + '%';
+      this.#thumb.style.top = (scrollTop / scrollHeight * 100) + '%';
+    } else {
+      const { clientWidth, scrollWidth, scrollLeft } = el;
+      const overflow = scrollWidth > clientWidth;
+      this.classList.toggle('hidden', !overflow);
+      if (!overflow) { return; }
+      this.#thumb.style.width = (clientWidth / scrollWidth * 100) + '%';
+      this.#thumb.style.left = (scrollLeft / scrollWidth * 100) + '%';
+    }
   }
 
   #initDrag() {
@@ -61,15 +88,19 @@ class ScrollBar extends HTMLElement {
 
     thumb.addEventListener('mousedown', e => {
       e.preventDefault();
-      const startX = e.clientX;
-      const startScroll = this.#pre.scrollLeft;
+      const isY = this.#axis === 'y';
+      const startPos = isY ? e.clientY : e.clientX;
+      const startScroll = isY ? this.#el.scrollTop : this.#el.scrollLeft;
       this.#dragged = false;
       this.classList.add('dragging');
       const onMove = e => {
-        const dx = e.clientX - startX;
-        if (Math.abs(dx) > 2) { this.#dragged = true; }
-        const { scrollWidth, clientWidth } = this.#pre;
-        this.#pre.scrollLeft = startScroll + dx * scrollWidth / clientWidth;
+        const d = (isY ? e.clientY : e.clientX) - startPos;
+        if (Math.abs(d) > 2) { this.#dragged = true; }
+        if (isY) {
+          this.#el.scrollTop = startScroll + d * this.#el.scrollHeight / this.#el.clientHeight;
+        } else {
+          this.#el.scrollLeft = startScroll + d * this.#el.scrollWidth / this.#el.clientWidth;
+        }
       };
       const onUp = () => {
         this.classList.remove('dragging');
@@ -82,15 +113,19 @@ class ScrollBar extends HTMLElement {
 
     thumb.addEventListener('touchstart', e => {
       e.preventDefault();
-      const startX = e.touches[0].clientX;
-      const startScroll = this.#pre.scrollLeft;
+      const isY = this.#axis === 'y';
+      const startPos = isY ? e.touches[0].clientY : e.touches[0].clientX;
+      const startScroll = isY ? this.#el.scrollTop : this.#el.scrollLeft;
       this.#dragged = false;
       this.classList.add('dragging');
       const onMove = e => {
-        const dx = e.touches[0].clientX - startX;
-        if (Math.abs(dx) > 2) { this.#dragged = true; }
-        const { scrollWidth, clientWidth } = this.#pre;
-        this.#pre.scrollLeft = startScroll + dx * scrollWidth / clientWidth;
+        const d = (isY ? e.touches[0].clientY : e.touches[0].clientX) - startPos;
+        if (Math.abs(d) > 2) { this.#dragged = true; }
+        if (isY) {
+          this.#el.scrollTop = startScroll + d * this.#el.scrollHeight / this.#el.clientHeight;
+        } else {
+          this.#el.scrollLeft = startScroll + d * this.#el.scrollWidth / this.#el.clientWidth;
+        }
       };
       const onEnd = () => {
         this.classList.remove('dragging');
@@ -107,9 +142,13 @@ class ScrollBar extends HTMLElement {
       if (this.#dragged) { this.#dragged = false; return; }
       if (e.composedPath().includes(this.#thumb)) { return; }
       const rect = this.getBoundingClientRect();
-      const ratio = (e.clientX - rect.left) / rect.width;
-      const { scrollWidth, clientWidth } = this.#pre;
-      this.#pre.scrollLeft = ratio * scrollWidth - clientWidth / 2;
+      if (this.#axis === 'y') {
+        const ratio = (e.clientY - rect.top) / rect.height;
+        this.#el.scrollTop = ratio * this.#el.scrollHeight - this.#el.clientHeight / 2;
+      } else {
+        const ratio = (e.clientX - rect.left) / rect.width;
+        this.#el.scrollLeft = ratio * this.#el.scrollWidth - this.#el.clientWidth / 2;
+      }
     });
   }
 

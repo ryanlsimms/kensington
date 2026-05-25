@@ -80,6 +80,8 @@
     box-shadow: 4px 0 0 var(--color-border);
   }
 
+  #sidebar-scrollbar { display: none; }
+
   #menu-toggle:checked ~ nav#sidebar { display: block; }
   #menu-toggle:checked ~ #menu-backdrop { display: block; }
 
@@ -87,7 +89,7 @@
 
   .header-github { display: none; }
 
-  .copy-btn { opacity: 1; }
+  .copy-btn { display: none; }
 
   .option-table td:first-child { width: auto; white-space: normal; font-weight: 600; padding-bottom: 0.1rem; }
   .option-table td {

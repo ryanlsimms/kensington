@@ -59,10 +59,21 @@ nav#sidebar {
   width: var(--sidebar-width);
   flex-shrink: 0;
   overflow-y: auto;
+  scrollbar-width: none;
   background: var(--color-sidebar-bg);
   border-right: 1px solid var(--color-border);
   padding-bottom: 1.5rem;
   font-size: 0.8125rem;
+}
+
+nav#sidebar::-webkit-scrollbar { display: none; }
+
+#sidebar-scrollbar {
+  position: sticky;
+  top: var(--topbar-height);
+  height: calc(100vh - var(--topbar-height));
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--color-border) 25%, var(--color-sidebar-bg));
 }
 
 nav#sidebar .sidebar-pages {
@@ -147,11 +158,17 @@ nav#sidebar ul ul li a {
 nav#sidebar ul li a.active {
   color: var(--color-accent);
   border-left-color: var(--color-accent);
+  border-left-width: 3px;
+  background: color-mix(in srgb, var(--color-accent) 10%, var(--color-sidebar-bg));
+  font-weight: 600;
 }
 
 [data-page-nav]:not(.page-inactive):not(:has(a.active)) ul:first-of-type > li:first-child > a {
   color: var(--color-accent);
   border-left-color: var(--color-accent);
+  border-left-width: 3px;
+  background: color-mix(in srgb, var(--color-accent) 10%, var(--color-sidebar-bg));
+  font-weight: 600;
 }
 
 nav#sidebar .sidebar-footer {

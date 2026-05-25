@@ -26,6 +26,11 @@ customElements.whenDefined('scroll-bar').then(() => {
     wrap.appendChild(bar);
     bar.attach(pre);
   });
+
+  const sidebarBar = document.createElement('scroll-bar');
+  sidebarBar.id = 'sidebar-scrollbar';
+  nav.insertAdjacentElement('afterend', sidebarBar);
+  sidebarBar.attach(nav, { axis: 'y' });
 });
 
 // ── Page switching ────────────────────────────────────────────────
