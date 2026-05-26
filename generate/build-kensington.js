@@ -1,5 +1,6 @@
 export default function buildKensington({ elements }) {
   return `import * as allAttributes from './attributes.js';
+import { enableDevtools } from './lib/reactive/devtools.js';
 import getPrototypeMethods from './lib/util/get-prototype-methods.js';
 import showInvalid from './lib/util/show-invalid.js';
 import { camelToKebab } from './lib/util/text-utils.js';
@@ -28,11 +29,13 @@ export default class Kensington {
    * @param {'off' | 'warn' | 'error'} [options.validationLevel] - Attribute validation behavior.
    * @param {number} [options.indentationLevel] - Spaces per indent level. Default: 2.
    * @param {function} [options.logger] - Function called with warning messages when \`validationLevel\` is \`'warn'\`. Default: \`console.log\`.
+   * @param {boolean} [options.debugMode] - Expose \`window.__KENSINGTON_DEVTOOLS__\` for use with the devtools panel.
    */
   constructor(options) {
     const {
       additionalGlobalAttributes = {},
       additionalNamespaces = [],
+      debugMode = false,
       indentationLevel = 2,
       logger = console.log,
       validationLevel = 'off',
@@ -56,6 +59,7 @@ export default class Kensington {
     if (allAttributes.__slim__ && validationLevel !== 'off') {
       throw new Error(\`The slim build does not include attribute data. Set validationLevel: 'off' or use the full build.\`);
     }
+    if (debugMode) { enableDevtools(); }
     getPrototypeMethods(this).forEach(key => {
       this[key] = this[key].bind(this);
     });

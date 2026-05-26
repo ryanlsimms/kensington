@@ -2,15 +2,11 @@ import { computed } from 'kensington';
 
 import t from '../template-engine.js';
 
-function taskItem(tasks, { id, text, done }) {
-  // done is a Signal<boolean>. Passing it as an attribute value tells Kensington
-  // to set up a live effect: the attribute updates whenever the signal changes,
-  // with no re-render of the surrounding list.
-  const itemClass = done.transform(d => d ? 'task-item done' : 'task-item');
-  // persist: true so signal effects survive the insertBefore moves during drag-reorder.
-  // Without it, dom-tracker permanently stops this item's effects when it sees the
-  // node in removedNodes, breaking the done signal's class and checkbox bindings.
-  return t.li({ 'data-key': id, class: itemClass, persist: true }, [
+function taskItem(tasks, { id, text, done, itemClass }) {
+  // done is a Signal<boolean>. `itemClass` is a stable `computed` derived once when the
+  // task is created. Reusing the same signal reference lets the reconciler snapshot
+  // fast-path skip toElement() for unchanged items on every list re-render.
+  return t.li({ 'data-key': id, class: itemClass }, [
     t.label({ class: 'task-label' }, [
       t.input({
         type: 'checkbox',

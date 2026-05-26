@@ -1,3 +1,5 @@
+import { notifyDomTrack, notifyDomUntrack } from './devtools.js';
+
 // Single per-element record. Any subset of { stop, connect, persist } may be present.
 // An entry survives stop or connect cleanup if its other half is still in use (persist=true).
 // Entries are held in a WeakMap so an element created with toElement() but never inserted
@@ -19,6 +21,7 @@ function getOrCreate(element) {
     entries.set(element, entry);
     trackedRefs.add(ref);
     trackedCleanup.register(element, ref);
+    notifyDomTrack();
   }
   return entry;
 }
@@ -26,6 +29,7 @@ function getOrCreate(element) {
 function deleteEntry(element, entry) {
   trackedRefs.delete(entry.ref);
   entries.delete(element);
+  notifyDomUntrack();
 }
 
 function clearStop(entry, element) {

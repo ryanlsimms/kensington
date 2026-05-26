@@ -26,4 +26,5 @@ export function signal(initial) {
 
 export { computed, effect };
 export const isBrowser = typeof window !== 'undefined';
+export { enableDevtools } from './lib/reactive/devtools.js';
 export { registerComponents, renderForHydration } from './lib/render/hydration.js';

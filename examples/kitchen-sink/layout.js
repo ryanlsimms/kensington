@@ -8,6 +8,7 @@ export function layout(body) {
       t.title('Kitchen Sink'),
       t.link({ rel: 'icon', href: 'data:image/png;base64,iVBORw0KGgo=' }),
       t.link({ rel: 'stylesheet', href: '/styles.css' }),
+      t.script({ src: 'dist/kensington-devtools.js' }),
       t.script({ type: 'importmap' }, JSON.stringify({
         imports: { kensington: '/dist/kensington.js' },
       })),

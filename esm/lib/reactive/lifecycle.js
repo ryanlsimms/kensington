@@ -1,5 +1,6 @@
+import { markNextEffectAsBinding, notifyEffectElement } from './devtools.js';
 import { addOnStop, trackForConnect, trackForStop } from './dom-tracker.js';
-import { effect } from './signal.js';
+import { _internalEffect } from './signal.js';
 
 /**
  * Owns the lifecycle of signal effects and connect/disconnect callbacks for a single DOM
@@ -27,12 +28,14 @@ export function createLifecycle({ element, persist }) {
      * element is garbage-collected. It pauses on removal and resumes on reconnect when
      * persist is true, otherwise it stops permanently on removal.
      */
-    signalEffect(sig, apply) {
-      const eff = effect(() => {
+    signalEffect(sig, apply, label) {
+      markNextEffectAsBinding(label);
+      const eff = _internalEffect(() => {
         const el = elementRef.deref();
         if (!el) { eff.stop(); return; }
         apply(el, sig.get());
       });
+      notifyEffectElement(eff._devId, element);
       wireEffect(eff);
       return eff;
     },

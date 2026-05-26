@@ -31,9 +31,9 @@ export function progressBar({ tasks }) {
       style: { width: '100%', height: '12px', display: 'block' },
       'aria-hidden': 'true',
     }, [
-      t.rect({ x: 0, y: 0, width: String(BAR_WIDTH), height: 12, rx: 6, fill: '#eee' }),
+      t.rect({ x: 0, y: 0, width: String(BAR_WIDTH), height: 12, rx: 6, class: 'progress-track' }),
       // barFill is a signal — the width attribute updates in place as pct changes.
-      t.rect({ x: 0, y: 0, width: barFill, height: 12, rx: 6, fill: '#4caf50' }),
+      t.rect({ x: 0, y: 0, width: barFill, height: 12, rx: 6, class: 'progress-fill' }),
     ]),
     t.span({ class: 'progress-label' }, label),
   ]);

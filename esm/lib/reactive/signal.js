@@ -1,3 +1,20 @@
+import filterStack from '../util/filter-stack.js';
+import {
+  notifyEffectCreate,
+  notifyEffectPause,
+  notifyEffectResume,
+  notifyEffectRun,
+  notifyEffectStop,
+  notifySignalCreate,
+  notifySignalEffectSubscription,
+  notifySignalEffectUnsubscription,
+  notifySignalMarkComputed,
+  notifySignalSet,
+  notifySignalStop,
+  notifySignalWake,
+  notifySignalZeroSubscribers,
+} from './devtools.js';
+
 let currentEffect = null;
 // Tracks whether we are inside a renderForHydration call. On the server we only need a static
 // HTML snapshot, so effects must not run — they would set up subscriptions with no DOM to update
@@ -25,6 +42,8 @@ let scheduled = false;
 let flushCount = 0;
 let flushResetScheduled = false;
 let inComputedFn = false;
+let suppressReactiveCheck = false;
+let suppressWakeNotify = false;
 const stopFns = new WeakMap();
 // sleep/wake hooks for auto-disposing computed signals when subscriber count hits zero.
 const sleepFns = new WeakMap();
@@ -40,7 +59,8 @@ function throttledError(key, msg) {
   const now = Date.now();
   if (now - (warnLastSeen.get(key) ?? 0) >= WARN_THROTTLE_MS) {
     warnLastSeen.set(key, now);
-    console.error(msg);
+    const error = filterStack(new Error(msg));
+    console.error(error.stack ?? msg);
   }
 }
 
@@ -105,9 +125,14 @@ function scheduleRun(fn) {
 
 function wakeForRead(sig) {
   const wake = wakeFns.get(sig);
-  if (wake !== undefined && wake()) {
-    const sleep = sleepFns.get(sig);
-    if (sleep !== undefined) { sleep(); }
+  if (wake !== undefined) {
+    suppressWakeNotify = true;
+    const woken = wake();
+    suppressWakeNotify = false;
+    if (woken) {
+      const sleep = sleepFns.get(sig);
+      if (sleep !== undefined) { sleep(); }
+    }
   }
 }
 
@@ -117,6 +142,24 @@ export default class Signal {
 
   constructor(initial) {
     this.#value = initial;
+    notifySignalCreate(this, initial);
+    if (!suppressReactiveCheck) {
+      if (inComputedFn) {
+        throttledError(
+          'signal-in-computed',
+          'kensington: signal() called inside a computed or transform callback. ' +
+          'A new signal is created on every re-run, breaking the reconciler snapshot fast-path and leaving orphaned sleeping signals. ' +
+          'Create signals outside the reactive callback and pass them in.',
+        );
+      } else if (currentEffect !== null) {
+        throttledError(
+          'signal-in-effect',
+          'kensington: signal() called inside an effect callback. ' +
+          'A new signal is created on every effect re-run. ' +
+          'Create signals outside the effect and pass them in.',
+        );
+      }
+    }
   }
 
   get() {
@@ -127,12 +170,18 @@ export default class Signal {
       }
       this.#subscribers.add(currentEffect);
       currentEffect._reads.add(this);
+      notifySignalEffectSubscription(this, currentEffect._devId, this.#subscribers.size);
       const sub = currentEffect;
       sub._cleanups.push(() => {
         this.#subscribers.delete(sub);
+        notifySignalEffectUnsubscription(this, sub._devId, this.#subscribers.size);
         if (this.#subscribers.size === 0) {
           const sleep = sleepFns.get(this);
-          if (sleep !== undefined) { sleep(); }
+          if (sleep === undefined) {
+            notifySignalZeroSubscribers(this);
+          } else {
+            sleep();
+          }
         }
       });
     } else if (currentEffect === null) {
@@ -171,6 +220,7 @@ export default class Signal {
       );
     }
     this.#value = next;
+    notifySignalSet(this, next, this.#subscribers.size);
     for (const fn of [...this.#subscribers]) {
       if (fn._isEffect) {
         scheduleRun(fn);
@@ -187,6 +237,7 @@ export default class Signal {
       stopFns.delete(this);
     }
     this.#subscribers.clear();
+    notifySignalStop(this);
   }
 
   toJSON() {
@@ -221,23 +272,26 @@ function track(run, fn) {
  * @param {function(): void} fn
  * @returns {{ pause: function(): void, resume: function(): void, stop: function(): void }}
  */
-export function effect(fn) {
-  // During SSR we only need a static snapshot; skip subscriptions entirely.
+function createEffect(fn) {
   if (ssrDepth > 0) {
     return { pause() {}, resume() {}, stop() {} };
   }
   let paused = false;
   let destroyed = false;
+  const _devId = notifyEffectCreate(fn);
   function run() {
     if (paused) {
       return;
     }
+    notifyEffectRun(_devId);
     track(run, fn);
   }
   run._cleanups = [];
   run._isEffect = true;
+  run._devId = _devId;
   run();
   return {
+    _devId,
     pause() {
       paused = true;
       pending.delete(run);
@@ -245,19 +299,48 @@ export function effect(fn) {
         cleanup();
       }
       run._cleanups = [];
+      notifyEffectPause(_devId);
     },
     resume() {
       if (destroyed) {
         return;
       }
       paused = false;
+      notifyEffectResume(_devId);
       run();
     },
     stop() {
       this.pause();
       destroyed = true;
+      notifyEffectStop(_devId);
     },
   };
+}
+
+export function effect(fn) {
+  if (inComputedFn) {
+    throttledError(
+      'effect-in-computed',
+      'kensington: effect() called inside a computed or transform callback. ' +
+      'A new effect is started on every re-run and the previous one is never stopped. ' +
+      'Create effects outside the reactive callback.',
+    );
+  } else if (currentEffect !== null) {
+    throttledError(
+      'effect-in-effect',
+      'kensington: effect() called inside an effect callback. ' +
+      'A new effect is started on every re-run and the previous one is never stopped. ' +
+      'Create effects at the top level or return a cleanup from the outer effect.',
+    );
+  }
+  return createEffect(fn);
+}
+
+// For library-internal use only. Creates an effect without the effect-in-effect/computed
+// warning checks — lifecycle.js legitimately creates effects inside running effects during
+// reconcile, and those effects are correctly managed and stopped by dom-tracker.
+export function _internalEffect(fn) {
+  return createEffect(fn);
 }
 
 /**
@@ -280,9 +363,32 @@ export function computed(fn) {
   if (ssrDepth > 0) {
     const s = new Signal(fn());
     derivedSignals.add(s);
+    notifySignalMarkComputed(s);
     return s;
   }
+  if (inComputedFn) {
+    throttledError(
+      'computed-in-computed',
+      'kensington: computed() called inside a computed or transform callback. ' +
+      'A new computed is created on every re-run, breaking the reconciler snapshot fast-path and leaving orphaned sleeping signals. ' +
+      'Create computeds outside the reactive callback and pass them in.',
+    );
+  } else if (currentEffect !== null) {
+    throttledError(
+      'computed-in-effect',
+      'kensington: computed() called inside an effect callback. ' +
+      'A new computed is created on every effect re-run and the previous one is never stopped. ' +
+      'Create computeds outside the effect or call .transform() on a signal that outlives the effect.',
+    );
+  }
+  suppressReactiveCheck = true;
   const s = new Signal(undefined);
+  suppressReactiveCheck = false;
+  notifySignalMarkComputed(s);
+  // Tracks the last successfully computed value so notifySignalWake can restore it.
+  // Without this, a wake where s.set(result) is a no-op (Object.is match) would leave
+  // the devtools entry at value: undefined from notifySignalWake forever.
+  let lastResult;
   function update() {
     track(update, () => {
       let result;
@@ -296,6 +402,7 @@ export function computed(fn) {
       } finally {
         inComputedFn = prevInComputedFn;
       }
+      lastResult = result;
       derivedWriteDepth++;
       try {
         s.set(result);
@@ -314,6 +421,9 @@ export function computed(fn) {
   let sleeping = false;
   sleepFns.set(s, () => {
     sleeping = true;
+    // Remove from devtools on sleep. If the computed is later woken by a new subscriber,
+    // notifySignalWake re-adds it. If nobody ever wakes it, the entry is gone — no ghost.
+    notifySignalStop(s);
     for (const cleanup of update._cleanups) {
       cleanup();
     }
@@ -322,6 +432,10 @@ export function computed(fn) {
   wakeFns.set(s, () => {
     if (!sleeping) { return false; }
     sleeping = false;
+    // Re-add to devtools before update() so notifySignalSet can find the entry.
+    // suppressWakeNotify is true when called from wakeForRead (transient read for toJSON/.value),
+    // so those reads stay silent and don't produce temporary devtools entries.
+    if (!suppressWakeNotify) { notifySignalWake(s, lastResult); }
     update();
     return true;
   });

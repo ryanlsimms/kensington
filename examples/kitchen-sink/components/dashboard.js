@@ -14,7 +14,10 @@ const STORAGE_KEY = 'kensington-tasks';
 // that one signal rather than replacing the whole tasks array. Components that
 // read task.done.get() inside a computed will react to individual changes.
 function toReactiveTasks(raw) {
-  return raw.map(task => ({ ...task, done: signal(task.done) }));
+  return raw.map(task => {
+    const done = signal(task.done);
+    return { ...task, done, itemClass: done.transform(d => d ? 'task-item done' : 'task-item') };
+  });
 }
 
 export function dashboard({ tasks: initialTasks }) {

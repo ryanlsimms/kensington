@@ -8,6 +8,7 @@ const attributesId = new URL('../../esm/attributes.js', import.meta.url).pathnam
 const attributesHref = new URL('../../esm/attributes.js', import.meta.url).href;
 const kensingtonId = new URL('../../esm/kensington.js', import.meta.url).pathname;
 const kensingtonSlimId = new URL('../../esm/kensington-slim.js', import.meta.url).pathname;
+const devtoolsId = new URL('../../esm/lib/reactive/devtools.js', import.meta.url).pathname;
 
 const attributesModule = await import(attributesHref);
 const camelCaseNames = JSON.stringify([...new Set(
@@ -16,21 +17,45 @@ const camelCaseNames = JSON.stringify([...new Set(
     .filter(k => /[A-Z]/.test(k)),
 )]);
 
-// The slim bundle swaps two source files inside rollup:
+// The slim bundle swaps three source files inside rollup:
 // - esm/kensington.js (huge generated class) -> esm/kensington-slim.js (small Proxy class)
 // - esm/attributes.js (per-tag spec maps) -> a stub that only exports __slim__ and camelCaseNames
+// - esm/lib/reactive/devtools.js -> a stub of no-op exports (devtools are a dev-only feature)
 // Together these eliminate the bulk of the full bundle for slim consumers.
+const slimDevtoolsStub = `
+export function enableDevtools() {}
+export function notifySignalCreate() {}
+export function notifySignalSet() {}
+export function notifySignalWake() {}
+export function notifySignalEffectSubscription() {}
+export function notifySignalEffectUnsubscription() {}
+export function notifySignalZeroSubscribers() {}
+export function notifySignalStop() {}
+export function notifySignalMarkComputed() {}
+export function notifyEffectCreate() { return 0; }
+export function notifyEffectRun() {}
+export function notifyEffectPause() {}
+export function notifyEffectResume() {}
+export function notifyEffectStop() {}
+export function notifyEffectElement() {}
+export function markNextEffectAsBinding() {}
+export function notifyDomTrack() {}
+export function notifyDomUntrack() {}
+`;
+
 const slimPlugin = {
   name: 'slim-build',
   resolveId(id) {
     if (id === attributesId) { return '\0slim-attributes'; }
     if (id === kensingtonId) { return kensingtonSlimId; }
+    if (id === devtoolsId) { return '\0slim-devtools'; }
     return null;
   },
   load(id) {
     if (id === '\0slim-attributes') {
       return `export const __slim__ = true;\nexport const camelCaseNames = new Set(${camelCaseNames});`;
     }
+    if (id === '\0slim-devtools') { return slimDevtoolsStub; }
     return null;
   },
 };

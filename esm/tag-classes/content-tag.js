@@ -170,7 +170,7 @@ export default class ContentTag {
           } else {
             el.setAttribute(attrName, String(val));
           }
-        });
+        }, attrName);
       } else {
         element.setAttribute(attrName, attrValue);
       }
@@ -192,7 +192,7 @@ export default class ContentTag {
           continue;
         }
         if (propValue instanceof Signal) {
-          lifecycle.signalEffect(propValue, (el, val) => { el[propName] = val; });
+          lifecycle.signalEffect(propValue, (el, val) => { el[propName] = val; }, `prop:${propName}`);
         } else {
           element[propName] = propValue;
         }
@@ -211,7 +211,7 @@ export default class ContentTag {
         element.append(startAnchor, endAnchor);
         lifecycle.signalEffect(node, (el, val) => {
           reconcile(el, startAnchor, endAnchor, Array.isArray(val) ? val : [val]);
-        });
+        }, '(content)');
         continue;
       }
       if (!this.contentIsLiteral && typeof node === 'string') { // literal tags (script/style) need exact spacing preserved. Only convert for regular tags

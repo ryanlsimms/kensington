@@ -132,6 +132,7 @@ const t = new Kensington({
   },
   indentationLevel: 2,            // spaces per indent level — default 2, 0 to disable
   logger: console.warn,           // called when validationLevel is 'warn' — default console.log
+  debugMode: false,               // activate window.__KENSINGTON_DEVTOOLS__ — default false
 });
 ```
 
@@ -167,7 +168,7 @@ t.form({ hxPost: '/api/submit', hxSwap: 'outerHTML' });
 Signals and `computed` work in any JavaScript environment. `.toElement()` and DOM-mutating effects require a browser. During `renderForHydration`, `effect()` is suppressed entirely — browser-only code inside an `effect()` is safe to call on the server.
 
 ```javascript
-import { t, signal, computed, effect, isBrowser, Signal } from 'kensington';
+import { t, signal, computed, effect, enableDevtools, isBrowser, Signal } from 'kensington';
 import { renderForHydration, registerComponents } from 'kensington';
 ```
 
@@ -324,6 +325,34 @@ const stored = isBrowser ? localStorage.getItem('theme') : null;
 // Inside effect() — always safe; effect is a no-op on the server
 effect(() => { localStorage.setItem('theme', dark.get() ? 'dark' : 'light'); });
 ```
+
+### DevTools
+
+Activate the devtools hook before creating any signals, either via the constructor or the standalone export:
+
+```javascript
+// Via constructor
+const t = new Kensington({ debugMode: true });
+
+// Standalone (when using signals without a Kensington instance)
+import { enableDevtools } from 'kensington';
+enableDevtools();
+```
+
+Then drop the panel script into your dev HTML:
+
+```html
+<script src="node_modules/kensington/dist/kensington-devtools.js"></script>
+```
+
+The panel is a shadow-DOM-isolated overlay in the bottom-right corner. Click the **K** badge to open it. Four tabs:
+
+- **Signals** — plain signals: current value, set count, DOM visibility indicator (● visible, ○ in DOM but hidden, — not in DOM), subscriber count. Hover the subscriber count for a tooltip listing subscribed effects. Click a row to highlight and scroll to the bound DOM element.
+- **Computed** — computed signals, same columns. Entries disappear when auto-disposed (no subscribers) and reappear on re-subscription.
+- **Effects** — user `effect()` calls: state (active/paused), run count, function source.
+- **DOM** — live signal-to-DOM bindings (attributes, props, content): element descriptor, binding label (e.g. `class`, `prop:checked`, `(content)`), state, run count. Hover a row to outline the element in the page; click to scroll to it.
+
+The hook is zero-cost when not enabled. All instrumentation calls are guarded by an `enabled` flag and return immediately when disabled. `debugMode`/`enableDevtools()` is intended for development only. Do not enable in production.
 
 ### Loading state
 
@@ -510,6 +539,42 @@ effect(() => {
 ### Do not use `setTimeout(() => {}, 0)` to defer `.set()` calls
 
 `setTimeout` is a macrotask. It fires after the browser renders, so the UI shows a frame of incorrect state before correcting itself. It also signals that the dependency graph is not quite right. Restructure with `.value` or a separate `effect` instead.
+
+### Do not create computed signals inside a list-mapping function
+
+When a `transform` or `computed` maps a list to tags, any `transform()` or `computed()` call inside the mapping function creates a new signal instance on every re-render. Signals compare by reference in the reconciler snapshot check, so a new instance always fails the snapshot fast-path. The reconciler calls `toElement()` for each item to get a fresh DOM element to diff against — then discards it via `stopTracked`. The brief stop causes the new computed to lose its only subscriber immediately after gaining it, putting it to sleep. Sleeping orphans accumulate in the devtools Signals tab on every list update.
+
+The fix: attach derived signals to the item object when it is created so the same signal reference is reused on every render.
+
+```javascript
+// Wrong — done.transform() creates a new computed on every list re-render.
+// Snapshot fails for all existing items (old signal !== new signal), so
+// toElement() runs for each item and produces sleeping orphan computeds.
+const rows = tasks.transform(list =>
+  list.map(({ id, text, done }) => {
+    const itemClass = done.transform(d => d ? 'task-item done' : 'task-item');
+    return t.li({ dataKey: id, class: itemClass }, text);
+  })
+);
+
+// Correct — create itemClass once when the task is created and store it on the object.
+// The snapshot sees the same signal reference every render and hits the fast-path.
+function makeTask(text) {
+  const done = signal(false);
+  return {
+    id: Date.now(),
+    text,
+    done,
+    itemClass: done.transform(d => d ? 'task-item done' : 'task-item'),
+  };
+}
+
+const rows = tasks.transform(list =>
+  list.map(({ id, text, itemClass }) => t.li({ dataKey: id, class: itemClass }, text))
+);
+```
+
+The same principle applies to inline functions: `onclick: () => remove(id)` creates a new function reference on every render. `valueEqual` falls back to reference equality for functions, so the snapshot always fails. Use event delegation on the container or store the handler on the item to restore snapshot hits.
 
 ## HTML to Kensington CLI
 

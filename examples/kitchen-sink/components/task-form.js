@@ -17,7 +17,9 @@ export function taskForm({ tasks }) {
     }
     // New tasks get done: signal(false) to match the shape liftTasks() produces,
     // so task-list, task-stats, and progress-bar can all call task.done.get().
-    tasks.set(ts => [...ts, { id: Date.now().toString(36), text, done: signal(false) }]);
+    const done = signal(false);
+    const itemClass = done.transform(d => d ? 'task-item done' : 'task-item');
+    tasks.set(ts => [...ts, { id: Date.now().toString(36), text, done, itemClass }]);
     // Setting the signal to '' clears the input field via the prop binding below.
     newTaskText.set('');
   }

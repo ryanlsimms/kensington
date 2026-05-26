@@ -6,11 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- `enableDevtools()` named export. Call it once before creating any signals to activate `window.__KENSINGTON_DEVTOOLS__`, the hook read by the devtools panel.
+- `debugMode: true` constructor option. Equivalent to calling `enableDevtools()` at startup.
+- New devtools panel script (`dist/kensington-devtools.js`). Drop it into any page that calls `enableDevtools()` to get a live overlay showing all signals, computed signals, effects, and DOM bindings.
+- Warning when `signal()` is called inside a `computed` or `effect` callback. A new signal created on every re-run breaks the reconciler snapshot fast-path and leaves orphaned sleeping signals. The warning is throttled and its stack trace is filtered to point to the caller's code.
+
 ### Changed
 - `renderForHydration` now throws if called in a browser context without an explicit `name` argument. Function names are not reliable after minification, so `fn.name` is no longer used as a fallback in the browser. Server-side calls (where code is not minified) continue to use `fn.name` as the default.
 - warnings for potential `.set()` inside of `computed` are throttled
 - Validation warnings now pass the full stack trace to the logger as a single call. Previously the logger was called twice per warning, once with the plain message and once with the stack. Stack frames internal to Kensington are stripped so the trace points to the caller's code.
 - SVG presentation attributes now match the properties defined as presentation attributes in the SVG spec. Previously all standard CSS properties were accepted as valid SVG attributes. The `style` attribute continues to accept any CSS property.
+
+### Fixed
+- Signal effects on child elements are now paused (not stopped permanently) when a parent with `persist: true` is removed from the DOM. Previously only the root element's effects were paused; effects on child elements were permanently stopped on removal.
+- Removing and immediately reinserting a node in the same mutation batch no longer stops its signal effects. Previously a `MutationObserver` callback that fired after the reinsert would permanently stop effects on a live element.
 
 ## [2.0.0-signals.11] - 2026-05-22
 

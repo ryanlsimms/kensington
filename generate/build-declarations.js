@@ -284,6 +284,8 @@ export default class Kensington {
     validationLevel?: 'off' | 'warn' | 'error';
     /** Called with warning messages when \`validationLevel\` is \`'warn'\`. Default: \`console.log\`. */
     logger?: (message: string) => void;
+    /** Expose \`window.__KENSINGTON_DEVTOOLS__\` for use with the devtools panel. Default: \`false\`. */
+    debugMode?: boolean;
   });
 
   /**
@@ -417,6 +419,9 @@ export function renderForHydration<S extends Record<string, unknown>>(
   state: S,
   name?: string
 ): LiteralTag;
+
+/** Activates \`window.__KENSINGTON_DEVTOOLS__\` for use with the devtools panel. Call once before creating signals. */
+export function enableDevtools(): void;
 
 
 `;
