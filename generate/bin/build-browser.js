@@ -9,6 +9,7 @@ const attributesHref = new URL('../../esm/attributes.js', import.meta.url).href;
 const kensingtonId = new URL('../../esm/kensington.js', import.meta.url).pathname;
 const kensingtonSlimId = new URL('../../esm/kensington-slim.js', import.meta.url).pathname;
 const devtoolsId = new URL('../../esm/lib/reactive/devtools.js', import.meta.url).pathname;
+const filterStackId = new URL('../../esm/lib/util/filter-stack.js', import.meta.url).pathname;
 
 const attributesModule = await import(attributesHref);
 const camelCaseNames = JSON.stringify([...new Set(
@@ -17,10 +18,11 @@ const camelCaseNames = JSON.stringify([...new Set(
     .filter(k => /[A-Z]/.test(k)),
 )]);
 
-// The slim bundle swaps three source files inside rollup:
+// The slim bundle swaps four source files inside rollup:
 // - esm/kensington.js (huge generated class) -> esm/kensington-slim.js (small Proxy class)
 // - esm/attributes.js (per-tag spec maps) -> a stub that only exports __slim__ and camelCaseNames
 // - esm/lib/reactive/devtools.js -> a stub of no-op exports (devtools are a dev-only feature)
+// - esm/lib/util/filter-stack.js -> an identity stub (stack filtering is a dev-only DX feature)
 // Together these eliminate the bulk of the full bundle for slim consumers.
 const slimDevtoolsStub = `
 export function enableDevtools() {}
@@ -49,6 +51,7 @@ const slimPlugin = {
     if (id === attributesId) { return '\0slim-attributes'; }
     if (id === kensingtonId) { return kensingtonSlimId; }
     if (id === devtoolsId) { return '\0slim-devtools'; }
+    if (id === filterStackId) { return '\0slim-filter-stack'; }
     return null;
   },
   load(id) {
@@ -56,6 +59,7 @@ const slimPlugin = {
       return `export const __slim__ = true;\nexport const camelCaseNames = new Set(${camelCaseNames});`;
     }
     if (id === '\0slim-devtools') { return slimDevtoolsStub; }
+    if (id === '\0slim-filter-stack') { return 'export default function filterStack(e) { return e; }'; }
     return null;
   },
 };

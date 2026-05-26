@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- `enableDevtools()` named export. Call it once before creating any signals to activate `window.__KENSINGTON_DEVTOOLS__`, the hook read by the devtools panel.
+- `enableDevtools()` named export. Call it once before creating any signals to activate the devtools panel.
 - `debugMode: true` constructor option. Equivalent to calling `enableDevtools()` at startup.
 - New devtools panel script (`dist/kensington-devtools.js`). Drop it into any page that calls `enableDevtools()` to get a live overlay showing all signals, computed signals, effects, and DOM bindings.
 - Warning when `signal()` is called inside a `computed` or `effect` callback. A new signal created on every re-run breaks the reconciler snapshot fast-path and leaves orphaned sleeping signals. The warning is throttled and its stack trace is filtered to point to the caller's code.
