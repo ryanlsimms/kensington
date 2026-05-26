@@ -139,8 +139,8 @@ export default class ContentTag {
     el.replaceWith(this.toElement());
   }
 
-  toElement() {
-    const persist = this.persist;
+  toElement({ _inheritPersist = false } = {}) {
+    const persist = this.persist || _inheritPersist;
     if (this.#domElement) {
       if (this.#domElement.parentNode !== null) {
         showInvalid(`toElement() called on a tag instance already in the DOM — the same node will be moved. Call the tag as a function to create a new independent node.`, this.validationLevel, this.logger);
@@ -201,7 +201,7 @@ export default class ContentTag {
 
     for (let node of this.content) { // let, not const. node is reassigned to preserveSpaces(node) below
       if (node instanceof ContentTag || node instanceof LiteralTag || node instanceof CommentTag) {
-        element.append(node.toElement());
+        element.append(node.toElement(node instanceof ContentTag ? { _inheritPersist: persist } : undefined));
         continue;
       }
       if (node instanceof Signal) {

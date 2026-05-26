@@ -43,7 +43,9 @@ function visit(node, fn) {
   const own = entries.get(node);
   if (own !== undefined) {
     fn(node, own);
-    return;
+    // Don't return — also process tracked child elements so that effects registered on
+    // child elements (e.g. checked=signal on an <input> inside a <li persist=true>) are
+    // paused or stopped together with the parent.
   }
   if (node.nodeType !== 1) { return; }
   for (const ref of [...trackedRefs]) {
@@ -52,6 +54,11 @@ function visit(node, fn) {
       trackedRefs.delete(ref);
       continue;
     }
+    if (el === node) { continue; }
+    // When the parent has its own entry, skip non-element nodes. This prevents
+    // comment-anchor entries registered by LiteralTag from being permanently stopped
+    // during a persist parent's pause-on-removal cycle.
+    if (own !== undefined && el.nodeType !== 1) { continue; }
     if (node.contains(el)) {
       const entry = entries.get(el);
       if (entry !== undefined) { fn(el, entry); }

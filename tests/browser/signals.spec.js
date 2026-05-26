@@ -1636,6 +1636,91 @@ test('disconnect callbacks fire in order on every removal with toElement persist
   expect(result).toEqual(['first', 'second', 'first', 'second']);
 });
 
+test('signal on child element stays reactive across remove and re-insert with persist parent',
+  async ({ page, bundle }) => {
+    const result = await page.evaluate(async src => {
+      const { t, signal } = await import(src);
+      const cls = signal('a');
+      const tag = t.div({ id: 'child-persist-resume', persist: true }, [t.span({ class: cls })]);
+      const el = tag.toElement();
+      document.body.append(el);
+      el.remove();
+      await Promise.resolve();
+      document.body.append(el);
+      await Promise.resolve();
+      cls.set('b');
+      await Promise.resolve();
+      return el.querySelector('span').className;
+    }, bundle);
+    expect(result).toBe('b');
+  });
+
+test('signal on child element stops updating after persist parent is permanently removed', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const cls = signal('a');
+    const tag = t.div({ id: 'child-persist-stop', persist: true }, [t.span({ class: cls })]);
+    const el = tag.toElement();
+    document.body.append(el);
+    el.remove();
+    await Promise.resolve();
+    cls.set('b');
+    await Promise.resolve();
+    return el.querySelector('span').className;
+  }, bundle);
+  expect(result).toBe('a');
+});
+
+test('signal on child stops and resumes correctly across three persist cycles', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const cls = signal('a');
+    const tag = t.div({ persist: true }, [t.span({ class: cls })]);
+    const el = tag.toElement();
+    const snapshot = [];
+    for (let i = 0; i < 3; i++) {
+      document.body.append(el);
+      await Promise.resolve();
+      cls.set(String(i + 1));
+      await Promise.resolve();
+      snapshot.push(el.querySelector('span').className);
+      el.remove();
+      await Promise.resolve();
+      cls.set('dead');
+      await Promise.resolve();
+      snapshot.push(el.querySelector('span').className);
+    }
+    return snapshot;
+  }, bundle);
+  expect(result).toEqual(['1', '1', '2', '2', '3', '3']);
+});
+
+test('signal on child element survives insertBefore reorder with persist parent', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const clsA = signal('a');
+    const clsB = signal('b');
+    const tagA = t.li({ persist: true }, [t.span({ id: 'child-reorder-a', class: clsA })]);
+    const tagB = t.li({ persist: true }, [t.span({ id: 'child-reorder-b', class: clsB })]);
+    const elA = tagA.toElement();
+    const elB = tagB.toElement();
+    const ul = document.createElement('ul');
+    ul.append(elA, elB);
+    document.body.append(ul);
+    await Promise.resolve();
+    ul.insertBefore(elB, elA);
+    await Promise.resolve();
+    clsA.set('a2');
+    clsB.set('b2');
+    await Promise.resolve();
+    return [
+      document.getElementById('child-reorder-a').className,
+      document.getElementById('child-reorder-b').className,
+    ];
+  }, bundle);
+  expect(result).toEqual(['a2', 'b2']);
+});
+
 test('literal(signal) stops its effect when the host element is removed', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
     const { t, signal } = await import(src);
