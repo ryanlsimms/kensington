@@ -1721,6 +1721,56 @@ test('signal on child element survives insertBefore reorder with persist parent'
   expect(result).toEqual(['a2', 'b2']);
 });
 
+test('signal effects survive insertBefore reorder without persist', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const clsA = signal('a');
+    const clsB = signal('b');
+    const elA = t.li({ id: 'li-nopersist-a', class: clsA }).toElement();
+    const elB = t.li({ id: 'li-nopersist-b', class: clsB }).toElement();
+    const ul = document.createElement('ul');
+    ul.append(elA, elB);
+    document.body.append(ul);
+    await Promise.resolve();
+
+    // insertBefore fires removedNodes then addedNodes in the same MO record.
+    // isConnected is true by the time the observer runs, so effects must survive.
+    ul.insertBefore(elB, elA);
+    await Promise.resolve();
+
+    clsA.set('a2');
+    clsB.set('b2');
+    await Promise.resolve();
+
+    return [document.getElementById('li-nopersist-a').className, document.getElementById('li-nopersist-b').className];
+  }, bundle);
+  expect(result).toEqual(['a2', 'b2']);
+});
+
+test('signal on child element survives insertBefore reorder without persist parent', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const clsA = signal('a');
+    const clsB = signal('b');
+    const elA = t.li([t.span({ id: 'child-nopersist-a', class: clsA })]).toElement();
+    const elB = t.li([t.span({ id: 'child-nopersist-b', class: clsB })]).toElement();
+    const ul = document.createElement('ul');
+    ul.append(elA, elB);
+    document.body.append(ul);
+    await Promise.resolve();
+    ul.insertBefore(elB, elA);
+    await Promise.resolve();
+    clsA.set('a2');
+    clsB.set('b2');
+    await Promise.resolve();
+    return [
+      document.getElementById('child-nopersist-a').className,
+      document.getElementById('child-nopersist-b').className,
+    ];
+  }, bundle);
+  expect(result).toEqual(['a2', 'b2']);
+});
+
 test('literal(signal) stops its effect when the host element is removed', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
     const { t, signal } = await import(src);

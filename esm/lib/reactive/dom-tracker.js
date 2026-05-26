@@ -87,7 +87,7 @@ function buildObserver() {
     if (trackedRefs.size === 0) { return; }
     for (const record of records) {
       for (const node of record.removedNodes) {
-        stopRemoved(node);
+        if (!node.isConnected) { stopRemoved(node); }
       }
       for (const node of record.addedNodes) {
         fireConnected(node);
