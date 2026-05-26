@@ -17,7 +17,10 @@ function svgElementObject(ownAttributes) {
 export default function buildAttributes({ elements, globalAttributes, globalEvents, svgPresentationAttrTypes }) {
   const hasSvgPresentation = svgPresentationAttrTypes?.length > 0;
 
-  return `export const globalAttributes = {
+  return `export const __slim__ = false;
+export const camelCaseNames = [];
+
+export const globalAttributes = {
   ${globalAttributes.map(a => `'${a.name}': ${a.value},`).join('\n  ')}
 };
 

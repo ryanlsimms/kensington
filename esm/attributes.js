@@ -1,3 +1,6 @@
+export const __slim__ = false;
+export const camelCaseNames = [];
+
 export const globalAttributes = {
   'accesskey': String,
   'autocapitalize': ['on', 'off', 'none', 'sentences', 'words', 'characters'],
