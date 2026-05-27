@@ -141,43 +141,23 @@ export default [
     ]),
 
     t.h3({ id: 'devtools' }, 'DevTools panel'),
-    t.p('A floating browser panel for inspecting signals, effects, and DOM-tracked elements at runtime. Zero cost in production — the hook only activates when explicitly enabled.'),
+    t.p('A floating browser panel for inspecting signals, effects, and DOM-tracked elements at runtime. Zero cost in production. The hook only activates when explicitly enabled.'),
 
-    t.h4('Enable the hook'),
+    t.h4('Enable'),
     t.p([
-      'Pass ',
-      t.code('debugMode: true'),
-      ' to the Kensington constructor, or call ',
+      'Import ',
+      t.code("'kensington/devtools'"),
+      ' in your dev entry point. It calls ',
       t.code('enableDevtools()'),
-      ' directly if you use signals without a Kensington instance:',
+      ' and mounts the panel overlay automatically. Guard it so it never runs in production:',
     ]),
-    panels(t, [
-      {
-        label: 'Via constructor',
-        content: code(t, 'javascript', `import Kensington from 'kensington';
-
-const t = new Kensington({ debugMode: true });`),
-      },
-      {
-        label: 'Standalone',
-        content: code(t, 'javascript', `import { enableDevtools, signal, effect } from 'kensington';
-
-enableDevtools(); // call before creating signals
-const count = signal(0);`),
-      },
-    ]),
-
-    t.h4('Load the panel'),
+    code(t, 'javascript', `if (import.meta.env.DEV) {
+  await import('kensington/devtools');
+}`),
     t.p([
-      'Add the panel script to your dev HTML. It reads ',
-      t.code('window.__KENSINGTON_DEVTOOLS__'),
-      ' and renders a shadow-DOM-isolated overlay in the bottom-right corner.',
-    ]),
-    code(t, 'html', `<script src="node_modules/kensington/dist/kensington-devtools.js"></script>`),
-    t.p([
-      'The panel polls for the hook automatically, so script load order does not matter. Click the ',
+      'Click the ',
       t.strong('K'),
-      ' badge to open it.',
+      ' badge in the bottom-right corner to open the panel.',
     ]),
 
     t.h4('Tabs'),
@@ -185,7 +165,7 @@ const count = signal(0);`),
       [t.strong('Signals'), 'All plain (non-computed) signals. Columns: ID, current value, set count, DOM visibility indicator (● visible, ○ in DOM but hidden, — not in DOM), subscriber count. Hover the subscriber count for a tooltip listing each subscribed effect.'],
       [t.strong('Computed'), 'All computed signals. Same columns as Signals. Computed entries disappear automatically when the last subscriber is removed (auto-dispose) and reappear when a new subscriber reads them.'],
       [t.strong('Effects'), 'All active user effects. Columns: ID, state badge (active or paused), run count, function source (hover for the full text).'],
-      [t.strong('DOM'), 'All live signal-to-DOM bindings. Columns: ID, element descriptor, binding label (e.g. ', t.code('class'), ', ', t.code('prop:checked'), ', ', t.code('(content)'), '), state badge, run count.'],
+      [t.strong('DOM'), ['All live signal-to-DOM bindings. Columns: ID, element descriptor, binding label (e.g. ', t.code('class'), ', ', t.code('prop:checked'), ', ', t.code('(content)'), '), state badge, run count.']],
     ]),
     t.p([
       'Hovering a row in the Signals or Computed tab outlines the DOM elements that signal controls. Clicking a row scrolls that element into view. Hovering a row in the DOM tab outlines its bound element.',

@@ -22,6 +22,7 @@ const tasks = [
 const app = express();
 
 app.use('/dist', express.static(path.join(projectRoot, 'dist')));
+app.use('/esm', express.static(path.join(projectRoot, 'esm')));
 app.use(express.static(__dirname));
 
 app.get('/', (req, res) => {

@@ -342,3 +342,17 @@ test('devtools: signal entry is not removed when a computed re-subscribes before
     expect(result.baseId).toBeDefined();
     expect(result.stillPresent).toBe(true);
   });
+
+test('devtools: kensington/devtools import enables hook and mounts panel', async ({ page, bundle }) => {
+  test.skip(bundle.includes('slim'), 'devtools are no-ops in the slim build');
+  const result = await page.evaluate(async src => {
+    await import(src);
+    await import('/esm/devtools.js');
+    return {
+      hookSet: typeof window.__KENSINGTON_DEVTOOLS__ === 'object' && window.__KENSINGTON_DEVTOOLS__ !== null,
+      panelMounted: document.getElementById('__kensington_devtools_panel__') !== null,
+    };
+  }, bundle);
+  expect(result.hookSet).toBe(true);
+  expect(result.panelMounted).toBe(true);
+});

@@ -4332,8 +4332,6 @@ export default class Kensington {
     validationLevel?: 'off' | 'warn' | 'error';
     /** Called with warning messages when `validationLevel` is `'warn'`. Default: `console.log`. */
     logger?: (message: string) => void;
-    /** Expose `window.__KENSINGTON_DEVTOOLS__` for use with the devtools panel. Default: `false`. */
-    debugMode?: boolean;
   });
 
   /**

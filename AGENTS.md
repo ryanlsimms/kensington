@@ -132,7 +132,6 @@ const t = new Kensington({
   },
   indentationLevel: 2,            // spaces per indent level — default 2, 0 to disable
   logger: console.warn,           // called when validationLevel is 'warn' — default console.log
-  debugMode: false,               // activate window.__KENSINGTON_DEVTOOLS__ — default false
 });
 ```
 
@@ -328,21 +327,12 @@ effect(() => { localStorage.setItem('theme', dark.get() ? 'dark' : 'light'); });
 
 ### DevTools
 
-Activate the devtools hook before creating any signals, either via the constructor or the standalone export:
+Import `kensington/devtools` in your dev entry point. It calls `enableDevtools()` and mounts the panel overlay in one step. Guard it so it never runs in production:
 
 ```javascript
-// Via constructor
-const t = new Kensington({ debugMode: true });
-
-// Standalone (when using signals without a Kensington instance)
-import { enableDevtools } from 'kensington';
-enableDevtools();
-```
-
-Then drop the panel script into your dev HTML:
-
-```html
-<script src="node_modules/kensington/dist/kensington-devtools.js"></script>
+if (import.meta.env.DEV) {
+  await import('kensington/devtools');
+}
 ```
 
 The panel is a shadow-DOM-isolated overlay in the bottom-right corner. Click the **K** badge to open it. Four tabs:
@@ -352,7 +342,7 @@ The panel is a shadow-DOM-isolated overlay in the bottom-right corner. Click the
 - **Effects** — user `effect()` calls: state (active/paused), run count, function source.
 - **DOM** — live signal-to-DOM bindings (attributes, props, content): element descriptor, binding label (e.g. `class`, `prop:checked`, `(content)`), state, run count. Hover a row to outline the element in the page; click to scroll to it.
 
-The hook is zero-cost when not enabled. All instrumentation calls are guarded by an `enabled` flag and return immediately when disabled. `debugMode`/`enableDevtools()` is intended for development only. Do not enable in production.
+The hook is zero-cost when not enabled. All instrumentation calls are guarded by an `enabled` flag and return immediately when disabled. Do not enable in production.
 
 ### Loading state
 

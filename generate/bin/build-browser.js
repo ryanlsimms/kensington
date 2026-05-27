@@ -4,6 +4,7 @@ import terser from '@rollup/plugin-terser';
 import { rollup } from 'rollup';
 
 const entry = new URL('../../esm/index.js', import.meta.url).pathname;
+const devtoolsScriptEntry = new URL('../../esm/devtools-script.js', import.meta.url).pathname;
 const attributesId = new URL('../../esm/attributes.js', import.meta.url).pathname;
 const attributesHref = new URL('../../esm/attributes.js', import.meta.url).href;
 const kensingtonId = new URL('../../esm/kensington.js', import.meta.url).pathname;
@@ -108,6 +109,17 @@ await slimBundle.write({
   format: 'esm',
   plugins: [terser()],
   sourcemap: true,
+});
+
+const devtoolsBundle = await rollup({
+  input: devtoolsScriptEntry,
+  plugins: [nodeResolve(), commonjs()],
+});
+
+await devtoolsBundle.write({
+  file: new URL('../../dist/kensington-devtools.js', import.meta.url).pathname,
+  format: 'iife',
+  generatedCode: { constBindings: true },
 });
 
 console.log('dist/ browser bundle written');

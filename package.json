@@ -4,7 +4,7 @@
   "description": "HTML/SVG/MathML template library for Node.js and the browser",
   "type": "module",
   "types": "./types.d.ts",
-  "sideEffects": false,
+  "sideEffects": ["./esm/devtools.js"],
   "license": "ISC",
   "bin": {
     "kensington": "bin/html-to-kensington.js"
@@ -17,12 +17,16 @@
     "scripts",
     "types.d.ts",
     "attributes.d.ts",
+    "devtools.d.ts",
     "AGENTS.md"
   ],
   "typesVersions": {
     "*": {
       "attributes": [
         "./attributes.d.ts"
+      ],
+      "devtools": [
+        "./devtools.d.ts"
       ]
     }
   },
@@ -36,6 +40,10 @@
       "types": "./attributes.d.ts",
       "import": "./esm/attributes.js",
       "require": "./cjs/attributes.js"
+    },
+    "./devtools": {
+      "types": "./devtools.d.ts",
+      "import": "./esm/devtools.js"
     },
     ".": {
       "import": {

@@ -22,6 +22,10 @@ const signalGcRegistry = new FinalizationRegistry(id => {
 
 export function enableDevtools() {
   if (enabled) { return; }
+  if (typeof window === 'undefined') {
+    console.warn('kensington: enableDevtools() has no effect on the server. Call it in browser-only code.');
+    return;
+  }
   enabled = true;
   hook = {
     signals: new Map(),
