@@ -1799,6 +1799,35 @@ describe('computed auto-dispose', () => {
     await Promise.resolve();
     assert.strictEqual(runs, 0);
   });
+
+  it('computed does not sleep when its subscriber re-subscribes in the same flush', async () => {
+    const src = signal(1);
+    let runs = 0;
+    const c = computed(() => { runs++; return src.get() * 2; });
+    runs = 0;
+    const seen = [];
+    const fx = effect(() => { seen.push(c.get()); });
+    runs = 0; // reset after initial effect run
+    src.set(5);
+    await Promise.resolve();
+    // c re-ran exactly once (src changed), no extra run from wake
+    assert.strictEqual(runs, 1);
+    assert.deepStrictEqual(seen, [2, 10]);
+    fx.stop();
+  });
+
+  it('computed still sleeps when its subscriber stops outside a flush', async () => {
+    const src = signal(1);
+    let runs = 0;
+    const c = computed(() => { runs++; return src.get() * 2; });
+    runs = 0;
+    const fx = effect(() => { c.get(); });
+    fx.stop();
+    const runsBefore = runs;
+    src.set(99);
+    await Promise.resolve();
+    assert.strictEqual(runs, runsBefore); // c slept immediately, did not re-run
+  });
 });
 
 // ─── effect ────────────────────────────────────────────────────────────────

@@ -44,10 +44,15 @@ let flushResetScheduled = false;
 let inComputedFn = false;
 let suppressReactiveCheck = false;
 let suppressWakeNotify = false;
+let inFlush = false;
 const stopFns = new WeakMap();
 // sleep/wake hooks for auto-disposing computed signals when subscriber count hits zero.
 const sleepFns = new WeakMap();
 const wakeFns = new WeakMap();
+// Computed signals whose sleep has been deferred until after the current flush. If the
+// subscriber comes back before the microtask fires (the common case when a DOM-binding
+// effect re-runs), the entry is removed and sleep is cancelled — no sleep/wake round-trip.
+const pendingSleep = new Set();
 // Tracks signals created by computed()/transform() so .set() can be blocked on them.
 const derivedSignals = new WeakSet();
 // Counter rather than boolean so nested computed calls don't prematurely re-enable the guard.
@@ -90,27 +95,32 @@ function flush() {
     return;
   }
   runCounts.clear();
-  while (pending.size > 0) {
-    const batch = [...pending];
-    pending.clear();
-    for (const fn of batch) {
-      const count = (runCounts.get(fn) ?? 0) + 1;
-      runCounts.set(fn, count);
-      if (count > MAX_EFFECT_LOOPS) {
-        throttledError(
-          'sync-loop',
-          `kensington: reactive loop detected. The same effect was re-queued ${count} times in a single flush. ` +
-          'Check for an effect that writes to a signal it also reads, or two effects that write to each other\'s signal dependencies. ' +
-          'For effects with async callbacks (queueMicrotask, setTimeout, fetch), guard the write with a condition check to confirm the update is still needed before calling .set().',
-        );
-        continue;
-      }
-      try {
-        fn();
-      } catch (err) {
-        rethrowAsync(err);
+  inFlush = true;
+  try {
+    while (pending.size > 0) {
+      const batch = [...pending];
+      pending.clear();
+      for (const fn of batch) {
+        const count = (runCounts.get(fn) ?? 0) + 1;
+        runCounts.set(fn, count);
+        if (count > MAX_EFFECT_LOOPS) {
+          throttledError(
+            'sync-loop',
+            `kensington: reactive loop detected. The same effect was re-queued ${count} times in a single flush. ` +
+            'Check for an effect that writes to a signal it also reads, or two effects that write to each other\'s signal dependencies. ' +
+            'For effects with async callbacks (queueMicrotask, setTimeout, fetch), guard the write with a condition check to confirm the update is still needed before calling .set().',
+          );
+          continue;
+        }
+        try {
+          fn();
+        } catch (err) {
+          rethrowAsync(err);
+        }
       }
     }
+  } finally {
+    inFlush = false;
   }
   runCounts.clear();
 }
@@ -142,7 +152,7 @@ export default class Signal {
 
   constructor(initial) {
     this.#value = initial;
-    notifySignalCreate(this, initial);
+    notifySignalCreate(this, initial, v => { this.set(v); });
     if (!suppressReactiveCheck) {
       if (inComputedFn) {
         throttledError(
@@ -165,8 +175,12 @@ export default class Signal {
   get() {
     if (currentEffect !== null && !this.#subscribers.has(currentEffect)) {
       if (this.#subscribers.size === 0) {
-        const wake = wakeFns.get(this);
-        if (wake !== undefined) { wake(); }
+        if (pendingSleep.has(this)) {
+          pendingSleep.delete(this);
+        } else {
+          const wake = wakeFns.get(this);
+          if (wake !== undefined) { wake(); }
+        }
       }
       this.#subscribers.add(currentEffect);
       currentEffect._reads.add(this);
@@ -179,6 +193,13 @@ export default class Signal {
           const sleep = sleepFns.get(this);
           if (sleep === undefined) {
             notifySignalZeroSubscribers(this);
+          } else if (inFlush) {
+            pendingSleep.add(this);
+            queueMicrotask(() => {
+              if (!pendingSleep.has(this)) { return; }
+              pendingSleep.delete(this);
+              sleep();
+            });
           } else {
             sleep();
           }
@@ -440,6 +461,7 @@ export function computed(fn) {
     return true;
   });
   stopFns.set(s, () => {
+    pendingSleep.delete(s);
     sleepFns.delete(s);
     wakeFns.delete(s);
     for (const cleanup of update._cleanups) {

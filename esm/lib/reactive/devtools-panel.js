@@ -3,6 +3,7 @@ export const PANEL_ID = '__kensington_devtools_panel__';
 const HIGHLIGHT_DURATION = 1800;
 const HIGHLIGHT_STYLE = '2px solid #89b4fa';
 const HIGHLIGHT_OFFSET = '3px';
+const LOG_MAX = 100;
 
 function fmt(v) {
   try {
@@ -60,6 +61,28 @@ const CSS = `
   .tab:hover { color: #cdd6f4; }
   .tab.active { color: #89b4fa; border-bottom-color: #89b4fa; }
 
+  #filter-row {
+    padding: 5px 10px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+  #filter-input {
+    width: 100%; padding: 3px 7px;
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+    border-radius: 4px; color: #cdd6f4; font-family: inherit; font-size: 11px;
+    outline: none;
+  }
+  #filter-input:focus { border-color: #89b4fa; }
+  #filter-input::placeholder { color: #45475a; }
+
+  #val-editor {
+    position: fixed; z-index: 2147483647;
+    background: #313244; color: #a6e3a1;
+    border: 1px solid #89b4fa; border-radius: 3px;
+    padding: 2px 6px; font-family: inherit; font-size: 12px;
+    outline: none; min-width: 60px;
+  }
+  #val-editor.hidden { display: none; }
+
   #content {
     overflow-y: auto; flex: 1; padding: 4px 0;
   }
@@ -80,6 +103,8 @@ const CSS = `
   .id { color: #6c7086; }
   .val-cell { max-width: 0; }
   .val { color: #a6e3a1; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .val[data-editable] { cursor: text; }
+  .val[data-editable]:hover { text-decoration: underline dotted; }
   .num { color: #fab387; text-align: right; }
   .subs-zero { color: #45475a; }
   .badge {
@@ -106,7 +131,7 @@ const CSS = `
   #tooltip.hidden { display: none; }
 
   .tip-items { display: flex; flex-direction: column; gap: 8px; }
-.tip-item { display: flex; flex-direction: column; gap: 3px; }
+  .tip-item { display: flex; flex-direction: column; gap: 3px; }
   .tip-row { display: flex; align-items: center; gap: 6px; }
   .tip-id { color: #cba6f7; font-weight: 600; }
   .tip-badge { font-size: 9px; padding: 1px 4px; border-radius: 3px; background: rgba(137,180,250,.2); color: #89b4fa; font-weight: 600; }
@@ -137,6 +162,22 @@ const CSS = `
     border-bottom: 1px solid rgba(255,255,255,.05);
   }
   .totals-counts { display: flex; gap: 10px; }
+
+  .log-ts { color: #45475a; white-space: nowrap; font-size: 10px; }
+  .log-evt { font-size: 10px; white-space: nowrap; }
+  .log-sig-set { color: #a6e3a1; }
+  .log-sig { color: #587d55; }
+  .log-computed-set { color: #cba6f7; }
+  .log-computed { color: #6e508a; }
+  .log-eff-run { color: #89b4fa; }
+  .log-eff { color: #4a6096; }
+  .log-dom { color: #3d7a80; }
+  .log-val { color: #a6e3a1; }
+  .log-clear-btn {
+    background: none; border: 1px solid rgba(255,255,255,.12); color: #6c7086;
+    border-radius: 3px; padding: 1px 7px; font-family: inherit; font-size: 10px; cursor: pointer;
+  }
+  .log-clear-btn:hover { color: #cdd6f4; border-color: rgba(255,255,255,.25); }
 `;
 
 const activeHighlights = new Map();
@@ -288,13 +329,42 @@ function signalOpenTag(hook, signalId) {
   return tags.join('\n') || null;
 }
 
-function renderSignalTable(hook, forComputed) {
-  const items = [...hook.signals.values()]
-    .filter(m => m.isComputed === forComputed)
+function effectDepsHtml(hook, effectId) {
+  const meta = hook.effects.get(effectId) ?? hook.bindings.get(effectId);
+  if (!meta || meta.depIds.size === 0) { return null; }
+  let items = '';
+  for (const sigId of meta.depIds) {
+    const sig = hook.signals.get(sigId);
+    if (!sig) { continue; }
+    const badge = sig.isComputed ? '<span class="tip-badge">computed</span>' : '';
+    items += `<div class="tip-item">
+      <div class="tip-row">
+        <span class="tip-id">#${sigId}</span>
+        ${badge}
+      </div>
+      <pre class="tip-code">${escHtml(fmt(sig.value))}</pre>
+    </div>`;
+  }
+  return items ? `<div class="tip-items">${items}</div>` : null;
+}
+
+function renderSignalTable(hook, forComputed, filterText = '') {
+  const q = filterText ? filterText.toLowerCase() : '';
+  const allItems = [...hook.signals.values()].filter(m => m.isComputed === forComputed);
+  const items = allItems
+    .filter(m => {
+      if (!q) { return true; }
+      if (String(m.id).includes(q)) { return true; }
+      if (fmt(m.value).toLowerCase().includes(q)) { return true; }
+      const bindings = [...m.effectIds].map(id => hook.bindings.get(id)).filter(Boolean);
+      const labels = [...new Set(bindings.map(b => b.label).filter(Boolean))];
+      return labels.some(l => l.toLowerCase().includes(q));
+    })
     .sort((a, b) => a.id - b.id);
   const label = forComputed ? 'computed signals' : 'signals';
   if (items.length === 0) {
-    return `<div class="empty">No ${label} registered</div>`;
+    const msg = allItems.length === 0 ? `No ${label} registered` : 'No matches';
+    return `<div class="empty">${msg}</div>`;
   }
   let rows = '';
   let totalSets = 0;
@@ -314,16 +384,17 @@ function renderSignalTable(hook, forComputed) {
     const trackedSubs = m.effectIds.size;
     const subsClass = trackedSubs === 0 ? 'num subs-zero' : 'num';
     const subAttr = trackedSubs > 0 ? ` data-subs="${m.id}"` : '';
+    const editAttr = (!m.isComputed && m.setter) ? ' data-editable="1"' : '';
     rows += `<tr data-sig="${m.id}">
       <td class="id">#${m.id}</td>
-      <td class="val-cell"><span class="val" data-src="${fmt(m.value).replace(/"/g, '&quot;')}">${fmt(m.value)}</span>${labelsRow}</td>
+      <td class="val-cell"><span class="val"${editAttr} data-src="${fmt(m.value).replace(/"/g, '&quot;')}">${fmt(m.value)}</span>${labelsRow}</td>
       <td class="num">×${m.setCount}</td>
       <td class="eye-cell"${eyeAttr}>${domStateIcon(domState)}</td>
       <td class="${subsClass}"${subAttr}>${trackedSubs}</td>
     </tr>`;
   }
   const count = items.length;
-  const summary = `${count} ${count === 1 ? label.replace(/s$/, '') : label}`;
+  const summary = q ? `${count}/${allItems.length} ${label}` : `${count} ${count === 1 ? label.replace(/s$/, '') : label}`;
   const totalSubsClass = totalSubs === 0 ? 'subs-zero' : '';
   return `<table style="table-layout:fixed">
     <colgroup>
@@ -349,24 +420,45 @@ function renderSignalTable(hook, forComputed) {
   </div>`;
 }
 
-function renderEffects(hook) {
-  if (hook.effects.size === 0) {
-    return '<div class="empty">No effect() calls active</div>';
+function renderEffects(hook, filterText = '') {
+  const q = filterText ? filterText.toLowerCase() : '';
+  const allItems = [...hook.effects.values()];
+  const items = allItems.filter(m => {
+    if (!q) { return true; }
+    if (String(m.id).includes(q)) { return true; }
+    if (m.state.includes(q)) { return true; }
+    if (m.src && fmtSrc(m.src).toLowerCase().includes(q)) { return true; }
+    return false;
+  });
+  if (items.length === 0) {
+    const msg = allItems.length === 0 ? 'No effect() calls active' : 'No matches';
+    return `<div class="empty">${msg}</div>`;
   }
   let rows = '';
-  for (const m of hook.effects.values()) {
+  for (const m of items) {
     const badge = `<span class="badge badge-${m.state}">${m.state}</span>`;
     const srcDisplay = m.src ? `<span class="src" data-src="${escapeSrc(m.src)}">${fmtSrc(m.src)}</span>` : '—';
+    const depCount = m.depIds.size;
+    const depsAttr = depCount > 0 ? ` data-deps="${m.id}"` : '';
+    const depsClass = depCount === 0 ? 'num subs-zero' : 'num';
     rows += `<tr>
       <td class="id">#${m.id}</td>
       <td>${badge}</td>
       <td class="num">×${m.runCount}</td>
+      <td class="${depsClass}"${depsAttr}>${depCount}</td>
       <td class="src-cell">${srcDisplay}</td>
     </tr>`;
   }
   return `<table>
+    <colgroup>
+      <col style="width:36px">
+      <col style="width:72px">
+      <col style="width:40px">
+      <col style="width:36px">
+      <col>
+    </colgroup>
     <thead><tr>
-      <th>ID</th><th>State</th><th>Runs</th><th>Function</th>
+      <th>ID</th><th>State</th><th>Runs</th><th>Dep</th><th>Function</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
@@ -383,12 +475,24 @@ function describeElement(el) {
   return desc;
 }
 
-function renderDom(hook) {
-  if (hook.bindings.size === 0) {
-    return '<div class="empty">No signal-to-DOM bindings active</div>';
+function renderDom(hook, filterText = '') {
+  const q = filterText ? filterText.toLowerCase() : '';
+  const allItems = [...hook.bindings.values()];
+  const items = allItems.filter(m => {
+    if (!q) { return true; }
+    if (String(m.id).includes(q)) { return true; }
+    const el = m.elementRef ? m.elementRef.deref() : null;
+    if (el && describeElement(el).toLowerCase().includes(q)) { return true; }
+    if (m.label && m.label.toLowerCase().includes(q)) { return true; }
+    if (m.state.includes(q)) { return true; }
+    return false;
+  });
+  if (items.length === 0) {
+    const msg = allItems.length === 0 ? 'No signal-to-DOM bindings active' : 'No matches';
+    return `<div class="empty">${msg}</div>`;
   }
   let rows = '';
-  for (const m of hook.bindings.values()) {
+  for (const m of items) {
     const el = m.elementRef ? m.elementRef.deref() : null;
     const elDesc = el ? describeElement(el) : 'removed';
     const elClass = el ? 'el' : 'el detached';
@@ -417,6 +521,87 @@ function renderDom(hook) {
   </table>`;
 }
 
+function logTypeLabel(e) {
+  return (e.isComputed && e.type.startsWith('signal:'))
+    ? `computed:${e.type.slice(7)}`
+    : e.type;
+}
+
+function renderLog(hook, entries, filterText = '') {
+  const q = filterText ? filterText.toLowerCase() : '';
+  const filtered = q
+    ? entries.filter(e => {
+      if (logTypeLabel(e).includes(q)) { return true; }
+      if (e.id !== undefined && String(e.id).includes(q)) { return true; }
+      if (e.value !== undefined && fmt(e.value).toLowerCase().includes(q)) { return true; }
+      return false;
+    })
+    : entries;
+  if (filtered.length === 0) {
+    const msg = entries.length === 0 ? 'No events recorded' : 'No matches';
+    return `<div class="empty">${msg}</div>`;
+  }
+  let rows = '';
+  for (let i = filtered.length - 1; i >= 0; i--) {
+    const e = filtered[i];
+    const isComputed = e.isComputed ?? false;
+    const label = logTypeLabel(e);
+    let typeClass = '';
+    if (isComputed && e.type.startsWith('signal:')) {
+      typeClass = e.type === 'signal:set' ? 'log-computed-set' : 'log-computed';
+    } else if (e.type === 'signal:set') { typeClass = 'log-sig-set'; }
+    else if (e.type.startsWith('signal:')) { typeClass = 'log-sig'; }
+    else if (e.type === 'effect:run') { typeClass = 'log-eff-run'; }
+    else if (e.type.startsWith('effect:')) { typeClass = 'log-eff'; }
+    else if (e.type.startsWith('dom:')) { typeClass = 'log-dom'; }
+    const idStr = e.id === undefined ? (e.count === undefined ? '' : `n=${e.count}`) : `#${e.id}`;
+    let rowAttr = '';
+    let idCellAttr = '';
+    if (e.id !== undefined && hook) {
+      if (e.type.startsWith('signal:')) {
+        rowAttr = ` data-sig="${e.id}"`;
+        if (hook.signals.has(e.id)) { idCellAttr = ` data-subs="${e.id}"`; }
+      } else if (e.type.startsWith('effect:')) {
+        if (hook.bindings.has(e.id)) {
+          rowAttr = ` data-bind="${e.id}"`;
+          const el = getBindingElement(hook, e.id);
+          if (el) { idCellAttr = ` data-src="${escapeSrc(elementOpenTag(el))}"`; }
+        } else if (hook.effects.has(e.id)) {
+          idCellAttr = ` data-deps="${e.id}"`;
+        }
+      }
+    }
+    const valCell = e.type === 'signal:set' ? `<span class="log-val">${fmt(e.value)}</span>` : '';
+    rows += `<tr${rowAttr}>
+      <td class="log-ts">+${e.ts}ms</td>
+      <td class="log-evt ${typeClass}">${label}</td>
+      <td class="id"${idCellAttr}>${idStr}</td>
+      <td class="val-cell">${valCell}</td>
+    </tr>`;
+  }
+  const total = entries.length;
+  const shown = filtered.length;
+  const summary = q ? `${shown}/${total}` : String(total);
+  return `<table>
+    <colgroup>
+      <col style="width:60px">
+      <col style="width:110px">
+      <col style="width:40px">
+      <col>
+    </colgroup>
+    <thead><tr>
+      <th>Time</th><th>Event</th><th>ID</th><th>Value</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <div class="sig-footer">
+    <div class="totals-row">
+      <span>${summary} event${total === 1 ? '' : 's'}</span>
+      <button class="log-clear-btn">Clear</button>
+    </div>
+  </div>`;
+}
+
 export function buildPanel(hook) {
   if (document.getElementById(PANEL_ID)) { return; }
 
@@ -428,6 +613,7 @@ export function buildPanel(hook) {
   shadow.innerHTML = `
     <style>${CSS}</style>
     <div id="tooltip" class="hidden"></div>
+    <input id="val-editor" class="hidden" spellcheck="false">
     <button id="toggle" title="Kensington DevTools">K</button>
     <div id="panel" class="hidden">
       <div id="header">
@@ -439,6 +625,10 @@ export function buildPanel(hook) {
         <button class="tab" data-tab="computed">Computed</button>
         <button class="tab" data-tab="effects">Effects</button>
         <button class="tab" data-tab="dom">DOM</button>
+        <button class="tab" data-tab="log">Log</button>
+      </div>
+      <div id="filter-row">
+        <input id="filter-input" type="text" placeholder="Filter…" spellcheck="false">
       </div>
       <div id="content"></div>
     </div>
@@ -447,6 +637,9 @@ export function buildPanel(hook) {
   const panel = shadow.getElementById('panel');
   const header = shadow.getElementById('header');
   const tabsEl = shadow.getElementById('tabs');
+  const filterRow = shadow.getElementById('filter-row');
+  const filterInput = shadow.getElementById('filter-input');
+  const valEditor = shadow.getElementById('val-editor');
   const toggle = shadow.getElementById('toggle');
   const closeBtn = shadow.getElementById('close');
   const content = shadow.getElementById('content');
@@ -458,6 +651,11 @@ export function buildPanel(hook) {
   let lastHoveredSigId = null;
   let lastHoveredBindId = null;
   let tooltipTarget = null;
+  let filterText = '';
+  let editingSignalId = null;
+
+  const logEntries = [];
+  const logStartTime = Date.now();
 
   function positionTooltip(anchorEl) {
     const r = anchorEl.getBoundingClientRect();
@@ -470,10 +668,19 @@ export function buildPanel(hook) {
   }
 
   content.addEventListener('mouseover', e => {
-    const tip = e.target.closest('[data-src],[data-subs]');
+    const tip = e.target.closest('[data-src],[data-subs],[data-deps]');
     if (tip !== tooltipTarget) {
       tooltipTarget = tip;
-      if (tip && tip.dataset.subs !== undefined && hook) {
+      if (tip && tip.dataset.deps !== undefined && hook) {
+        const html = effectDepsHtml(hook, Number(tip.dataset.deps));
+        if (html) {
+          tooltip.innerHTML = html;
+          tooltip.classList.remove('hidden');
+          positionTooltip(tip);
+        } else {
+          tooltip.classList.add('hidden');
+        }
+      } else if (tip && tip.dataset.subs !== undefined && hook) {
         const html = signalSubscriberHtml(hook, hook.signals.get(Number(tip.dataset.subs)));
         if (html) {
           tooltip.innerHTML = html;
@@ -520,10 +727,11 @@ export function buildPanel(hook) {
       lastHoveredSigId = null;
     }
     const allRenderers = [
-      () => renderSignalTable(hook, false),
-      () => renderSignalTable(hook, true),
-      () => renderEffects(hook),
-      () => renderDom(hook),
+      () => renderSignalTable(hook, false, filterText),
+      () => renderSignalTable(hook, true, filterText),
+      () => renderEffects(hook, filterText),
+      () => renderDom(hook, filterText),
+      () => renderLog(hook, logEntries, filterText),
     ];
     content.style.minHeight = '';
     let maxH = 0;
@@ -531,15 +739,17 @@ export function buildPanel(hook) {
       content.innerHTML = render();
       if (content.scrollHeight > maxH) { maxH = content.scrollHeight; }
     }
-    if (activeTab === 'signals') { content.innerHTML = renderSignalTable(hook, false); }
-    else if (activeTab === 'computed') { content.innerHTML = renderSignalTable(hook, true); }
-    else if (activeTab === 'effects') { content.innerHTML = renderEffects(hook); }
-    else { content.innerHTML = renderDom(hook); }
-    const chromeH = header.offsetHeight + tabsEl.offsetHeight;
+    if (activeTab === 'signals') { content.innerHTML = renderSignalTable(hook, false, filterText); }
+    else if (activeTab === 'computed') { content.innerHTML = renderSignalTable(hook, true, filterText); }
+    else if (activeTab === 'effects') { content.innerHTML = renderEffects(hook, filterText); }
+    else if (activeTab === 'dom') { content.innerHTML = renderDom(hook, filterText); }
+    else if (activeTab === 'log') { content.innerHTML = renderLog(hook, logEntries, filterText); }
+    const chromeH = header.offsetHeight + tabsEl.offsetHeight + filterRow.offsetHeight;
     content.style.minHeight = `${Math.min(maxH, 480 - chromeH)}px`;
   }
 
   function scheduleRender() {
+    if (editingSignalId !== null) { return; }
     if (rafPending) { return; }
     rafPending = true;
     requestAnimationFrame(() => {
@@ -547,6 +757,45 @@ export function buildPanel(hook) {
       renderTab();
     });
   }
+
+  function startEdit(sigId, meta, anchorEl) {
+    editingSignalId = sigId;
+    let initial;
+    try { initial = JSON.stringify(meta.value); } catch { initial = String(meta.value); }
+    valEditor.value = initial;
+    const r = anchorEl.getBoundingClientRect();
+    valEditor.style.left = `${r.left}px`;
+    valEditor.style.top = `${r.top}px`;
+    valEditor.style.width = `${Math.max(r.width + 2, 80)}px`;
+    valEditor.classList.remove('hidden');
+    requestAnimationFrame(() => { valEditor.focus(); valEditor.select(); });
+  }
+
+  function commitEdit() {
+    if (editingSignalId === null) { return; }
+    const sigId = editingSignalId;
+    editingSignalId = null;
+    valEditor.classList.add('hidden');
+    const meta = hook ? hook.signals.get(sigId) : null;
+    if (meta && meta.setter) {
+      try { meta.setter(JSON.parse(valEditor.value)); } catch { /* invalid JSON, discard */ }
+    }
+    scheduleRender();
+  }
+
+  function cancelEdit() {
+    editingSignalId = null;
+    valEditor.classList.add('hidden');
+    scheduleRender();
+  }
+
+  valEditor.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { commitEdit(); }
+    if (e.key === 'Escape') { cancelEdit(); }
+    e.stopPropagation();
+  });
+
+  valEditor.addEventListener('blur', () => { commitEdit(); });
 
   toggle.addEventListener('click', () => {
     panel.classList.toggle('hidden');
@@ -566,7 +815,28 @@ export function buildPanel(hook) {
     });
   });
 
+  filterInput.addEventListener('input', () => {
+    filterText = filterInput.value;
+    renderTab();
+  });
+
   content.addEventListener('click', e => {
+    const valSpan = e.target.closest('.val[data-editable]');
+    if (valSpan) {
+      const row = valSpan.closest('tr[data-sig]');
+      if (!row) { return; }
+      const sigId = Number(row.dataset.sig);
+      const meta = hook ? hook.signals.get(sigId) : null;
+      if (!meta || !meta.setter || meta.isComputed) { return; }
+      startEdit(sigId, meta, valSpan);
+      return;
+    }
+    const clearBtn = e.target.closest('.log-clear-btn');
+    if (clearBtn) {
+      logEntries.length = 0;
+      renderTab();
+      return;
+    }
     const sigRow = e.target.closest('tr[data-sig]');
     if (sigRow) {
       const elements = getSignalElements(hook, Number(sigRow.dataset.sig));
@@ -598,6 +868,16 @@ export function buildPanel(hook) {
       if (el) { clearHoverHighlight([el]); }
       lastHoveredBindId = null;
     }
+  });
+
+  hook.on('update', event => {
+    if (logEntries.length >= LOG_MAX) { logEntries.shift(); }
+    const entry = { ts: Date.now() - logStartTime, ...event };
+    if (event.type === 'signal:set') {
+      const meta = hook.signals.get(event.id);
+      if (meta) { entry.value = meta.value; }
+    }
+    logEntries.push(entry);
   });
 
   hook.on('update', scheduleRender);

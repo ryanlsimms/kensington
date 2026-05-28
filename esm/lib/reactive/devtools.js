@@ -6,6 +6,8 @@ let nextBindingLabel = '';
 const signalIds = new WeakMap();
 // Signals created via computed() — used to restore isComputed: true when a sleeping computed wakes.
 const computedSigs = new WeakSet();
+// Tracks IDs of computed signals for event payloads where only the ID is available (GC callbacks).
+const computedIds = new Set();
 let idCounter = 0;
 // IDs of plain signals that have reached zero subscribers; removed from devtools on the next
 // microtask unless the signal re-subscribes first (e.g. during drag-reorder pause/resume).
@@ -17,7 +19,8 @@ const pendingZeroSubscribers = new Set();
 const signalGcRegistry = new FinalizationRegistry(id => {
   if (!hook) { return; }
   hook.signals.delete(id);
-  hook._emit('update', { type: 'signal:stop', id });
+  hook._emit('update', { type: 'signal:stop', id, isComputed: computedIds.has(id) });
+  computedIds.delete(id);
 });
 
 export function enableDevtools() {
@@ -61,13 +64,21 @@ export function enableDevtools() {
   }
 }
 
-export function notifySignalCreate(sig, value) {
+export function notifySignalCreate(sig, value, setter) {
   if (!enabled) { return; }
   const id = ++idCounter;
   signalIds.set(sig, id);
-  hook.signals.set(id, { id, value, subscriberCount: 0, setCount: 0, effectIds: new Set(), isComputed: false });
+  hook.signals.set(id, {
+    id,
+    value,
+    subscriberCount: 0,
+    setCount: 0,
+    effectIds: new Set(),
+    isComputed: false,
+    setter: setter ?? null,
+  });
   signalGcRegistry.register(sig, id);
-  hook._emit('update', { type: 'signal:create', id });
+  hook._emit('update', { type: 'signal:create', id, isComputed: false });
 }
 
 export function notifySignalSet(sig, value, subscriberCount) {
@@ -79,7 +90,7 @@ export function notifySignalSet(sig, value, subscriberCount) {
   meta.value = value;
   meta.subscriberCount = subscriberCount;
   meta.setCount++;
-  hook._emit('update', { type: 'signal:set', id });
+  hook._emit('update', { type: 'signal:set', id, isComputed: computedIds.has(id) });
 }
 
 // Re-adds a sleeping computed to the signals map using its original ID so it reappears
@@ -90,10 +101,16 @@ export function notifySignalWake(sig, frozenValue) {
   const id = signalIds.get(sig);
   if (id === undefined) { return; }
   const meta = {
-    id, value: frozenValue, subscriberCount: 0, setCount: 0, effectIds: new Set(), isComputed: computedSigs.has(sig),
+    id,
+    value: frozenValue,
+    subscriberCount: 0,
+    setCount: 0,
+    effectIds: new Set(),
+    isComputed: computedSigs.has(sig),
+    setter: null,
   };
   hook.signals.set(id, meta);
-  hook._emit('update', { type: 'signal:wake', id });
+  hook._emit('update', { type: 'signal:wake', id, isComputed: true });
 }
 
 export function notifySignalMarkComputed(sig) {
@@ -101,8 +118,13 @@ export function notifySignalMarkComputed(sig) {
   computedSigs.add(sig);
   const id = signalIds.get(sig);
   if (id === undefined) { return; }
+  computedIds.add(id);
   const meta = hook.signals.get(id);
   if (meta !== undefined) { meta.isComputed = true; }
+}
+
+function getEffectMeta(id) {
+  return hook.effects.get(id) ?? hook.bindings.get(id);
 }
 
 export function notifySignalEffectSubscription(sig, effectId, subscriberCount) {
@@ -115,9 +137,11 @@ export function notifySignalEffectSubscription(sig, effectId, subscriberCount) {
   // must still keep the source signal alive in devtools.
   pendingZeroSubscribers.delete(id);
   meta.subscriberCount = subscriberCount;
-  // Only track real user-effect IDs. Computed update functions have no _devId (undefined)
-  // and must not pollute effectIds with undefined entries.
-  if (effectId) { meta.effectIds.add(effectId); }
+  if (effectId) {
+    meta.effectIds.add(effectId);
+    const effMeta = getEffectMeta(effectId);
+    if (effMeta !== undefined) { effMeta.depIds.add(id); }
+  }
 }
 
 export function notifySignalZeroSubscribers(sig) {
@@ -129,7 +153,7 @@ export function notifySignalZeroSubscribers(sig) {
   queueMicrotask(() => {
     if (!pendingZeroSubscribers.delete(id)) { return; }
     hook.signals.delete(id);
-    hook._emit('update', { type: 'signal:stop', id });
+    hook._emit('update', { type: 'signal:stop', id, isComputed: false });
   });
 }
 
@@ -140,7 +164,11 @@ export function notifySignalEffectUnsubscription(sig, effectId, subscriberCount)
   const meta = hook.signals.get(id);
   if (meta === undefined) { return; }
   meta.subscriberCount = subscriberCount;
-  if (effectId) { meta.effectIds.delete(effectId); }
+  if (effectId) {
+    meta.effectIds.delete(effectId);
+    const effMeta = getEffectMeta(effectId);
+    if (effMeta !== undefined) { effMeta.depIds.delete(id); }
+  }
 }
 
 export function notifySignalStop(sig) {
@@ -148,11 +176,8 @@ export function notifySignalStop(sig) {
   const id = signalIds.get(sig);
   if (id === undefined) { return; }
   hook.signals.delete(id);
-  hook._emit('update', { type: 'signal:stop', id });
-}
-
-function getEffectMeta(id) {
-  return hook.effects.get(id) ?? hook.bindings.get(id);
+  hook._emit('update', { type: 'signal:stop', id, isComputed: computedSigs.has(sig) });
+  computedIds.delete(id);
 }
 
 export function notifyEffectElement(effectId, element) {
@@ -175,7 +200,7 @@ export function notifyEffectCreate(fn) {
   nextBindingLabel = '';
   const id = ++idCounter;
   const src = fn ? fn.toString() : '';
-  const meta = { id, state: 'active', runCount: 0, elementRef: null, src, label };
+  const meta = { id, state: 'active', runCount: 0, elementRef: null, src, label, depIds: new Set() };
   if (isBinding) {
     hook.bindings.set(id, meta);
   } else {
