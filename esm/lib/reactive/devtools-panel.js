@@ -14,6 +14,14 @@ function fmt(v) {
   }
 }
 
+function fmtFull(v) {
+  try {
+    return JSON.stringify(v, null, 2);
+  } catch {
+    return '[unserializable]';
+  }
+}
+
 const CSS = `
   :host { all: initial; }
   * { box-sizing: border-box; font-family: ui-monospace, 'Cascadia Code', monospace; }
@@ -172,7 +180,7 @@ const CSS = `
   .log-eff-run { color: #89b4fa; }
   .log-eff { color: #4a6096; }
   .log-dom { color: #3d7a80; }
-  .log-val { color: #a6e3a1; }
+  .log-val { color: #a6e3a1; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .log-clear-btn {
     background: none; border: 1px solid rgba(255,255,255,.12); color: #6c7086;
     border-radius: 3px; padding: 1px 7px; font-family: inherit; font-size: 10px; cursor: pointer;
@@ -571,10 +579,15 @@ function renderLog(hook, entries, filterText = '') {
         }
       }
     }
-    const valCell = e.type === 'signal:set' ? `<span class="log-val">${fmt(e.value)}</span>` : '';
+    let evtAttr = '';
+    if (e.id !== undefined && hook && e.type.startsWith('effect:') && !hook.bindings.has(e.id)) {
+      const eff = hook.effects.get(e.id);
+      if (eff && eff.src) { evtAttr = ` data-src="${escapeSrc(eff.src)}"`; }
+    }
+    const valCell = e.type === 'signal:set' ? `<span class="log-val" data-src="${escapeSrc(fmtFull(e.value))}">${fmt(e.value)}</span>` : '';
     rows += `<tr${rowAttr}>
       <td class="log-ts">+${e.ts}ms</td>
-      <td class="log-evt ${typeClass}">${label}</td>
+      <td class="log-evt ${typeClass}"${evtAttr}>${label}</td>
       <td class="id"${idCellAttr}>${idStr}</td>
       <td class="val-cell">${valCell}</td>
     </tr>`;
