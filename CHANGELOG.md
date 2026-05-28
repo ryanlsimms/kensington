@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [2.0.0-signals.12] - 2026-05-28
 
 ### Added
 - `enableDevtools()` named export. Call it once before creating any signals to activate the devtools panel. Logs a warning if called in a server context (no `window`).
