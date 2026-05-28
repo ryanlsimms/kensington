@@ -1919,6 +1919,44 @@ test(`requestAnimationFrame loop bypasses the flush counter and runs indefinitel
   expect(result.x).toBeGreaterThan(0);
 });
 
+test('reconcile flattens nested arrays in signal content', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+    const items = signal([
+      { id: 1, label: 'a' },
+      { id: 2, label: 'b' },
+    ]);
+    const extra = signal([{ id: 3, label: 'c' }]);
+    const rows = computed(() => [
+      items.get().map(item => t.li({ dataKey: item.id }, item.label)),
+      extra.get().map(item => t.li({ dataKey: item.id }, item.label)),
+    ]);
+    document.body.append(t.ul({ id: 'flat-nested' }, rows).toElement());
+    await Promise.resolve();
+    const before = Array.from(document.querySelectorAll('#flat-nested li')).map(el => el.textContent);
+
+    extra.set([{ id: 3, label: 'C' }, { id: 4, label: 'd' }]);
+    await Promise.resolve();
+    const after = Array.from(document.querySelectorAll('#flat-nested li')).map(el => el.textContent);
+
+    return { before, after };
+  }, bundle);
+  expect(result.before).toEqual(['a', 'b', 'c']);
+  expect(result.after).toEqual(['a', 'b', 'C', 'd']);
+});
+
+test('reconcile filters true and empty string from signal content', async ({ page, bundle }) => {
+  // collectContent filters true and '' on the static path. The reconcile loop must match.
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const items = signal([true, '', 'hello', false, null, undefined, 'world']);
+    document.body.append(t.span({ id: 'filter-true-empty' }, items).toElement());
+    await Promise.resolve();
+    return document.querySelector('#filter-true-empty').textContent;
+  }, bundle);
+  expect(result).toBe('helloworld');
+});
+
 test('async queueMicrotask loop is halted by the flush counter and page stays responsive', async ({ page, bundle }) => {
   // Without the async flush counter, reading x via .get() subscribes the effect; the
   // unconditional queueMicrotask write re-triggers it on every microtask turn, creating

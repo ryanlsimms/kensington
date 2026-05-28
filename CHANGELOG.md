@@ -9,7 +9,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 - `enableDevtools()` named export. Call it once before creating any signals to activate the devtools panel. Logs a warning if called in a server context (no `window`).
 - `kensington/devtools` module export. Importing it calls `enableDevtools()` and mounts the panel overlay in one step. Use a dynamic import guarded by your bundler's dev flag so it tree-shakes out of production builds: `if (import.meta.env.DEV) { await import('kensington/devtools'); }`
-- New devtools panel script (`dist/kensington-devtools.js`). Drop it into any page that calls `enableDevtools()` to get a live overlay showing all signals, computed signals, effects, and DOM bindings.
 - Warning when `signal()` is called inside a `computed` or `effect` callback. A new signal created on every re-run breaks the reconciler snapshot fast-path and leaves orphaned sleeping signals. The warning is throttled and its stack trace is filtered to point to the caller's code.
 
 ### Changed
@@ -19,6 +18,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - SVG presentation attributes now match the properties defined as presentation attributes in the SVG spec. Previously all standard CSS properties were accepted as valid SVG attributes. The `style` attribute continues to accept any CSS property.
 
 ### Fixed
+- Reconcile now flattens nested arrays in signal content, matching the static rendering path. A signal returning `[groupA.map(fn), groupB.map(fn)]` renders all items flat without requiring `...spread` at the call site.
+- Reconcile now filters `true` and `''` from signal content, matching the static rendering path. Previously `true` rendered as the text `"true"` and `''` inserted a spurious empty text node.
 - Signal effects on child elements are now paused (not stopped permanently) when a parent with `persist: true` is removed from the DOM. Previously only the root element's effects were paused; effects on child elements were permanently stopped on removal.
 - Removing and immediately reinserting a node in the same mutation batch no longer stops its signal effects. Previously a `MutationObserver` callback that fired after the reinsert would permanently stop effects on a live element.
 

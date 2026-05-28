@@ -136,6 +136,16 @@ function syncNode(existing, fresh) {
   return existing;
 }
 
+function* flatItems(items) {
+  for (const item of items) {
+    if (Array.isArray(item)) {
+      yield* flatItems(item);
+    } else {
+      yield item;
+    }
+  }
+}
+
 export function reconcile(parent, startAnchor, endAnchor, newItems) {
   const oldNodes = new Map();
   let node = startAnchor.nextSibling;
@@ -148,8 +158,8 @@ export function reconcile(parent, startAnchor, endAnchor, newItems) {
   }
 
   let cursor = startAnchor.nextSibling;
-  for (const item of newItems) {
-    if (item === null || item === undefined || item === false) { continue; }
+  for (const item of flatItems(newItems)) {
+    if (item === null || item === undefined || item === false || item === true || item === '') { continue; }
     const key = itemKey(item);
     let targetNode;
     if (key !== null && oldNodes.has(key)) {
