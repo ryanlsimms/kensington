@@ -1,5 +1,6 @@
 import { githubLink } from '../../components/ui.js';
 import { reactivityCleanup } from './cleanup.js';
+import { reactivityDevtools } from './devtools.js';
 import { reactivityInTemplates } from './in-templates.js';
 import { reactivityIntro } from './intro.js';
 import { reactivityLifecycle } from './lifecycle.js';
@@ -48,6 +49,13 @@ export function reactivitySidebar(t) {
       ]),
       t.li(t.a({ href: '#hydration' }, 'SSR reactive data')),
       t.li(t.a({ href: '#known-tradeoffs' }, 'Known tradeoffs')),
+      t.li([
+        t.a({ href: '#devtools' }, 'Devtools'),
+        t.ul([
+          t.li(t.a({ href: '#devtools-setup' }, 'Setup')),
+          t.li(t.a({ href: '#devtools-panel' }, 'Panel')),
+        ]),
+      ]),
     ]),
     githubLink(t),
   ];
@@ -63,5 +71,6 @@ export function reactivityContent(t) {
     reactivityCleanup(t),
     reactivityLifecycle(t),
     reactivitySsr(t),
+    reactivityDevtools(t),
   ];
 }

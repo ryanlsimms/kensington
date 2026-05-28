@@ -1,5 +1,6 @@
 import { apiTable } from '../../components/table.js';
 import { code, ideMock, panels } from '../../components/ui.js';
+import { devtoolsMock } from '../../components/devtools-mock.js';
 
 export function basicsTooling(t) {
   return t.section({ id: 'tooling' }, [
@@ -140,35 +141,15 @@ export default [
       },
     ]),
 
-    t.h3({ id: 'devtools' }, 'DevTools panel'),
-    t.p('A floating browser panel for inspecting signals, effects, and DOM-tracked elements at runtime. Zero cost in production. The hook only activates when explicitly enabled.'),
-
-    t.h4('Enable'),
+    t.h3({ id: 'devtools-panel' }, 'DevTools panel'),
+    code(t, 'javascript', `import 'kensington/devtools';`),
+    devtoolsMock(t),
     t.p([
-      'Import ',
-      t.code("'kensington/devtools'"),
-      ' in your dev entry point. It calls ',
-      t.code('enableDevtools()'),
-      ' and mounts the panel overlay automatically. Guard it so it never runs in production:',
-    ]),
-    code(t, 'javascript', `if (import.meta.env.DEV) {
-  await import('kensington/devtools');
-}`),
-    t.p([
-      'Click the ',
+      'A floating overlay that tracks every signal, effect, and DOM binding live. Click the ',
       t.strong('K'),
-      ' badge in the bottom-right corner to open the panel.',
-    ]),
-
-    t.h4('Tabs'),
-    apiTable(t, ['Tab', 'What it shows'], [
-      [t.strong('Signals'), 'All plain (non-computed) signals. Columns: ID, current value, set count, DOM visibility indicator (● visible, ○ in DOM but hidden, — not in DOM), subscriber count. Hover the subscriber count for a tooltip listing each subscribed effect.'],
-      [t.strong('Computed'), 'All computed signals. Same columns as Signals. Computed entries disappear automatically when the last subscriber is removed (auto-dispose) and reappear when a new subscriber reads them.'],
-      [t.strong('Effects'), 'All active user effects. Columns: ID, state badge (active or paused), run count, function source (hover for the full text).'],
-      [t.strong('DOM'), ['All live signal-to-DOM bindings. Columns: ID, element descriptor, binding label (e.g. ', t.code('class'), ', ', t.code('prop:checked'), ', ', t.code('(content)'), '), state badge, run count.']],
-    ]),
-    t.p([
-      'Hovering a row in the Signals or Computed tab outlines the DOM elements that signal controls. Clicking a row scrolls that element into view. Hovering a row in the DOM tab outlines its bound element.',
+      ' badge in the bottom-right corner to open it. Guard the import so it does not run in production. See ',
+      t.a({ href: '?page=reactivity#devtools' }, 'Devtools'),
+      ' on the Reactive data page for setup options and a full tab reference.',
     ]),
 
     t.h3({ id: 'server-packages' }, 'Server packages'),

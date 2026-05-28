@@ -409,3 +409,134 @@ aside p:last-child { margin-bottom: 0; }
 .section-cta a:hover {
   text-decoration: underline;
 }
+
+/* ── Devtools mock ──────────────────────────────────────────── */
+
+.devtools-mock {
+  font-family: var(--mono), monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  background: #1e1e2e;
+  color: #cdd6f4;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, .08);
+  box-shadow: 4px 4px 0 var(--color-ide-shadow);
+  max-width: 360px;
+  margin: 1.5rem 0;
+  overflow: hidden;
+}
+
+.dtm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+  font-size: 11px;
+  font-weight: 600;
+  color: #89b4fa;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.dtm-close { color: #6c7086; font-size: 14px; }
+
+.dtm-tabs {
+  display: flex;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+}
+
+.dtm-tab {
+  flex: 1;
+  padding: 6px 0;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #6c7086;
+  font-size: 11px;
+  font-family: var(--mono), monospace;
+  cursor: default;
+}
+
+.dtm-tab.dtm-active {
+  color: #89b4fa;
+  border-bottom-color: #89b4fa;
+}
+
+.dtm-filter {
+  padding: 5px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+}
+
+.dtm-filter-input {
+  width: 100%;
+  padding: 3px 7px;
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 4px;
+  color: #45475a;
+  font-family: var(--mono), monospace;
+  font-size: 11px;
+}
+
+.dtm-filter-input::placeholder { color: #45475a; }
+
+.devtools-mock table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  margin-bottom: 0;
+  font-size: 12px;
+}
+
+.devtools-mock thead th {
+  text-align: left;
+  padding: 4px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #45475a;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  background: #1e1e2e;
+  border: none;
+}
+
+.devtools-mock tbody td {
+  padding: 3px 10px;
+  color: #cdd6f4;
+  border: none;
+  background: transparent;
+  vertical-align: middle;
+}
+
+.devtools-mock tbody tr:nth-child(even) td {
+  background: rgba(255, 255, 255, .03);
+}
+
+.dtm-id { color: #6c7086; }
+
+.dtm-val {
+  color: #a6e3a1;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dtm-num { color: #fab387; text-align: right; }
+.dtm-center { text-align: center; }
+.dtm-eye-visible { color: #a6e3a1; }
+.dtm-eye-hidden { color: #fab387; }
+
+.dtm-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 12px 6px;
+  font-size: 10px;
+  color: #6c7086;
+  border-top: 1px solid rgba(255, 255, 255, .08);
+}
+
+.dtm-totals { display: flex; gap: 10px; }
+

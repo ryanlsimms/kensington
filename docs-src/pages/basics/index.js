@@ -32,7 +32,7 @@ export function basicsSidebar(t) {
       t.li(t.a({ href: '#cli' }, 'HTML → Kensington')),
       t.li(t.a({ href: '#ide-plugins' }, 'IDE plugins')),
       t.li(t.a({ href: '#eslint-plugin' }, 'ESLint plugin')),
-      t.li(t.a({ href: '#devtools' }, 'DevTools panel')),
+      t.li(t.a({ href: '#devtools-panel' }, 'DevTools panel')),
       t.li(t.a({ href: '#server-packages' }, 'Server packages')),
       t.li(t.a({ href: '#ai-assistants' }, 'AI assistants')),
     ]),
