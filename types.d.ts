@@ -104,6 +104,11 @@ export class Signal<T> implements ReadonlySignal<T> {
 
 export type Reactive<T> = T | ReadonlySignal<T>;
 
+/** A style object where each CSS property may be a static value or a reactive signal. */
+type ReactiveStyleProperties = {
+  [K in keyof (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)]?: Reactive<string | number>
+};
+
 type ElementInterface<Tag extends string> =
   Tag extends keyof HTMLElementTagNameMap ? HTMLElementTagNameMap[Tag] :
   Tag extends keyof SVGElementTagNameMap ? SVGElementTagNameMap[Tag] :
@@ -156,7 +161,7 @@ export type GlobalAttributes = {
   role?: Reactive<string>;
   slot?: Reactive<string>;
   spellcheck?: Reactive<"true" | "false">;
-  style?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  style?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   tabindex?: Reactive<number | `${number}`>;
   title?: Reactive<string>;
   translate?: Reactive<"yes" | "no">;
@@ -452,7 +457,7 @@ type AnimateAttributes = {
   'repeatDur'?: Reactive<string>;
   'requiredExtensions'?: Reactive<string>;
   'restart'?: Reactive<"always" | "never" | "whenNotActive">;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'to'?: Reactive<string>;
@@ -551,7 +556,7 @@ type AnimateMotionAttributes = {
   'requiredExtensions'?: Reactive<string>;
   'restart'?: Reactive<"always" | "never" | "whenNotActive">;
   'rotate'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'to'?: Reactive<string>;
@@ -647,7 +652,7 @@ type AnimateTransformAttributes = {
   'repeatDur'?: Reactive<string>;
   'requiredExtensions'?: Reactive<string>;
   'restart'?: Reactive<"always" | "never" | "whenNotActive">;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'to'?: Reactive<string>;
@@ -669,7 +674,7 @@ type AnnotationAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'annotation'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -686,7 +691,7 @@ type AnnotationXmlAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'annotation-xml'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -858,7 +863,7 @@ type CircleAttributes = {
   'r'?: Reactive<number | string>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -873,7 +878,7 @@ type ClipPathAttributes = {
   'id'?: Reactive<string>;
   'requiredExtensions'?: Reactive<string>;
   'requiredFeatures'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'transform'?: Reactive<string>;
   'xml:base'?: Reactive<string>;
@@ -968,7 +973,7 @@ type DefsAttributes = {
   'onvolumechange'?: Reactive<string | ((event: Event) => void)>;
   'onwaiting'?: Reactive<string | ((event: Event) => void)>;
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
   prop?: PropFor<'defs'> | null; persist?: boolean;
@@ -1045,7 +1050,7 @@ type DescAttributes = {
   'onvolumechange'?: Reactive<string | ((event: Event) => void)>;
   'onwaiting'?: Reactive<string | ((event: Event) => void)>;
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
   prop?: PropFor<'desc'> | null; persist?: boolean;
@@ -1142,7 +1147,7 @@ type EllipseAttributes = {
   'role'?: Reactive<string>;
   'rx'?: Reactive<number | string>;
   'ry'?: Reactive<number | string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1162,7 +1167,7 @@ type EmbedAttributes = {
 type FeBlendAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1172,7 +1177,7 @@ type FeBlendAttributes = {
 type FeColorMatrixAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1182,7 +1187,7 @@ type FeColorMatrixAttributes = {
 type FeComponentTransferAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1192,7 +1197,7 @@ type FeComponentTransferAttributes = {
 type FeCompositeAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1202,7 +1207,7 @@ type FeCompositeAttributes = {
 type FeConvolveMatrixAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1212,7 +1217,7 @@ type FeConvolveMatrixAttributes = {
 type FeDiffuseLightingAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1222,7 +1227,7 @@ type FeDiffuseLightingAttributes = {
 type FeDisplacementMapAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1240,7 +1245,7 @@ type FeDistantLightAttributes = {
 type FeDropShadowAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1250,7 +1255,7 @@ type FeDropShadowAttributes = {
 type FeFloodAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1292,7 +1297,7 @@ type FeFuncRAttributes = {
 type FeGaussianBlurAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1303,7 +1308,7 @@ type FeImageAttributes = {
   'class'?: Reactive<string | string[]>;
   'externalResourcesRequired'?: Reactive<"true" | "false">;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1313,7 +1318,7 @@ type FeImageAttributes = {
 type FeMergeAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1331,7 +1336,7 @@ type FeMergeNodeAttributes = {
 type FeMorphologyAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1341,7 +1346,7 @@ type FeMorphologyAttributes = {
 type FeOffsetAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1359,7 +1364,7 @@ type FePointLightAttributes = {
 type FeSpecularLightingAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1377,7 +1382,7 @@ type FeSpotLightAttributes = {
 type FeTileAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1387,7 +1392,7 @@ type FeTileAttributes = {
 type FeTurbulenceAttributes = {
   'class'?: Reactive<string | string[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1409,7 +1414,7 @@ type FilterAttributes = {
   'class'?: Reactive<string | string[]>;
   'externalResourcesRequired'?: Reactive<"true" | "false">;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1486,7 +1491,7 @@ type ForeignObjectAttributes = {
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'width'?: Reactive<number | string>;
@@ -1577,7 +1582,7 @@ type GAttributes = {
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1693,7 +1698,7 @@ type ImageAttributes = {
   'preserveAspectRatio'?: Reactive<string>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'width'?: Reactive<number | string>;
@@ -1849,7 +1854,7 @@ type LineAttributes = {
   'pathLength'?: Reactive<number | `${number}`>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'x1'?: Reactive<number | string>;
@@ -1929,7 +1934,7 @@ type LinearGradientAttributes = {
   'onwaiting'?: Reactive<string | ((event: Event) => void)>;
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
   'spreadMethod'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'x1'?: Reactive<number | string>;
   'x2'?: Reactive<number | string>;
@@ -2042,7 +2047,7 @@ type MarkerAttributes = {
   'preserveAspectRatio'?: Reactive<string>;
   'refX'?: Reactive<string>;
   'refY'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'viewBox'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -2054,7 +2059,7 @@ type MaskAttributes = {
   'id'?: Reactive<string>;
   'requiredExtensions'?: Reactive<string>;
   'requiredFeatures'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
@@ -2075,7 +2080,7 @@ type MathAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'xmlns'?: Reactive<string>;
   prop?: PropFor<'math'> | null; persist?: boolean;
@@ -2094,7 +2099,7 @@ type MencloseAttributes = {
   'nonce'?: Reactive<string>;
   'notation'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'menclose'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2113,7 +2118,7 @@ type MerrorAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'merror'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2193,7 +2198,7 @@ type MetadataAttributes = {
   'onvolumechange'?: Reactive<string | ((event: Event) => void)>;
   'onwaiting'?: Reactive<string | ((event: Event) => void)>;
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
   prop?: PropFor<'metadata'> | null; persist?: boolean;
@@ -2222,7 +2227,7 @@ type MfracAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'mfrac'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2239,7 +2244,7 @@ type MiAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'mi'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2256,7 +2261,7 @@ type MmultiscriptsAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'mmultiscripts'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2273,7 +2278,7 @@ type MnAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'mn'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2299,7 +2304,7 @@ type MoAttributes = {
   'scriptlevel'?: Reactive<string>;
   'separator'?: Reactive<string>;
   'stretchy'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'symmetric'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'mo'> | null; persist?: boolean;
@@ -2318,7 +2323,7 @@ type MoverAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'mover'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2338,7 +2343,7 @@ type MpaddedAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'voffset'?: Reactive<string>;
   'width'?: Reactive<number | string>;
@@ -2411,7 +2416,7 @@ type MpathAttributes = {
   'onvolumechange'?: Reactive<string | ((event: Event) => void)>;
   'onwaiting'?: Reactive<string | ((event: Event) => void)>;
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
   prop?: PropFor<'mpath'> | null; persist?: boolean;
@@ -2429,7 +2434,7 @@ type MphantomAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'mphantom'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2446,7 +2451,7 @@ type MprescriptsAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'mprescripts'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2463,7 +2468,7 @@ type MrootAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'mroot'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2480,7 +2485,7 @@ type MrowAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'mrow'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2497,7 +2502,7 @@ type MsAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'ms'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2515,7 +2520,7 @@ type MspaceAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'width'?: Reactive<number | string>;
   prop?: PropFor<'mspace'> | null; persist?: boolean;
@@ -2533,7 +2538,7 @@ type MsqrtAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'msqrt'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2550,7 +2555,7 @@ type MstyleAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'mstyle'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2567,7 +2572,7 @@ type MsubAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'msub'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2584,7 +2589,7 @@ type MsubsupAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'msubsup'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2601,7 +2606,7 @@ type MsupAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'msup'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2627,7 +2632,7 @@ type MtableAttributes = {
   'rowlines'?: Reactive<string>;
   'rowspacing'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'width'?: Reactive<number | string>;
   prop?: PropFor<'mtable'> | null; persist?: boolean;
@@ -2649,7 +2654,7 @@ type MtdAttributes = {
   'rowalign'?: Reactive<string>;
   'rowspan'?: Reactive<number | `${number}`>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'mtd'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2666,7 +2671,7 @@ type MtextAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'mtext'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2685,7 +2690,7 @@ type MtrAttributes = {
   'nonce'?: Reactive<string>;
   'rowalign'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'mtr'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2703,7 +2708,7 @@ type MunderAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'munder'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2722,7 +2727,7 @@ type MunderoverAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'munderover'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2840,7 +2845,7 @@ type PathAttributes = {
   'pathLength'?: Reactive<number | `${number}`>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -2918,7 +2923,7 @@ type PatternAttributes = {
   'patternTransform'?: Reactive<string>;
   'patternUnits'?: Reactive<string>;
   'preserveAspectRatio'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'viewBox'?: Reactive<string>;
   'width'?: Reactive<number | string>;
@@ -3001,7 +3006,7 @@ type PolygonAttributes = {
   'points'?: Reactive<string>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -3077,7 +3082,7 @@ type PolylineAttributes = {
   'points'?: Reactive<string>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -3172,7 +3177,7 @@ type RadialGradientAttributes = {
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
   'r'?: Reactive<number | string>;
   'spreadMethod'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'xlink:href'?: Reactive<string>;
   'xlink:title'?: Reactive<string>;
@@ -3251,7 +3256,7 @@ type RectAttributes = {
   'role'?: Reactive<string>;
   'rx'?: Reactive<number | string>;
   'ry'?: Reactive<number | string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'width'?: Reactive<number | string>;
@@ -3314,7 +3319,7 @@ type SemanticsAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'semantics'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -3399,7 +3404,7 @@ type SetAttributes = {
   'repeatDur'?: Reactive<string>;
   'requiredExtensions'?: Reactive<string>;
   'restart'?: Reactive<"always" | "never" | "whenNotActive">;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'to'?: Reactive<string>;
@@ -3493,7 +3498,7 @@ type StopAttributes = {
   'onvolumechange'?: Reactive<string | ((event: Event) => void)>;
   'onwaiting'?: Reactive<string | ((event: Event) => void)>;
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
   prop?: PropFor<'stop'> | null; persist?: boolean;
@@ -3584,7 +3589,7 @@ type SvgAttributes = {
   'preserveAspectRatio'?: Reactive<string>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'transform'?: Reactive<string>;
@@ -3664,7 +3669,7 @@ type SwitchAttributes = {
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -3741,7 +3746,7 @@ type SymbolAttributes = {
   'refX'?: Reactive<string>;
   'refY'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'viewBox'?: Reactive<string>;
   'width'?: Reactive<number | string>;
@@ -3843,7 +3848,7 @@ type TextAttributes = {
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
   'rotate'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'textLength'?: Reactive<string>;
@@ -3944,7 +3949,7 @@ type TextPathAttributes = {
   'side'?: Reactive<string>;
   'spacing'?: Reactive<string>;
   'startOffset'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'textLength'?: Reactive<string>;
@@ -4056,7 +4061,7 @@ type TspanAttributes = {
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
   'rotate'?: Reactive<number | string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'textLength'?: Reactive<string>;
@@ -4139,7 +4144,7 @@ type UseAttributes = {
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'width'?: Reactive<number | string>;
@@ -4236,7 +4241,7 @@ type ViewAttributes = {
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
   'preserveAspectRatio'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'viewBox'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -4843,8 +4848,5 @@ export function renderForHydration<S extends Record<string, unknown>>(
   state: S,
   name?: string
 ): LiteralTag;
-
-/** Activates `window.__KENSINGTON_DEVTOOLS__` for use with the devtools panel. Call once before creating signals. */
-export function enableDevtools(): void;
 
 

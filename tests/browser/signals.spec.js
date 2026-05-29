@@ -456,17 +456,18 @@ test('snapshot fast path: declines when an attribute value changes', async ({ pa
   expect(result).toEqual(['done', 'done']);
 });
 
-test('snapshot fast path: declines when an inline event handler closure changes', async ({ page, bundle }) => {
+test('snapshot fast path: snapshot falls through when inline handler changes', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
     const { t, signal, computed } = await import(src);
     const items = signal([{ id: 1 }]);
     const rows = computed(() =>
       items.get().map(item =>
-        // Fresh arrow per render. Forces the fast path to decline.
+        // Fresh arrow per render. Functions compare by reference, so the snapshot
+        // does not match and itemToNode is called (createElement fires).
         t.li({ dataKey: item.id, onclick: () => {} }, 'item'),
       ),
     );
-    document.body.append(t.ul({ id: 'fastpath-decline-fn' }, rows).toElement());
+    document.body.append(t.ul({ id: 'fastpath-fn' }, rows).toElement());
 
     const orig = Document.prototype.createElement;
     let count = 0;
@@ -482,8 +483,58 @@ test('snapshot fast path: declines when an inline event handler closure changes'
     }
     return count;
   }, bundle);
-  // At least one createElement call means the fast path declined and itemToNode ran.
+  // createElement was called, confirming the snapshot fast path was skipped.
   expect(result).toBeGreaterThan(0);
+});
+
+test('snapshot fast path: handler is replaced when re-rendered with fresh function', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+    const log = [];
+    let label = 'original';
+    const items = signal([{ id: 1 }]);
+    const rows = computed(() =>
+      items.get().map(item => {
+        const captured = label;
+        return t.li({ dataKey: item.id, onclick: () => log.push(captured) }, 'item');
+      }),
+    );
+    document.body.append(t.ul({ id: 'fastpath-fn-handler' }, rows).toElement());
+
+    // Re-render: a fresh function closes over 'replacement'. Functions compare by
+    // reference so the snapshot falls through to syncNode, which calls transferListeners
+    // and installs the new handler on the existing DOM node.
+    label = 'replacement';
+    items.set(prev => [...prev]);
+    await Promise.resolve();
+
+    document.querySelector('#fastpath-fn-handler li').click();
+    return log;
+  }, bundle);
+  expect(result).toEqual(['replacement']);
+});
+
+test('snapshot fast path: DOM nodes are reused across a re-render with fresh functions', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+    const items = signal([{ id: 1 }, { id: 2 }]);
+    const rows = computed(() =>
+      items.get().map(item =>
+        t.li({ dataKey: item.id, onclick: () => {} }, String(item.id)),
+      ),
+    );
+    document.body.append(t.ul({ id: 'fastpath-fn-identity' }, rows).toElement());
+
+    const before = Array.from(document.querySelectorAll('#fastpath-fn-identity li'));
+    before.forEach(el => { el._sentinel = true; });
+
+    items.set(prev => [...prev]);
+    await Promise.resolve();
+
+    const after = Array.from(document.querySelectorAll('#fastpath-fn-identity li'));
+    return after.map(el => el._sentinel === true);
+  }, bundle);
+  expect(result).toEqual([true, true]);
 });
 
 test('snapshot fast path: a stable Signal as an attribute hits the fast path', async ({ page, bundle }) => {

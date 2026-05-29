@@ -5,6 +5,7 @@
 // only. See content-tag.js for the other half of the cycle.
 import ContentTag from '../../tag-classes/content-tag.js';
 import { isContentTracked, isTracked, stopRemoved, stopTracked } from './dom-tracker.js';
+import { transferListeners } from './element-listeners.js';
 
 // Snapshot of a tag's (attributes, content) after the render that produced the keyed DOM
 // node. The next reconcile pass compares the new tag against this snapshot by value, not by
@@ -21,7 +22,10 @@ function itemKey(item) {
 
 // Structural equality. Plain objects and arrays compare by their keys/elements. ContentTag
 // instances (including VoidTag and HtmlWithDoctypeTag, which extend it) compare by
-// tagName + attributes + content. Functions and class instances with private state (Signal,
+// tagName + attributes + content. Functions compare by reference — two arrow functions
+// closing over the same variables are still distinct references, so a re-render with a new
+// inline handler correctly falls through to syncNode, which calls transferListeners to swap
+// the old handler for the new one. Other class instances with private state (Signal,
 // LiteralTag, CommentTag, DOM nodes, Maps, Sets, ...) fall back to reference equality.
 // Recursion is bounded by tree size and short-circuits on the first mismatch.
 function valueEqual(a, b) {
@@ -132,6 +136,7 @@ function syncNode(existing, fresh) {
       }
     }
   }
+  transferListeners(existing, fresh);
   stopTracked(fresh);
   return existing;
 }
