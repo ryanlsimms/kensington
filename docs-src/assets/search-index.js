@@ -39,6 +39,7 @@ export const searchIndex = [
   { label: 'Per-row signals', page: 'reactivity', id: 'per-row-signals', keywords: ['per row', 'fine grained', 'performance', 'granular', 'list optimization'] },
   { label: 'Signals in content', page: 'reactivity', id: 'signals-content', keywords: ['content', 'text', 'live text', 'dynamic content', 'text node'] },
   { label: 'Signals in attributes', page: 'reactivity', id: 'signals-attributes', keywords: ['attribute', 'reactive attribute', 'live attribute', 'class signal', 'style signal'] },
+  { label: 'Reactive style properties', page: 'reactivity', id: 'signals-style-props', keywords: ['style', 'reactive style', 'per-property style', 'style signal', 'css signal', 'inline style'] },
   { label: 'Signals in DOM props', page: 'reactivity', id: 'signals-dom-props', keywords: ['dom prop', 'property', 'prop', 'value', 'checked', 'selected'] },
   { label: 'Keyed lists', page: 'reactivity', id: 'signals-keyed-lists', keywords: ['keyed', 'list', 'array signal', 'reconcile', 'data-key', 'reorder', 'diff'] },
   { label: 'Signals in literals', page: 'reactivity', id: 'signals-literal', keywords: ['literal', 'raw html', 'signal literal', 'dynamic html'] },

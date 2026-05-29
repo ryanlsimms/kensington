@@ -83,7 +83,7 @@ export function attributeValueIsValid(tag, attr, value) {
       } catch {
         continue;
       }
-      if (!isValidStyleValue(v)) {
+      if (!(v instanceof Signal) && !isValidStyleValue(v)) {
         return false;
       }
     }
@@ -108,7 +108,7 @@ export function validate(tag) {
   if (invalidAttributeValues.length) {
     const attrString = invalidAttributeValues.map(([attr, value]) => {
       if (attr === 'style' && value !== null && typeof value === 'object' && !Array.isArray(value)) { // !Array.isArray. typeof [] === 'object'
-        return `style="${styleObjectToCss(value, (_, v) => !isValidStyleValue(v))}"`;
+        return `style="${styleObjectToCss(value, (_, v) => !(v instanceof Signal) && !isValidStyleValue(v))}"`;
       }
       if (Array.isArray(value)) {
         // JSON.stringify(Symbol) returns undefined, which JSON array serialization renders as null. String() gives 'Symbol(x)'

@@ -3,6 +3,16 @@ import he from '../util/he.js';
 import { styleObjectToCss } from '../util/style-utils.js';
 import { getAttrName } from '../util/text-utils.js';
 
+function resolveStyleSignals(obj) {
+  const resolved = {};
+  for (const k of Object.keys(obj)) {
+    let v;
+    try { v = obj[k]; } catch { continue; }
+    resolved[k] = v instanceof Signal ? v.get() : v;
+  }
+  return resolved;
+}
+
 export function attributesArrayFromObject(obj, options = {}) {
   const { attrsSet = new Map(), encode, prefix = '', seen = new WeakSet() } = options; // seen default is a fresh WeakSet per top-level call. Recursive calls pass the existing one to share cycle state
   const result = [];
@@ -30,9 +40,24 @@ export function attributesArrayFromObject(obj, options = {}) {
       continue;
     }
     if (attr === 'style' && val !== null && typeof val === 'object' && !Array.isArray(val)) { // !Array.isArray: typeof [] === 'object'
-      const css = styleObjectToCss(val);
-      if (css) {
-        result.push([attrName, css]);
+      let hasSignal = false;
+      for (const k of Object.keys(val)) {
+        let v;
+        try { v = val[k]; } catch { continue; }
+        if (v instanceof Signal) { hasSignal = true; break; }
+      }
+      if (hasSignal) {
+        // Resolve signal values for the initial render / toString. Per-property
+        // effects in toElement() handle subsequent updates.
+        const css = styleObjectToCss(resolveStyleSignals(val));
+        if (css) {
+          result.push([attrName, css]);
+        }
+      } else {
+        const css = styleObjectToCss(val);
+        if (css) {
+          result.push([attrName, css]);
+        }
       }
       continue;
     }

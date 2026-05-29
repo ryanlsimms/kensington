@@ -37,6 +37,56 @@ isLoading.set(false);  // restores it`),
       ]),
     ]),
 
+    t.section({ id: 'signals-style-props' }, [
+      t.h2('Reactive style properties'),
+      t.p([
+        'Individual properties inside a ',
+        t.code('style'),
+        ' object accept signals. Only the changed property is written to the DOM on each update — all other properties are left untouched.',
+      ]),
+      code(t, 'javascript', `const color = signal('red');
+const opacity = signal(1);
+
+t.div({
+  style: {
+    color,             // reactive — only color is updated when the signal changes
+    opacity,           // reactive — only opacity is updated when the signal changes
+    fontSize: '1rem',  // static — set once at render time
+  },
+}).toElement();
+
+color.set('blue');   // writes el.style.setProperty('color', 'blue')
+opacity.set(0.5);    // writes el.style.setProperty('opacity', '0.5')`),
+      t.p([
+        'A signal that resolves to ',
+        t.code('null'),
+        ', ',
+        t.code('undefined'),
+        ', ',
+        t.code('false'),
+        ', or ',
+        t.code("''"),
+        ' calls ',
+        t.code('removeProperty'),
+        ' on that property. In ',
+        t.code('.toString()'),
+        ', all signal values are resolved to their current value inline. The ',
+        t.code('style'),
+        ' attribute also continues to accept a signal returning a whole object or string for cases where the entire style needs to change atomically.',
+      ]),
+      t.aside([
+        t.p([
+          'Devtools shows each reactive property as a separate binding in the DOM tab, labelled ',
+          t.code('style:color'),
+          ', ',
+          t.code('style:opacity'),
+          ', etc., matching the ',
+          t.code('prop:propName'),
+          ' convention.',
+        ]),
+      ]),
+    ]),
+
     t.section({ id: 'signals-dom-props' }, [
       t.h2('DOM properties'),
       t.p([

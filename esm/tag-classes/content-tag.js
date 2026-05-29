@@ -1,4 +1,5 @@
 import { markContentTracked } from '../lib/reactive/dom-tracker.js';
+import { recordListeners } from '../lib/reactive/element-listeners.js';
 import { createLifecycle } from '../lib/reactive/lifecycle.js';
 // Forms a known cycle with reconcile.js (reconcile imports ContentTag for its structural
 // equality check). Benign because `reconcile` here is only invoked inside the signal-content
@@ -21,7 +22,7 @@ import {
   validateAttributeByType,
 } from '../lib/render/validate.js';
 import showInvalid from '../lib/util/show-invalid.js';
-import { preserveSpaces } from '../lib/util/text-utils.js';
+import { camelToKebab, preserveSpaces } from '../lib/util/text-utils.js';
 import CommentTag from './comment-tag.js';
 import LiteralTag from './literal-tag.js';
 
@@ -80,6 +81,18 @@ export default class ContentTag {
     this.tagName = options.tagName;
     this.attributes = options.attributes;
     this.prop = options.attributes?.prop ?? null;
+    const rawStyle = options.attributes?.style ?? null;
+    let hasSignalStyleProp = false;
+    const isPlainStyleObj = rawStyle !== null && typeof rawStyle === 'object'
+      && !(rawStyle instanceof Signal) && !Array.isArray(rawStyle);
+    if (isPlainStyleObj) {
+      for (const k of Object.keys(rawStyle)) {
+        let v;
+        try { v = rawStyle[k]; } catch { continue; }
+        if (v instanceof Signal) { hasSignalStyleProp = true; break; }
+      }
+    }
+    this.styleProps = hasSignalStyleProp ? rawStyle : null;
     this.persist = options.attributes?.persist ?? false;
     this.additionalGlobalAttributes = options.additionalGlobalAttributes ?? {};
     this.allowedAttributeMap = options.allowedAttributeMap ?? new Map(); // empty Map fallback. All non-namespace attrs fail has(), so custom tags with no spec reject everything except namespaces
@@ -157,10 +170,13 @@ export default class ContentTag {
 
     const lifecycle = createLifecycle({ element, persist });
     let hasSignalContent = false;
+    let listeners = null;
 
     for (const [attrName, attrValue] of this.attributeArray()) {
       if (/^on[a-z]/.test(attrName) && typeof attrValue === 'function') {
         element.addEventListener(attrName.slice(2), attrValue);
+        if (listeners === null) { listeners = new Map(); }
+        listeners.set(attrName.slice(2), attrValue);
       } else if (attrValue instanceof Signal) {
         lifecycle.signalEffect(attrValue, (el, val) => {
           if (val === false || val === null || val === undefined) {
@@ -181,6 +197,8 @@ export default class ContentTag {
       for (const [eventName, handler] of Object.entries(events)) {
         if (typeof handler === 'function') {
           element.addEventListener(eventName, handler);
+          if (listeners === null) { listeners = new Map(); }
+          listeners.set(eventName, handler);
         }
       }
     }
@@ -196,6 +214,22 @@ export default class ContentTag {
         } else {
           element[propName] = propValue;
         }
+      }
+    }
+
+    if (this.styleProps) {
+      for (const [propName, propValue] of Object.entries(this.styleProps)) {
+        if (!(propValue instanceof Signal)) {
+          continue; // static values are already set via the initial style attribute
+        }
+        const cssProp = camelToKebab(propName);
+        lifecycle.signalEffect(propValue, (el, val) => {
+          if (val === null || val === undefined || val === false || val === '') {
+            el.style.removeProperty(cssProp);
+          } else {
+            el.style.setProperty(cssProp, String(val));
+          }
+        }, `style:${propName}`);
       }
     }
 
@@ -226,6 +260,8 @@ export default class ContentTag {
       onCleared: () => { if (this.#domElement === element) { this.#domElement = null; } },
       onReconnect: () => { this.#domElement = element; },
     });
+
+    if (listeners !== null) { recordListeners(element, listeners); }
 
     if (hasSignalContent) {
       markContentTracked(element);

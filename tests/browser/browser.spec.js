@@ -83,6 +83,42 @@ test('style as object sets inline styles via setAttribute', async ({ page, bundl
   await expect(page.locator('#styled')).toHaveCSS('z-index', '2');
 });
 
+test('reactive style property updates only the changed property on signal change', async ({ page, bundle }) => {
+  await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const color = signal('red');
+    document.body.append(t.div({ id: 'rs', style: { color, opacity: '0.5' } }).toElement());
+    await Promise.resolve();
+    color.set('blue');
+    await Promise.resolve();
+  }, bundle);
+  await expect(page.locator('#rs')).toHaveCSS('color', 'rgb(0, 0, 255)');
+  await expect(page.locator('#rs')).toHaveCSS('opacity', '0.5');
+});
+
+test('reactive style property removes the property when signal is set to null', async ({ page, bundle }) => {
+  await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const display = signal('none');
+    document.body.append(t.div({ id: 'rd', style: { display } }).toElement());
+    await Promise.resolve();
+    display.set(null);
+    await Promise.resolve();
+  }, bundle);
+  const display = await page.locator('#rd').evaluate(el => el.style.display);
+  expect(display).toBe('');
+});
+
+test('toString with reactive style properties resolves signal values inline', async ({ page, bundle }) => {
+  const html = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const color = signal('green');
+    return t.div({ style: { color, fontSize: '14px' } }).toString();
+  }, bundle);
+  expect(html).toContain('color: green');
+  expect(html).toContain('font-size: 14px');
+});
+
 // ─── content ───────────────────────────────────────────────────────────────
 
 test('sets text content as a text node', async ({ page, bundle }) => {

@@ -39,7 +39,8 @@ const EVENT_TYPES = {
 
 function attrType(name, type) {
   if (name === 'style') {
-    return 'Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>';
+    return 'Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>'
+      + ' | ReactiveStyleProperties';
   }
   if (name === 'class') { return 'Reactive<string | string[]>'; }
   if (name === 'hidden') { return 'Reactive<boolean | "until-found" | "hidden">'; }
@@ -160,6 +161,11 @@ export class Signal<T> implements ReadonlySignal<T> {
 }
 
 export type Reactive<T> = T | ReadonlySignal<T>;
+
+/** A style object where each CSS property may be a static value or a reactive signal. */
+type ReactiveStyleProperties = {
+  [K in keyof (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)]?: Reactive<string | number>
+};
 
 type ElementInterface<Tag extends string> =
   Tag extends keyof HTMLElementTagNameMap ? HTMLElementTagNameMap[Tag] :
@@ -417,9 +423,6 @@ export function renderForHydration<S extends Record<string, unknown>>(
   state: S,
   name?: string
 ): LiteralTag;
-
-/** Activates \`window.__KENSINGTON_DEVTOOLS__\` for use with the devtools panel. Call once before creating signals. */
-export function enableDevtools(): void;
 
 
 `;
