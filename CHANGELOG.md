@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [2.0.0-signals.13] - 2026-05-29
 
 ### Fixed
 - Reconciler keyed fast-path now recognises `data-key` passed as a nested object (`{ data: { key: id } }`). Previously only the flat forms `{ dataKey: id }` and `{ 'data-key': id }` were matched, so all keyed items were treated as unkeyed on every reconcile — causing full re-renders and unnecessary effect churn.
