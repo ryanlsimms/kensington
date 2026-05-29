@@ -2,15 +2,15 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import express from 'express';
-import { renderForHydration } from 'kensington';
 
-import { dashboard } from './components/dashboard.js';
-import { taskSpotlight } from './components/task-spotlight.js';
+import t, { renderForHydration } from '#kensington';
+
+import { dashboard } from '../shared/components/dashboard.js';
+import { taskSpotlight } from '../shared/components/task-spotlight.js';
 import { layout } from './layout.js';
-import t from './template-engine.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const projectRoot = path.resolve(__dirname, '../..');
+const projectRoot = path.resolve(__dirname, '../../..');
 
 const tasks = [
   { id: 't1', text: 'Read the Kensington docs', done: true },
@@ -23,7 +23,8 @@ const app = express();
 
 app.use('/dist', express.static(path.join(projectRoot, 'dist')));
 app.use('/esm', express.static(path.join(projectRoot, 'esm')));
-app.use(express.static(__dirname));
+app.use('/shared', express.static(path.join(__dirname, '../shared')));
+app.use(express.static(path.join(__dirname, '../client')));
 
 app.get('/', (req, res) => {
   const spotlightSection = t.div({ class: 'spotlight-section' }, [

@@ -1,4 +1,5 @@
 import { githubLink } from '../../components/ui.js';
+import { reactivityBestPractices } from './best-practices.js';
 import { reactivityCleanup } from './cleanup.js';
 import { reactivityDevtools } from './devtools.js';
 import { reactivityInTemplates } from './in-templates.js';
@@ -50,6 +51,15 @@ export function reactivitySidebar(t) {
       t.li(t.a({ href: '#hydration' }, 'SSR reactive data')),
       t.li(t.a({ href: '#known-tradeoffs' }, 'Known tradeoffs')),
       t.li([
+        t.a({ href: '#best-practices' }, 'Best practices'),
+        t.ul([
+          t.li(t.a({ href: '#bp-use-signal' }, 'Use signals for reactive values')),
+          t.li(t.a({ href: '#bp-reactive-in-callback' }, 'Reactive values in callbacks')),
+          t.li(t.a({ href: '#bp-named-handler' }, 'Named event handlers')),
+          t.li(t.a({ href: '#bp-data-key' }, 'Keyed lists')),
+        ]),
+      ]),
+      t.li([
         t.a({ href: '#devtools' }, 'Devtools'),
         t.ul([
           t.li(t.a({ href: '#devtools-setup' }, 'Setup')),
@@ -71,6 +81,7 @@ export function reactivityContent(t) {
     reactivityCleanup(t),
     reactivityLifecycle(t),
     reactivitySsr(t),
+    reactivityBestPractices(t),
     reactivityDevtools(t),
   ];
 }

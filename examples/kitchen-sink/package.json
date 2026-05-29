@@ -1,7 +1,10 @@
 {
   "type": "module",
+  "imports": {
+    "#kensington": "./shared/template-engine.js"
+  },
   "scripts": {
-    "start": "node --watch server.js"
+    "start": "node --watch server/server.js"
   },
   "dependencies": {
     "express": "^4.19.0"

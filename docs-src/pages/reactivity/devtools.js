@@ -5,26 +5,14 @@ export function reactivityDevtools(t) {
   return t.section({ id: 'devtools' }, [
     t.h2('Devtools'),
     t.p([
-      'Kensington ships a devtools overlay for inspecting signals, computed signals, effects, and DOM bindings at runtime. It is a floating panel that can be toggled with a button in the bottom-right corner of the page.',
+      'Kensington ships a devtools overlay for inspecting signals, computed signals, effects, and DOM bindings at runtime. It is a floating panel that can be toggled with a button in the bottom-right corner of the page. A pop-out button (↗) in the panel header opens it in a separate window so it can sit alongside the page being developed. The popup reconnects automatically when the main page reloads.',
     ]),
 
     t.h3({ id: 'devtools-setup' }, 'Setup'),
     t.p([
-      'Call ',
-      t.code('enableDevtools()'),
-      ' before creating any signals. The panel mounts itself automatically the first time it is called.',
-    ]),
-    code(t, 'javascript', `import { enableDevtools, signal, t } from 'kensington';
-
-enableDevtools();
-
-const count = signal(0);`),
-    t.p([
-      'Or import ',
+      'Import ',
       t.code('kensington/devtools'),
-      ', which calls ',
-      t.code('enableDevtools()'),
-      ' and mounts the panel in one step. Wrap it in your bundler\'s dev-only guard so it tree-shakes out of production builds.',
+      ' in your dev entry point. It mounts the panel overlay in one step. Wrap it in your bundler\'s dev-only guard so it tree-shakes out of production builds.',
     ]),
     code(t, 'javascript', `// Vite
 if (import.meta.env.DEV) {
@@ -41,8 +29,9 @@ if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
   await import('kensington/devtools');
 }`),
     t.p([
-      t.code('enableDevtools()'),
-      ' is a no-op in non-browser environments, so it is safe to call unconditionally in isomorphic code. A warning is logged if it is called inside a Node.js context.',
+      'The import is safe in non-browser environments. It checks for ',
+      t.code('window'),
+      ' before mounting and does nothing on the server.',
     ]),
 
     t.h3({ id: 'devtools-panel' }, 'Panel'),
@@ -77,7 +66,7 @@ if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
       ]),
       t.li([
         t.strong('Log.'),
-        ' A timestamped feed of all signal, effect, and DOM binding events capped at 100 entries. Hover an event row to see the effect function source or the full signal value.',
+        ' A timestamped feed of all signal, effect, and DOM binding events capped at 100 entries. Hover an event row to see the effect function source or the full signal value. A Copy button copies the currently visible entries as tab-separated text, respecting the active filter.',
       ]),
     ]),
     t.p([

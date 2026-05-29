@@ -41,7 +41,7 @@ The first argument to any tag method is a plain object. It accepts HTML attribut
 - Nested objects flatten: `{ data: { id: '1' } }` → `data-id="1"`
 - Boolean: `{ checked: true }` → `checked`; `{ checked: false }` → attribute omitted
 - `class` accepts a string or array: `{ class: ['a', 'b'] }` → `class="a b"`
-- `style` accepts an object: `{ style: { backgroundColor: 'red' } }` → `style="background-color: red"`. Keys can be camelCase or kebab-case. Values of `null`, `undefined`, `false`, or `''` are silently omitted.
+- `style` accepts an object: `{ style: { backgroundColor: 'red' } }` → `style="background-color: red"`. Keys can be camelCase or kebab-case. Static values of `null`, `undefined`, `false`, or `''` are silently omitted. Individual property values also accept signals — only the changed property is written to the DOM on each update. `style: { color: colorSignal, fontSize: '1rem' }` sets `font-size` once at render time and updates only `color` reactively.
 - `data-*` and `aria-*` are always allowed without configuration
 - Standard event handler attributes (`onclick`, `oninput`, etc.) accept a string or function. Functions are wired via `addEventListener` in `toElement()`.
 - `on` key for custom event listeners — pass a plain object mapping event names verbatim to functions: `{ on: { bricksSelectorChange: handler } }`. Names are passed directly to `addEventListener` with no transformation. Silently ignored in `.toString()`.
@@ -167,7 +167,7 @@ t.form({ hxPost: '/api/submit', hxSwap: 'outerHTML' });
 Signals and `computed` work in any JavaScript environment. `.toElement()` and DOM-mutating effects require a browser. During `renderForHydration`, `effect()` is suppressed entirely — browser-only code inside an `effect()` is safe to call on the server.
 
 ```javascript
-import { t, signal, computed, effect, enableDevtools, isBrowser, Signal } from 'kensington';
+import { t, signal, computed, effect, isBrowser, Signal } from 'kensington';
 import { renderForHydration, registerComponents } from 'kensington';
 ```
 
@@ -281,7 +281,7 @@ const rows = items.transform(list =>
 t.tbody(rows);
 ```
 
-Add `dataKey` whenever items may reorder, be added, or removed. Reused nodes are diffed recursively; signal effects on discarded nodes are stopped automatically. Keyed nodes whose attributes and content are structurally unchanged from the previous render are reused as-is without a diff pass, so the naive `arr.map(item => t.tr({ dataKey: item.id }, item.name))` pattern is efficient without memoization. Inline functions, `LiteralTag`, and other non-plain values in attributes or content compare by reference, so prefer stable references (event delegation, signals stored on the item) when row-level reuse matters.
+Add `dataKey` whenever items may reorder, be added, or removed. Reused nodes are diffed recursively; signal effects on discarded nodes are stopped automatically. Keyed nodes whose attributes and content are structurally unchanged from the previous render are reused as-is without a diff pass, so the naive `arr.map(item => t.tr({ dataKey: item.id }, item.name))` pattern is efficient without memoization. Functions compare by reference: a fresh inline arrow function causes the snapshot to fall through to `syncNode`, which transfers event listeners from the old node to the new one so the latest handler is always installed. `Signal`, `LiteralTag`, and other class instances compare by reference. Store signals on the item object for stable per-row reactivity.
 
 For drag-and-drop sortable lists where DOM nodes are moved via `insertBefore`, add `persist: true` to each item tag so signal effects survive the move. See **Cleanup** below.
 
@@ -327,7 +327,7 @@ effect(() => { localStorage.setItem('theme', dark.get() ? 'dark' : 'light'); });
 
 ### DevTools
 
-Import `kensington/devtools` in your dev entry point. It calls `enableDevtools()` and mounts the panel overlay in one step. Guard it so it never runs in production:
+Import `kensington/devtools` in your dev entry point. It mounts the panel overlay in one step. Guard it so it never runs in production:
 
 ```javascript
 if (import.meta.env.DEV) {
@@ -340,7 +340,7 @@ The panel is a shadow-DOM-isolated overlay in the bottom-right corner. Click the
 - **Signals** — plain signals: current value, set count, DOM visibility indicator (● visible, ○ in DOM but hidden, — not in DOM), subscriber count. Hover the subscriber count for a tooltip listing subscribed effects. Click a row to highlight and scroll to the bound DOM element.
 - **Computed** — computed signals, same columns. Entries disappear when auto-disposed (no subscribers) and reappear on re-subscription.
 - **Effects** — user `effect()` calls: state (active/paused), run count, function source.
-- **DOM** — live signal-to-DOM bindings (attributes, props, content): element descriptor, binding label (e.g. `class`, `prop:checked`, `(content)`), state, run count. Hover a row to outline the element in the page; click to scroll to it.
+- **DOM** — live signal-to-DOM bindings (attributes, props, content): element descriptor, binding label (e.g. `class`, `prop:checked`, `style:color`, `(content)`), state, run count. Hover a row to outline the element in the page; click to scroll to it.
 
 The hook is zero-cost when not enabled. All instrumentation calls are guarded by an `enabled` flag and return immediately when disabled. Do not enable in production.
 
@@ -530,9 +530,9 @@ effect(() => {
 
 `setTimeout` is a macrotask. It fires after the browser renders, so the UI shows a frame of incorrect state before correcting itself. It also signals that the dependency graph is not quite right. Restructure with `.value` or a separate `effect` instead.
 
-### Do not create computed signals inside a list-mapping function
+### Do not create computed signals inside a computed or transform callback
 
-When a `transform` or `computed` maps a list to tags, any `transform()` or `computed()` call inside the mapping function creates a new signal instance on every re-render. Signals compare by reference in the reconciler snapshot check, so a new instance always fails the snapshot fast-path. The reconciler calls `toElement()` for each item to get a fresh DOM element to diff against — then discards it via `stopTracked`. The brief stop causes the new computed to lose its only subscriber immediately after gaining it, putting it to sleep. Sleeping orphans accumulate in the devtools Signals tab on every list update.
+When a `transform` or `computed` callback re-runs, any `transform()` or `computed()` call inside it creates a new signal instance on every re-render. Signals compare by reference in the reconciler snapshot check, so a new instance always fails the snapshot fast-path. The reconciler calls `toElement()` for each item to get a fresh DOM element to diff against — then discards it via `stopTracked`. The brief stop causes the new computed to lose its only subscriber immediately after gaining it, putting it to sleep. Sleeping orphans accumulate in the devtools Signals tab on every list update.
 
 The fix: attach derived signals to the item object when it is created so the same signal reference is reused on every render.
 
@@ -563,8 +563,6 @@ const rows = tasks.transform(list =>
   list.map(({ id, text, itemClass }) => t.li({ dataKey: id, class: itemClass }, text))
 );
 ```
-
-The same principle applies to inline functions: `onclick: () => remove(id)` creates a new function reference on every render. `valueEqual` falls back to reference equality for functions, so the snapshot always fails. Use event delegation on the container or store the handler on the item to restore snapshot hits.
 
 ## HTML to Kensington CLI
 

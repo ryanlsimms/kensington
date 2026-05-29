@@ -1,6 +1,8 @@
-import t from '../template-engine.js';
+import t from '#kensington';
 
-export function filterBar({ filter }) {
+import { filter } from '../state.js';
+
+export function filterBar() {
   function btn(value, label) {
     return t.button({
       type: 'button',

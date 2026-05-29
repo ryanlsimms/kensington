@@ -1,8 +1,8 @@
-import { computed } from 'kensington';
+import t, { computed } from '#kensington';
 
-import t from '../template-engine.js';
+import { tasks } from '../state.js';
 
-export function taskStats({ tasks }) {
+export function taskStats() {
   // Each computed reads both the tasks array and each task's done signal, so it
   // re-runs when tasks are added/removed OR when any individual done is toggled.
   const total = computed(() => tasks.get().length);

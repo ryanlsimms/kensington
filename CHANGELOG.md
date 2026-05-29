@@ -4,11 +4,26 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- Reactive per-property style objects. Individual values inside a `style` object now accept signals. Only the changed property is written to the DOM on each signal update — other properties are left untouched. Static property values continue to be set once at render time. `toString()` resolves all signal values inline as before.
+- Devtools DOM tab now shows `style:propName` binding labels for reactive style properties, matching the `prop:propName` convention.
+- Devtools panel pop-out button (↗ in the panel header). Opens the panel in a named popup window so it can sit alongside the page being developed. The popup reconnects automatically when the main page reloads.
+- Devtools panel Copy button on the Log tab. Copies the currently visible log entries as tab-separated text to the clipboard, respecting the active filter.
+- Event listener tracking for keyed list items. When the reconciler reuses a keyed DOM node, it now transfers event listeners from the old node to the new one, removing stale handlers and adding fresh ones. Inline arrow functions in `.map()` are always up to date on the next click without requiring signals for handler arguments.
+
+### Changed
+- `enableDevtools` is no longer a named export of the main `kensington` package. Activate devtools by importing `kensington/devtools` as a side effect, which also mounts the panel. Any existing `import { enableDevtools } from 'kensington'; enableDevtools()` should change to `import 'kensington/devtools'`.
+
+### Fixed
+- Devtools panel Log tab now scrolls correctly when entries overflow the panel height.
+- Devtools no longer emits spurious `computed:stop` events for sleeping computed signals read transiently via `.toJSON()`, `.value`, or `.get()` outside a reactive context (e.g. when the devtools panel serializes signal values for display). The cascade of `computed:stop` events that previously triggered repeated RAF re-renders after a keyed list item deletion is resolved.
+
 ## [2.0.0-signals.12] - 2026-05-28
 
 ### Added
-- `enableDevtools()` named export. Call it once before creating any signals to activate the devtools panel. Logs a warning if called in a server context (no `window`).
-- `kensington/devtools` module export. Importing it calls `enableDevtools()` and mounts the panel overlay in one step. Use a dynamic import guarded by your bundler's dev flag so it tree-shakes out of production builds: `if (import.meta.env.DEV) { await import('kensington/devtools'); }`
+- `kensington/devtools` module export. Importing it mounts the panel overlay in one step. Use a dynamic import guarded by your bundler's dev flag so it tree-shakes out of production builds: `if (import.meta.env.DEV) { await import('kensington/devtools'); }`
 - Warning when `signal()` is called inside a `computed` or `effect` callback. A new signal created on every re-run breaks the reconciler snapshot fast-path and leaves orphaned sleeping signals. The warning is throttled and its stack trace is filtered to point to the caller's code.
 
 ### Changed

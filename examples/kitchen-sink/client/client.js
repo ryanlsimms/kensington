@@ -1,10 +1,10 @@
 import './components/sortable-list.js';
 import 'kensington/devtools';
 
-import { registerComponents } from 'kensington';
+import { registerComponents } from '#kensington';
 
-import { dashboard } from './components/dashboard.js';
-import { taskSpotlight } from './components/task-spotlight.js';
+import { dashboard } from '../shared/components/dashboard.js';
+import { taskSpotlight } from '../shared/components/task-spotlight.js';
 
 // registerComponents scans the DOM for <script type="application/json" data-k-component>
 // blocks on DOMContentLoaded, then hydrates each one by calling the matching component

@@ -1,10 +1,10 @@
-import { computed } from 'kensington';
+import t, { computed } from '#kensington';
 
-import t from '../template-engine.js';
+import { tasks } from '../state.js';
 
 const BAR_WIDTH = 200;
 
-export function progressBar({ tasks }) {
+export function progressBar() {
   // computed() derives a value from other signals. This reads both tasks.get() and
   // each task.done.get(), so it re-runs whenever tasks change or a task is toggled.
   const pct = computed(() => {
@@ -15,10 +15,14 @@ export function progressBar({ tasks }) {
     return Math.round(all.filter(task => task.done.get()).length / all.length * 100);
   });
 
-  // transform() is shorthand for a single-signal computed. barFill and label each
-  // derive from pct, so they update whenever pct changes.
+  // transform() is shorthand for a single-signal computed. barFill derives from
+  // pct and updates whenever pct changes.
   const barFill = pct.transform(p => String(Math.round(p / 100 * BAR_WIDTH)));
-  const label = pct.transform(p => `${p}% complete`);
+
+  // Template literals call .toString() on every interpolated value. Inside
+  // computed(), pct.toString() calls pct.get() and registers pct as a
+  // dependency — the same tracking that an explicit .get() would produce.
+  const label = computed(() => `${pct}% complete`);
 
   return t.div({
     class: 'progress-wrap',

@@ -138,11 +138,11 @@ function wakeForRead(sig) {
   if (wake !== undefined) {
     suppressWakeNotify = true;
     const woken = wake();
-    suppressWakeNotify = false;
     if (woken) {
       const sleep = sleepFns.get(sig);
       if (sleep !== undefined) { sleep(); }
     }
+    suppressWakeNotify = false;
   }
 }
 
@@ -442,9 +442,10 @@ export function computed(fn) {
   let sleeping = false;
   sleepFns.set(s, () => {
     sleeping = true;
-    // Remove from devtools on sleep. If the computed is later woken by a new subscriber,
-    // notifySignalWake re-adds it. If nobody ever wakes it, the entry is gone — no ghost.
-    notifySignalStop(s);
+    // Suppress during transient wakeForRead reads (.toJSON(), .value, .get() outside reactive
+    // context) so serializing a value that contains sleeping computed signals does not emit
+    // spurious computed:stop events and trigger unnecessary devtools re-renders.
+    if (!suppressWakeNotify) { notifySignalStop(s); }
     for (const cleanup of update._cleanups) {
       cleanup();
     }

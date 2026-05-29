@@ -1,6 +1,6 @@
-import { effect, isBrowser, signal } from 'kensington';
+import t, { effect, signal } from '#kensington';
 
-import t from '../template-engine.js';
+import { hasSaved, tasks } from '../state.js';
 import { filterBar } from './filter-bar.js';
 import { progressBar } from './progress-bar.js';
 import { taskForm } from './task-form.js';
@@ -23,16 +23,36 @@ function toReactiveTasks(raw) {
 export function dashboard({ tasks: initialTasks }) {
   // signal() creates a reactive value. Any computed or effect that calls .get()
   // on this signal will re-run automatically when it changes.
-  const tasks = signal(toReactiveTasks(initialTasks));
-  const filter = signal('all');
-  const hasSaved = signal(isBrowser && Boolean(localStorage.getItem(STORAGE_KEY)));
+  tasks.set(toReactiveTasks(initialTasks));
 
-  // effect() runs immediately and re-runs whenever any signal read inside changes.
-  // Here it tracks tasks and each task's done signal, so the tab title stays in sync.
-  effect(() => {
+  // effect() returns { pause, resume, stop }. Storing the handle lets us
+  // pause and resume updates from outside the effect.
+  const titleEffect = effect(() => {
     const remaining = tasks.get().filter(task => !task.done.get()).length;
-    document.title = remaining ? `(${remaining}) Kitchen Sink` : 'Kitchen Sink';
+    // .value reads the current value without registering hasSaved as a
+    // dependency. The title should update when tasks change, not when hasSaved
+    // flips independently.
+    const savedTag = hasSaved.value ? ' ★' : '';
+    document.title = remaining
+      ? `(${remaining}) Kitchen Sink${savedTag}`
+      : `Kitchen Sink${savedTag}`;
   });
+
+  // titleLive controls whether the effect is active. pause() temporarily
+  // unsubscribes from all signals without destroying the effect. resume()
+  // re-runs the callback and re-subscribes, so the title is immediately
+  // correct when toggled back on.
+  const titleLive = signal(true);
+
+  function toggleTitle() {
+    const next = !titleLive.get();
+    titleLive.set(next);
+    if (next) {
+      titleEffect.resume();
+    } else {
+      titleEffect.pause();
+    }
+  }
 
   function save() {
     // Signal implements toJSON(), so JSON.stringify resolves every signal in the
@@ -52,13 +72,13 @@ export function dashboard({ tasks: initialTasks }) {
   return t.div({ class: 'dashboard' }, [
     t.h2('Task Manager'),
     t.inlineComment('progress and stats'),
-    progressBar({ tasks }),
-    taskStats({ tasks }),
+    progressBar(),
+    taskStats(),
     t.inlineComment('filters and input'),
-    filterBar({ filter }),
-    taskForm({ tasks }),
+    filterBar(),
+    taskForm(),
     t.inlineComment('task list'),
-    taskList({ tasks, filter }),
+    taskList(),
     t.div({ class: 'storage-actions' }, [
       t.button({ type: 'button', class: 'storage-btn', onclick: save }, 'Save'),
       t.button({
@@ -69,6 +89,11 @@ export function dashboard({ tasks: initialTasks }) {
         disabled: hasSaved.transform(v => !v),
         onclick: load,
       }, 'Load'),
+      t.button({
+        type: 'button',
+        class: 'storage-btn',
+        onclick: toggleTitle,
+      }, titleLive.transform(v => v ? 'Pause Title' : 'Resume Title')),
     ]),
   ]);
 }

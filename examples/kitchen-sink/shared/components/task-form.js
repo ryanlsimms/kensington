@@ -1,15 +1,15 @@
-import { signal } from 'kensington';
+import t, { signal } from '#kensington';
 
-import t from '../template-engine.js';
+import { tasks } from '../state.js';
 
-export function taskForm({ tasks }) {
+export function taskForm() {
   // Local signal for the controlled input — scoped to this component.
   const newTaskText = signal('');
   // transform() creates a derived signal: disabled is true whenever the trimmed
   // input is empty, and updates automatically as newTaskText changes.
   const disabled = newTaskText.transform(v => !v.trim());
 
-  function submit(e) {
+  function onsubmit(e) {
     e.preventDefault();
     const text = newTaskText.get().trim();
     if (!text) {
@@ -24,11 +24,20 @@ export function taskForm({ tasks }) {
     newTaskText.set('');
   }
 
-  return t.form({ class: 'task-form', onsubmit: submit }, [
+  return t.form({
+    class: 'task-form',
+    // Boolean attributes are included when true, omitted when false.
+    // novalidate: true renders as <form novalidate> — native validation is
+    // disabled and the onsubmit handler below takes full responsibility.
+    novalidate: true,
+    onsubmit,
+  }, [
     t.input({
       type: 'text',
       class: 'task-input',
       placeholder: 'What needs to be done?',
+      // readonly: false → the attribute is omitted entirely from the HTML output.
+      readonly: false,
       aria: { label: 'New task text' },
       oninput: e => newTaskText.set(e.target.value),
       // prop assigns directly to the DOM property, not the HTML attribute.

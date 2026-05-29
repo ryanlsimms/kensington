@@ -10,6 +10,7 @@ import { _internalEffect } from './signal.js';
  */
 export function createLifecycle({ element, persist }) {
   const stops = [];
+  const devIds = [];
   const resumables = persist ? [] : null;
   const elementRef = new WeakRef(element);
 
@@ -36,13 +37,14 @@ export function createLifecycle({ element, persist }) {
         apply(el, sig.get());
       });
       notifyEffectElement(eff._devId, element);
+      if (eff._devId !== 0) { devIds.push(eff._devId); }
       wireEffect(eff);
       return eff;
     },
 
     finalize({ connectCallbacks = [], disconnectCallbacks = [], onCleared, onReconnect } = {}) {
       function registerDisconnectChain() {
-        trackForStop(element, () => { for (const stop of stops) { stop(); } });
+        trackForStop(element, () => { for (const stop of stops) { stop(); } }, devIds);
         if (onCleared) { addOnStop(element, onCleared); }
         for (const fn of disconnectCallbacks) {
           addOnStop(element, () => fn.call(element, element));

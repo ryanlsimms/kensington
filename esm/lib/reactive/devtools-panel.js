@@ -92,7 +92,7 @@ const CSS = `
   #val-editor.hidden { display: none; }
 
   #content {
-    overflow-y: auto; flex: 1; padding: 4px 0;
+    overflow-y: auto; flex: 1; min-height: 0; padding: 4px 0;
   }
   #content::-webkit-scrollbar { width: 5px; }
   #content::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 3px; }
@@ -181,11 +181,26 @@ const CSS = `
   .log-eff { color: #4a6096; }
   .log-dom { color: #3d7a80; }
   .log-val { color: #a6e3a1; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .log-clear-btn {
+  .log-action-btn {
     background: none; border: 1px solid rgba(255,255,255,.12); color: #6c7086;
     border-radius: 3px; padding: 1px 7px; font-family: inherit; font-size: 10px; cursor: pointer;
   }
-  .log-clear-btn:hover { color: #cdd6f4; border-color: rgba(255,255,255,.25); }
+  .log-action-btn:hover { color: #cdd6f4; border-color: rgba(255,255,255,.25); }
+  .log-actions { display: flex; gap: 4px; }
+
+  #header-actions { display: flex; gap: 4px; align-items: center; }
+  #popout {
+    background: none; border: none; color: #6c7086; cursor: pointer;
+    font-size: 12px; line-height: 1; padding: 0 2px;
+  }
+  #popout:hover { color: #cdd6f4; }
+
+  :host(.popup-mode) #toggle { display: none; }
+  :host(.popup-mode) #panel {
+    position: static;
+    width: 100%; height: 100%; max-height: none;
+    border-radius: 0; box-shadow: none; border: none;
+  }
 `;
 
 const activeHighlights = new Map();
@@ -562,7 +577,9 @@ function renderLog(hook, entries, filterText = '') {
     else if (e.type === 'effect:run') { typeClass = 'log-eff-run'; }
     else if (e.type.startsWith('effect:')) { typeClass = 'log-eff'; }
     else if (e.type.startsWith('dom:')) { typeClass = 'log-dom'; }
-    const idStr = e.id === undefined ? (e.count === undefined ? '' : `n=${e.count}`) : `#${e.id}`;
+    const idStr = e.id === undefined
+      ? (e.bindingIds && e.bindingIds.length > 0 ? e.bindingIds.map(id => `#${id}`).join(' ') : '')
+      : `#${e.id}`;
     let rowAttr = '';
     let idCellAttr = '';
     if (e.id !== undefined && hook) {
@@ -610,16 +627,51 @@ function renderLog(hook, entries, filterText = '') {
   <div class="sig-footer">
     <div class="totals-row">
       <span>${summary} event${total === 1 ? '' : 's'}</span>
-      <button class="log-clear-btn">Clear</button>
+      <div class="log-actions">
+        <button class="log-action-btn log-copy-btn">Copy</button>
+        <button class="log-action-btn log-clear-btn">Clear</button>
+      </div>
     </div>
   </div>`;
 }
 
-export function buildPanel(hook) {
+function buildPopupHtml(panelUrl) {
+  const closeTag = '</script>';
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Kensington DevTools</title>
+  <style>html,body{margin:0;padding:0;background:#1e1e2e;height:100%;overflow:hidden}</style>
+</head>
+<body>
+<script type="module">
+  import { buildPanel } from "${panelUrl}";
+  function connect() {
+    var hook = window.opener && window.opener.__KENSINGTON_DEVTOOLS__;
+    if (!hook) { return; }
+    var el = document.getElementById("${PANEL_ID}");
+    if (el) { el.remove(); }
+    buildPanel(hook, { popup: true });
+  }
+  connect();
+  var ch = new BroadcastChannel("kensington-devtools");
+  ch.onmessage = function(e) { if (e.data === "ready") { connect(); } };
+  window.addEventListener("unload", function() { ch.close(); });
+${closeTag}
+</body>
+</html>`;
+}
+
+export function buildPanel(hook, { popup = false } = {}) {
   if (document.getElementById(PANEL_ID)) { return; }
 
   const host = document.createElement('div');
   host.id = PANEL_ID;
+  if (popup) {
+    host.classList.add('popup-mode');
+    host.style.cssText = 'display:block;width:100%;height:100%';
+  }
   document.body.appendChild(host);
 
   const shadow = host.attachShadow({ mode: 'open' });
@@ -631,7 +683,10 @@ export function buildPanel(hook) {
     <div id="panel" class="hidden">
       <div id="header">
         <span>Kensington DevTools</span>
-        <button id="close">✕</button>
+        <div id="header-actions">
+          <button id="popout" title="Open in new window">↗</button>
+          <button id="close">✕</button>
+        </div>
       </div>
       <div id="tabs">
         <button class="tab active" data-tab="signals">Signals</button>
@@ -655,9 +710,18 @@ export function buildPanel(hook) {
   const valEditor = shadow.getElementById('val-editor');
   const toggle = shadow.getElementById('toggle');
   const closeBtn = shadow.getElementById('close');
+  const popoutBtn = shadow.getElementById('popout');
   const content = shadow.getElementById('content');
   const tabs = shadow.querySelectorAll('.tab');
   const tooltip = shadow.getElementById('tooltip');
+
+  let popupWin = null;
+
+  if (popup) {
+    panel.classList.remove('hidden');
+    popoutBtn.style.display = 'none';
+    closeBtn.style.display = 'none';
+  }
 
   let activeTab = 'signals';
   let rafPending = false;
@@ -757,8 +821,10 @@ export function buildPanel(hook) {
     else if (activeTab === 'effects') { content.innerHTML = renderEffects(hook, filterText); }
     else if (activeTab === 'dom') { content.innerHTML = renderDom(hook, filterText); }
     else if (activeTab === 'log') { content.innerHTML = renderLog(hook, logEntries, filterText); }
-    const chromeH = header.offsetHeight + tabsEl.offsetHeight + filterRow.offsetHeight;
-    content.style.minHeight = `${Math.min(maxH, 480 - chromeH)}px`;
+    if (!popup) {
+      const chromeH = header.offsetHeight + tabsEl.offsetHeight + filterRow.offsetHeight;
+      content.style.minHeight = `${Math.min(maxH, 480 - chromeH)}px`;
+    }
   }
 
   function scheduleRender() {
@@ -819,6 +885,20 @@ export function buildPanel(hook) {
     panel.classList.add('hidden');
   });
 
+  popoutBtn.addEventListener('click', () => {
+    if (popupWin && !popupWin.closed) {
+      popupWin.focus();
+      return;
+    }
+    popupWin = window.open('', 'kensington-devtools', 'width=480,height=640,resizable=yes');
+    if (!popupWin) { return; }
+    popupWin.document.open();
+    popupWin.document.write(buildPopupHtml(import.meta.url));
+    popupWin.document.close();
+    popupWin.focus();
+    panel.classList.add('hidden');
+  });
+
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
       tabs.forEach(t => t.classList.remove('active'));
@@ -842,6 +922,26 @@ export function buildPanel(hook) {
       const meta = hook ? hook.signals.get(sigId) : null;
       if (!meta || !meta.setter || meta.isComputed) { return; }
       startEdit(sigId, meta, valSpan);
+      return;
+    }
+    const copyBtn = e.target.closest('.log-copy-btn');
+    if (copyBtn) {
+      const q = filterText ? filterText.toLowerCase() : '';
+      const toCopy = q
+        ? logEntries.filter(entry => {
+          if (logTypeLabel(entry).includes(q)) { return true; }
+          if (entry.id !== undefined && String(entry.id).includes(q)) { return true; }
+          if (entry.value !== undefined && fmt(entry.value).toLowerCase().includes(q)) { return true; }
+          return false;
+        })
+        : logEntries;
+      const lines = toCopy.map(entry => {
+        const parts = [`+${entry.ts}ms`, logTypeLabel(entry)];
+        if (entry.id !== undefined) { parts.push(`#${entry.id}`); }
+        if (entry.type === 'signal:set' && entry.value !== undefined) { parts.push(fmt(entry.value)); }
+        return parts.join('\t');
+      });
+      navigator.clipboard.writeText(lines.join('\n')).catch(() => {});
       return;
     }
     const clearBtn = e.target.closest('.log-clear-btn');

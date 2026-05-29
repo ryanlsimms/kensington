@@ -6,7 +6,13 @@
     "target": "ES2020",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "lib": ["ES2020", "DOM"]
+    "lib": ["ES2020", "DOM"],
+    "baseUrl": ".",
+    "paths": {
+      "#kensington": ["./shared/template-engine.js"],
+      "kensington": ["../../esm/index.js"],
+      "kensington/*": ["../../esm/*.js"]
+    }
   },
-  "exclude": ["node_modules", "server.js"]
+  "exclude": ["node_modules", "server/server.js"]
 }

@@ -29,7 +29,7 @@ function getOrCreate(element) {
 function deleteEntry(element, entry) {
   trackedRefs.delete(entry.ref);
   entries.delete(element);
-  notifyDomUntrack();
+  notifyDomUntrack(entry.bindingDevIds);
 }
 
 function clearStop(entry, element) {
@@ -101,9 +101,11 @@ function buildObserver() {
   observer.observe(document.documentElement, { childList: true, subtree: true });
 }
 
-export function trackForStop(element, stop) {
+export function trackForStop(element, stop, devIds = []) {
   buildObserver();
-  getOrCreate(element).stop = stop;
+  const entry = getOrCreate(element);
+  entry.stop = stop;
+  if (devIds.length > 0) { entry.bindingDevIds = devIds; }
 }
 
 export function trackForConnect(element, fn, persist = false) {

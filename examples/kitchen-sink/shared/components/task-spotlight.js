@@ -1,6 +1,4 @@
-import { signal } from 'kensington';
-
-import t from '../template-engine.js';
+import t, { signal } from '#kensington';
 
 // This component is shared between server and client. On the server, renderForHydration
 // calls it in SSR mode: signals resolve to their initial values and no effects run.
@@ -13,7 +11,16 @@ export function taskSpotlight({ task }) {
 
   return t.div({ class: 'spotlight-card' }, [
     t.div({ class: 'spotlight-header' }, [
-      t.span({ class: task.done ? 'spotlight-text done' : 'spotlight-text' }, task.text),
+      t.span({
+        class: task.done ? 'spotlight-text done' : 'spotlight-text',
+        // Individual style properties accept signals. Only textDecoration is reactive
+        // here — fontSize is static. When starred changes, only text-decoration is
+        // updated in the DOM; fontSize is untouched.
+        style: {
+          textDecoration: starred.transform(v => v ? 'line-through' : 'none'),
+          fontSize: '1rem',
+        },
+      }, task.text),
       t.button({
         type: 'button',
         class: 'star-btn',

@@ -1,4 +1,4 @@
-import t from './template-engine.js';
+import t from '#kensington';
 
 export function layout(body) {
   return t.htmlWithDocType({ lang: 'en' }, [
@@ -12,6 +12,7 @@ export function layout(body) {
         imports: {
           kensington: '/esm/index.js',
           'kensington/devtools': '/esm/devtools.js',
+          '#kensington': '/shared/template-engine.js',
         },
       })),
       t.script({ type: 'module', src: '/client.js' }),

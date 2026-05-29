@@ -16,14 +16,12 @@ const el = t.p(count).toElement();
 document.body.append(el);
 el.remove(); // effect tracking count stops automatically`),
     t.p([
-      'To pause effects instead of stopping them, pass ',
-      t.code('{ persist: true }'),
-      ' to ',
-      t.code('.toElement()'),
-      '. Effects resume automatically when the element is re-inserted, and pause again if it is removed a second time. This works across unlimited cycles.',
+      'To pause effects instead of stopping them, add ',
+      t.code('persist: true'),
+      ' to the tag options. Effects resume automatically when the element is re-inserted, and pause again if it is removed a second time. This works across unlimited cycles.',
     ]),
     code(t, 'javascript', `const cls = signal('idle');
-const el = t.div({ class: cls }).toElement({ persist: true });
+const el = t.div({ class: cls, persist: true }).toElement();
 
 document.body.append(el);
 el.remove();               // effects pause. cls.set() has no DOM effect

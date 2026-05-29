@@ -62,6 +62,11 @@ export function enableDevtools() {
   if (typeof window !== 'undefined') {
     window.__KENSINGTON_DEVTOOLS__ = hook;
   }
+  if (typeof BroadcastChannel !== 'undefined') {
+    const ch = new BroadcastChannel('kensington-devtools');
+    ch.postMessage('ready');
+    ch.close();
+  }
 }
 
 export function notifySignalCreate(sig, value, setter) {
@@ -248,8 +253,10 @@ export function notifyDomTrack() {
   hook._emit('update', { type: 'dom:track', count: hook.domTrackedCount });
 }
 
-export function notifyDomUntrack() {
+export function notifyDomUntrack(bindingIds) {
   if (!enabled) { return; }
   if (hook.domTrackedCount > 0) { hook.domTrackedCount--; }
-  hook._emit('update', { type: 'dom:untrack', count: hook.domTrackedCount });
+  const event = { type: 'dom:untrack', count: hook.domTrackedCount };
+  if (bindingIds && bindingIds.length > 0) { event.bindingIds = bindingIds; }
+  hook._emit('update', event);
 }

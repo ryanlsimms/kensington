@@ -1,19 +1,43 @@
-import { computed } from 'kensington';
+import t, { computed } from '#kensington';
 
-import t from '../template-engine.js';
+import { filter, tasks } from '../state.js';
 
-function taskItem(tasks, { id, text, done, itemClass }) {
+function handleDeleteClick(evt) {
+  const id = evt.target.closest('li').dataset.key;
+  tasks.set(ts => {
+    const task = ts.find(item => item.id === id);
+    if (task) {
+      // stop() immediately clears all subscribers and removes the signal from
+      // devtools. done.stop() causes itemClass (a derived computed) to auto-sleep;
+      // itemClass.stop() then tears it down fully rather than waiting for GC.
+      task.done.stop();
+      task.itemClass.stop();
+    }
+    return ts.filter(item => item.id !== id);
+  });
+}
+
+function handleDoneClick(evt) {
+  const id = evt.target.closest('li').dataset.key;
+  const foundTask = tasks.get().find(task => task.id === id);
+  foundTask?.done.set(v => !v);
+}
+
+function taskItem({ id, text, done, itemClass }) {
   // done is a Signal<boolean>. `itemClass` is a stable `computed` derived once when the
   // task is created. Reusing the same signal reference lets the reconciler snapshot
   // fast-path skip toElement() for unchanged items on every list re-render.
-  return t.li({ 'data-key': id, class: itemClass }, [
+  // Nested data-* objects flatten to hyphen-separated attribute names.
+  // { data: { key: id } } renders as data-key="...". Deeper nesting like
+  // { data: { bs: { toggle: 'modal' } } } becomes data-bs-toggle="modal".
+  return t.li({ data: { key: id }, class: itemClass }, [
     t.label({ class: 'task-label' }, [
       t.input({
         type: 'checkbox',
         checked: done,
         // Toggling only mutates this task's done signal. When filter === 'all'
         // the tasks array never changes, so the list is never re-reconciled.
-        onclick: () => done.set(d => !d),
+        onclick: handleDoneClick,
       }),
       t.span({ class: 'task-text' }, text),
     ]),
@@ -21,12 +45,12 @@ function taskItem(tasks, { id, text, done, itemClass }) {
       type: 'button',
       class: 'remove-btn',
       aria: { label: `Delete task: ${text}` },
-      onclick: () => tasks.set(ts => ts.filter(task => task.id !== id)),
+      onclick: handleDeleteClick,
     }, '×'),
   ]);
 }
 
-export function taskList({ tasks, filter }) {
+export function taskList() {
   const filtered = computed(() => {
     const all = tasks.get();
     const f = filter.get();
@@ -40,9 +64,7 @@ export function taskList({ tasks, filter }) {
     return all;
   });
 
-  // Each update produces new tag objects, but reconcile() matches them to existing
-  // DOM nodes by data-key and patches only what changed rather than replacing elements.
-  const listItems = filtered.transform(items => items.map(item => taskItem(tasks, item)));
+  const listItems = filtered.transform(items => items.map(taskItem));
   const hasItems = filtered.transform(items => items.length > 0);
   const emptyMsg = filter.transform(f => ({
     active: 'No active tasks. Add one above!',
@@ -55,6 +77,7 @@ export function taskList({ tasks, filter }) {
     tasks.set(ts => {
       const from = ts.findIndex(task => task.id === fromKey);
       const to = ts.findIndex(task => task.id === toKey);
+      if (from === -1 || to === -1) { return ts; }
       const updated = [...ts];
       const [moved] = updated.splice(from, 1);
       updated.splice(to, 0, moved);

@@ -9,8 +9,8 @@ test.beforeEach(async ({ page }) => {
 test('devtools: signal appears in hook.signals on creation', async ({ page, bundle }) => {
   test.skip(bundle.includes('slim'), 'devtools are no-ops in the slim build');
   const result = await page.evaluate(async src => {
-    const { signal, enableDevtools } = await import(src);
-    enableDevtools();
+    const { signal } = await import(src);
+    await import('/esm/devtools.js');
     const hook = window.__KENSINGTON_DEVTOOLS__;
     signal(42);
     const meta = [...hook.signals.values()].find(m => m.value === 42);
@@ -25,8 +25,8 @@ test('devtools: subscriberCount stays accurate as effects subscribe and unsubscr
   async ({ page, bundle }) => {
     test.skip(bundle.includes('slim'), 'devtools are no-ops in the slim build');
     const result = await page.evaluate(async src => {
-      const { signal, effect, enableDevtools } = await import(src);
-      enableDevtools();
+      const { signal, effect } = await import(src);
+      await import('/esm/devtools.js');
       const hook = window.__KENSINGTON_DEVTOOLS__;
       const s = signal(0);
       const sigId = [...hook.signals.values()].find(m => m.value === 0)?.id;
@@ -48,8 +48,8 @@ test('devtools: subscriberCount stays accurate as effects subscribe and unsubscr
 test('devtools: signal value and setCount update in devtools on .set()', async ({ page, bundle }) => {
   test.skip(bundle.includes('slim'), 'devtools are no-ops in the slim build');
   const result = await page.evaluate(async src => {
-    const { signal, enableDevtools } = await import(src);
-    enableDevtools();
+    const { signal } = await import(src);
+    await import('/esm/devtools.js');
     const hook = window.__KENSINGTON_DEVTOOLS__;
     const s = signal('before');
     const id = [...hook.signals.values()].find(m => m.value === 'before')?.id;
@@ -63,8 +63,8 @@ test('devtools: signal value and setCount update in devtools on .set()', async (
 test('devtools: signal is removed from hook.signals on .stop()', async ({ page, bundle }) => {
   test.skip(bundle.includes('slim'), 'devtools are no-ops in the slim build');
   const result = await page.evaluate(async src => {
-    const { signal, enableDevtools } = await import(src);
-    enableDevtools();
+    const { signal } = await import(src);
+    await import('/esm/devtools.js');
     const hook = window.__KENSINGTON_DEVTOOLS__;
     const s = signal('val');
     const id = [...hook.signals.values()].find(m => m.value === 'val')?.id;
@@ -80,8 +80,8 @@ test('devtools: signal is removed from hook.signals on .stop()', async ({ page, 
 test('devtools: effect appears in hook.effects on creation', async ({ page, bundle }) => {
   test.skip(bundle.includes('slim'), 'devtools are no-ops in the slim build');
   const result = await page.evaluate(async src => {
-    const { signal, effect, enableDevtools } = await import(src);
-    enableDevtools();
+    const { signal, effect } = await import(src);
+    await import('/esm/devtools.js');
     const hook = window.__KENSINGTON_DEVTOOLS__;
     const s = signal(0);
     const handle = effect(() => { s.get(); });
@@ -96,8 +96,8 @@ test('devtools: effect appears in hook.effects on creation', async ({ page, bund
 test('devtools: effect runCount increments when the effect re-runs', async ({ page, bundle }) => {
   test.skip(bundle.includes('slim'), 'devtools are no-ops in the slim build');
   const result = await page.evaluate(async src => {
-    const { signal, effect, enableDevtools } = await import(src);
-    enableDevtools();
+    const { signal, effect } = await import(src);
+    await import('/esm/devtools.js');
     const hook = window.__KENSINGTON_DEVTOOLS__;
     const s = signal(0);
     const handle = effect(() => { s.get(); });
@@ -111,8 +111,8 @@ test('devtools: effect runCount increments when the effect re-runs', async ({ pa
 test('devtools: effect state is paused after pause()', async ({ page, bundle }) => {
   test.skip(bundle.includes('slim'), 'devtools are no-ops in the slim build');
   const result = await page.evaluate(async src => {
-    const { signal, effect, enableDevtools } = await import(src);
-    enableDevtools();
+    const { signal, effect } = await import(src);
+    await import('/esm/devtools.js');
     const hook = window.__KENSINGTON_DEVTOOLS__;
     const s = signal(0);
     const handle = effect(() => { s.get(); });
@@ -125,8 +125,8 @@ test('devtools: effect state is paused after pause()', async ({ page, bundle }) 
 test('devtools: effect is removed from hook.effects on stop()', async ({ page, bundle }) => {
   test.skip(bundle.includes('slim'), 'devtools are no-ops in the slim build');
   const result = await page.evaluate(async src => {
-    const { signal, effect, enableDevtools } = await import(src);
-    enableDevtools();
+    const { signal, effect } = await import(src);
+    await import('/esm/devtools.js');
     const hook = window.__KENSINGTON_DEVTOOLS__;
     const s = signal(0);
     const handle = effect(() => { s.get(); });
@@ -142,8 +142,8 @@ test('devtools: effect is removed from hook.effects on stop()', async ({ page, b
 test('devtools: effect ID is added to signal effectIds on subscribe', async ({ page, bundle }) => {
   test.skip(bundle.includes('slim'), 'devtools are no-ops in the slim build');
   const result = await page.evaluate(async src => {
-    const { signal, effect, enableDevtools } = await import(src);
-    enableDevtools();
+    const { signal, effect } = await import(src);
+    await import('/esm/devtools.js');
     const hook = window.__KENSINGTON_DEVTOOLS__;
     const s = signal('tracked');
     const sigId = [...hook.signals.values()].find(m => m.value === 'tracked')?.id;
@@ -162,8 +162,8 @@ test('devtools: effect ID is added to signal effectIds on subscribe', async ({ p
 test('devtools: effect ID is removed from signal effectIds on stop()', async ({ page, bundle }) => {
   test.skip(bundle.includes('slim'), 'devtools are no-ops in the slim build');
   const result = await page.evaluate(async src => {
-    const { signal, effect, enableDevtools } = await import(src);
-    enableDevtools();
+    const { signal, effect } = await import(src);
+    await import('/esm/devtools.js');
     const hook = window.__KENSINGTON_DEVTOOLS__;
     const s = signal(0);
     const sigId = [...hook.signals.values()].find(m => m.value === 0)?.id;
@@ -183,8 +183,8 @@ test('devtools: computed subscription does not add undefined to source signal ef
   async ({ page, bundle }) => {
     test.skip(bundle.includes('slim'), 'devtools are no-ops in the slim build');
     const result = await page.evaluate(async src => {
-      const { signal, computed, enableDevtools } = await import(src);
-      enableDevtools();
+      const { signal, computed } = await import(src);
+      await import('/esm/devtools.js');
       const hook = window.__KENSINGTON_DEVTOOLS__;
       const base = signal('source-val');
       const baseId = [...hook.signals.values()].find(m => m.value === 'source-val')?.id;
@@ -199,8 +199,8 @@ test('devtools: computed subscription does not add undefined to source signal ef
 test('devtools: computed signal appears in hook.signals on creation', async ({ page, bundle }) => {
   test.skip(bundle.includes('slim'), 'devtools are no-ops in the slim build');
   const result = await page.evaluate(async src => {
-    const { signal, computed, enableDevtools } = await import(src);
-    enableDevtools();
+    const { signal, computed } = await import(src);
+    await import('/esm/devtools.js');
     const hook = window.__KENSINGTON_DEVTOOLS__;
     const base = signal(3);
     computed(() => base.get() * 10);
@@ -215,8 +215,8 @@ test('devtools: computed signal appears in hook.signals on creation', async ({ p
 test('devtools: computed is removed from devtools when it loses all subscribers', async ({ page, bundle }) => {
   test.skip(bundle.includes('slim'), 'devtools are no-ops in the slim build');
   const result = await page.evaluate(async src => {
-    const { signal, computed, effect, enableDevtools } = await import(src);
-    enableDevtools();
+    const { signal, computed, effect } = await import(src);
+    await import('/esm/devtools.js');
     const hook = window.__KENSINGTON_DEVTOOLS__;
     const base = signal(5);
     const c = computed(() => base.get() + 1);
@@ -234,8 +234,8 @@ test('devtools: computed is removed from devtools when it loses all subscribers'
 test('devtools: computed re-appears in devtools when re-subscribed after sleeping', async ({ page, bundle }) => {
   test.skip(bundle.includes('slim'), 'devtools are no-ops in the slim build');
   const result = await page.evaluate(async src => {
-    const { signal, computed, effect, enableDevtools } = await import(src);
-    enableDevtools();
+    const { signal, computed, effect } = await import(src);
+    await import('/esm/devtools.js');
     const hook = window.__KENSINGTON_DEVTOOLS__;
     const base = signal(4);
     const c = computed(() => base.get() + 1);
@@ -257,8 +257,8 @@ test('devtools: source signal is removed when its only subscriber (a computed) s
   async ({ page, bundle }) => {
     test.skip(bundle.includes('slim'), 'devtools are no-ops in the slim build');
     const result = await page.evaluate(async src => {
-      const { signal, computed, effect, enableDevtools } = await import(src);
-      enableDevtools();
+      const { signal, computed, effect } = await import(src);
+      await import('/esm/devtools.js');
       const hook = window.__KENSINGTON_DEVTOOLS__;
       const base = signal('only-computed-sub');
       const baseId = [...hook.signals.values()].find(m => m.value === 'only-computed-sub')?.id;
@@ -279,8 +279,8 @@ test('devtools: source signal is removed when its only subscriber (a computed) s
 test('devtools: signal entry is removed after all subscribing effects are paused', async ({ page, bundle }) => {
   test.skip(bundle.includes('slim'), 'devtools are no-ops in the slim build');
   const result = await page.evaluate(async src => {
-    const { t, signal, enableDevtools } = await import(src);
-    enableDevtools();
+    const { t, signal } = await import(src);
+    await import('/esm/devtools.js');
     const hook = window.__KENSINGTON_DEVTOOLS__;
     const sig = signal('x');
     const tag = t.span({ class: sig, persist: true });
@@ -301,8 +301,8 @@ test('devtools: signal entry is not removed when effects re-subscribe before mic
   async ({ page, bundle }) => {
     test.skip(bundle.includes('slim'), 'devtools are no-ops in the slim build');
     const result = await page.evaluate(async src => {
-      const { t, signal, enableDevtools } = await import(src);
-      enableDevtools();
+      const { t, signal } = await import(src);
+      await import('/esm/devtools.js');
       const hook = window.__KENSINGTON_DEVTOOLS__;
       const cls = signal('a');
       const tag = t.li({ persist: true }, [t.span({ class: cls })]);
@@ -326,8 +326,8 @@ test('devtools: signal entry is not removed when a computed re-subscribes before
   async ({ page, bundle }) => {
     test.skip(bundle.includes('slim'), 'devtools are no-ops in the slim build');
     const result = await page.evaluate(async src => {
-      const { signal, computed, effect, enableDevtools } = await import(src);
-      enableDevtools();
+      const { signal, computed, effect } = await import(src);
+      await import('/esm/devtools.js');
       const hook = window.__KENSINGTON_DEVTOOLS__;
       const base = signal(10);
       const baseId = [...hook.signals.values()].find(m => m.value === 10)?.id;
