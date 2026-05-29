@@ -4,7 +4,7 @@
     "#kensington": "./shared/template-engine.js"
   },
   "scripts": {
-    "start": "node --watch server/server.js"
+    "start": "node --watch server/index.js"
   },
   "dependencies": {
     "express": "^4.19.0"

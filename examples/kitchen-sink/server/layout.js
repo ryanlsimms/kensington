@@ -15,7 +15,7 @@ export function layout(body) {
           '#kensington': '/shared/template-engine.js',
         },
       })),
-      t.script({ type: 'module', src: '/client.js' }),
+      t.script({ type: 'module', src: '/index.js' }),
     ]),
     t.body(body),
   ]);

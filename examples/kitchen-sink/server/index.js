@@ -5,37 +5,24 @@ import express from 'express';
 
 import t, { renderForHydration } from '#kensington';
 
-import { dashboard } from '../shared/components/dashboard.js';
-import { taskSpotlight } from '../shared/components/task-spotlight.js';
+import { dashboard } from '../components/dashboard.js';
+import { spotlightSection } from '../components/spotlight-section.js';
+import { taskSpotlight } from '../components/task-spotlight.js';
+import tasks from './data.json' with { type: 'json' };
 import { layout } from './layout.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '../../..');
-
-const tasks = [
-  { id: 't1', text: 'Read the Kensington docs', done: true },
-  { id: 't2', text: 'Build a reactive UI', done: false },
-  { id: 't3', text: 'Try the filter buttons', done: false },
-  { id: 't4', text: 'Add a task of your own', done: false },
-];
 
 const app = express();
 
 app.use('/dist', express.static(path.join(projectRoot, 'dist')));
 app.use('/esm', express.static(path.join(projectRoot, 'esm')));
 app.use('/shared', express.static(path.join(__dirname, '../shared')));
+app.use('/components', express.static(path.join(__dirname, '../components')));
 app.use(express.static(path.join(__dirname, '../client')));
 
 app.get('/', (req, res) => {
-  const spotlightSection = t.div({ class: 'spotlight-section' }, [
-    t.h2('Task Spotlight'),
-    t.p({ class: 'spotlight-hint' },
-      'Fetches a server-rendered fragment — the MutationObserver hydrates it automatically.',
-    ),
-    t.button({ type: 'button', id: 'spotlight-load', class: 'load-btn' }, 'Load random task'),
-    t.div({ id: 'spotlight-container' }),
-  ]);
-
   const page = [
     t.literal('<p class="intro">Kensington <strong>kitchen sink</strong>: SSR with <em>reactive</em> hydration.'),
     // renderForHydration renders the component as an HTML string and embeds the props
@@ -43,7 +30,7 @@ app.get('/', (req, res) => {
     // The component function runs in SSR mode: signals resolve to their initial values,
     // effects are skipped entirely (no DOM, no subscriptions).
     renderForHydration(dashboard, { tasks }),
-    spotlightSection,
+    spotlightSection(),
   ];
 
   return res.send(layout(page).toString());

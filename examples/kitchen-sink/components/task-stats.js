@@ -1,6 +1,6 @@
 import t, { computed } from '#kensington';
 
-import { tasks } from '../state.js';
+import { tasks } from '../shared/state.js';
 
 export function taskStats() {
   // Each computed reads both the tasks array and each task's done signal, so it

@@ -1,0 +1,6 @@
+[
+  { "id": "t1", "text": "Read the Kensington docs", "done": true },
+  { "id": "t2", "text": "Build a reactive UI", "done": false },
+  { "id": "t3", "text": "Try the filter buttons", "done": false },
+  { "id": "t4", "text": "Add a task of your own", "done": false }
+]

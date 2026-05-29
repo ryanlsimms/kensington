@@ -1,6 +1,6 @@
 import t from '#kensington';
 
-import { filter } from '../state.js';
+import { filter } from '../shared/state.js';
 
 export function filterBar() {
   function btn(value, label) {

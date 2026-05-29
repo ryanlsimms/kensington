@@ -1,6 +1,6 @@
 import t, { computed } from '#kensington';
 
-import { tasks } from '../state.js';
+import { tasks } from '../shared/state.js';
 
 const BAR_WIDTH = 200;
 

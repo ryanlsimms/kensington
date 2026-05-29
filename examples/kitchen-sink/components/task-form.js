@@ -1,6 +1,6 @@
 import t, { signal } from '#kensington';
 
-import { tasks } from '../state.js';
+import { tasks } from '../shared/state.js';
 
 export function taskForm() {
   // Local signal for the controlled input — scoped to this component.

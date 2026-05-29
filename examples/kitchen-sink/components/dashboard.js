@@ -1,6 +1,6 @@
 import t, { effect, signal } from '#kensington';
 
-import { hasSaved, tasks } from '../state.js';
+import { hasSaved, tasks } from '../shared/state.js';
 import { filterBar } from './filter-bar.js';
 import { progressBar } from './progress-bar.js';
 import { taskForm } from './task-form.js';
@@ -43,6 +43,9 @@ export function dashboard({ tasks: initialTasks }) {
   // re-runs the callback and re-subscribes, so the title is immediately
   // correct when toggled back on.
   const titleLive = signal(true);
+  // titleStopped tracks whether stop() has been called. stop() is permanent —
+  // unlike pause(), a stopped effect cannot be resumed.
+  const titleStopped = signal(false);
 
   function toggleTitle() {
     const next = !titleLive.get();
@@ -52,6 +55,11 @@ export function dashboard({ tasks: initialTasks }) {
     } else {
       titleEffect.pause();
     }
+  }
+
+  function stopTitle() {
+    titleEffect.stop();
+    titleStopped.set(true);
   }
 
   function save() {
@@ -92,8 +100,15 @@ export function dashboard({ tasks: initialTasks }) {
       t.button({
         type: 'button',
         class: 'storage-btn',
+        disabled: titleStopped,
         onclick: toggleTitle,
       }, titleLive.transform(v => v ? 'Pause Title' : 'Resume Title')),
+      t.button({
+        type: 'button',
+        class: 'storage-btn',
+        disabled: titleStopped,
+        onclick: stopTitle,
+      }, 'Stop Title'),
     ]),
   ]);
 }

@@ -6,19 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- Reconciler keyed fast-path now recognises `data-key` passed as a nested object (`{ data: { key: id } }`). Previously only the flat forms `{ dataKey: id }` and `{ 'data-key': id }` were matched, so all keyed items were treated as unkeyed on every reconcile — causing full re-renders and unnecessary effect churn.
+
 ### Added
-- Reactive per-property style objects. Individual values inside a `style` object now accept signals. Only the changed property is written to the DOM on each signal update — other properties are left untouched. Static property values continue to be set once at render time. `toString()` resolves all signal values inline as before.
+- Reactive per-property style objects. Individual values inside a `style` object now accept signals. Only the changed property is written to the DOM on each signal update.
 - Devtools DOM tab now shows `style:propName` binding labels for reactive style properties, matching the `prop:propName` convention.
 - Devtools panel pop-out button (↗ in the panel header). Opens the panel in a named popup window so it can sit alongside the page being developed. The popup reconnects automatically when the main page reloads.
 - Devtools panel Copy button on the Log tab. Copies the currently visible log entries as tab-separated text to the clipboard, respecting the active filter.
 - Event listener tracking for keyed list items. When the reconciler reuses a keyed DOM node, it now transfers event listeners from the old node to the new one, removing stale handlers and adding fresh ones. Inline arrow functions in `.map()` are always up to date on the next click without requiring signals for handler arguments.
 
 ### Changed
-- `enableDevtools` is no longer a named export of the main `kensington` package. Activate devtools by importing `kensington/devtools` as a side effect, which also mounts the panel. Any existing `import { enableDevtools } from 'kensington'; enableDevtools()` should change to `import 'kensington/devtools'`.
-
-### Fixed
-- Devtools panel Log tab now scrolls correctly when entries overflow the panel height.
-- Devtools no longer emits spurious `computed:stop` events for sleeping computed signals read transiently via `.toJSON()`, `.value`, or `.get()` outside a reactive context (e.g. when the devtools panel serializes signal values for display). The cascade of `computed:stop` events that previously triggered repeated RAF re-renders after a keyed list item deletion is resolved.
+- `enableDevtools` is no longer a named export of the main `kensington` package. Activate devtools by importing `kensington/devtools` as a side effect, which also mounts the panel.
 
 ## [2.0.0-signals.12] - 2026-05-28
 

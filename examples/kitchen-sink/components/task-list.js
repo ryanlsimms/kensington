@@ -1,20 +1,10 @@
 import t, { computed } from '#kensington';
 
-import { filter, tasks } from '../state.js';
+import { filter, tasks } from '../shared/state.js';
 
 function handleDeleteClick(evt) {
   const id = evt.target.closest('li').dataset.key;
-  tasks.set(ts => {
-    const task = ts.find(item => item.id === id);
-    if (task) {
-      // stop() immediately clears all subscribers and removes the signal from
-      // devtools. done.stop() causes itemClass (a derived computed) to auto-sleep;
-      // itemClass.stop() then tears it down fully rather than waiting for GC.
-      task.done.stop();
-      task.itemClass.stop();
-    }
-    return ts.filter(item => item.id !== id);
-  });
+  tasks.set(ts => ts.filter(item => item.id !== id) );
 }
 
 function handleDoneClick(evt) {

@@ -16,7 +16,7 @@ const snapshots = new WeakMap();
 
 function itemKey(item) {
   const attrs = item?.attributes;
-  const key = attrs?.dataKey ?? attrs?.['data-key'];
+  const key = attrs?.dataKey ?? attrs?.['data-key'] ?? attrs?.data?.key;
   return key === undefined ? null : String(key);
 }
 

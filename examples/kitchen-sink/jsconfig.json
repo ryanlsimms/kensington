@@ -14,5 +14,5 @@
       "kensington/*": ["../../esm/*.js"]
     }
   },
-  "exclude": ["node_modules", "server/server.js"]
+  "exclude": ["node_modules", "server/index.js"]
 }
