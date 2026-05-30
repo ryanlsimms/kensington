@@ -1237,6 +1237,148 @@ test('signal prop effect stops when element is removed from DOM', async ({ page,
   expect(result).toBe('before');
 });
 
+test('static prop on keyed element is updated when value changes', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+    const selectedIds = signal(new Set());
+    const items = signal([{ id: 1 }, { id: 2 }]);
+    const rows = computed(() =>
+      items.get().map(item =>
+        t.li({ dataKey: item.id },
+          t.input({ type: 'checkbox', prop: { checked: selectedIds.get().has(item.id) } }),
+        ),
+      ),
+    );
+    document.body.append(t.ul({ id: 'static-prop-update' }, rows).toElement());
+    await Promise.resolve();
+
+    selectedIds.set(new Set([1]));
+    await Promise.resolve();
+
+    return Array.from(document.querySelectorAll('#static-prop-update input')).map(el => el.checked);
+  }, bundle);
+  expect(result[0]).toBe(true);
+  expect(result[1]).toBe(false);
+});
+
+test('static prop reconciliation reuses the existing DOM node', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+    const checked = signal(false);
+    const items = signal([{ id: 1 }]);
+    const rows = computed(() =>
+      items.get().map(item =>
+        t.li({ dataKey: item.id },
+          t.input({ id: 'static-prop-node', type: 'checkbox', prop: { checked: checked.get() } }),
+        ),
+      ),
+    );
+    document.body.append(t.ul({}, rows).toElement());
+    await Promise.resolve();
+
+    const before = document.getElementById('static-prop-node');
+    before._sentinel = true;
+
+    checked.set(true);
+    await Promise.resolve();
+
+    const after = document.getElementById('static-prop-node');
+    return { reused: after._sentinel === true, checked: after.checked };
+  }, bundle);
+  expect(result.reused).toBe(true);
+  expect(result.checked).toBe(true);
+});
+
+test('multiple static props on a keyed element all reconcile', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+    const state = signal({ checked: false, disabled: false });
+    const items = signal([{ id: 1 }]);
+    const rows = computed(() => {
+      const s = state.get();
+      return items.get().map(item =>
+        t.li({ dataKey: item.id },
+          t.input({ id: 'multi-prop-input', type: 'checkbox', prop: { checked: s.checked, disabled: s.disabled } }),
+        ),
+      );
+    });
+    document.body.append(t.ul({}, rows).toElement());
+    await Promise.resolve();
+
+    state.set({ checked: true, disabled: true });
+    await Promise.resolve();
+
+    const input = document.getElementById('multi-prop-input');
+    return { checked: input.checked, disabled: input.disabled };
+  }, bundle);
+  expect(result.checked).toBe(true);
+  expect(result.disabled).toBe(true);
+});
+
+test('static prop reconciles across multiple value changes including back to original', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+    const selectedIds = signal(new Set());
+    const items = signal([{ id: 1 }, { id: 2 }]);
+    const rows = computed(() =>
+      items.get().map(item =>
+        t.li({ dataKey: item.id },
+          t.input({ type: 'checkbox', prop: { checked: selectedIds.get().has(item.id) } }),
+        ),
+      ),
+    );
+    document.body.append(t.ul({ id: 'prop-cycle' }, rows).toElement());
+    await Promise.resolve();
+
+    const snapshots = [];
+    const read = () => Array.from(document.querySelectorAll('#prop-cycle input')).map(el => el.checked);
+
+    selectedIds.set(new Set([1]));
+    await Promise.resolve();
+    snapshots.push(read());
+
+    selectedIds.set(new Set([1, 2]));
+    await Promise.resolve();
+    snapshots.push(read());
+
+    selectedIds.set(new Set());
+    await Promise.resolve();
+    snapshots.push(read());
+
+    return snapshots;
+  }, bundle);
+  expect(result[0]).toEqual([true, false]);
+  expect(result[1]).toEqual([true, true]);
+  expect(result[2]).toEqual([false, false]);
+});
+
+test('signal prop on a keyed element remains reactive after syncNode runs', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+    const val = signal('first');
+    const items = signal([{ id: 1, label: 'a' }]);
+    const rows = computed(() =>
+      items.get().map(item =>
+        // data-label change triggers snapshotMatches failure → syncNode runs
+        t.li({ dataKey: item.id, 'data-label': item.label },
+          t.input({ id: 'signal-prop-reactive', type: 'text', prop: { value: val } }),
+        ),
+      ),
+    );
+    const ul = t.ul({}, rows).toElement();
+    document.body.append(ul);
+
+    items.set([{ id: 1, label: 'b' }]);
+    await Promise.resolve();
+
+    val.set('second');
+    await Promise.resolve();
+
+    return document.getElementById('signal-prop-reactive')?.value;
+  }, bundle);
+  expect(result).toBe('second');
+});
+
 // ─── addConnectedCallback / addDisconnectedCallback ──────────────────────────
 
 test('addConnectedCallback fires when element is appended to the DOM', async ({ page, bundle }) => {

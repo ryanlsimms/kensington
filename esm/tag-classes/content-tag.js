@@ -6,7 +6,7 @@ import { createLifecycle } from '../lib/reactive/lifecycle.js';
 // effect callback at runtime, not at module-load time. ESM live bindings resolve correctly
 // by the time the callback fires. Rollup emits a CIRCULAR_DEPENDENCY warning that's
 // informational only. See reconcile.js for the other half of the cycle.
-import { reconcile } from '../lib/reactive/reconcile.js';
+import { reconcile, recordStaticProps } from '../lib/reactive/reconcile.js';
 import Signal from '../lib/reactive/signal.js';
 import {
   attributeArray,
@@ -204,6 +204,8 @@ export default class ContentTag {
     }
 
     if (this.prop) {
+      const statics = {};
+      let hasStatics = false;
       for (const [propName, propValue] of Object.entries(this.prop)) {
         if (propName in element && !isPropWritable(element, propName)) {
           showInvalid(`prop key \`${propName}\` is read-only on <${this.tagName}>`, this.validationLevel, this.logger);
@@ -213,7 +215,12 @@ export default class ContentTag {
           lifecycle.signalEffect(propValue, (el, val) => { el[propName] = val; }, `prop:${propName}`);
         } else {
           element[propName] = propValue;
+          statics[propName] = propValue;
+          hasStatics = true;
         }
+      }
+      if (hasStatics) {
+        recordStaticProps(element, statics);
       }
     }
 

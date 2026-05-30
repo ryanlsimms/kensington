@@ -14,6 +14,14 @@ import { transferListeners } from './element-listeners.js';
 // clear automatically on garbage collection.
 const snapshots = new WeakMap();
 
+// Static (non-Signal) prop values assigned during toElement(). syncNode reads these to
+// replay prop assignments onto the reused existing node when a keyed item re-renders.
+const staticProps = new WeakMap();
+
+export function recordStaticProps(element, props) {
+  staticProps.set(element, props);
+}
+
 function itemKey(item) {
   const attrs = item?.attributes;
   const key = attrs?.dataKey ?? attrs?.['data-key'] ?? attrs?.data?.key;
@@ -135,6 +143,15 @@ function syncNode(existing, fresh) {
         }
       }
     }
+  }
+  const props = staticProps.get(fresh);
+  if (props) {
+    for (const [name, val] of Object.entries(props)) {
+      if (existing[name] !== val) {
+        existing[name] = val;
+      }
+    }
+    staticProps.set(existing, props);
   }
   transferListeners(existing, fresh);
   stopTracked(fresh);

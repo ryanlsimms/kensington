@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Fixed
+- Static `prop` values on keyed list items are now reconciled when the item re-renders with a changed value.
+
 ## [2.0.0-signals.13] - 2026-05-29
 
 ### Fixed
