@@ -264,29 +264,29 @@ effect(() => {
 });
 
 function homePage() {
-  return t.main(
+  return t.main([
     t.h1('Home'),
-    t.nav(
-      t.a({ href: '/user/1', onClick: [e => { e.preventDefault(); router.navigate('/user/1'); }] }, 'User 1'),
+    t.nav([
+      t.a({ dataNavigo: true, href: '/user/1' }, 'User 1'),
       ' ',
-      t.a({ href: '/settings', onClick: [e => { e.preventDefault(); router.navigate('/settings'); }] }, 'Settings'),
-    ),
-  );
+      t.a({ dataNavigo: true, href: '/settings' }, 'Settings'),
+    ]),
+  ]);
 }
 
 function userPage(id) {
-  return t.main(
+  return t.main([
     t.h1(\`User \${id}\`),
-    t.a({ href: '/', onClick: [e => { e.preventDefault(); router.navigate('/'); }] }, 'Back'),
-  );
+    t.a({ dataNavigo: true, href: '/' }, 'Back'),
+  ]);
 }
 
 function settingsPage() {
-  return t.main(t.h1('Settings'));
+  return t.main([t.h1('Settings')]);
 }
 
 function notFound() {
-  return t.main(t.h1('404 - Not found'));
+  return t.main([t.h1('404 - Not found')]);
 }`),
       t.p([
         'Navigo intercepts link clicks itself when you use its ',

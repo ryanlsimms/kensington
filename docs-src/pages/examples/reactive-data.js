@@ -609,11 +609,9 @@ registerComponents({ registrationForm });`),
         t.code('addConnectedCallback'),
         ' to start a data fetch loop when mounted, and ',
         t.code('addDisconnectedCallback'),
-        ' to stop it when removed. Passing ',
-        t.code('{ persist: true }'),
-        ' to ',
-        t.code('toElement'),
-        ' makes both callbacks re-fire on every mount and unmount, so the ticker pauses polling when removed from the DOM and restarts when re-inserted.',
+        ' to stop it when removed. ',
+        t.code('persist: true'),
+        ' keeps the element\'s signal effects paused rather than destroyed on DOM removal, so the element can be re-inserted and resume reactivity. The connected and disconnected callbacks re-fire on each cycle as part of that mechanism.',
       ]),
       code(t, 'javascript', `import { t, signal } from 'kensington';
 
@@ -624,13 +622,15 @@ function PriceTicker({ symbol }) {
   let pollId = null;
 
   const ticker = t.div(
-    { class: 'ticker' },
-    t.span({ class: 'symbol' }, symbol),
-    t.span({ class: 'price' }, price),
-    t.span(
-      { class: direction.transform(d => d > 0 ? 'up' : d < 0 ? 'down' : 'flat') },
-      direction.transform(d => d > 0 ? '▲' : d < 0 ? '▼' : '–'),
-    ),
+    { class: 'ticker', persist: true },
+    [
+      t.span({ class: 'symbol' }, symbol),
+      t.span({ class: 'price' }, price),
+      t.span(
+        { class: direction.transform(d => d > 0 ? 'up' : d < 0 ? 'down' : 'flat') },
+        direction.transform(d => d > 0 ? '▲' : d < 0 ? '▼' : '–'),
+      ),
+    ],
   );
 
   ticker.addConnectedCallback(function() {
@@ -649,7 +649,7 @@ function PriceTicker({ symbol }) {
     clearInterval(pollId);
   });
 
-  return ticker.toElement({ persist: true });
+  return ticker.toElement();
 }`),
     ]),
 
@@ -772,21 +772,21 @@ effect(() => {
 });
 
 function homePage() {
-  return t.main(
+  return t.main([
     t.h1('Home'),
-    t.nav(
+    t.nav([
       t.a({ href: '/user/1' }, 'User 1'),
       ' ',
       t.a({ href: '/user/2' }, 'User 2'),
-    ),
-  );
+    ]),
+  ]);
 }
 
 function userPage(id) {
-  return t.main(
+  return t.main([
     t.h1(\`User \${id}\`),
     t.a({ href: '/' }, 'Back'),
-  );
+  ]);
 }
 
 function notFound() {

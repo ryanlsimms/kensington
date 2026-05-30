@@ -42,7 +42,7 @@ export function layout(t, pages) {
       ]),
 
       t.nav({ id: 'sidebar' }, [
-        renderForHydration(pageTabs, { pages: pages.map(p => ({ id: p.id, label: p.label })) }),
+        renderForHydration(pageTabs, { pages: pages.filter(p => !p.hideFromNav).map(p => ({ id: p.id, label: p.label })) }),
         ...pages.map((p, i) =>
           t.div({ dataPageNav: p.id, class: i > 0 ? 'page-inactive' : '' }, p.sidebar(t))
         ),

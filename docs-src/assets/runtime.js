@@ -79,3 +79,14 @@ nav.querySelectorAll('a[href^="#"]').forEach(l => l.addEventListener('click', e 
 // ── Components ────────────────────────────────────────────────────
 
 registerComponents({ signalDemo, searchDocs, copyButton, pageTabs, comparisonsModal });
+
+// ── Architecture: sticky legend bar ──────────────────────────
+
+(function () {
+  const sentinel = document.querySelector('.legend-sentinel');
+  const bar = document.querySelector('.legend-bar');
+  if (!sentinel || !bar) { return; }
+  new IntersectionObserver(([entry]) => {
+    bar.classList.toggle('is-stuck', !entry.isIntersecting);
+  }, { threshold: 0 }).observe(sentinel);
+})();
