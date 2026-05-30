@@ -60,10 +60,12 @@ export function apiContent(t) {
     apiSpecialMethods(t),
     apiSignals(t),
     ...apiExportsAndTypes(t),
-    t.p({ style: 'margin-top: 3rem; font-size: 0.83rem; color: var(--color-muted)' }, [
-      'Want to understand how everything works under the hood? See the ',
-      t.a({ href: '?page=architecture' }, 'architecture guide'),
-      '.',
+    t.section([
+      t.p({ style: 'margin-top: 3rem; font-size: 0.83rem; color: var(--color-muted)' }, [
+        'Want to understand how everything works under the hood? See the ',
+        t.a({ href: '?page=architecture' }, 'architecture guide'),
+        '.',
+      ]),
     ]),
   ];
 }
