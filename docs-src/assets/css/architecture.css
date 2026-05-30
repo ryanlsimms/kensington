@@ -149,10 +149,6 @@ section.stage-5 h2::before { background: var(--color-stage5); }
   color: var(--color-heading);
 }
 
-@media (max-width: 768px) {
-  .compare-grid { grid-template-columns: 1fr; }
-}
-
 /* Mermaid diagram container */
 .mermaid-wrap {
   background: var(--color-mermaid-bg);
@@ -164,8 +160,10 @@ section.stage-5 h2::before { background: var(--color-stage5); }
   overflow-x: auto;
 }
 
+/* mermaid sets inline style="max-width: Npx" on the SVG — !important overrides it */
 .mermaid-wrap svg {
-  max-width: 100%;
+  max-width: 100% !important;
+  height: auto !important;
 }
 
 /* Sticky legend bar */
@@ -207,6 +205,33 @@ section.stage-5 h2::before { background: var(--color-stage5); }
 @media (max-width: 768px) {
   .legend-bar { top: 44px; }
   section[id] { scroll-margin-top: 90px; }
+
+  .mermaid-wrap {
+    max-width: none;
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+    margin-left: -1.5em;
+    margin-right: -1.5em;
+  }
+
+  .step-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .compare-grid {
+    grid-template-columns: 1fr;
+    margin-left: -1.5em;
+    margin-right: -1.5em;
+  }
+
+  .compare-grid > div {
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+  }
+
+  .loc, .term { white-space: normal; }
 }
 
 /* File path breadcrumb */

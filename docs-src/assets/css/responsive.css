@@ -131,4 +131,6 @@
     border-right: none;
     border-bottom: 1px solid var(--color-border);
   }
+
+  code:is(:not([class]), .wrappable) { text-wrap: wrap; }
 }

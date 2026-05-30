@@ -285,7 +285,7 @@ h1 {
   font-family: var(--font-heading);
   font-weight: 700;
   color: var(--color-heading);
-  font-size: 4.25rem;
+  font-size: clamp(3.5rem, 10vw, 4.25rem);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   line-height: 1.05;
