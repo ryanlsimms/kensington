@@ -95,18 +95,21 @@ describe('elements', () => {
   });
 
   it('nested element', () => {
-    assert.strictEqual(run('<div><p>hi</p></div>').out, 't.div(t.p("hi"))');
+    assert.strictEqual(
+      run('<div><p>hi</p></div>').out,
+      `t.div([
+  t.p("hi"),
+])`,
+    );
   });
 
   it('multiple children rendered as array', () => {
     assert.strictEqual(
       run('<ul><li>a</li><li>b</li></ul>').out,
-      `t.ul(
-  [
-    t.li("a"),
-    t.li("b"),
-  ],
-)`,
+      `t.ul([
+  t.li("a"),
+  t.li("b"),
+])`,
     );
   });
 });
@@ -151,12 +154,10 @@ describe('document structure', () => {
   it('full document with doctype', () => {
     assert.strictEqual(
       run('<!doctype html><html><head></head><body></body></html>').out,
-      `t.htmlWithDocType(
-  [
-    t.head(),
-    t.body(),
-  ],
-)`,
+      `t.htmlWithDocType([
+  t.head(),
+  t.body(),
+])`,
     );
   });
 });
@@ -200,12 +201,10 @@ describe('nested attributes', () => {
     const html = `<button data-bs-toggle="collapse" data-bs-target="#one" aria-expanded="true" aria-controls="one"></button>`;
     assert.strictEqual(
       run(html).out,
-      `t.button(
-  {
-    data: { bsToggle: "collapse", bsTarget: "#one" },
-    aria: { expanded: "true", controls: "one" },
-  },
-)`,
+      `t.button({
+  data: { bsToggle: "collapse", bsTarget: "#one" },
+  aria: { expanded: "true", controls: "one" }
+})`,
     );
   });
 });
@@ -215,14 +214,13 @@ describe('long attributes', () => {
     const html = `<button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">Text</button>`;
     assert.strictEqual(
       run(html).out,
-      `t.button(
-  {
-    class: "accordion-button",
-    type: "button",
-    data: { bsToggle: "collapse", bsTarget: "#collapseOne" },
-  },
+      `t.button({
+  class: "accordion-button",
+  type: "button",
+  data: { bsToggle: "collapse", bsTarget: "#collapseOne" }
+}, [
   "Text",
-)`,
+])`,
     );
   });
 });
@@ -231,14 +229,18 @@ describe('SVG', () => {
   it('basic SVG with child element', () => {
     assert.strictEqual(
       run('<svg><circle cx="12" cy="12" r="10"></circle></svg>').out,
-      't.svg(t.circle({ cx: "12", cy: "12", r: "10" }))',
+      `t.svg([
+  t.circle({ cx: "12", cy: "12", r: "10" }),
+])`,
     );
   });
 
   it('camelCase SVG element name is restored', () => {
     assert.strictEqual(
       run('<svg><linearGradient id="g"></linearGradient></svg>').out,
-      't.svg(t.linearGradient({ id: "g" }))',
+      `t.svg([
+  t.linearGradient({ id: "g" }),
+])`,
     );
   });
 });
@@ -309,9 +311,7 @@ export default [{ plugins: { '@stylistic/js': stylistic }, rules: { '@stylistic/
 `);
     assert.strictEqual(
       run('<a href="/about" target="_blank"></a>', [], eslintDir).out,
-      `t.a(
-  { href: "/about", target: "_blank" },
-)`,
+      't.a({ href: "/about", target: "_blank" })',
     );
   });
 
@@ -345,9 +345,7 @@ module.exports = {
     // 't.a({ href: "/about", target: "_blank" })' = 42 chars — fits in 80 (default) but not 40
     assert.strictEqual(
       run('<a href="/about" target="_blank"></a>', [], prettierDir).out,
-      `t.a(
-  { href: "/about", target: "_blank" },
-)`,
+      't.a({ href: "/about", target: "_blank" })',
     );
   });
 

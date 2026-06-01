@@ -24,26 +24,31 @@ export function nodeToCode(node, maxLen, tagOverride = null) {
   const children = (node.childNodes ?? [])
     .map(n => nodeToCode(n, maxLen))
     .filter(Boolean);
-  let contentCode;
-  if (children.length === 0) {
-    contentCode = null;
-  } else if (children.length === 1) {
-    contentCode = children[0];
-  } else {
-    const items = children.map(c => reindent(c, 2));
-    contentCode = `[\n  ${items.join(',\n  ')},\n]`;
-  }
 
-  const args = [attrsCode, contentCode].filter(Boolean);
-  if (!args.length) {
+  const contentArray = children.length > 0
+    ? `[\n  ${children.map(c => reindent(c, 2)).join(',\n  ')},\n]`
+    : null;
+
+  // Single child goes bare for the inline check; multiple children use the array (which has \n, so inline check fails anyway)
+  const inlineContent = children.length === 1 ? children[0] : contentArray;
+
+  const inlineArgs = [attrsCode, inlineContent].filter(Boolean);
+  if (!inlineArgs.length) {
     return `t.${tag}()`;
   }
 
-  const inline = `t.${tag}(${args.join(', ')})`;
-  if (inline.length <= maxLen && !inline.includes('\n')) {
+  const isComponentContent = children.length === 1 && children[0].startsWith('t.');
+  const inline = `t.${tag}(${inlineArgs.join(', ')})`;
+  if (!isComponentContent && inline.length <= maxLen && !inline.includes('\n')) {
     return inline;
   }
 
-  const indentedArgs = args.map(a => reindent(a, 2));
-  return `t.${tag}(\n  ${indentedArgs.join(',\n  ')},\n)`;
+  // Multi-line: attrs stay on the same line as the method call, content wrapped in array
+  if (!contentArray) {
+    return `t.${tag}(${attrsCode})`;
+  }
+  if (attrsCode) {
+    return `t.${tag}(${attrsCode}, ${contentArray})`;
+  }
+  return `t.${tag}(${contentArray})`;
 }

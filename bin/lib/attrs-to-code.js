@@ -55,7 +55,12 @@ export function attrsToCode(attrs, maxLen) {
           }
           return `${key}: ${JSON.stringify(value)}`;
         });
-        pairs.push(`${prefix}: { ${innerPairs.join(', ')} }`);
+        const nestedInline = `${prefix}: { ${innerPairs.join(', ')} }`;
+        if (nestedInline.length + 2 <= maxLen) {
+          pairs.push(nestedInline);
+        } else {
+          pairs.push(`${prefix}: { ${innerPairs.join(',\n    ')} }`);
+        }
       } else {
         const { name, value } = members[0];
         if (BOOLEAN_ATTRS.has(name) && value === '') {
@@ -71,5 +76,8 @@ export function attrsToCode(attrs, maxLen) {
     return null;
   }
   const inline = `{ ${pairs.join(', ')} }`;
-  return inline.length <= maxLen ? inline : `{\n  ${pairs.join(',\n  ')},\n}`;
+  if (inline.length <= maxLen) {
+    return inline;
+  }
+  return `{\n  ${pairs.join(',\n  ')}\n}`;
 }
