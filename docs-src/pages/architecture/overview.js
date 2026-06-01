@@ -111,11 +111,7 @@ export function architectureOverview(t) {
             t.td([
               'Opt-in via the ',
               t.code('persist'),
-              ' tag option or by passing ',
-              t.code('{ persist: true }'),
-              ' to ',
-              t.code('toElement()'),
-              '. Effects pause on removal and resume on reconnect. Disconnect/connect callbacks fire every cycle.',
+              ' tag option. Effects pause on removal and resume on reconnect. Disconnect/connect callbacks fire every cycle.',
             ]),
             t.td(loc(t, 'esm/lib/reactive/lifecycle.js')),
           ]),

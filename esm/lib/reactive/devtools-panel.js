@@ -201,6 +201,11 @@ const CSS = `
     width: 100%; height: 100%; max-height: none;
     border-radius: 0; box-shadow: none; border: none;
   }
+
+  @media (max-width: 400px) {
+    #toggle { bottom: 12px; right: 12px; }
+    #panel { left: 12px; right: 12px; width: auto; max-height: calc(100vh - 80px); border-radius: 6px; }
+  }
 `;
 
 const activeHighlights = new Map();

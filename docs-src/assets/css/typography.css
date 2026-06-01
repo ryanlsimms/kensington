@@ -13,7 +13,7 @@
   --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
 }
 
-section {
+section, h1, h2, h3 {
   margin-bottom: 3rem;
   scroll-margin-top: calc((var(--topbar-height) + var(--main-x-padding) + var(--section-x-padding)) * 0.93);
 }

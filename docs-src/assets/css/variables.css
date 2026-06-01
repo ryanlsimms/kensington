@@ -91,7 +91,7 @@
   --color-ide-completion-divider: hsla(0, 0%, 100%, 0.04);
   --color-ide-cursor: hsl(90, 1%, 68%);
 
-  --main-x-padding: 2em;
+  --main-x-padding: 32px;
   --section-x-padding: 0em;
   --topbar-height: 44px;
 }

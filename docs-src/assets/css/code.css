@@ -122,7 +122,8 @@ pre[class*="language-"]:hover .copy-btn { opacity: 1; }
   border: 1px dashed var(--color-border);
   border-bottom: none;
   border-radius: 0;
-  padding: 0.3rem 0.7rem;
+  padding-block: 0.3rem;
+  padding-inline: var(--section-x-padding);
   display: inline-block;
   max-width: 100%;
   overflow: hidden;

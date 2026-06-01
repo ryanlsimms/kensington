@@ -16,9 +16,9 @@ const MERMAID_INIT = `
 (async function () {
   const { default: mermaid } = await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs');
   const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', fontFamily: 'ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace' });
+  mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', fontFamily: 'ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace', flowchart: { curve: 'linear' } });
   const nodes = document.querySelectorAll('[data-page-content="architecture"] .mermaid');
-  if (nodes.length) { mermaid.run({ nodes }); }
+  if (nodes.length) { mermaid.run({ nodes }).catch(() => {}); }
 })();
 `.trim();
 

@@ -25,6 +25,8 @@ section.stage h2 {
   display: flex;
   align-items: center;
   gap: 0.6rem;
+  border-left: none;
+  padding-left: 0;
 }
 
 section.stage h2::before {
@@ -173,9 +175,6 @@ section.stage-5 h2::before { background: var(--color-stage5); }
 }
 
 .legend-bar {
-  position: sticky;
-  top: 0;
-  z-index: 50;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -203,7 +202,6 @@ section.stage-5 h2::before { background: var(--color-stage5); }
 }
 
 @media (max-width: 768px) {
-  .legend-bar { top: 44px; }
   section[id] { scroll-margin-top: 90px; }
 
   .mermaid-wrap {

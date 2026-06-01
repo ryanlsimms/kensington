@@ -64,11 +64,7 @@ export function architectureRemoval(t) {
       t.p([
         'The ',
         t.code('persist'),
-        ' tag option (or passing ',
-        t.code('{ persist: true }'),
-        ' to ',
-        t.code('toElement()'),
-        ') changes this. Effects pause instead of stop. The tag\'s ',
+        ' tag option changes this. Effects pause instead of stop. The tag\'s ',
         t.code('#domElement'),
         ' restores when the element returns. The disconnect-callback chain rebuilds so it fires on every cycle, not just the first.',
       ]),

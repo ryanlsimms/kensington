@@ -14,7 +14,7 @@ export function architectureDomOutput(t) {
       '.',
     ]),
     mermaid(t, `flowchart TD
-  S(["toElement(persist)"]) --> A{"domElement cached?"}
+  S(["toElement()"]) --> A{"domElement cached?"}
   A -- yes --> R1["return cached"]
   A -- no --> B["validateContent"]
   B --> C["createElement(NS)"]
