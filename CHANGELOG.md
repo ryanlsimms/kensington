@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [2.0.0-signals.15] - 2026-06-02
 
 ### Added
 - Keyed signals. `signal(initial, key)` inside a `computed` callback returns the same `Signal` instance across re-runs of that computed when called with the same key. Use this for local state inside `.map()` callbacks (e.g. `signal(false, item.id)`).
