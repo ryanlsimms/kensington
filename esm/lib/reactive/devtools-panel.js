@@ -122,6 +122,7 @@ const CSS = `
   .badge-active  { background: rgba(166,227,161,.15); color: #a6e3a1; }
   .badge-paused  { background: rgba(250,179,135,.15); color: #fab387; }
   .lbl { display: inline-block; margin: 0 2px 1px 0; padding: 1px 4px; border-radius: 3px; font-size: 10px; background: rgba(137,180,250,.1); color: #89b4fa; }
+  .lbl.lbl-key { background: rgba(245,194,231,.12); color: #f5c2e7; }
   .lbls { margin-top: 1px; line-height: 1.3; overflow: hidden; }
 
   .src-cell { max-width: 0; }
@@ -405,7 +406,8 @@ function renderSignalTable(hook, forComputed, filterText = '') {
       .filter(Boolean);
     const labels = [...new Set(bindings.map(b => b.label).filter(Boolean))];
     const labelChips = labels.map(l => `<span class="lbl">${l}</span>`).join('');
-    const labelsRow = labelChips ? `<div class="lbls">${labelChips}</div>` : '';
+    const keyChip = m.key === undefined ? '' : `<span class="lbl lbl-key">key: ${escHtml(String(m.key))}</span>`;
+    const labelsRow = (keyChip || labelChips) ? `<div class="lbls">${keyChip}${labelChips}</div>` : '';
     const domState = getSignalDomState(hook, m.id);
     const openTag = signalOpenTag(hook, m.id);
     const eyeAttr = openTag ? ` data-src="${escapeSrc(openTag)}"` : '';

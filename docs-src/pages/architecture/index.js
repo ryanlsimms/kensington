@@ -60,6 +60,7 @@ export function architectureSidebar(t) {
           t.li(t.a({ href: '#signal-write' }, 'Writes and flush')),
           t.li(t.a({ href: '#signal-effect' }, 'effect()')),
           t.li(t.a({ href: '#signal-computed' }, 'computed()')),
+          t.li(t.a({ href: '#signal-keyed' }, 'Keyed signals')),
         ]),
       ]),
       t.li([
@@ -77,6 +78,7 @@ export function architectureSidebar(t) {
         t.ul([
           t.li(t.a({ href: '#reconcile-snapshot' }, 'Snapshot fast path')),
           t.li(t.a({ href: '#reconcile-sync' }, 'syncNode')),
+          t.li(t.a({ href: '#reconcile-signal-mismatch' }, 'Signal-ref mismatch')),
         ]),
       ]),
       t.li(t.a({ href: '#hydration' }, 'SSR and Hydration')),

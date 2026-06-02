@@ -185,6 +185,10 @@ n.toString()              // returns String(this.get()); works in template liter
 
 const double = n.transform(v => v * 2)                       // derived; chainable
 const label  = computed(() => n.get() === 1 ? 'item' : 'items')  // read multiple signals
+
+// Keyed form. Inside a computed, returns the same instance per key across re-runs.
+// Outside a computed the key is ignored and a fresh signal is returned each call.
+const editing = signal(false, item.id)
 ```
 
 `Signal` is exported as a named export so callers can use `instanceof Signal` instead of duck-typing:
@@ -285,6 +289,42 @@ Add `dataKey` whenever items may reorder, be added, or removed. Reused nodes are
 
 For drag-and-drop sortable lists where DOM nodes are moved via `insertBefore`, add `persist: true` to each item tag so signal effects survive the move. See **Cleanup** below.
 
+### Local state inside a computed (keyed signals)
+
+Sometimes a per-item piece of interactive state belongs alongside the item rather than in the outer data. Pass a stable `key` as the second argument to `signal()` to scope it to the surrounding `computed`:
+
+```javascript
+const items = signal([{ id: 'a', label: 'Apple' }, { id: 'b', label: 'Banana' }]);
+
+const list = computed(() => items.get().map(item => {
+  const highlight = signal(false, item.id);
+  return t.li({ dataKey: item.id, class: highlight.transform(v => v ? 'active' : 'idle') }, [
+    t.button({ onclick: () => highlight.set(true) }, item.label),
+  ]);
+}));
+
+t.ul(list);
+```
+
+`signal(initial, key)` looks the signal up in a per-computed registry. The same key returns the same instance across re-runs, so the local state persists when the outer signal changes. When an item leaves the list, its keyed signal is stopped automatically. Use the item identity (typically `item.id`) as the key. Two `signal()` calls with the same key inside the same computed run would share a single signal between two items and would log an error to console.
+
+For best DOM identity preservation, bind the keyed signal directly to an attribute or use it via a CSS class toggle, rather than through a fresh `.transform()` each render. The transform creates a new derived signal per run, which the reconciler treats as a signal-reference mismatch and rebuilds the node. State still persists via the keyed source signal, but a `data-*` attribute or a direct class binding lets the node stay in place:
+
+```javascript
+// Editing state toggled via a data attribute. CSS swaps the visible element.
+const list = computed(() => items.get().map(item => {
+  const editing = signal('view', item.id);
+  return t.li({ dataKey: item.id, data: { editing } }, [
+    t.span({ class: 'task-text', ondblclick: () => editing.set('edit') }, item.text),
+    t.input({ class: 'task-edit-input', prop: { value: item.text } }),
+  ]);
+}));
+// CSS: .task-item[data-editing="view"] .task-edit-input { display: none; }
+//      .task-item[data-editing="edit"] .task-text       { display: none; }
+```
+
+`signal()` without a key inside a `computed` still works, but the reconciler must replace the DOM node when the outer state changes (so the fresh signal can drive the new live element). Focus, scroll, input value, and selection are preserved across the replacement; local signal state resets to the initial value. The library logs a `console.warn` suggesting the keyed form for best performance and persistent state.
+
 ### Cleanup
 
 `computed()` and `transform()` signals auto-dispose: when the last subscriber (a DOM effect or a downstream computed) is removed, the computed unsubscribes from its source signals and freezes its value. When something reads it inside a reactive context again, it revives and re-subscribes. This means computed chains used to build a DOM subtree clean themselves up automatically when that subtree is removed — no manual teardown needed.
@@ -337,7 +377,7 @@ if (import.meta.env.DEV) {
 
 The panel is a shadow-DOM-isolated overlay in the bottom-right corner. Click the **K** badge to open it. Four tabs:
 
-- **Signals** — plain signals: current value, set count, DOM visibility indicator (● visible, ○ in DOM but hidden, — not in DOM), subscriber count. Hover the subscriber count for a tooltip listing subscribed effects. Click a row to highlight and scroll to the bound DOM element.
+- **Signals** — plain signals: current value, set count, DOM visibility indicator (● visible, ○ in DOM but hidden, — not in DOM), subscriber count. Hover the subscriber count for a tooltip listing subscribed effects. Click a row to highlight and scroll to the bound DOM element. Keyed signals (created via `signal(initial, key)` inside a computed) show their key as a pink chip alongside binding labels.
 - **Computed** — computed signals, same columns. Entries disappear when auto-disposed (no subscribers) and reappear on re-subscription.
 - **Effects** — user `effect()` calls: state (active/paused), run count, function source.
 - **DOM** — live signal-to-DOM bindings (attributes, props, content): element descriptor, binding label (e.g. `class`, `prop:checked`, `style:color`, `(content)`), state, run count. Hover a row to outline the element in the page; click to scroll to it.
@@ -458,8 +498,24 @@ These are deliberate simplicity tradeoffs, not bugs.
 - Do not skip `.toString()` when passing to HTTP framework response methods
 - Do not use `onclick="string"` for DOM usage — pass a function; string handlers only serialize in `.toString()`
 - For drag-and-drop sortable lists: add `persist: true` to the item tag, not the container. Without it, `insertBefore` reorders fire a remove event that permanently stops the item's signal effects (class updates, checked state, etc. all break silently after the first drag). `persist: true` causes effects to pause on removal and resume on re-insertion instead.
+- For per-row local state inside a list mapping, use the keyed form: `signal(initial, item.id)` inside the surrounding `computed` callback returns the same instance per key across re-runs. Without a key, the DOM node is replaced on every outer re-render (focus, scroll, input value, and selection are copied over, but local signal state resets to the initial value).
 
 ## Reactive pitfalls
+
+Most of these are caught at lint time by [`eslint-plugin-kensington`](https://www.npmjs.com/package/eslint-plugin-kensington). Install it in any project that uses signals. It catches `.set()` inside a computed, `.get()`-then-`.set()` self-loops, async writes inside effects, missing keys on `signal()` calls inside a computed, and other patterns covered below.
+
+```bash
+npm install --save-dev eslint-plugin-kensington
+```
+
+```javascript
+// eslint.config.js
+import kensington from 'eslint-plugin-kensington';
+
+export default [
+  kensington.configs.recommended,
+];
+```
 
 ### Do not read and write the same signal in the same effect or computed run
 
@@ -532,14 +588,14 @@ effect(() => {
 
 ### Do not create computed signals inside a computed or transform callback
 
-When a `transform` or `computed` callback re-runs, any `transform()` or `computed()` call inside it creates a new signal instance on every re-render. Signals compare by reference in the reconciler snapshot check, so a new instance always fails the snapshot fast-path. The reconciler calls `toElement()` for each item to get a fresh DOM element to diff against — then discards it via `stopTracked`. The brief stop causes the new computed to lose its only subscriber immediately after gaining it, putting it to sleep. Sleeping orphans accumulate in the devtools Signals tab on every list update.
+When a `transform` or `computed` callback re-runs, any `transform()` or `computed()` call inside it creates a new derived signal on every re-render. The reconciler detects the reference change at the same attribute or content position and rebuilds the DOM node so the new derived signal can drive the live element. DOM state (focus, scroll, input value, selection) is preserved across the rebuild, but the work is wasteful, and the old derived signal becomes an orphan that sleeps and accumulates in the devtools Signals tab on every list update.
 
-The fix: attach derived signals to the item object when it is created so the same signal reference is reused on every render.
+Unlike `signal()`, there is no keyed form for `computed()` or `transform()`. The fix is to attach derived signals to the item object when it is created so the same reference is reused on every render.
 
 ```javascript
-// Wrong — done.transform() creates a new computed on every list re-render.
-// Snapshot fails for all existing items (old signal !== new signal), so
-// toElement() runs for each item and produces sleeping orphan computeds.
+// Wrong. done.transform() creates a new computed on every list re-render.
+// Snapshot fails for all existing items (old signal !== new signal), so the
+// reconciler rebuilds the DOM node each time and produces sleeping orphan computeds.
 const rows = tasks.transform(list =>
   list.map(({ id, text, done }) => {
     const itemClass = done.transform(d => d ? 'task-item done' : 'task-item');

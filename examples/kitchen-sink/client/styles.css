@@ -103,6 +103,9 @@ h2 { font-size: 1.2rem; margin: 0 0 16px; }
 .task-label input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
 .task-text { font-size: 1rem; }
 .task-item.done .task-text { text-decoration: line-through; color: var(--fg-faint); }
+.task-edit-input { font: inherit; padding: 2px 6px; border: 1px solid var(--border-subtle); border-radius: 3px; background: var(--bg-elevated, #fff); color: inherit; flex: 1; min-width: 0; }
+.task-item[data-editing="view"] .task-edit-input { display: none; }
+.task-item[data-editing="edit"] .task-text { display: none; }
 k-sortable-list { display: contents; }
 k-sortable-list [draggable="true"] { cursor: grab; }
 k-sortable-list .dragging { opacity: 0.4; }

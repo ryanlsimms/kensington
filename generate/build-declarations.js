@@ -368,12 +368,21 @@ export const t: InstanceType<typeof Kensington>;
 
 /**
  * Creates a reactive signal. Pass as content or an attribute value — the DOM updates live.
+ * When called inside a \`computed\` callback with a stable \`key\`, returns the same signal
+ * instance across re-runs (scoped to that computed). Use this for local state inside
+ * list mappings. Pass the item's id as the key.
  * @example
  * const count = signal(0);
  * document.body.append(t.div(count).toElement());
  * count.set(n => n + 1);
+ * @example
+ * // Keyed signal inside a computed. Same instance per key across re-runs.
+ * const list = computed(() => items.get().map(item => {
+ *   const highlight = signal(false, item.id);
+ *   return t.li({ dataKey: item.id, class: highlight }, item.label);
+ * }));
  */
-export function signal<T>(initial: T): Signal<T>;
+export function signal<T>(initial: T, key?: string | number): Signal<T>;
 
 /**
  * Creates a read-only signal derived from other signals. Re-runs automatically whenever

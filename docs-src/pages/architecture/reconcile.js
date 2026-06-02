@@ -58,6 +58,17 @@ export function architectureReconcile(t) {
       ]),
       code(t, 'javascript', `if (snapshotMatches(snapshots.get(old), item)) {
   targetNode = old;   // skip itemToNode() and syncNode(); reuse existing
+} else if (snapshotHasSignalRefMismatch(snapshots.get(old), item)) {
+  // Replace path. A Signal at the same position is a different reference.
+  // The old node\'s effects are still wired to the stale signal, so patching
+  // in place would leave the DOM disconnected from the new signal. Build a
+  // fresh node, copy user-visible state across, and swap.
+  const fresh = itemToNode(item);
+  const state = captureState(old);
+  parent.insertBefore(fresh, cursor);
+  old.remove();
+  stopRemoved(old);
+  restoreState(fresh, state);
 } else {
   targetNode = syncNode(old, itemToNode(item));
   recordSnapshot(targetNode, item);
@@ -135,12 +146,66 @@ if (!isContentTracked(existing)) {
       ]),
     ]),
 
+    t.section({ id: 'reconcile-signal-mismatch' }, [
+      t.h3('Signal-reference mismatch: replace + preserve state'),
+      t.p([
+        'When a Signal at the same position is a different reference between renders, patching in place would leave the live element\'s effects bound to the stale signal. ',
+        t.code('signalRefMismatch'),
+        ' walks the snapshot in parallel with the new item, returning true at the first paired position where both sides are Signal instances but the references differ. Static value changes, function-reference changes, and ContentTag content changes do not trigger this branch.',
+      ]),
+      callout(t, 'key', 'When this fires',
+        t.p([
+          'The dominant case is ',
+          t.code('signal()'),
+          ' called inside a ',
+          t.code('computed'),
+          ' callback without a key. Each re-run allocates a fresh Signal, so the snapshot\'s reference is stale on the next render. The recommended fix is to pass a key (',
+          t.code('signal(initial, key)'),
+          ') so the same instance is reused across runs. The replace path makes the unkeyed case work correctly at a performance cost.',
+        ]),
+      ),
+      t.p([
+        'The replace branch builds a fresh DOM element via ',
+        t.code('item.toElement()'),
+        ' (so the new signal\'s effect is wired to it), captures user-visible state from the old node via ',
+        loc(t, 'esm/lib/reactive/preserve-state.js'),
+        ', swaps the nodes with ',
+        t.code('parent.insertBefore(fresh, cursor); old.remove()'),
+        ', restores state to fresh, and advances the cursor past it. ',
+        t.code('stopRemoved(old)'),
+        ' fires synchronously so the old node\'s effects (subscribed to the orphaned signal) stop immediately rather than waiting for the next MutationObserver microtask.',
+      ]),
+      t.h4('What state is preserved'),
+      t.ul([
+        t.li([t.code('document.activeElement'), ' focus, plus selection range for text inputs.']),
+        t.li([t.code('scrollTop'), ' and ', t.code('scrollLeft'), ' on every scrollable descendant.']),
+        t.li([t.code('value'), ', ', t.code('checked'), ', ', t.code('indeterminate'), ' on ', t.code('<input>'), ' and ', t.code('<textarea>'), '.']),
+        t.li([t.code('value'), ' on ', t.code('<select>'), ' (selectedIndex follows).']),
+        t.li([t.code('open'), ' on ', t.code('<details>'), ' and ', t.code('<dialog>'), '.']),
+      ]),
+      t.h4('What is lost on replacement'),
+      t.ul([
+        t.li('IME composition session in progress.'),
+        t.li('CSS transitions and animations currently running.'),
+        t.li('Pointer capture and active drag operations.'),
+        t.li([t.code('<canvas>'), ' bitmap contents (drawn imperatively).']),
+        t.li([t.code('<iframe>'), ' document state.']),
+        t.li('Web component instance state. connectedCallback re-runs.'),
+        t.li('Third-party event listeners attached outside Kensington.'),
+      ]),
+      callout(t, 'note', 'Positional state mapping',
+        t.p([
+          'State on descendants is identified by child-index path from the root. This assumes the new subtree has the same shape as the old (the dominant case when only signal references differ). If the structure shifted, paths that no longer resolve are silently dropped, so the failure mode is "state lost," not "state misapplied."',
+        ]),
+      ),
+    ]),
+
     t.section({ id: 'reconcile-loop' }, [
       t.h3('Insertion, reuse, leftover cleanup'),
       t.p('The main reconcile loop walks newItems in order:'),
       t.ol({ class: 'numbered' }, [
         t.li([t.code('null'), ', ', t.code('undefined'), ', and ', t.code('false'), ' items are skipped.']),
-        t.li('If the item has a key and matches an existing keyed node, call syncNode. The result is either the patched existing node or the fresh node if types diverged.'),
+        t.li('If the item has a key and matches an existing keyed node, branch on the snapshot: fast-path reuse if value-equal, replace + state copy if a Signal reference changed, otherwise syncNode patches in place.'),
         t.li('If no match (or no key), build a new node via itemToNode.'),
         t.li([
           'If ',

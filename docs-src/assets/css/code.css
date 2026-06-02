@@ -123,7 +123,7 @@ pre[class*="language-"]:hover .copy-btn { opacity: 1; }
   border-bottom: none;
   border-radius: 0;
   padding-block: 0.3rem;
-  padding-inline: var(--section-x-padding);
+  padding-inline: 1.5em;
   display: inline-block;
   max-width: 100%;
   overflow: hidden;

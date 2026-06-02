@@ -6,6 +6,8 @@
 import ContentTag from '../../tag-classes/content-tag.js';
 import { isContentTracked, isTracked, stopRemoved, stopTracked } from './dom-tracker.js';
 import { transferListeners } from './element-listeners.js';
+import { captureState, restoreState } from './preserve-state.js';
+import Signal from './signal.js';
 
 // Snapshot of a tag's (attributes, content) after the render that produced the keyed DOM
 // node. The next reconcile pass compares the new tag against this snapshot by value, not by
@@ -78,6 +80,65 @@ function snapshotMatches(prev, item) {
   if (prev === undefined) { return false; }
   return valueEqual(prev.attributes, item.attributes)
     && valueEqual(prev.content, item.content);
+}
+
+// Walks the previous snapshot and the new item in parallel. Returns true if any pair of
+// values are both Signal instances but reference different signals. Used to distinguish
+// "static value changed" (patch in place, preserves DOM identity) from "signal identity
+// changed" (must rebuild the node so the fresh signal's effect drives the live element).
+function signalRefMismatch(a, b) {
+  if (a === b) { return false; }
+  if (a instanceof Signal && b instanceof Signal) { return true; }
+  if (a instanceof ContentTag && b instanceof ContentTag) {
+    if (a.attributes !== undefined && b.attributes !== undefined) {
+      for (const k of Object.keys(a.attributes)) {
+        if (signalRefMismatch(a.attributes[k], b.attributes[k])) { return true; }
+      }
+    }
+    if (Array.isArray(a.content) && Array.isArray(b.content)) {
+      const cLen = Math.min(a.content.length, b.content.length);
+      for (let i = 0; i < cLen; i++) {
+        if (signalRefMismatch(a.content[i], b.content[i])) { return true; }
+      }
+    }
+    return false;
+  }
+  if (Array.isArray(a) && Array.isArray(b)) {
+    const len = Math.min(a.length, b.length);
+    for (let i = 0; i < len; i++) {
+      if (signalRefMismatch(a[i], b[i])) { return true; }
+    }
+    return false;
+  }
+  if (a !== null && b !== null && typeof a === 'object' && typeof b === 'object') {
+    const protoA = Object.getPrototypeOf(a);
+    const protoB = Object.getPrototypeOf(b);
+    if (
+      (protoA === Object.prototype || protoA === null)
+      && (protoB === Object.prototype || protoB === null)
+    ) {
+      for (const k of Object.keys(a)) {
+        if (signalRefMismatch(a[k], b[k])) { return true; }
+      }
+    }
+  }
+  return false;
+}
+
+function snapshotHasSignalRefMismatch(prev, item) {
+  if (prev === undefined) { return false; }
+  if (prev.attributes !== undefined && item.attributes !== undefined) {
+    for (const k of Object.keys(prev.attributes)) {
+      if (signalRefMismatch(prev.attributes[k], item.attributes[k])) { return true; }
+    }
+  }
+  if (Array.isArray(prev.content) && Array.isArray(item.content)) {
+    const len = Math.min(prev.content.length, item.content.length);
+    for (let i = 0; i < len; i++) {
+      if (signalRefMismatch(prev.content[i], item.content[i])) { return true; }
+    }
+  }
+  return false;
 }
 
 function recordSnapshot(node, item) {
@@ -187,10 +248,26 @@ export function reconcile(parent, startAnchor, endAnchor, newItems) {
     if (key !== null && oldNodes.has(key)) {
       const old = oldNodes.get(key);
       oldNodes.delete(key);
-      if (snapshotMatches(snapshots.get(old), item)) {
+      const prevSnapshot = snapshots.get(old);
+      if (snapshotMatches(prevSnapshot, item)) {
         // Attributes and content structurally equal the previous render. The DOM under this
         // key cannot have changed shape, so skip the toElement() build and the syncNode diff.
         targetNode = old;
+      } else if (snapshotHasSignalRefMismatch(prevSnapshot, item)) {
+        // A Signal instance changed reference between renders (typically an unkeyed signal()
+        // created inside a computed). Patching the old node in place would leave its effects
+        // bound to the stale signal, so we build a fresh node and swap. User-visible DOM
+        // state (focus, scroll, input value, selection, details/dialog open) is copied
+        // across so the interaction feels continuous.
+        const fresh = itemToNode(item);
+        const state = captureState(old);
+        parent.insertBefore(fresh, cursor);
+        old.remove();
+        stopRemoved(old);
+        restoreState(fresh, state);
+        recordSnapshot(fresh, item);
+        cursor = fresh.nextSibling;
+        continue;
       } else {
         targetNode = syncNode(old, itemToNode(item));
         recordSnapshot(targetNode, item);

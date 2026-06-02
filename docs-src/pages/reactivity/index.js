@@ -7,6 +7,7 @@ import { reactivityIntro } from './intro.js';
 import { reactivityLifecycle } from './lifecycle.js';
 import { reactivityPrimitives } from './primitives.js';
 import { reactivitySsr } from './ssr.js';
+import { reactivityKnownTradeoffs } from './tradeoffs.js';
 import { reactivityValueAndTransform } from './value-and-transform.js';
 import { reactivityWhenUpdates } from './when-updates.js';
 
@@ -23,7 +24,12 @@ export function reactivitySidebar(t) {
       t.li(t.a({ href: '#signals-content' }, 'Content')),
       t.li(t.a({ href: '#signals-attributes' }, 'Attributes')),
       t.li(t.a({ href: '#signals-dom-props' }, 'DOM properties')),
-      t.li(t.a({ href: '#signals-keyed-lists' }, 'Keyed lists')),
+      t.li([
+        t.a({ href: '#signals-keyed-lists' }, 'Keyed lists'),
+        t.ul([
+          t.li(t.a({ href: '#signals-keyed-local-state' }, 'Per-item local state')),
+        ]),
+      ]),
       t.li(t.a({ href: '#signals-literal' }, '.literal() & comments')),
       t.li(t.a({ href: '#signals-existing-elements' }, 'Existing elements')),
     ]),
@@ -49,7 +55,6 @@ export function reactivitySidebar(t) {
         ]),
       ]),
       t.li(t.a({ href: '#hydration' }, 'SSR reactive data')),
-      t.li(t.a({ href: '#known-tradeoffs' }, 'Known tradeoffs')),
       t.li([
         t.a({ href: '#best-practices' }, 'Best practices'),
         t.ul([
@@ -66,6 +71,7 @@ export function reactivitySidebar(t) {
           t.li(t.a({ href: '#devtools-panel' }, 'Panel')),
         ]),
       ]),
+      t.li(t.a({ href: '#known-tradeoffs' }, 'Known tradeoffs')),
     ]),
     githubLink(t),
   ];
@@ -83,5 +89,6 @@ export function reactivityContent(t) {
     reactivitySsr(t),
     reactivityBestPractices(t),
     reactivityDevtools(t),
+    reactivityKnownTradeoffs(t),
   ];
 }

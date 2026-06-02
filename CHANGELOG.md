@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- Keyed signals. `signal(initial, key)` inside a `computed` callback returns the same `Signal` instance across re-runs of that computed when called with the same key. Use this for local state inside `.map()` callbacks (e.g. `signal(false, item.id)`).
+- Reconciler now handles unkeyed `signal()` inside a `computed` callback. When a signal reference changes between renders, the reconciler replaces the DOM node instead of patching in place, so the fresh signal's effect drives the new live element. User-visible DOM state is carried over. Pass a `key` to `signal()` to avoid replacement entirely.
+
+### Changed
+- The warning for `signal()` called inside a `computed` is now `console.warn` (was `console.error`) and steers the developer toward the new keyed-signal form. The library now handles unkeyed nested signals correctly. The warning is a performance hint rather than an error.
+
 ## [2.0.0-signals.14] - 2026-05-31
 
 ### Fixed

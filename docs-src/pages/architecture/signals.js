@@ -275,16 +275,92 @@ export function architectureSignals(t) {
         t.code('.stop()'),
         ' call is rarely needed. When the parent effect re-runs and clears its subscriptions, the inner computed auto-sleeps and releases its source subscriptions automatically.',
       ]),
-      callout(t, 'note', 'computed inside effect',
+      callout(t, 'note', 'signal() inside computed',
         t.p([
           t.code('signal()'),
           ' called inside a ',
           t.code('computed'),
-          ' or ',
-          t.code('effect'),
-          ' callback emits a throttled error via filterStack (see ',
+          ' callback without a key emits a throttled ',
+          t.code('console.warn'),
+          ' via filterStack (see ',
           loc(t, 'esm/lib/util/filter-stack.js'),
-          '). A new signal is created on every re-run, breaking the reconciler\'s snapshot fast path and leaving orphaned sleeping signals.',
+          '). A new signal is created on every re-run; the reconciler handles this by replacing the DOM node so the fresh signal\'s effect drives the new live element, and ',
+          loc(t, 'esm/lib/reactive/preserve-state.js'),
+          ' copies focus, scroll, input values, and selection across the swap. Local signal state still resets to the initial value. Pass a stable key as the second argument (',
+          t.code('signal(initial, key)'),
+          ') to scope the signal to the surrounding computed so the same instance is reused across re-runs.',
+        ]),
+      ),
+    ]),
+
+    t.section({ id: 'signal-keyed' }, [
+      t.h3('Keyed signals'),
+      t.p([
+        'A second argument to ',
+        t.code('signal()'),
+        ' turns it into a keyed signal scoped to the innermost running ',
+        t.code('computed'),
+        '. The implementation in ',
+        loc(t, 'esm/lib/reactive/signal.js'),
+        ' tracks the active computed in a module-level ',
+        t.code('currentComputed'),
+        ' variable, and stores a per-computed registry in a ',
+        t.code('keyedRegistries'),
+        ' WeakMap:',
+      ]),
+      code(t, 'javascript', `export function signal(initial, key) {
+  if (key !== undefined && currentComputed !== null) {
+    const owner = currentComputed;
+    let registry = keyedRegistries.get(owner);
+    if (registry === undefined) {
+      registry = { signals: new Map(), accessed: new Set() };
+      keyedRegistries.set(owner, registry);
+    }
+    if (registry.accessed.has(key)) {
+      throttledError('duplicate-keyed-signal', /* ... */);
+    }
+    registry.accessed.add(key);
+    const existing = registry.signals.get(key);
+    if (existing !== undefined) { return existing; }
+    const sig = new Signal(initial);
+    registry.signals.set(key, sig);
+    return sig;
+  }
+  return new Signal(initial);
+}`),
+      t.p([
+        'Each computed run clears its ',
+        t.code('accessed'),
+        ' set before invoking the user\'s function. After the run completes, any key in the registry that wasn\'t accessed is stopped and removed:',
+      ]),
+      code(t, 'javascript', `// Sweep keyed signals that weren't touched this run.
+if (registry !== undefined) {
+  for (const [k, sig] of registry.signals) {
+    if (!registry.accessed.has(k)) {
+      sig.stop();
+      registry.signals.delete(k);
+    }
+  }
+}`),
+      t.p([
+        'This handles list mappings naturally. ',
+        t.code('signal(false, item.id)'),
+        ' inside ',
+        t.code('items.get().map(...)'),
+        ' returns the same instance for the same item id across renders. When an item leaves the list, its key is never accessed, so the signal is stopped and the entry removed in the same render cycle.',
+      ]),
+      t.p([
+        'Reuse of the same Signal reference keeps the reconciler\'s snapshot fast path effective: the new render\'s attribute object contains the same keyed-signal reference as the previous snapshot, so ',
+        t.code('valueEqual'),
+        ' returns true and the DOM node is reused as-is. Even when a sibling change (e.g. an added item) misses the fast path, ',
+        t.code('signalRefMismatch'),
+        ' returns false for the keyed-signal position, so the reconciler patches in place rather than replacing.',
+      ]),
+      callout(t, 'note', 'sleep vs stop',
+        t.p([
+          'When the owning computed is permanently stopped (via ',
+          t.code('.stop()'),
+          '), the registry is torn down: every keyed signal is stopped and the WeakMap entry is deleted. When the computed merely sleeps (its last subscriber went away via auto-dispose), the registry is preserved. If the computed wakes later, the same keys return the same signal instances.',
         ]),
       ),
     ]),

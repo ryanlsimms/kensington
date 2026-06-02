@@ -121,7 +121,6 @@
     display: block;
     border-inline: none;
     border-radius: 0;
-    padding-inline: var(--section-x-padding);
   }
 
   section > pre[class*="language-"],
@@ -148,4 +147,26 @@
   }
 
   code:is(:not([class]), .wrappable) { text-wrap: wrap; overflow-wrap: anywhere; }
+
+  /* Sticky section headings: pin under the topbar. In natural flow they keep the
+     normal h2 look; once pinned (.is-stuck, toggled by a scroll listener in
+     runtime.js) they collapse to a compact full-width bar over 200ms. */
+  section h2 {
+    position: sticky;
+    top: calc(var(--topbar-height) - 2px);
+    z-index: 50;
+  }
+
+  section h2.is-stuck {
+    font-size: 0.85rem;
+    padding: 0.25rem var(--section-x-padding) 0.05rem;
+    margin-left: calc(-1 * var(--section-x-padding));
+    margin-right: calc(-1 * var(--section-x-padding));
+    margin-bottom: 44px;
+    max-width: none;
+    border-radius: 0;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+  }
 }

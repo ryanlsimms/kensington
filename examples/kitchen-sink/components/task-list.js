@@ -1,4 +1,4 @@
-import t, { computed } from '#kensington';
+import t, { computed, signal } from '#kensington';
 
 import { filter, tasks } from '../shared/state.js';
 
@@ -13,14 +13,46 @@ function handleDoneClick(evt) {
   foundTask?.done.set(v => !v);
 }
 
+function commitRename(id, currentText, newText) {
+  const trimmed = newText.trim();
+  if (!trimmed || trimmed === currentText) { return; }
+  tasks.set(ts => ts.map(task => task.id === id ? { ...task, text: trimmed } : task));
+}
+
 function taskItem({ id, text, done, itemClass }) {
   // done is a Signal<boolean>. `itemClass` is a stable `computed` derived once when the
   // task is created. Reusing the same signal reference lets the reconciler snapshot
   // fast-path skip toElement() for unchanged items on every list re-render.
+  //
+  // `editing` is a keyed signal scoped to the outer transform's computed. The second
+  // argument (the task id) tells signal() to return the same instance across re-runs
+  // for the same key, so each row keeps its own view/edit mode across reorders and
+  // additions. When the row is removed from the list, the keyed signal is stopped and
+  // dropped automatically — no manual cleanup.
+  const editing = signal('view', id);
+
+  function enterEditMode(evt) {
+    const input = evt.target.closest('li').querySelector('.task-edit-input');
+    input.value = text;
+    editing.set('edit');
+    requestAnimationFrame(() => { input.focus(); input.select(); });
+  }
+
+  function commitEdit(evt) {
+    commitRename(id, text, evt.target.value);
+    editing.set('view');
+  }
+
+  function cancelEdit(evt) {
+    evt.target.value = text;
+    editing.set('view');
+  }
+
   // Nested data-* objects flatten to hyphen-separated attribute names.
-  // { data: { key: id } } renders as data-key="...". Deeper nesting like
-  // { data: { bs: { toggle: 'modal' } } } becomes data-bs-toggle="modal".
-  return t.li({ data: { key: id }, class: itemClass }, [
+  // { data: { key: id, editing } } renders as data-key="..." data-editing="view"|"edit".
+  // CSS toggles between the static text span and the inline edit input on that attribute,
+  // so the swap is a single reactive attribute write with no DOM rebuild.
+  return t.li({ data: { key: id, editing }, class: itemClass }, [
     t.label({ class: 'task-label' }, [
       t.input({
         type: 'checkbox',
@@ -29,7 +61,22 @@ function taskItem({ id, text, done, itemClass }) {
         // the tasks array never changes, so the list is never re-reconciled.
         onclick: handleDoneClick,
       }),
-      t.span({ class: 'task-text' }, text),
+      t.span({
+        class: 'task-text',
+        ondblclick: enterEditMode,
+        title: 'Double-click to rename',
+      }, text),
+      t.input({
+        type: 'text',
+        class: 'task-edit-input',
+        aria: { label: `Rename task: ${text}` },
+        prop: { value: text },
+        onblur: commitEdit,
+        onkeydown: e => {
+          if (e.key === 'Enter') { e.target.blur(); }
+          else if (e.key === 'Escape') { cancelEdit(e); }
+        },
+      }),
     ]),
     t.button({
       type: 'button',

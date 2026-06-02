@@ -2172,3 +2172,336 @@ test('async queueMicrotask loop is halted by the flush counter and page stays re
   expect(result.x).toBeGreaterThan(0);
 });
 
+// ─── nested signals inside computed ────────────────────────────────────────
+// A signal() created inside a computed callback currently re-creates a new instance on
+// every re-run. The reconciler reuses the keyed DOM node but the old effect stays wired
+// to the old signal, and the new onclick closes over the new signal. Result: local state
+// resets visually and the button becomes inert after any unrelated outer re-render.
+// These tests express the desired behaviour. Implementation TBD.
+
+test('local signal state inside computed survives outer re-render', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+
+    const items = signal([
+      { id: 'a', label: 'Apple' },
+      { id: 'b', label: 'Banana' },
+    ]);
+
+    const list = computed(() => items.get().map(item => {
+      const highlight = signal(false);
+      return t.li({
+        dataKey: item.id,
+        class: highlight.transform(v => v ? 'active' : 'idle'),
+      }, [
+        t.button({
+          id: `btn-${item.id}`,
+          onclick: () => { highlight.set(true); },
+        }, item.label),
+      ]);
+    }));
+
+    document.body.append(t.ul({ id: 'nested-sig-persist' }, list).toElement());
+
+    const liA = () => document.querySelector('[data-key="a"]');
+
+    document.querySelector('#btn-a').click();
+    await Promise.resolve();
+    await Promise.resolve();
+    const afterClick = liA().className;
+
+    items.set(prev => [...prev, { id: 'c', label: 'Cherry' }]);
+    await Promise.resolve();
+    await Promise.resolve();
+    const afterReRender = liA().className;
+
+    document.querySelector('#btn-a').click();
+    await Promise.resolve();
+    await Promise.resolve();
+    const afterSecondClick = liA().className;
+
+    return { afterClick, afterReRender, afterSecondClick };
+  }, bundle);
+
+  expect(result.afterClick).toBe('active');
+  expect(result.afterReRender).toBe('idle');
+  expect(result.afterSecondClick).toBe('active');
+});
+
+test('keyed signal inside computed persists state across outer re-render', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+
+    const items = signal([
+      { id: 'a', label: 'Apple' },
+      { id: 'b', label: 'Banana' },
+    ]);
+
+    const list = computed(() => items.get().map(item => {
+      const highlight = signal(false, item.id);
+      return t.li({
+        dataKey: item.id,
+        class: highlight.transform(v => v ? 'active' : 'idle'),
+      }, [
+        t.button({
+          id: `btn-${item.id}`,
+          onclick: () => { highlight.set(true); },
+        }, item.label),
+      ]);
+    }));
+
+    document.body.append(t.ul({ id: 'keyed-sig-persist' }, list).toElement());
+
+    const liA = () => document.querySelector('[data-key="a"]');
+
+    document.querySelector('#btn-a').click();
+    await Promise.resolve();
+    await Promise.resolve();
+    const afterClick = liA().className;
+
+    items.set(prev => [...prev, { id: 'c', label: 'Cherry' }]);
+    await Promise.resolve();
+    await Promise.resolve();
+    const afterReRender = liA().className;
+
+    document.querySelector('#btn-a').click();
+    await Promise.resolve();
+    await Promise.resolve();
+    const afterSecondClick = liA().className;
+
+    return { afterClick, afterReRender, afterSecondClick };
+  }, bundle);
+
+  expect(result.afterClick).toBe('active');
+  expect(result.afterReRender).toBe('active');
+  expect(result.afterSecondClick).toBe('active');
+});
+
+test('keyed signal bound directly preserves DOM identity across outer re-render', async ({ page, bundle }) => {
+  const sameNode = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+
+    const items = signal([
+      { id: 'a', label: 'Apple' },
+      { id: 'b', label: 'Banana' },
+    ]);
+
+    // Binding the keyed signal directly (no `.transform()` in between) keeps the same
+    // signal reference at the same position across renders, so the snapshot fast path or
+    // in-place patch fires — no replacement.
+    const list = computed(() => items.get().map(item => {
+      const cls = signal('idle', item.id);
+      return t.li({ dataKey: item.id, class: cls }, item.label);
+    }));
+
+    document.body.append(t.ul({ id: 'keyed-direct' }, list).toElement());
+    document.querySelector('[data-key="a"]')._sentinel = true;
+
+    items.set(prev => [...prev, { id: 'c', label: 'Cherry' }]);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    return document.querySelector('[data-key="a"]')._sentinel === true;
+  }, bundle);
+
+  expect(sameNode).toBe(true);
+});
+
+test('keyed signals scope per-item state across a list', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+
+    const items = signal([
+      { id: 'a', label: 'Apple' },
+      { id: 'b', label: 'Banana' },
+    ]);
+
+    const list = computed(() => items.get().map(item => {
+      const highlight = signal(false, item.id);
+      return t.li({
+        dataKey: item.id,
+        class: highlight.transform(v => v ? 'active' : 'idle'),
+      }, [
+        t.button({
+          id: `btn-${item.id}`,
+          onclick: () => { highlight.set(true); },
+        }, item.label),
+      ]);
+    }));
+
+    document.body.append(t.ul({ id: 'keyed-sig-scoped' }, list).toElement());
+
+    document.querySelector('#btn-a').click();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    items.set(prev => [...prev, { id: 'c', label: 'Cherry' }]);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    document.querySelector('#btn-c').click();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    return {
+      a: document.querySelector('[data-key="a"]').className,
+      b: document.querySelector('[data-key="b"]').className,
+      c: document.querySelector('[data-key="c"]').className,
+    };
+  }, bundle);
+
+  expect(result.a).toBe('active');
+  expect(result.b).toBe('idle');
+  expect(result.c).toBe('active');
+});
+
+test('keyed signal is swept when its item leaves the list', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { signal, computed, effect } = await import(src);
+
+    const items = signal([{ id: 'a' }, { id: 'b' }]);
+    const refs = [];
+
+    const list = computed(() => items.get().map(item => {
+      const s = signal(false, item.id);
+      refs.push({ id: item.id, sig: s });
+      return s;
+    }));
+
+    // Subscribe so the computed runs and stays active across re-runs.
+    const fx = effect(() => { list.get(); });
+
+    const initialA = refs.find(r => r.id === 'a').sig;
+    initialA.set(true);
+
+    // Remove 'b'. The keyed signal for 'b' should be stopped and removed from the registry.
+    items.set([{ id: 'a' }]);
+    await Promise.resolve();
+
+    // Re-add 'b'. A fresh signal should be created (different reference from the original).
+    items.set([{ id: 'a' }, { id: 'b' }]);
+    await Promise.resolve();
+
+    const bSignals = refs.filter(r => r.id === 'b');
+    const sameInstance = bSignals.length >= 2 && bSignals[0].sig === bSignals[bSignals.length - 1].sig;
+
+    fx.stop();
+
+    return {
+      // 'a' stayed throughout, so its signal is stable and retains its value.
+      aSameInstance: refs.filter(r => r.id === 'a').every(r => r.sig === initialA),
+      aValue: initialA.value,
+      // 'b' was recreated after removal — different signal instance.
+      bRecreated: !sameInstance,
+    };
+  }, bundle);
+
+  expect(result.aSameInstance).toBe(true);
+  expect(result.aValue).toBe(true);
+  expect(result.bRecreated).toBe(true);
+});
+
+test('replacement on signal-ref mismatch preserves input focus and value', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+
+    const items = signal([{ id: 'a' }, { id: 'b' }]);
+
+    const list = computed(() => items.get().map(item => {
+      const local = signal('');
+      return t.li(
+        { dataKey: item.id },
+        t.input({
+          id: `input-${item.id}`,
+          type: 'text',
+          value: local.transform(v => v),
+        }),
+      );
+    }));
+
+    document.body.append(t.ul({ id: 'preserve-input' }, list).toElement());
+
+    const inputA = document.querySelector('#input-a');
+    inputA.focus();
+    inputA.value = 'hello';
+    inputA.setSelectionRange(2, 4);
+
+    items.set(prev => [...prev, { id: 'c' }]);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const inputAfter = document.querySelector('#input-a');
+    return {
+      focused: document.activeElement === inputAfter,
+      value: inputAfter.value,
+      selectionStart: inputAfter.selectionStart,
+      selectionEnd: inputAfter.selectionEnd,
+    };
+  }, bundle);
+
+  expect(result.focused).toBe(true);
+  expect(result.value).toBe('hello');
+  expect(result.selectionStart).toBe(2);
+  expect(result.selectionEnd).toBe(4);
+});
+
+test('warns when signal() is called inside a computed without a key', async ({ page, bundle }) => {
+  const warnings = await page.evaluate(async src => {
+    const { signal, computed } = await import(src);
+    const messages = [];
+    const orig = console.warn;
+    console.warn = msg => messages.push(msg);
+    const trigger = signal(0);
+    const c = computed(() => {
+      trigger.get();
+      const local = signal(false);
+      return local.get();
+    });
+    c.get();
+    console.warn = orig;
+    return messages;
+  }, bundle);
+  expect(warnings.some(w => w.includes('signal() called inside a computed'))).toBe(true);
+});
+
+test('signal() with a key does not warn inside a computed', async ({ page, bundle }) => {
+  const warnings = await page.evaluate(async src => {
+    const { signal, computed } = await import(src);
+    const messages = [];
+    const origWarn = console.warn;
+    const origError = console.error;
+    console.warn = msg => messages.push(msg);
+    console.error = msg => messages.push(msg);
+    const trigger = signal(0);
+    const c = computed(() => {
+      trigger.get();
+      const local = signal(false, 'local-a');
+      return local.get();
+    });
+    c.get();
+    console.warn = origWarn;
+    console.error = origError;
+    return messages;
+  }, bundle);
+  expect(warnings.some(w => w.includes('signal() called inside a computed'))).toBe(false);
+});
+
+test('errors when two keyed signals use the same key in one computed run', async ({ page, bundle }) => {
+  const errors = await page.evaluate(async src => {
+    const { signal, computed } = await import(src);
+    const messages = [];
+    const orig = console.error;
+    console.error = msg => messages.push(msg);
+    const trigger = signal(0);
+    const c = computed(() => {
+      trigger.get();
+      signal(false, 'dup');
+      signal(true, 'dup');
+    });
+    c.get();
+    console.error = orig;
+    return messages;
+  }, bundle);
+  expect(errors.some(e => e.includes('called twice with key'))).toBe(true);
+});
+

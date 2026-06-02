@@ -9,6 +9,7 @@ import {
   notifySignalEffectSubscription,
   notifySignalEffectUnsubscription,
   notifySignalMarkComputed,
+  notifySignalMarkKeyed,
   notifySignalSet,
   notifySignalStop,
   notifySignalWake,
@@ -69,9 +70,27 @@ function throttledError(key, msg) {
   }
 }
 
+function throttledWarn(key, msg) {
+  const now = Date.now();
+  if (now - (warnLastSeen.get(key) ?? 0) >= WARN_THROTTLE_MS) {
+    warnLastSeen.set(key, now);
+    const error = filterStack(new Error(msg));
+    console.warn(error.stack ?? msg);
+  }
+}
+
 export function _resetWarningThrottle() {
   warnLastSeen.clear();
 }
+
+// Tracks the innermost computed currently running, so signal(initial, key) can scope
+// keyed signal lookups to that computed instance. Saved/restored as a stack across nested
+// computed runs (which are warned against but otherwise tolerated).
+let currentComputed = null;
+// Per-computed registry of keyed signals. Each entry has `signals: Map<key, Signal>` and
+// `accessed: Set<key>`. After each computed run, keys not accessed are stopped and removed,
+// so signals tied to items that have left the list are cleaned up automatically.
+const keyedRegistries = new WeakMap();
 
 function rethrowAsync(err) {
   queueMicrotask(() => { throw err; });
@@ -155,11 +174,13 @@ export default class Signal {
     notifySignalCreate(this, initial, v => { this.set(v); });
     if (!suppressReactiveCheck) {
       if (inComputedFn) {
-        throttledError(
+        throttledWarn(
           'signal-in-computed',
-          'kensington: signal() called inside a computed or transform callback. ' +
-          'A new signal is created on every re-run, breaking the reconciler snapshot fast-path and leaving orphaned sleeping signals. ' +
-          'Create signals outside the reactive callback and pass them in.',
+          'kensington: signal() called inside a computed or transform callback without a key. ' +
+          'The DOM node will be replaced when outer state changes. ' +
+          'Focus, scroll, input value, and selection are preserved across the replacement, ' +
+          'but local signal state resets to the initial value. ' +
+          'For best performance and to persist local state, pass a stable key as the second argument: signal(initial, key).',
         );
       } else if (currentEffect !== null) {
         throttledError(
@@ -414,7 +435,13 @@ export function computed(fn) {
     track(update, () => {
       let result;
       const prevInComputedFn = inComputedFn;
+      const prevComputed = currentComputed;
       inComputedFn = true;
+      currentComputed = s;
+      // Reset accessed-key tracking for this run. Any registry entry whose key isn't
+      // accessed during this run is swept after the run completes.
+      const registry = keyedRegistries.get(s);
+      if (registry !== undefined) { registry.accessed.clear(); }
       try {
         result = fn();
       } catch (err) {
@@ -422,6 +449,17 @@ export function computed(fn) {
         return;
       } finally {
         inComputedFn = prevInComputedFn;
+        currentComputed = prevComputed;
+      }
+      // Sweep keyed signals that weren't touched this run. Their owning item left the list
+      // (or was renamed); stop the signal and drop it from the registry so it can be GC'd.
+      if (registry !== undefined) {
+        for (const [k, sig] of registry.signals) {
+          if (!registry.accessed.has(k)) {
+            sig.stop();
+            registry.signals.delete(k);
+          }
+        }
       }
       lastResult = result;
       derivedWriteDepth++;
@@ -469,9 +507,71 @@ export function computed(fn) {
       cleanup();
     }
     update._cleanups = [];
+    // Stop any keyed signals that this computed owned, so their subscribers are cleared
+    // and devtools entries are removed.
+    const registry = keyedRegistries.get(s);
+    if (registry !== undefined) {
+      for (const sig of registry.signals.values()) {
+        sig.stop();
+      }
+      keyedRegistries.delete(s);
+    }
   });
   derivedSignals.add(s);
   return s;
+}
+
+/**
+ * Creates a reactive signal. Pass as content or an attribute value — the DOM updates live.
+ * When called inside a computed callback with a stable `key`, returns the same signal
+ * instance across re-runs (scoped to that computed). This is the recommended pattern for
+ * local interactive state inside list mappings: pass the item's id as the key.
+ * @template T
+ * @param {T} initial
+ * @param {string | number} [key]
+ * @returns {Signal<T>}
+ * @example
+ * // Module-level signal — same instance for the lifetime of the page.
+ * const count = signal(0);
+ * @example
+ * // Keyed signal inside a computed — same instance per key across re-runs.
+ * const list = computed(() => items.get().map(item => {
+ *   const highlight = signal(false, item.id);
+ *   return t.li({ dataKey: item.id, class: highlight }, item.label);
+ * }));
+ */
+export function signal(initial, key) {
+  if (key !== undefined && currentComputed !== null) {
+    const owner = currentComputed;
+    let registry = keyedRegistries.get(owner);
+    if (registry === undefined) {
+      registry = { signals: new Map(), accessed: new Set() };
+      keyedRegistries.set(owner, registry);
+    }
+    if (registry.accessed.has(key)) {
+      throttledError(
+        'duplicate-keyed-signal',
+        `kensington: signal() called twice with key "${key}" in the same computed run. ` +
+        'Each keyed signal needs a unique key per computed run, or two items will share state. ' +
+        'Use a key that includes the item identity (e.g., item.id).',
+      );
+    }
+    registry.accessed.add(key);
+    const existing = registry.signals.get(key);
+    if (existing !== undefined) {
+      return existing;
+    }
+    // Suppress the signal-in-computed warning. Keyed signals are the intended pattern;
+    // a warning would fire on every fresh key (every item added to a list).
+    const prevSuppress = suppressReactiveCheck;
+    suppressReactiveCheck = true;
+    const sig = new Signal(initial);
+    suppressReactiveCheck = prevSuppress;
+    notifySignalMarkKeyed(sig, key);
+    registry.signals.set(key, sig);
+    return sig;
+  }
+  return new Signal(initial);
 }
 
 // Defined here rather than in the class body because transform calls computed, and computed

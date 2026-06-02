@@ -118,6 +118,15 @@ export function notifySignalWake(sig, frozenValue) {
   hook._emit('update', { type: 'signal:wake', id, isComputed: true });
 }
 
+export function notifySignalMarkKeyed(sig, key) {
+  if (!enabled) { return; }
+  const id = signalIds.get(sig);
+  if (id === undefined) { return; }
+  const meta = hook.signals.get(id);
+  if (meta !== undefined) { meta.key = key; }
+  hook._emit('update', { type: 'signal:mark-keyed', id, key });
+}
+
 export function notifySignalMarkComputed(sig) {
   if (!enabled) { return; }
   computedSigs.add(sig);

@@ -1,5 +1,5 @@
 import Kensington from './kensington.js';
-import Signal, { computed, effect } from './lib/reactive/signal.js';
+import Signal, { computed, effect, signal } from './lib/reactive/signal.js';
 
 export { Signal };
 
@@ -10,21 +10,7 @@ export default Kensington;
 // in package.json, an unused `t` removes the class and all its transitive imports.
 export const t = /* @__PURE__ */ new Kensington();
 
-/**
- * Creates a reactive signal. Pass as content or an attribute value — the DOM updates live.
- * @template T
- * @param {T} initial
- * @returns {Signal<T>}
- * @example
- * const count = signal(0);
- * document.body.append(t.div(count).toElement());
- * count.set(n => n + 1);
- */
-export function signal(initial) {
-  return new Signal(initial);
-}
-
-export { computed, effect };
+export { computed, effect, signal };
 export const isBrowser = typeof window !== 'undefined';
 
 export { registerComponents, renderForHydration } from './lib/render/hydration.js';

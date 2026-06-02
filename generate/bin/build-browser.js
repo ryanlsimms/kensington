@@ -35,6 +35,7 @@ export function notifySignalEffectUnsubscription() {}
 export function notifySignalZeroSubscribers() {}
 export function notifySignalStop() {}
 export function notifySignalMarkComputed() {}
+export function notifySignalMarkKeyed() {}
 export function notifyEffectCreate() { return 0; }
 export function notifyEffectRun() {}
 export function notifyEffectPause() {}

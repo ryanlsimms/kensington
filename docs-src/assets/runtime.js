@@ -80,13 +80,36 @@ nav.querySelectorAll('a[href^="#"]').forEach(l => l.addEventListener('click', e 
 
 registerComponents({ signalDemo, searchDocs, copyButton, pageTabs, comparisonsModal });
 
-// ── Architecture: sticky legend bar ──────────────────────────
+// ── Sticky h2 stuck-state detection ──────────────────────────
 //
-// (function () {
-//   const sentinel = document.querySelector('.legend-sentinel');
-//   const bar = document.querySelector('.legend-bar');
-//   if (!sentinel || !bar) { return; }
-//   new IntersectionObserver(([entry]) => {
-//     bar.classList.toggle('is-stuck', !entry.isIntersecting);
-//   }, { threshold: 0 }).observe(sentinel);
-// })();
+// Section h2s are position: sticky under the topbar on mobile. IntersectionObserver
+// has an inherent notification delay (the spec lets browsers batch callbacks for
+// performance — ~100-200ms is typical), which makes the .is-stuck class lag visibly
+// behind the pin. A passive scroll listener with requestAnimationFrame is frame-
+// accurate. Each frame we read getBoundingClientRect().top for every h2 and compare
+// against the pin line.
+(function () {
+  const headings = Array.from(document.querySelectorAll('section h2'));
+  if (headings.length === 0) { return; }
+  const topbarHeight = parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue('--topbar-height'),
+  ) || 44;
+  // CSS pins at `calc(var(--topbar-height) - 2px)`. An h2 is stuck when its top has
+  // reached (or moved above) that line.
+  const pinLine = topbarHeight + 2;
+  let scheduled = false;
+  function update() {
+    scheduled = false;
+    for (const h2 of headings) {
+      h2.classList.toggle('is-stuck', h2.getBoundingClientRect().top <= pinLine);
+    }
+  }
+  function schedule() {
+    if (scheduled) { return; }
+    scheduled = true;
+    requestAnimationFrame(update);
+  }
+  window.addEventListener('scroll', schedule, { passive: true });
+  window.addEventListener('resize', schedule, { passive: true });
+  update();
+})();

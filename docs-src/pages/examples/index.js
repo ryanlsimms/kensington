@@ -26,6 +26,7 @@ export function examplesSidebar(t) {
           t.li(t.a({ href: '#counter' }, 'Counter')),
           t.li(t.a({ href: '#live-filter' }, 'Live filter')),
           t.li(t.a({ href: '#todo-list' }, 'Todo list')),
+          t.li(t.a({ href: '#editable-rows' }, 'Editable list rows')),
           t.li(t.a({ href: '#dark-mode' }, 'Dark mode')),
           t.li(t.a({ href: '#character-counter' }, 'Character counter')),
           t.li(t.a({ href: '#incremental-search' }, 'Incremental search')),

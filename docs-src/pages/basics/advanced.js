@@ -9,7 +9,7 @@ export function basicsAdvanced(t) {
     ]),
 
     t.section({ id: 'advanced' }, [
-      t.h3({ id: 'options' }, 'Attributes & options'),
+      t.h2({ id: 'options' }, 'Attributes & options'),
       t.table({ class: 'option-table' }, [
         t.tbody([
           t.tr([t.td('camelCase keys'), t.td([t.code('{ dataBsToggle: \'collapse\' }'), ' → ', t.code('data-bs-toggle="collapse"'), '. SVG attributes like ', t.code('viewBox'), ' and ', t.code('gradientUnits'), ' pass through unchanged.'])]),
@@ -26,10 +26,10 @@ export function basicsAdvanced(t) {
         ]),
       ]),
 
-      t.h3({ id: 'dev-vs-prod' }, 'Dev vs production'),
+      t.h2({ id: 'dev-vs-prod' }, 'Dev vs production'),
       t.p('Two settings are worth flipping between local development and production. Use them together to catch attribute typos and bad values during development while shipping a small bundle to users.'),
 
-      t.h4({ id: 'dev-validation' }, 'Validation in development'),
+      t.h3({ id: 'dev-validation' }, 'Validation in development'),
       t.p([
         'By default, ',
         t.code('validationLevel'),
@@ -54,7 +54,7 @@ t.div({ unknownAttr: 'x' });     // throws. Not a known attribute`),
         ' below for the full options and behavior.',
       ]),
 
-      t.h4({ id: 'prod-slim' }, 'Slim build for production'),
+      t.h3({ id: 'prod-slim' }, 'Slim build for production'),
       t.p([
         'The slim build is a separate bundle that ships without per-element attribute spec data. The minified output drops from ~148 KB to ~27 KB, about 5× smaller. The public API is identical. Tags, attributes, signals, and hydration all work the same.',
       ]),
@@ -70,7 +70,7 @@ t.div({ unknownAttr: 'x' });     // throws. Not a known attribute`),
 const t = new Kensington();   // validationLevel defaults to 'off'
 t.div({ class: 'card' }, t.p('Hello'));`),
 
-      t.h4({ id: 'vite' }, 'Wiring it up with Vite'),
+      t.h3({ id: 'vite' }, 'Wiring it up with Vite'),
       t.p([
         'Use a Vite alias to swap the import target by build mode. Your application code stays as ',
         t.code("import Kensington from 'kensington'"),
@@ -112,7 +112,7 @@ export const t = new Kensington({
         ' in the examples page for equivalent setups.',
       ]),
 
-      t.h3({ id: 'constructor' }, 'Constructor options'),
+      t.h2({ id: 'constructor' }, 'Constructor options'),
       code(t, 'javascript', `import Kensington from 'kensington';
 
 const t = new Kensington({
@@ -144,7 +144,7 @@ const t = new Kensington({
 t.svg({ xmlns: 'http://www.w3.org/2000/svg', 'xmlns:xlink': 'http://www.w3.org/1999/xlink' });`),
       ]),
 
-      t.h3({ id: 'validation' }, 'Validation'),
+      t.h2({ id: 'validation' }, 'Validation'),
       apiTable(t, ['Level', 'Behavior'], [
         [t.code("'off'"), ['No validation. Best for production. ', t.strong('Default.')]],
         [t.code("'warn'"), ['Logs via ', t.code('logger'), ' (default ', t.code('console.log'), '). Does not throw.']],
@@ -162,7 +162,7 @@ t.div({ unknownAttr: 'x' });    // throws: not a known attribute
 t.input({ type: 'checkbox' });  // fine
 t.input({ type: 'notatype' });  // throws: not an allowed value`),
 
-      t.h3({ id: 'custom-elements' }, 'Custom elements'),
+      t.h2({ id: 'custom-elements' }, 'Custom elements'),
       code(t, 'javascript', `import Kensington from 'kensington';
 
 class MyEngine extends Kensington {
@@ -247,7 +247,7 @@ t.div({ hxBoost: 'true' });  // now valid`),
         exLink(t, '?page=examples#alpine', 'Alpine.js example'),
       ]),
 
-      t.h3({ id: 'persist' }, 'Persist effects'),
+      t.h2({ id: 'persist' }, 'Persist effects'),
       t.p([
         'By default, ',
         t.code('.toElement()'),
@@ -271,7 +271,7 @@ const item = t.li({ 'data-key': task.id, class: statusClass, persist: true }, [
         ' is removed and re-inserted into the DOM.',
       ]),
 
-      t.h3({ id: 'raw-html' }, 'Raw HTML & comments'),
+      t.h2({ id: 'raw-html' }, 'Raw HTML & comments'),
       code(t, 'javascript', `t.literal('<li>verbatim, HTML-encoded</li>');    // <script> tags flagged via validationLevel
 t.unsafeLiteral('<li>trusted HTML, no encoding</li>');
 

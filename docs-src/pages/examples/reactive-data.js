@@ -136,6 +136,51 @@ document.body.append(
 );`),
     ]),
 
+    t.section({ id: 'editable-rows' }, [
+      t.h3('Editable list rows'),
+      t.p([
+        'Each row has its own edit mode that does not belong on the outer data array. ',
+        t.code('signal(false, item.id)'),
+        ' inside the ',
+        t.code('computed'),
+        ' scopes the per-row state to the surrounding computed so the same signal instance is reused for the same key across renders. State persists when other rows change, and the keyed signal is stopped automatically when its row leaves the list.',
+      ]),
+      code(t, 'javascript', `import { t, signal, computed } from 'kensington';
+
+const items = signal([
+  { id: 1, label: 'Apples' },
+  { id: 2, label: 'Bananas' },
+  { id: 3, label: 'Cherries' },
+]);
+
+function rename(id, label) {
+  items.set(list => list.map(it => it.id === id ? { ...it, label } : it));
+}
+
+const rows = computed(() => items.get().map(item => {
+  // Keyed per row. Same signal instance returned across re-runs for the same item.id.
+  const editing = signal(false, item.id);
+
+  return t.li({ dataKey: item.id }, [
+    computed(() => editing.get()
+      ? t.input({
+          type: 'text',
+          value: item.label,
+          onblur: e => { rename(item.id, e.target.value); editing.set(false); },
+        })
+      : t.span({ onclick: () => editing.set(true) }, item.label)
+    ),
+  ]);
+}));
+
+document.body.append(t.ul(rows).toElement());`),
+      t.p([
+        'Click a row to edit, blur to save. Adding or removing items elsewhere in the list does not collapse a row that is currently being edited, because each row\'s ',
+        t.code('editing'),
+        ' signal kept its identity across the re-render.',
+      ]),
+    ]),
+
     t.section({ id: 'dark-mode' }, [
       t.h3('Dark mode'),
       t.p([
