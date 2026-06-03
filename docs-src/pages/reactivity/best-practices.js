@@ -1,6 +1,8 @@
+import { t } from 'kensington';
+
 import { callout, code } from '../../components/ui.js';
 
-export function reactivityBestPractices(t) {
+export function reactivityBestPractices() {
   return t.section({ id: 'best-practices' }, [
     t.h2('Best Practices'),
     t.p('A few common mistakes and how to avoid them.'),
@@ -11,11 +13,11 @@ export function reactivityBestPractices(t) {
       t.code('prop'),
       ' values are read once when the tag is built. A plain variable passed at that point is a snapshot — changing it later has no effect on the DOM. Wrap the value in a signal so updates flow through automatically.',
     ]),
-    code(t, 'javascript', `// Problem: the attribute is read once at creation. Changing the variable does nothing.
+    code('javascript', `// Problem: the attribute is read once at creation. Changing the variable does nothing.
 let submitting = false;
 const btn = t.button({ disabled: submitting }, 'Submit').toElement();
 submitting = true; // button is still enabled`),
-    code(t, 'javascript', `// Fixed: the attribute updates whenever the signal changes.
+    code('javascript', `// Fixed: the attribute updates whenever the signal changes.
 const submitting = signal(false);
 const btn = t.button({ disabled: submitting }, 'Submit').toElement();
 submitting.set(true); // button becomes disabled`),
@@ -25,7 +27,7 @@ submitting.set(true); // button becomes disabled`),
       ') and ',
       t.code('prop'),
       ' values (',
-      t.code("prop: { value: mySignal }"),
+      t.code('prop: { value: mySignal }'),
       ').',
     ]),
 
@@ -48,7 +50,7 @@ submitting.set(true); // button becomes disabled`),
       t.code('computed'),
       '. The same key returns the same instance across re-runs, so local state persists and the DOM node stays in place. Use the item identity (typically its id) as the key.',
     ]),
-    code(t, 'javascript', `// Works, but the DOM node is replaced on every outer re-render and local
+    code('javascript', `// Works, but the DOM node is replaced on every outer re-render and local
 // state resets. The library logs a console.warn pointing to the keyed form.
 const list = computed(() => items.get().map(item => {
   const highlight = signal(false);
@@ -56,7 +58,7 @@ const list = computed(() => items.get().map(item => {
     t.button({ onclick: () => highlight.set(true) }, item.label),
   ]);
 }));`),
-    code(t, 'javascript', `// Best: keyed signal. Same instance across re-runs, state persists, DOM node
+    code('javascript', `// Best: keyed signal. Same instance across re-runs, state persists, DOM node
 // is reused, and the signal is stopped automatically when the item leaves the list.
 const list = computed(() => items.get().map(item => {
   const highlight = signal(false, item.id);
@@ -67,7 +69,7 @@ const list = computed(() => items.get().map(item => {
     t.p([
       'For derived values that depend only on data already on the item, lifting the signal onto the item object is also a good choice. It avoids the key bookkeeping and makes the per-item state explicit in the data model.',
     ]),
-    code(t, 'javascript', `// Alternative: store reactive state on the item itself.
+    code('javascript', `// Alternative: store reactive state on the item itself.
 function makeItem(id, label) {
   const done = signal(false);
   const cls = done.transform(d => d ? 'done' : 'open');
@@ -79,7 +81,7 @@ const items = signal([makeItem(1, 'Buy milk'), makeItem(2, 'Walk dog')]);
 const rows = items.transform(list =>
   list.map(item => t.li({ dataKey: item.id, class: item.cls }, item.label))
 );`),
-    callout(t, 'note', 'Duplicate keys',
+    callout('note', 'Duplicate keys',
       t.p([
         'Two ',
         t.code('signal(initial, key)'),
@@ -98,7 +100,7 @@ const rows = items.transform(list =>
     t.p([
       'A named function defined outside the callback has a stable reference. The reconciler sees nothing changed and skips the node entirely. Because the function reads its closed-over variables at call time rather than capturing them, it always sees the current value.',
     ]),
-    code(t, 'javascript', `// Inline arrow: new reference each render. Works correctly but the reconciler
+    code('javascript', `// Inline arrow: new reference each render. Works correctly but the reconciler
 // touches every node to swap in the updated handler.
 let mode = 'view';
 const rows = items.transform(list =>
@@ -106,7 +108,7 @@ const rows = items.transform(list =>
     t.li({ dataKey: item.id, onclick: () => handleClick(item.id, mode) }, item.label)
   )
 );`),
-    code(t, 'javascript', `// Named function: stable reference. The reconciler skips unchanged nodes.
+    code('javascript', `// Named function: stable reference. The reconciler skips unchanged nodes.
 // mode is read at click time so it always reflects the current value.
 let mode = 'view';
 function handleClick(e) { doSomething(e.currentTarget.dataset.id, mode); }
@@ -123,11 +125,11 @@ mode = 'edit'; // all items see 'edit' when clicked, no re-render needed`),
     t.p([
       'Without a key, every re-render tears down all existing list nodes and builds fresh ones. With a key, the reconciler matches old nodes to new items by ID, reuses any node whose content is unchanged, and only touches the nodes that actually changed.',
     ]),
-    code(t, 'javascript', `// Problem: all nodes are replaced on every update, even when most items are unchanged.
+    code('javascript', `// Problem: all nodes are replaced on every update, even when most items are unchanged.
 const rows = items.transform(list =>
   list.map(item => t.li(item.label))
 );`),
-    code(t, 'javascript', `// Fixed: nodes are reused. Only added or removed items touch the DOM.
+    code('javascript', `// Fixed: nodes are reused. Only added or removed items touch the DOM.
 const rows = items.transform(list =>
   list.map(item => t.li({ dataKey: item.id }, item.label))
 );`),

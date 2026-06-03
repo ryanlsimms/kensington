@@ -1,7 +1,9 @@
+import { t } from 'kensington';
+
 import { apiTable } from '../../components/table.js';
 import { code } from '../../components/ui.js';
 
-export function apiTagMethods(t) {
+export function apiTagMethods() {
   return t.section({ id: 'tag-methods' }, [
     t.h2('Tag methods'),
     t.p([
@@ -32,7 +34,7 @@ export function apiTagMethods(t) {
       t.code('table'),
       ', and so on.',
     ]),
-    code(t, 'typescript', `t.div(attributes: DivAttributes, content?: Content): DivTag
+    code('typescript', `t.div(attributes: DivAttributes, content?: Content): DivTag
 t.div(content?: Content): DivTag`),
     t.p([
       'A subset of elements have branded return types and enforce a strict content model in TypeScript. Passing the wrong child type is a compile-time error. All strict containers also accept ',
@@ -47,16 +49,58 @@ t.div(content?: Content): DivTag`),
       t.code('boolean'),
       ' as escape hatches for conditional patterns.',
     ]),
-    apiTable(t, ['Element(s)', 'Return type', 'Accepts'], [
+    apiTable(['Element(s)', 'Return type', 'Accepts'], [
       [t.code('html'), t.code('HtmlTag'), [t.code('head'), ', ', t.code('body')]],
-      [t.code('table'), t.code('TableTag'), [t.code('caption'), ', ', t.code('colgroup'), ', ', t.code('thead'), ', ', t.code('tbody'), ', ', t.code('tfoot'), ', ', t.code('tr')]],
-      [[t.code('thead'), ', ', t.code('tbody'), ', ', t.code('tfoot')], [t.code('TheadTag'), ', ', t.code('TbodyTag'), ', ', t.code('TfootTag')], t.code('tr')],
+      [
+        t.code('table'),
+        t.code('TableTag'),
+        [
+          t.code('caption'),
+          ', ',
+          t.code('colgroup'),
+          ', ',
+          t.code('thead'),
+          ', ',
+          t.code('tbody'),
+          ', ',
+          t.code('tfoot'),
+          ', ',
+          t.code('tr'),
+        ],
+      ],
+      [
+        [t.code('thead'), ', ', t.code('tbody'), ', ', t.code('tfoot')],
+        [t.code('TheadTag'), ', ', t.code('TbodyTag'), ', ', t.code('TfootTag')],
+        t.code('tr'),
+      ],
       [t.code('tr'), t.code('TrTag'), [t.code('td'), ', ', t.code('th')]],
       [t.code('colgroup'), t.code('ColgroupTag'), [t.code('col'), ', ', t.code('template')]],
-      [[t.code('ul'), ', ', t.code('ol'), ', ', t.code('menu')], [t.code('UlTag'), ', ', t.code('OlTag'), ', ', t.code('MenuTag')], t.code('li')],
+      [
+        [t.code('ul'), ', ', t.code('ol'), ', ', t.code('menu')],
+        [t.code('UlTag'), ', ', t.code('OlTag'), ', ', t.code('MenuTag')],
+        t.code('li'),
+      ],
       [t.code('dl'), t.code('DlTag'), [t.code('dt'), ', ', t.code('dd'), ', ', t.code('div')]],
-      [t.code('select'), t.code('SelectTag'), [t.code('option'), ', ', t.code('optgroup'), ', ', t.code('hr'), ', ', t.code('div'), ', ', t.code('button')]],
-      [t.code('optgroup'), t.code('OptgroupTag'), [t.code('option'), ', ', t.code('div'), ', ', t.code('noscript'), ', ', t.code('legend')]],
+      [
+        t.code('select'),
+        t.code('SelectTag'),
+        [
+          t.code('option'),
+          ', ',
+          t.code('optgroup'),
+          ', ',
+          t.code('hr'),
+          ', ',
+          t.code('div'),
+          ', ',
+          t.code('button'),
+        ],
+      ],
+      [
+        t.code('optgroup'),
+        t.code('OptgroupTag'),
+        [t.code('option'), ', ', t.code('div'), ', ', t.code('noscript'), ', ', t.code('legend')],
+      ],
       [t.code('picture'), t.code('PictureTag'), [t.code('source'), ', ', t.code('img')]],
       [t.code('hgroup'), t.code('HgroupTag'), [t.code('h1'), '–', t.code('h6'), ', ', t.code('p')]],
     ]),
@@ -129,7 +173,7 @@ t.div(content?: Content): DivTag`),
       t.code('wbr'),
       ', and others.',
     ]),
-    code(t, 'typescript', `t.input(attributes?: InputAttributes): VoidTag
+    code('typescript', `t.input(attributes?: InputAttributes): VoidTag
 t.img(attributes?: ImgAttributes): ImgTag`),
     t.aside([
       t.p([
@@ -144,7 +188,7 @@ t.img(attributes?: ImgAttributes): ImgTag`),
 
     t.h3({ id: 'instance-methods' }, 'Instance methods'),
     t.p('All tag objects share these methods.'),
-    apiTable(t, ['Method', 'Returns', 'Description'], [
+    apiTable(['Method', 'Returns', 'Description'], [
       [
         t.code('.toString()'),
         t.code('string'),
@@ -153,22 +197,59 @@ t.img(attributes?: ImgAttributes): ImgTag`),
       [
         t.code('.toElement(options?)'),
         t.code('Element'),
-        ['Creates a live DOM node. Signal attribute values, signal content, and ', t.code('prop'), ' values update the DOM in place when the signal changes. Signal effects are stopped automatically when the element is removed from the DOM. Pass ', t.code('{ persist: true }'), ' to pause effects on removal and resume them automatically on re-insertion instead of stopping permanently. Browser only. ', t.code('LiteralTag'), ' returns a ', t.code('DocumentFragment'), '; ', t.code('CommentTag'), ' returns a ', t.code('Comment'), '.'],
+        [
+          'Creates a live DOM node. Signal attribute values, signal content, and ',
+          t.code('prop'),
+          ' values update the DOM in place when the signal changes. ',
+          'Signal effects are stopped automatically when the element is removed from the DOM. Pass ',
+          t.code('{ persist: true }'),
+          ' to pause effects on removal and resume them automatically on re-insertion instead of stopping permanently. Browser only. ',
+          t.code('LiteralTag'),
+          ' returns a ',
+          t.code('DocumentFragment'),
+          '; ',
+          t.code('CommentTag'),
+          ' returns a ',
+          t.code('Comment'),
+          '.',
+        ],
       ],
       [
         t.code('.getDomElement()'),
         [t.code('Element'), ' | ', t.code('null')],
-        ['Returns the live DOM element created by a prior ', t.code('.toElement()'), ' call if it is still connected to the document, otherwise ', t.code('null'), '.'],
+        [
+          'Returns the live DOM element created by a prior ',
+          t.code('.toElement()'),
+          ' call if it is still connected to the document, otherwise ',
+          t.code('null'),
+          '.',
+        ],
       ],
       [
         t.code('.addConnectedCallback(fn)'),
         t.code('this'),
-        ['Registers a callback that fires when the element is inserted into the DOM. ', t.code('fn'), ' receives the live element as its first argument and as ', t.code('this'), '. Call before ', t.code('.toElement()'), '. With ', t.code('toElement({ persist: true })'), ' the callback re-fires on every re-insertion. Can be called multiple times to register multiple handlers.'],
+        [
+          'Registers a callback that fires when the element is inserted into the DOM. ',
+          t.code('fn'),
+          ' receives the live element as its first argument and as ',
+          t.code('this'),
+          '. Call before ',
+          t.code('.toElement()'),
+          '. With ',
+          t.code('toElement({ persist: true })'),
+          ' the callback re-fires on every re-insertion. ',
+          'Can be called multiple times to register multiple handlers.',
+        ],
       ],
       [
         t.code('.addDisconnectedCallback(fn)'),
         t.code('this'),
-        ['Registers a callback that fires when the element leaves the DOM, after signal effects are stopped. With ', t.code('toElement({ persist: true })'), ' the callback re-fires on every removal and is re-registered automatically on each reconnection, so the full enter/leave cycle repeats without extra setup.'],
+        [
+          'Registers a callback that fires when the element leaves the DOM, after signal effects are stopped. With ',
+          t.code('toElement({ persist: true })'),
+          ' the callback re-fires on every removal and is re-registered automatically on each reconnection, ',
+          'so the full enter/leave cycle repeats without extra setup.',
+        ],
       ],
     ]),
   ]);

@@ -1,6 +1,8 @@
+import { t } from 'kensington';
+
 import { code, exLink } from '../../components/ui.js';
 
-export function basicsDom(t) {
+export function basicsDom() {
   return t.section({ id: 'dom' }, [
     t.h2('Browser DOM'),
     t.p([
@@ -16,7 +18,7 @@ export function basicsDom(t) {
       t.code('on'),
       ' key with a plain object mapping event names verbatim to handlers. SVG and MathML elements get the correct namespace automatically.',
     ]),
-    code(t, 'javascript', `import { t } from 'kensington';
+    code('javascript', `import { t } from 'kensington';
 
 const button = t.button({ type: 'button' }, 'Click me').toElement();
 document.body.append(button);
@@ -40,6 +42,6 @@ document.body.append(svg);`),
       t.code('.toElement()'),
       ' to get a live DOM element. It is safe to call before the element is mounted.',
     ]),
-    t.p(exLink(t, '?page=examples#counter', 'Counter example')),
+    t.p(exLink('?page=examples#counter', 'Counter example')),
   ]);
 }

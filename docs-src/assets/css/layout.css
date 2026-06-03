@@ -55,14 +55,14 @@ main::after {
 nav#sidebar {
   position: sticky;
   top: var(--topbar-height);
-  height: calc(100vh - var(--topbar-height));
+  height: calc(100dvh - var(--topbar-height));
   width: var(--sidebar-width);
   flex-shrink: 0;
   overflow-y: auto;
   scrollbar-width: none;
   background: var(--color-sidebar-bg);
   border-right: 1px solid var(--color-border);
-  padding-bottom: 1.5rem;
+  padding-bottom: var(--space-lg);
   font-size: 0.8125rem;
 }
 
@@ -71,7 +71,7 @@ nav#sidebar::-webkit-scrollbar { display: none; }
 #sidebar-scrollbar {
   position: sticky;
   top: var(--topbar-height);
-  height: calc(100vh - var(--topbar-height));
+  height: calc(100dvh - var(--topbar-height));
   flex-shrink: 0;
   background: color-mix(in srgb, var(--color-border) 25%, var(--color-sidebar-bg));
 }
@@ -81,7 +81,7 @@ nav#sidebar .sidebar-pages {
   grid-template-columns: 1fr 1fr;
   gap: 1px;
   padding: 0;
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-md);
   position: sticky;
   top: 0;
   z-index: 1;
@@ -92,7 +92,7 @@ nav#sidebar .sidebar-pages {
 nav#sidebar .sidebar-pages button {
   flex: 1;
   text-align: center;
-  padding: 0.4rem 0.5rem;
+  padding: 0.4rem var(--space-sm);
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -121,6 +121,7 @@ nav#sidebar .sidebar-title {
   text-transform: uppercase;
   letter-spacing: 0.14em;
   color: var(--color-muted);
+  margin: 0;
   padding: 1.1rem 0.875rem 0.3rem;
   opacity: 0.7;
 }
@@ -130,7 +131,7 @@ nav#sidebar ul {
 }
 
 nav#sidebar .sidebar-pages + ul {
-  padding-top: 0.5rem;
+  padding-top: var(--space-sm);
 }
 
 nav#sidebar ul li a {
@@ -173,7 +174,7 @@ nav#sidebar ul li a.active {
 
 nav#sidebar .sidebar-footer {
   padding: 0.75rem 0.875rem 0;
-  margin-top: 1rem;
+  margin-top: var(--space-md);
   border-top: 1px solid var(--color-border);
 }
 
@@ -184,7 +185,7 @@ nav#sidebar .sidebar-footer a {
   font-size: 0.775rem;
   color: var(--color-muted);
   text-decoration: none;
-  padding: 0.25rem 0;
+  padding: var(--space-xs) 0;
   transition: color 0.12s;
 }
 
@@ -204,8 +205,8 @@ nav#sidebar .sidebar-footer a:hover {
   z-index: 150;
   height: var(--topbar-height);
   background: var(--color-toolbar);
-  border-bottom: 2px solid var(--color-border);
-  padding: 0 1rem;
+  border-bottom: 1px solid var(--color-border);
+  padding: 0 var(--space-md);
   align-items: center;
   gap: 0.75rem;
 }
@@ -242,7 +243,7 @@ nav#sidebar .sidebar-footer a:hover {
 header {
   position: relative;
   margin-bottom: 2.5rem;
-  padding-bottom: 1.5rem;
+  padding-bottom: var(--space-lg);
   border-bottom: 2px solid var(--color-border);
 }
 
@@ -250,7 +251,7 @@ main > header, main > section { padding-inline: var(--section-x-padding); }
 
 section + header {
   margin-top: 12rem;
-  padding-top: 1.5rem;
+  padding-top: var(--space-lg);
   border-top: 2px solid var(--color-border);
 }
 
@@ -296,7 +297,7 @@ h1 {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-md);
 }
 
 .badges img { vertical-align: middle; }
@@ -315,4 +316,53 @@ header p {
 [data-page-nav].page-inactive,
 [data-page-content].page-inactive {
   display: none !important;
+}
+
+/* Initial-load page selection.
+   An inline script in <head> reads ?page=X from the URL and sets
+   <html data-page="X">. The SSR HTML always has basics visible and other
+   pages marked .page-inactive; these rules invert that when a known page is
+   selected. Unknown values are ignored, so the default page still renders. */
+
+html[data-page="reactivity"] [data-page-content="basics"],
+html[data-page="examples"] [data-page-content="basics"],
+html[data-page="api"] [data-page-content="basics"],
+html[data-page="architecture"] [data-page-content="basics"],
+html[data-page="reactivity"] [data-page-nav="basics"],
+html[data-page="examples"] [data-page-nav="basics"],
+html[data-page="api"] [data-page-nav="basics"],
+html[data-page="architecture"] [data-page-nav="basics"] {
+  display: none !important;
+}
+
+html[data-page="reactivity"] [data-page-content="reactivity"].page-inactive,
+html[data-page="examples"] [data-page-content="examples"].page-inactive,
+html[data-page="api"] [data-page-content="api"].page-inactive,
+html[data-page="architecture"] [data-page-content="architecture"].page-inactive {
+  display: block !important;
+}
+
+html[data-page="reactivity"] [data-page-nav="reactivity"].page-inactive,
+html[data-page="examples"] [data-page-nav="examples"].page-inactive,
+html[data-page="api"] [data-page-nav="api"].page-inactive,
+html[data-page="architecture"] [data-page-nav="architecture"].page-inactive {
+  display: contents !important;
+}
+
+html[data-page="reactivity"] [data-page-tab="basics"].active,
+html[data-page="examples"] [data-page-tab="basics"].active,
+html[data-page="api"] [data-page-tab="basics"].active,
+html[data-page="architecture"] [data-page-tab="basics"].active {
+  color: var(--color-muted) !important;
+  background: var(--color-tab-inactive) !important;
+  border-bottom-color: transparent !important;
+}
+
+html[data-page="reactivity"] [data-page-tab="reactivity"],
+html[data-page="examples"] [data-page-tab="examples"],
+html[data-page="api"] [data-page-tab="api"],
+html[data-page="architecture"] [data-page-tab="architecture"] {
+  color: var(--color-heading) !important;
+  background: var(--color-sidebar-tab-hover) !important;
+  border-bottom-color: var(--color-accent) !important;
 }

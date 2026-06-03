@@ -15,12 +15,12 @@ const app = t.div([
     t.button({
       type: 'button',
       onclick: () => userId.set(v => Math.max(1, v - 1)),
-    }, '← Prev'),
+    }, [ '← Prev']),
     t.span({ class: 'user-id' }, ['User ', userId, ' of ', MAX_ID]),
     t.button({
       type: 'button',
       onclick: () => userId.set(v => Math.min(MAX_ID, v + 1)),
-    }, 'Next →'),
+    }, [ 'Next →']),
   ]),
   // signal content can be a tag — switches between loading, error, and data views reactively
   loading.transform(l => l

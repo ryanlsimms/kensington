@@ -1,7 +1,9 @@
+import { t } from 'kensington';
+
 import { apiTable } from '../../components/table.js';
 import { code } from '../../components/ui.js';
 
-export function apiSignals(t) {
+export function apiSignals() {
   return t.section({ id: 'signals' }, [
     t.h2('Signals'),
     t.p([
@@ -19,7 +21,7 @@ export function apiSignals(t) {
     ]),
 
     t.h3({ id: 'signal' }, 'signal'),
-    code(t, 'typescript', `import { signal } from 'kensington';
+    code('typescript', `import { t, signal } from 'kensington';
 
 signal<T>(initialValue: T): Signal<T>`),
     t.p([
@@ -29,39 +31,82 @@ signal<T>(initialValue: T): Signal<T>`),
     ]),
 
     t.h3({ id: 'signal-methods' }, 'Signal methods'),
-    apiTable(t, ['Method', 'Description'], [
+    apiTable(['Method', 'Description'], [
       [
         t.code('.get(): T'),
-        ['Returns the current value. When called inside ', t.code('computed()'), ' or ', t.code('effect()'), ', registers this signal as a dependency of the running computation.'],
+        [
+          'Returns the current value. When called inside ',
+          t.code('computed()'),
+          ' or ',
+          t.code('effect()'),
+          ', registers this signal as a dependency of the running computation.',
+        ],
       ],
       [
         t.code('.value: T'),
-        ['Property getter. Returns the current value without tracking. Unlike ', t.code('.get()'), ', reading ', t.code('.value'), ' inside ', t.code('computed()'), ' or ', t.code('effect()'), ' does not subscribe to this signal. The computation will not re-run when this signal changes.'],
+        [
+          'Property getter. Returns the current value without tracking. Unlike ',
+          t.code('.get()'),
+          ', reading ',
+          t.code('.value'),
+          ' inside ',
+          t.code('computed()'),
+          ' or ',
+          t.code('effect()'),
+          ' does not subscribe to this signal. The computation will not re-run when this signal changes.',
+        ],
       ],
       [
         t.code('.set(value: T | (prev: T) => T): void'),
-        ['Updates the value and notifies subscribers. Accepts a new value or an updater function. Throws if called on a signal created by ', t.code('computed()'), ' or ', t.code('.transform()'), '.'],
+        [
+          'Updates the value and notifies subscribers. Accepts a new value or an updater function. ',
+          'Throws if called on a signal created by ',
+          t.code('computed()'),
+          ' or ',
+          t.code('.transform()'),
+          '.',
+        ],
       ],
       [
         t.code('.transform<U>(fn: (value: T) => U): Signal<U>'),
-        ['Returns a new read-only derived signal equivalent to ', t.code('computed(() => fn(this.get()))'), '. Tracks all signals read inside ', t.code('fn'), ', not just the source.'],
+        [
+          'Returns a new read-only derived signal equivalent to ',
+          t.code('computed(() => fn(this.get()))'),
+          '. Tracks all signals read inside ',
+          t.code('fn'),
+          ', not just the source.',
+        ],
       ],
       [
         t.code('.stop(): void'),
-        ['Clears all subscribers. For signals created by ', t.code('computed()'), ' or ', t.code('.transform()'), ', also tears down the derived computation and freezes the value.'],
+        [
+          'Clears all subscribers. For signals created by ',
+          t.code('computed()'),
+          ' or ',
+          t.code('.transform()'),
+          ', also tears down the derived computation and freezes the value.',
+        ],
       ],
       [
         t.code('.toJSON(): T'),
-        ['Returns the raw value without tracking side effects. Makes signals transparent to ', t.code('JSON.stringify'), '.'],
+        [
+          'Returns the raw value without tracking side effects. Makes signals transparent to ',
+          t.code('JSON.stringify'),
+          '.',
+        ],
       ],
       [
         t.code('.toString(): string'),
-        ['Calls ', t.code('.get()'), ' and converts to string. Allows signals to be used in template literals inside reactive contexts.'],
+        [
+          'Calls ',
+          t.code('.get()'),
+          ' and converts to string. Allows signals to be used in template literals inside reactive contexts.',
+        ],
       ],
     ]),
 
     t.h3({ id: 'computed' }, 'computed'),
-    code(t, 'typescript', `import { computed } from 'kensington';
+    code('typescript', `import { computed } from 'kensington';
 
 computed<T>(fn: () => T): Signal<T>`),
     t.p([
@@ -71,13 +116,13 @@ computed<T>(fn: () => T): Signal<T>`),
       t.code('.stop()'),
       ' to unsubscribe from all tracked signals and freeze the value.',
     ]),
-    code(t, 'javascript', `const count = signal(0);
+    code('javascript', `const count = signal(0);
 const label = computed(() => count.get() === 1 ? 'item' : 'items');
 
 label.stop(); // unsubscribes from tracked signals, value freezes`),
 
     t.h3({ id: 'effect' }, 'effect'),
-    code(t, 'typescript', `import { effect } from 'kensington';
+    code('typescript', `import { effect } from 'kensington';
 
 effect(fn: () => void): { pause(): void, resume(): void, stop(): void }`),
     t.p([
@@ -89,7 +134,7 @@ effect(fn: () => void): { pause(): void, resume(): void, stop(): void }`),
       t.code('.set()'),
       ' calls in the same turn batch into one re-run. Errors thrown inside the callback are re-surfaced asynchronously so they do not abort other pending effects.',
     ]),
-    code(t, 'javascript', `const e = effect(() => {
+    code('javascript', `const e = effect(() => {
   document.title = \`\${count.get()} items\`;
 });
 
@@ -124,7 +169,7 @@ e.stop();   // permanently destroys. resume() after stop() is a no-op`),
       t.code('playbackRate'),
       ' on media elements.',
     ]),
-    code(t, 'javascript', `const query = signal('');
+    code('javascript', `const query = signal('');
 
 // Assigns el.value reactively — keeps the live property in sync
 t.input({ type: 'search', prop: { value: query } }).toElement();
@@ -140,13 +185,13 @@ t.video({ src: '/intro.mp4', prop: { muted: true, playbackRate: 1.5 } }).toEleme
       t.code('validationLevel'),
       '.',
     ]),
-    code(t, 'typescript', `t.input({ prop: { value: 'hello' } });           // typed: HTMLInputElement.value
+    code('typescript', `t.input({ prop: { value: 'hello' } });           // typed: HTMLInputElement.value
 t.input({ prop: { checked: isChecked } });       // typed: boolean
 t.video({ prop: { muted: true, playbackRate: 1.5 } });  // typed: HTMLVideoElement props
 t.div({ prop: { _instance: component } });       // expando: accepted as unknown`),
 
     t.h3({ id: 'render-for-hydration' }, 'renderForHydration'),
-    code(t, 'typescript', `import { renderForHydration } from 'kensington';
+    code('typescript', `import { renderForHydration } from 'kensington';
 
 renderForHydration(
   fn: (state: Record<string, unknown>) => ContentTag | ContentTag[] | null | undefined,
@@ -168,12 +213,16 @@ renderForHydration(
       t.code('registerComponents'),
       ' to match script blocks to component functions on the client.',
     ]),
-    t.p(['State must be a plain serializable object. Values that cannot survive ', t.code('JSON.stringify'), ' (functions, symbols, BigInt, circular references, class instances) cause a warning or throw.']),
-    code(t, 'javascript', `// server
+    t.p([
+      'State must be a plain serializable object. Values that cannot survive ',
+      t.code('JSON.stringify'),
+      ' (functions, symbols, BigInt, circular references, class instances) cause a warning or throw.',
+    ]),
+    code('javascript', `// server
 res.send(layout(renderForHydration(counter, { count: 0 })).toString());`),
 
     t.h3({ id: 'register-components' }, 'registerComponents'),
-    code(t, 'typescript', `import { registerComponents } from 'kensington';
+    code('typescript', `import { registerComponents } from 'kensington';
 
 registerComponents(
   components: Record<string, Function>
@@ -190,7 +239,7 @@ registerComponents(
       t.code('{ stop() }'),
       ' to disconnect the observer and halt auto-hydration.',
     ]),
-    code(t, 'javascript', `// client
+    code('javascript', `// client
 const { stop } = registerComponents({ counter, userCard });
 
 // later, if you want to stop watching for new components:

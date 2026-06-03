@@ -1,4 +1,4 @@
-import { t, signal, computed } from 'kensington';
+import { computed, signal, t } from 'kensington';
 
 export function copyButton() {
   const copied = signal(false);

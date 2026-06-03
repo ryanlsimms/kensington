@@ -79,7 +79,7 @@
     align-items: center;
     background: none;
     border: none;
-    padding: 0.25rem;
+    padding: var(--space-xs);
     cursor: pointer;
     color: var(--color-text);
     line-height: 0;
@@ -92,6 +92,7 @@
     left: 0;
     z-index: 100;
     box-shadow: 4px 0 0 var(--color-border);
+    padding-bottom: 4em;
   }
 
   #sidebar-scrollbar { display: none; }
@@ -148,21 +149,22 @@
 
   code:is(:not([class]), .wrappable) { text-wrap: wrap; overflow-wrap: anywhere; }
 
-  /* Sticky section headings: pin under the topbar. In natural flow they keep the
-     normal h2 look; once pinned (.is-stuck, toggled by a scroll listener in
-     runtime.js) they collapse to a compact full-width bar over 200ms. */
-  section h2 {
+  /* Sticky section headings: the runtime wraps each h2 in a div.h2-slot.
+     The slot itself is sticky (containing block is the section, so it stays
+     pinned through the whole section), and its min-height is locked to the
+     h2's natural box height. That way the h2 can shrink visually when the
+     slot has .is-stuck without changing the flow space the slot occupies. */
+  .h2-slot {
     position: sticky;
     top: calc(var(--topbar-height) - 2px);
     z-index: 50;
   }
 
-  section h2.is-stuck {
+  .h2-slot.is-stuck h2 {
     font-size: 0.85rem;
-    padding: 0.25rem var(--section-x-padding) 0.05rem;
+    padding: 0.35rem var(--section-x-padding) 0.2rem;
     margin-left: calc(-1 * var(--section-x-padding));
     margin-right: calc(-1 * var(--section-x-padding));
-    margin-bottom: 44px;
     max-width: none;
     border-radius: 0;
     border-top: none;

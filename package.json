@@ -1,7 +1,7 @@
 {
   "name": "kensington",
   "version": "2.0.0-signals.15",
-  "description": "HTML/SVG/MathML template library for Node.js and the browser",
+  "description": "Reactive HTML/SVG/MathML template library for Node.js and the browser",
   "type": "module",
   "types": "./types.d.ts",
   "sideEffects": [
@@ -69,7 +69,7 @@
     "name": "Ryan Lee Simms",
     "url": "https://www.ryansimms.com"
   },
-  "homepage": "https://github.com/ryanlsimms/kensington#readme",
+  "homepage": "https://kensingtonjs.com",
   "bugs": "https://github.com/ryanlsimms/kensington/issues",
   "repository": {
     "type": "git",
@@ -126,7 +126,7 @@
     "globals": "^17.3.0",
     "html-validate": "^9.4.1",
     "jsdom": "^26.0.0",
-    "kensington-eslint-plugin": "^0.2.1",
+    "kensington-eslint-plugin": "^0.3.2",
     "lint-staged": "^16.2.7",
     "rollup": "^4.35.0",
     "simple-git-hooks": "^2.13.1",

@@ -1,4 +1,4 @@
-import { t, signal } from 'kensington';
+import { signal, t } from 'kensington';
 
 export function signalDemo(state) {
   const count = signal(state.count);

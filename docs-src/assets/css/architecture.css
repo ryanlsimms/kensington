@@ -90,7 +90,7 @@ section.stage-5 h2::before { background: var(--color-stage5); }
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 0.75rem;
-  margin: 1rem 0;
+  margin: var(--space-md) 0;
   max-width: 900px;
 }
 
@@ -106,7 +106,7 @@ section.stage-5 h2::before { background: var(--color-stage5); }
   font-family: var(--mono);
   font-size: 0.72rem;
   color: var(--color-muted);
-  margin-bottom: 0.25rem;
+  margin-bottom: var(--space-xs);
 }
 
 .step-card .step-title {
@@ -132,7 +132,7 @@ section.stage-5 h2::before { background: var(--color-stage5); }
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
-  margin: 1rem 0;
+  margin: var(--space-md) 0;
   max-width: 900px;
 }
 
@@ -140,12 +140,12 @@ section.stage-5 h2::before { background: var(--color-stage5); }
   background: var(--color-panel-bg);
   border: 1px solid var(--color-border);
   border-radius: 0;
-  padding: 0.9rem 1rem;
+  padding: 0.9rem var(--space-md);
 }
 
 .compare-grid h4 {
   margin-top: 0;
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--space-sm);
   font-size: 0.9rem;
   font-weight: 700;
   color: var(--color-heading);
@@ -155,8 +155,8 @@ section.stage-5 h2::before { background: var(--color-stage5); }
 .mermaid-wrap {
   background: var(--color-mermaid-bg);
   border: 1px solid var(--color-border);
-  padding: 1rem;
-  margin: 1rem 0;
+  padding: var(--space-md);
+  margin: var(--space-md) 0;
   max-width: 900px;
   text-align: center;
   overflow-x: auto;
@@ -180,7 +180,7 @@ section.stage-5 h2::before { background: var(--color-stage5); }
   align-items: center;
   gap: 0 0.8rem;
   padding: 0.6rem 0;
-  margin: -0.5rem 0 2rem;
+  margin: -0.5rem 0 var(--space-xl);
   background: var(--color-bg);
   border-bottom: 1px solid var(--color-border);
   backdrop-filter: blur(6px);
@@ -209,8 +209,8 @@ section.stage-5 h2::before { background: var(--color-stage5); }
     border-left: none;
     border-right: none;
     border-radius: 0;
-    margin-left: -1.5em;
-    margin-right: -1.5em;
+    margin-left: calc(-1 * var(--section-x-padding));
+    margin-right: calc(-1 * var(--section-x-padding));
   }
 
   .step-grid {
@@ -219,8 +219,8 @@ section.stage-5 h2::before { background: var(--color-stage5); }
 
   .compare-grid {
     grid-template-columns: 1fr;
-    margin-left: -1.5em;
-    margin-right: -1.5em;
+    margin-left: calc(-1 * var(--section-x-padding));
+    margin-right: calc(-1 * var(--section-x-padding));
   }
 
   .compare-grid > div {
@@ -237,7 +237,7 @@ section.stage-5 h2::before { background: var(--color-stage5); }
   font-family: var(--mono);
   font-size: 0.78rem;
   color: var(--color-muted);
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--space-sm);
 }
 
 .file-crumb .slash {
@@ -267,7 +267,7 @@ ol.numbered > li {
   counter-increment: num;
   position: relative;
   padding-left: 2.5rem;
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-md);
 }
 
 ol.numbered > li::before {

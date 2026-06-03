@@ -1,16 +1,18 @@
+import { t } from 'kensington';
+
 import { githubLink } from '../../components/ui.js';
+import { architectureConstruction } from './construction.js';
+import { architectureDomOutput } from './dom-output.js';
 import { stageDot } from './helpers.js';
+import { architectureHydration } from './hydration.js';
+import { architectureLifecycle } from './lifecycle.js';
 import { architectureOverview } from './overview.js';
 import { architecturePipeline } from './pipeline.js';
-import { architectureConstruction } from './construction.js';
-import { architectureStringOutput } from './string-output.js';
-import { architectureDomOutput } from './dom-output.js';
-import { architectureSignals } from './signals.js';
-import { architectureLifecycle } from './lifecycle.js';
-import { architectureRemoval } from './removal.js';
 import { architectureReconcile } from './reconcile.js';
-import { architectureHydration } from './hydration.js';
 import { architectureReference } from './reference.js';
+import { architectureRemoval } from './removal.js';
+import { architectureSignals } from './signals.js';
+import { architectureStringOutput } from './string-output.js';
 
 const MERMAID_INIT = `
 (async function () {
@@ -22,14 +24,14 @@ const MERMAID_INIT = `
 })();
 `.trim();
 
-export function architectureSidebar(t) {
+export function architectureSidebar() {
   return [
     t.ul([
       t.li(t.a({ href: '#introduction' }, 'Introduction')),
       t.li(t.a({ href: '#concepts' }, 'Concepts')),
       t.li(t.a({ href: '#pipeline' }, 'The Pipeline')),
       t.li([
-        t.a({ href: '#construction' }, [stageDot(t, 1), 'Construction']),
+        t.a({ href: '#construction' }, [stageDot(1), 'Construction']),
         t.ul([
           t.li(t.a({ href: '#construction-createtag' }, 'createTag closure')),
           t.li(t.a({ href: '#construction-contenttag' }, 'ContentTag constructor')),
@@ -37,13 +39,13 @@ export function architectureSidebar(t) {
         ]),
       ]),
       t.li([
-        t.a({ href: '#serialize' }, [stageDot(t, 2), 'String Output']),
+        t.a({ href: '#serialize' }, [stageDot(2), 'String Output']),
         t.ul([
           t.li(t.a({ href: '#serialize-paths' }, 'Three content paths')),
         ]),
       ]),
       t.li([
-        t.a({ href: '#render' }, [stageDot(t, 3), 'DOM Output']),
+        t.a({ href: '#render' }, [stageDot(3), 'DOM Output']),
         t.ul([
           t.li(t.a({ href: '#render-cache' }, 'Cache check')),
           t.li(t.a({ href: '#render-attributes' }, 'Attribute wiring')),
@@ -64,14 +66,14 @@ export function architectureSidebar(t) {
         ]),
       ]),
       t.li([
-        t.a({ href: '#lifecycle' }, [stageDot(t, 4), 'Lifecycle Module']),
+        t.a({ href: '#lifecycle' }, [stageDot(4), 'Lifecycle Module']),
       ]),
       t.li(t.a({ href: '#dom-tracker' }, 'DOM Tracker')),
       t.li([
-        t.a({ href: '#removal' }, [stageDot(t, 5), 'Removal Flow']),
+        t.a({ href: '#removal' }, [stageDot(5), 'Removal Flow']),
       ]),
       t.li([
-        t.a({ href: '#persist' }, [stageDot(t, 4), 'Persist Mode']),
+        t.a({ href: '#persist' }, [stageDot(4), 'Persist Mode']),
       ]),
       t.li([
         t.a({ href: '#reconcile' }, 'Reconciliation'),
@@ -85,48 +87,49 @@ export function architectureSidebar(t) {
       t.li(t.a({ href: '#invariants' }, 'Invariants')),
       t.li(t.a({ href: '#cheatsheet' }, 'Where to look')),
     ]),
-    githubLink(t),
+    githubLink(),
   ];
 }
 
-export function architectureContent(t) {
+export function architectureContent() {
   const legendBar = t.div({ class: 'legend-bar' }, [
     t.span({ class: 'legend' }, [
-      t.span({ class: 'pill', ariaHidden: 'true', style: 'background:var(--color-stage1)' }),
+      t.span({ class: 'pill', ariaHidden: 'true', style: { background: 'var(--color-stage1)' } }),
       'Construction',
     ]),
     t.span({ class: 'legend' }, [
-      t.span({ class: 'pill', ariaHidden: 'true', style: 'background:var(--color-stage2)' }),
+      t.span({ class: 'pill', ariaHidden: 'true', style: { background: 'var(--color-stage2)' } }),
       'String output',
     ]),
     t.span({ class: 'legend' }, [
-      t.span({ class: 'pill', ariaHidden: 'true', style: 'background:var(--color-stage3)' }),
+      t.span({ class: 'pill', ariaHidden: 'true', style: { background: 'var(--color-stage3)' } }),
       'DOM output',
     ]),
     t.span({ class: 'legend' }, [
-      t.span({ class: 'pill', ariaHidden: 'true', style: 'background:var(--color-stage4)' }),
+      t.span({ class: 'pill', ariaHidden: 'true', style: { background: 'var(--color-stage4)' } }),
       'Lifecycle',
     ]),
     t.span({ class: 'legend' }, [
-      t.span({ class: 'pill', ariaHidden: 'true', style: 'background:var(--color-stage5)' }),
+      t.span({ class: 'pill', ariaHidden: 'true', style: { background: 'var(--color-stage5)' } }),
       'Removal',
     ]),
   ]);
 
   return [
-    ...architectureOverview(t),
+    ...architectureOverview(),
     t.div({ class: 'legend-sentinel', ariaHidden: 'true' }),
     legendBar,
-    architecturePipeline(t),
-    architectureConstruction(t),
-    architectureStringOutput(t),
-    architectureDomOutput(t),
-    architectureSignals(t),
-    ...architectureLifecycle(t),
-    ...architectureRemoval(t),
-    architectureReconcile(t),
-    architectureHydration(t),
-    ...architectureReference(t),
+    architecturePipeline(),
+    architectureConstruction(),
+    architectureStringOutput(),
+    architectureDomOutput(),
+    architectureSignals(),
+    ...architectureLifecycle(),
+    ...architectureRemoval(),
+    architectureReconcile(),
+    architectureHydration(),
+    ...architectureReference(),
+    // eslint-disable-next-line kensington/no-unsafe-literal -- inline script tag, content controlled by us
     t.unsafeLiteral(`<script type="module">${MERMAID_INIT}</script>`),
   ];
 }

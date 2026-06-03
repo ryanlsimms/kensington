@@ -7,6 +7,7 @@ import kensington from 'kensington-eslint-plugin';
 /** @type {import('eslint').Linter.Config[]} */
 export default [
   kensington.configs.recommended,
+  kensington.configs.style,
   {
     'languageOptions': {
       'ecmaVersion': 'latest',
@@ -21,7 +22,6 @@ export default [
     'ignores': [
       'cjs/**',
       'dist/**',
-      'docs-src/**',
       '**/node_modules/**',
     ],
   },
@@ -38,6 +38,7 @@ export default [
       '@stylistic/js/arrow-parens': ['error', 'as-needed'],
       '@stylistic/js/brace-style': 'off',
       '@stylistic/js/comma-dangle': ['error', 'always-multiline'],
+      '@stylistic/js/comma-spacing': ['error', { before: false, after: true }],
       '@stylistic/js/dot-location': ['error', 'property'],
       '@stylistic/js/function-call-argument-newline': 'off',
       '@stylistic/js/function-paren-newline': 'off',

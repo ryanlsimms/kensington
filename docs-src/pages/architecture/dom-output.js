@@ -1,7 +1,9 @@
+import { t } from 'kensington';
+
 import { callout, code } from '../../components/ui.js';
 import { loc, mermaid } from './helpers.js';
 
-export function architectureDomOutput(t) {
+export function architectureDomOutput() {
   return t.section({ id: 'render', class: 'stage stage-3' }, [
     t.h2('Stage 3: DOM Output'),
     t.p([
@@ -10,10 +12,10 @@ export function architectureDomOutput(t) {
     ]),
     t.p([
       'The function lives at ',
-      loc(t, 'esm/tag-classes/content-tag.js'),
+      loc('esm/tag-classes/content-tag.js'),
       '.',
     ]),
-    mermaid(t, `flowchart TD
+    mermaid(`flowchart TD
   S(["toElement()"]) --> A{"domElement cached?"}
   A -- yes --> R1["return cached"]
   A -- no --> B["validateContent"]
@@ -52,13 +54,13 @@ export function architectureDomOutput(t) {
         t.code('showInvalid'),
         ' reports it.',
       ]),
-      code(t, 'javascript', `if (this.#domElement) {
+      code('javascript', `if (this.#domElement) {
   if (this.#domElement.parentNode !== null) {
     showInvalid('toElement() called on a tag instance already in the DOM ...', ...);
   }
   return this.#domElement;
 }`),
-      callout(t, 'note', 'Why cache?',
+      callout('note', 'Why cache?',
         t.p([
           'So that ',
           t.code('getDomElement()'),
@@ -71,9 +73,7 @@ export function architectureDomOutput(t) {
 
     t.section({ id: 'render-element' }, [
       t.h3('Element creation'),
-      code(t, 'javascript', `const element = this.namespace
-  ? document.createElementNS(this.namespace, this.tagName)
-  : document.createElement(this.tagName);
+      code('javascript', `const element = this.namespace ? document.createElementNS(this.namespace, this.tagName) : document.createElement(this.tagName);
 
 const lifecycle = createLifecycle({ element, persist });
 let hasSignalContent = false;`),
@@ -118,7 +118,7 @@ let hasSignalContent = false;`),
         ]),
       ]),
       t.p('The signal-attribute apply function:'),
-      code(t, 'javascript', `lifecycle.signalEffect(attrValue, (el, val) => {
+      code('javascript', `lifecycle.signalEffect(attrValue, (el, val) => {
   if (val === false || val === null || val === undefined) {
     el.removeAttribute(attrName);
   } else if (val === true) {
@@ -143,7 +143,7 @@ let hasSignalContent = false;`),
         t.code('on'),
         ' attribute attaches multiple event handlers via a single nested object:',
       ]),
-      code(t, 'javascript', `t.button({ on: { click: handleClick, mouseenter: handleHover } }, 'Press me')`),
+      code('javascript', `t.button({ on: { click: handleClick, mouseenter: handleHover } }, 'Press me')`),
       t.p([
         'The loop calls ',
         t.code('element.addEventListener(eventName, handler)'),
@@ -162,13 +162,13 @@ let hasSignalContent = false;`),
         t.code('input[value]'),
         ' (attribute reflects initial state only):',
       ]),
-      code(t, 'javascript', `t.input({ prop: { value: count } })  // input.value updates as count changes
+      code('javascript', `t.input({ prop: { value: count } })  // input.value updates as count changes
 t.input({ value: count.get() })      // frozen attribute set at construction time`),
       t.p([
         t.code('isPropWritable'),
         ' validates each property against the live element before assignment. If the property exists on the prototype but is read-only, showInvalid reports it and the assignment is skipped. Otherwise:',
       ]),
-      code(t, 'javascript', `if (propValue instanceof Signal) {
+      code('javascript', `if (propValue instanceof Signal) {
   lifecycle.signalEffect(propValue, (el, val) => { el[propName] = val; }, 'prop:' + propName);
 } else {
   element[propName] = propValue;
@@ -179,7 +179,7 @@ t.input({ value: count.get() })      // frozen attribute set at construction tim
       t.h3('Content wiring'),
       t.p([
         'For each item in the flattened content array (see ',
-        loc(t, 'esm/tag-classes/content-tag.js'),
+        loc('esm/tag-classes/content-tag.js'),
         '):',
       ]),
       t.div({ class: 'step-grid' }, [
@@ -208,7 +208,7 @@ t.input({ value: count.get() })      // frozen attribute set at construction tim
         ]),
       ]),
       t.p('The signal-content wiring:'),
-      code(t, 'javascript', `if (node instanceof Signal) {
+      code('javascript', `if (node instanceof Signal) {
   hasSignalContent = true;
   const startAnchor = document.createComment('');
   const endAnchor = document.createComment('');
@@ -218,7 +218,7 @@ t.input({ value: count.get() })      // frozen attribute set at construction tim
   }, '(content)');
   continue;
 }`),
-      callout(t, 'key', 'Anchors persist for the element\'s lifetime',
+      callout('key', 'Anchors persist for the element\'s lifetime',
         t.p([
           'The two comment nodes are held only by the effect\'s closure. ',
           t.code('markContentTracked(element)'),
@@ -230,7 +230,7 @@ t.input({ value: count.get() })      // frozen attribute set at construction tim
     t.section({ id: 'render-finalize' }, [
       t.h3('Lifecycle finalize'),
       t.p('After all wiring, the lifecycle is finalized:'),
-      code(t, 'javascript', `lifecycle.finalize({
+      code('javascript', `lifecycle.finalize({
   connectCallbacks: this.#connectedCallbacks,
   disconnectCallbacks: this.#disconnectedCallbacks,
   onCleared: () => { if (this.#domElement === element) { this.#domElement = null; } },
@@ -244,10 +244,32 @@ if (hasSignalContent) {
 this.#domElement = element;
 return element;`),
       t.ul([
-        t.li([t.strong('connectCallbacks.'), ' User-registered via ', t.code('addConnectedCallback'), '. Fire on every insertion when persist is true; once otherwise.']),
-        t.li([t.strong('disconnectCallbacks.'), ' User-registered via ', t.code('addDisconnectedCallback'), '. Fire on every removal.']),
-        t.li([t.strong('onCleared.'), ' Internal. Resets ', t.code('#domElement'), ' to null after removal so ', t.code('getDomElement()'), ' returns null.']),
-        t.li([t.strong('onReconnect.'), ' Internal. Restores ', t.code('#domElement'), ' to the live element on re-insertion under persist mode.']),
+        t.li([
+          t.strong('connectCallbacks.'),
+          ' User-registered via ',
+          t.code('addConnectedCallback'),
+          '. Fire on every insertion when persist is true; once otherwise.',
+        ]),
+        t.li([
+          t.strong('disconnectCallbacks.'),
+          ' User-registered via ',
+          t.code('addDisconnectedCallback'),
+          '. Fire on every removal.',
+        ]),
+        t.li([
+          t.strong('onCleared.'),
+          ' Internal. Resets ',
+          t.code('#domElement'),
+          ' to null after removal so ',
+          t.code('getDomElement()'),
+          ' returns null.',
+        ]),
+        t.li([
+          t.strong('onReconnect.'),
+          ' Internal. Restores ',
+          t.code('#domElement'),
+          ' to the live element on re-insertion under persist mode.',
+        ]),
       ]),
     ]),
   ]);

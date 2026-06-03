@@ -1,6 +1,8 @@
+import { t } from 'kensington';
+
 import { code, exLink } from '../../components/ui.js';
 
-export function reactivityPrimitives(t) {
+export function reactivityPrimitives() {
   return t.section({ id: 'signals' }, [
     t.h2('Signals'),
     t.p([
@@ -10,7 +12,7 @@ export function reactivityPrimitives(t) {
       t.code('.set()'),
       '. Anything using the signal updates automatically when the value changes.',
     ]),
-    code(t, 'javascript', `import { signal, t } from 'kensington';
+    code('javascript', `import { signal, t } from 'kensington';
 
 const busy = signal(false);
 const result = signal('Press the button to fetch a quote.');
@@ -27,11 +29,11 @@ document.body.append(t.div([
   t.p(result),
   t.button({ type: 'button', disabled: busy, onclick: fetchQuote }, 'Fetch quote'),
 ]).toElement());`),
-    t.p(exLink(t, '?page=examples#counter', 'Counter example')),
+    t.p(exLink('?page=examples#counter', 'Counter example')),
 
     t.h3({ id: 'computed' }, 'computed'),
     t.p('A read-only signal derived from others. Re-evaluates automatically when any dependency changes.'),
-    code(t, 'javascript', `const firstName = signal('Ada');
+    code('javascript', `const firstName = signal('Ada');
 const lastName = signal('Lovelace');
 const fullName = computed(() => \`\${firstName.get()} \${lastName.get()}\`);
 
@@ -48,7 +50,7 @@ t.p(fullName).toElement();`),
       t.code('localStorage'),
       ', analytics, etc.',
     ]),
-    code(t, 'javascript', `const count = signal(0);
+    code('javascript', `const count = signal(0);
 
 const e = effect(() => {
   // runs whenever count changes

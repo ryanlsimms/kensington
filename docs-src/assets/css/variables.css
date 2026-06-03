@@ -94,6 +94,15 @@
   --main-x-padding: 32px;
   --section-x-padding: 0em;
   --topbar-height: 44px;
+
+  /* Spacing scale */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  --space-3xl: 4rem;
 }
 
 /* IDE mock widget — IntelliJ Light (when page is in light mode) */

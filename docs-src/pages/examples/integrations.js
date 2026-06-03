@@ -1,6 +1,8 @@
-import { code, panels } from '../../components/ui.js';
+import { t } from 'kensington';
 
-export function examplesIntegrations(t) {
+import { code } from '../../components/ui.js';
+
+export function examplesIntegrations() {
   return t.section({ id: 'integrations' }, [
     t.h2('Integrations'),
 
@@ -17,7 +19,7 @@ export function examplesIntegrations(t) {
         t.code("'x'"),
         '.',
       ]),
-      code(t, 'javascript', `import Kensington from 'kensington';
+      code('javascript', `import Kensington from 'kensington';
 
 const t = new Kensington({ additionalNamespaces: ['hx'] });
 
@@ -27,9 +29,11 @@ t.div([
     type: 'search',
     name: 'q',
     placeholder: 'Search...',
-    hxGet: '/search',
-    hxTrigger: 'input changed delay:300ms',
-    hxTarget: '#results',
+    hx: {
+      get: '/search',
+      trigger: 'input changed delay:300ms',
+      target: '#results',
+    },
   }),
   t.ul({ id: 'results' }),
 ]);
@@ -48,7 +52,7 @@ app.get('/search', async (req, res) => {
         t.code('class'),
         ' array is a natural fit for Tailwind. Falsy entries are dropped, so conditional classes don\'t need ternaries or string concatenation.',
       ]),
-      code(t, 'javascript', `import { t } from 'kensington';
+      code('javascript', `import { t } from 'kensington';
 
 function button(label, { variant = 'primary', disabled = false } = {}) {
   return t.button({
@@ -115,7 +119,7 @@ t.div({ class: 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8' }, [
         t.code('xShow'),
         ', etc. automatically.',
       ]),
-      code(t, 'javascript', `import Kensington from 'kensington';
+      code('javascript', `import Kensington from 'kensington';
 
 const t = new Kensington({ additionalNamespaces: ['x'] });
 
@@ -124,12 +128,16 @@ function dropdown(label, items) {
   return t.div({ xData: '{ open: false }', class: 'dropdown' }, [
     t.button({
       type: 'button',
-      xOn: { click: 'open = !open' },
-      xBind: { ariaExpanded: 'open' },
+      x: {
+        on: { click: 'open = !open' },
+        bind: { ariaExpanded: 'open' },
+      },
     }, label),
     t.ul({
-      xShow: 'open',
-      xOn: { 'click.outside': 'open = false' },
+      x: {
+        show: 'open',
+        on: { 'click.outside': 'open = false' },
+      },
       class: 'dropdown-menu',
     }, items.map(item =>
       t.li(t.a({ href: item.href }, item.label))
@@ -145,8 +153,10 @@ function tabs(items) {
         t.button({
           type: 'button',
           role: 'tab',
-          xOn: { click: \`active = \${i}\` },
-          xBind: { class: \`active === \${i} ? 'tab--active' : ''\` },
+          x: {
+            on: { click: \`active = \${i}\` },
+            bind: { class: \`active === \${i} ? 'tab--active' : ''\` },
+          },
         }, item.label)
       )
     ),
@@ -166,7 +176,7 @@ function tabs(items) {
         t.code('new Response()'),
         ' and set the content-type header manually, since Elysia doesn\'t have a dedicated HTML response method.',
       ]),
-      code(t, 'javascript', `import { Elysia } from 'elysia';
+      code('javascript', `import { Elysia } from 'elysia';
 import { t } from 'kensington';
 import { layout } from './layout.js';
 
@@ -196,7 +206,7 @@ const app = new Elysia()
         t.code('c.html()'),
         ' to send a Kensington string as an HTML response.',
       ]),
-      code(t, 'javascript', `import { Hono } from 'hono';
+      code('javascript', `import { Hono } from 'hono';
 import { t } from 'kensington';
 import { layout } from './layout.js';
 
@@ -236,7 +246,7 @@ export default app;`),
         t.code('navigate()'),
         ' helper. Wire its route callbacks into a signal and the rest of your UI reacts automatically.',
       ]),
-      code(t, 'javascript', `import { t, signal, effect } from 'kensington';
+      code('javascript', `import { t, signal, effect } from 'kensington';
 import Navigo from 'navigo';
 
 const route = signal({ page: 'home', params: {} });
@@ -312,7 +322,7 @@ function notFound() {
         t.code('toElement()'),
         ' so effects pause on removal and resume on re-insertion rather than being destroyed.',
       ]),
-      code(t, 'javascript', `import { t, signal, computed } from 'kensington';
+      code('javascript', `import { t, signal, computed } from 'kensington';
 
 class UserCard extends HTMLElement {
   #name = signal('');
@@ -364,7 +374,7 @@ customElements.define('user-card', UserCard);`),
         t.code('effect'),
         ' so the chart redraws automatically whenever the signal holding the data changes.',
       ]),
-      code(t, 'javascript', `import { t, signal, effect } from 'kensington';
+      code('javascript', `import { t, signal, effect } from 'kensington';
 import * as d3 from 'd3';
 
 const data = signal([12, 40, 28, 55, 33, 20, 47]);

@@ -71,15 +71,15 @@ class ScrollBar extends HTMLElement {
       const overflow = scrollHeight > clientHeight;
       this.classList.toggle('hidden', !overflow);
       if (!overflow) { return; }
-      this.#thumb.style.height = (clientHeight / scrollHeight * 100) + '%';
-      this.#thumb.style.top = (scrollTop / scrollHeight * 100) + '%';
+      this.#thumb.style.height = `${clientHeight / scrollHeight * 100}%`;
+      this.#thumb.style.top = `${scrollTop / scrollHeight * 100}%`;
     } else {
       const { clientWidth, scrollWidth, scrollLeft } = el;
       const overflow = scrollWidth > clientWidth;
       this.classList.toggle('hidden', !overflow);
       if (!overflow) { return; }
-      this.#thumb.style.width = (clientWidth / scrollWidth * 100) + '%';
-      this.#thumb.style.left = (scrollLeft / scrollWidth * 100) + '%';
+      this.#thumb.style.width = `${clientWidth / scrollWidth * 100}%`;
+      this.#thumb.style.left = `${scrollLeft / scrollWidth * 100}%`;
     }
   }
 
@@ -93,8 +93,8 @@ class ScrollBar extends HTMLElement {
       const startScroll = isY ? this.#el.scrollTop : this.#el.scrollLeft;
       this.#dragged = false;
       this.classList.add('dragging');
-      const onMove = e => {
-        const d = (isY ? e.clientY : e.clientX) - startPos;
+      const onMove = ev => {
+        const d = (isY ? ev.clientY : ev.clientX) - startPos;
         if (Math.abs(d) > 2) { this.#dragged = true; }
         if (isY) {
           this.#el.scrollTop = startScroll + d * this.#el.scrollHeight / this.#el.clientHeight;
@@ -118,8 +118,8 @@ class ScrollBar extends HTMLElement {
       const startScroll = isY ? this.#el.scrollTop : this.#el.scrollLeft;
       this.#dragged = false;
       this.classList.add('dragging');
-      const onMove = e => {
-        const d = (isY ? e.touches[0].clientY : e.touches[0].clientX) - startPos;
+      const onMove = ev => {
+        const d = (isY ? ev.touches[0].clientY : ev.touches[0].clientX) - startPos;
         if (Math.abs(d) > 2) { this.#dragged = true; }
         if (isY) {
           this.#el.scrollTop = startScroll + d * this.#el.scrollHeight / this.#el.clientHeight;

@@ -1,3 +1,5 @@
+import { t } from 'kensington';
+
 import { githubLink } from '../../components/ui.js';
 import { basicsAdvanced } from './advanced.js';
 import { basicsBuildingHtml } from './building-html.js';
@@ -9,7 +11,7 @@ import { basicsTooling } from './tooling.js';
 import { basicsTypescript } from './typescript.js';
 import { basicsWhy } from './why.js';
 
-export function basicsSidebar(t) {
+export function basicsSidebar() {
   return [
     t.ul([
       t.li(t.a({ href: '#quick-start' }, 'Quick start')),
@@ -27,7 +29,7 @@ export function basicsSidebar(t) {
       t.li(t.a({ href: '#signals' }, 'Reactive Data')),
       t.li(t.a({ href: '#typescript' }, 'TypeScript')),
     ]),
-    t.div({ class: 'sidebar-title' }, 'Tooling'),
+    t.h2({ class: 'sidebar-title' }, 'Tooling'),
     t.ul([
       t.li(t.a({ href: '#cli' }, 'HTML → Kensington')),
       t.li(t.a({ href: '#ide-plugins' }, 'IDE plugins')),
@@ -36,7 +38,7 @@ export function basicsSidebar(t) {
       t.li(t.a({ href: '#server-packages' }, 'Server packages')),
       t.li(t.a({ href: '#ai-assistants' }, 'AI assistants')),
     ]),
-    t.div({ class: 'sidebar-title' }, 'Advanced'),
+    t.h2({ class: 'sidebar-title' }, 'Advanced'),
     t.ul([
       t.li(t.a({ href: '#options' }, 'Attributes & options')),
       t.li([
@@ -53,20 +55,20 @@ export function basicsSidebar(t) {
       t.li(t.a({ href: '#persist' }, 'Persist effects')),
       t.li(t.a({ href: '#raw-html' }, 'Raw HTML & comments')),
     ]),
-    githubLink(t),
+    githubLink(),
   ];
 }
 
-export function basicsContent(t) {
+export function basicsContent() {
   return [
-    basicsHeader(t),
-    basicsQuickStart(t),
-    basicsWhy(t),
-    basicsBuildingHtml(t),
-    basicsDom(t),
-    basicsSignals(t),
-    basicsTypescript(t),
-    basicsTooling(t),
-    ...basicsAdvanced(t),
+    basicsHeader(),
+    basicsQuickStart(),
+    basicsWhy(),
+    basicsBuildingHtml(),
+    basicsDom(),
+    basicsSignals(),
+    basicsTypescript(),
+    basicsTooling(),
+    ...basicsAdvanced(),
   ];
 }

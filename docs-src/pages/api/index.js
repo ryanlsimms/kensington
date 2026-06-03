@@ -1,11 +1,13 @@
+import { t } from 'kensington';
+
 import { githubLink, headerGithubLink } from '../../components/ui.js';
 import { apiConstructor } from './constructor.js';
-import { apiTagMethods } from './tag-methods.js';
-import { apiSpecialMethods } from './special-methods.js';
-import { apiSignals } from './signals.js';
 import { apiExportsAndTypes } from './exports-and-types.js';
+import { apiSignals } from './signals.js';
+import { apiSpecialMethods } from './special-methods.js';
+import { apiTagMethods } from './tag-methods.js';
 
-export function apiSidebar(t) {
+export function apiSidebar() {
   return [
     t.ul([
       t.li(t.a({ href: '#constructor' }, 'Constructor')),
@@ -40,14 +42,14 @@ export function apiSidebar(t) {
       t.li(t.a({ href: '#exports' }, 'Exports')),
       t.li(t.a({ href: '#types' }, 'TypeScript types')),
     ]),
-    githubLink(t),
+    githubLink(),
   ];
 }
 
-export function apiContent(t) {
+export function apiContent() {
   return [
     t.header([
-      headerGithubLink(t),
+      headerGithubLink(),
       t.h1('Kensington API'),
       t.p([
         'Method signatures, types, and exports. See the ',
@@ -55,13 +57,13 @@ export function apiContent(t) {
         ' for usage examples.',
       ]),
     ]),
-    apiConstructor(t),
-    apiTagMethods(t),
-    apiSpecialMethods(t),
-    apiSignals(t),
-    ...apiExportsAndTypes(t),
+    apiConstructor(),
+    apiTagMethods(),
+    apiSpecialMethods(),
+    apiSignals(),
+    ...apiExportsAndTypes(),
     t.section([
-      t.p({ style: 'margin-top: 3rem; font-size: 0.83rem; color: var(--color-muted)' }, [
+      t.p({ style: { marginTop: '3rem', fontSize: '0.83rem', color: 'var(--color-muted)' } }, [
         'Want to understand how everything works under the hood? See the ',
         t.a({ href: '?page=architecture' }, 'architecture guide'),
         '.',

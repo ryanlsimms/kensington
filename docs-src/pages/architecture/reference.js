@@ -1,7 +1,9 @@
+import { t } from 'kensington';
+
 import { callout } from '../../components/ui.js';
 import { loc } from './helpers.js';
 
-export function architectureReference(t) {
+export function architectureReference() {
   return [
     t.section({ id: 'invariants' }, [
       t.h2('Invariants'),
@@ -10,7 +12,7 @@ export function architectureReference(t) {
         t.li([
           t.strong("validationLevel: 'off' never throws on runtime input."),
           ' All validation routes through ',
-          loc(t, 'esm/lib/util/show-invalid.js'),
+          loc('esm/lib/util/show-invalid.js'),
           ", which is a no-op at 'off'. Only hard invariants (createTag called with a non-string tagName, etc.) throw unconditionally.",
         ]),
         t.li([
@@ -27,7 +29,7 @@ export function architectureReference(t) {
         ]),
         t.li([
           t.strong('The persist mechanism lives entirely in '),
-          loc(t, 'esm/lib/reactive/lifecycle.js'),
+          loc('esm/lib/reactive/lifecycle.js'),
           '. No other file decides between pause() and stop(). dom-tracker knows about persist only to decide whether to preserve the connect/persist entry fields after stop-cleanup.',
         ]),
         t.li([
@@ -62,60 +64,64 @@ export function architectureReference(t) {
       t.p("If you're fixing a bug or adding a feature, here's where the change probably belongs."),
       t.table([
         t.thead(t.tr([
-          t.th({ style: 'width: 16em' }, "If you're working on..."),
+          t.th({ style: { width: '16em' } }, "If you're working on..."),
           t.th('Look at...'),
         ])),
         t.tbody([
           t.tr([
             t.td('A new attribute type or validation rule'),
-            t.td([loc(t, 'esm/lib/render/validate.js'), '. Either attributeValueIsValid or validateAttributeByType']),
+            t.td([loc('esm/lib/render/validate.js'), '. Either attributeValueIsValid or validateAttributeByType']),
           ]),
           t.tr([
             t.td('HTML output formatting (indentation, encoding)'),
-            t.td([loc(t, 'esm/lib/render/serialize.js'), ' + ', loc(t, 'esm/lib/render/stringify-content-array.js')]),
+            t.td([loc('esm/lib/render/serialize.js'), ' + ', loc('esm/lib/render/stringify-content-array.js')]),
           ]),
           t.tr([
             t.td('DOM property vs attribute, event handler wiring'),
-            t.td([loc(t, 'esm/tag-classes/content-tag.js'), '. The toElement dispatch']),
+            t.td([loc('esm/tag-classes/content-tag.js'), '. The toElement dispatch']),
           ]),
           t.tr([
             t.td('Signal subscription semantics (.get, .set, .value)'),
-            t.td([loc(t, 'esm/lib/reactive/signal.js'), '. The Signal class']),
+            t.td([loc('esm/lib/reactive/signal.js'), '. The Signal class']),
           ]),
           t.tr([
             t.td('Effect lifecycle (pause, resume, stop, batching)'),
-            t.td([loc(t, 'esm/lib/reactive/signal.js'), '. effect(), _internalEffect(), createEffect(), flush()']),
+            t.td([loc('esm/lib/reactive/signal.js'), '. effect(), _internalEffect(), createEffect(), flush()']),
           ]),
           t.tr([
             t.td('Persist mode (pause on removal, resume on reconnect)'),
-            t.td([loc(t, 'esm/lib/reactive/lifecycle.js'), '. The entire file']),
+            t.td([loc('esm/lib/reactive/lifecycle.js'), '. The entire file']),
           ]),
           t.tr([
             t.td('When effects stop or connect callbacks fire'),
-            t.td([loc(t, 'esm/lib/reactive/dom-tracker.js'), '. stopRemoved and fireConnected']),
+            t.td([loc('esm/lib/reactive/dom-tracker.js'), '. stopRemoved and fireConnected']),
           ]),
           t.tr([
             t.td('Signal-array DOM patching'),
-            t.td([loc(t, 'esm/lib/reactive/reconcile.js'), '. Particularly syncNode and the guards']),
+            t.td([loc('esm/lib/reactive/reconcile.js'), '. Particularly syncNode and the guards']),
           ]),
           t.tr([
             t.td('SSR or hydration behavior'),
-            t.td([loc(t, 'esm/lib/render/hydration.js'), ' + the ssrDepth counter in ', loc(t, 'esm/lib/reactive/signal.js')]),
+            t.td([
+              loc('esm/lib/render/hydration.js'),
+              ' + the ssrDepth counter in ',
+              loc('esm/lib/reactive/signal.js'),
+            ]),
           ]),
           t.tr([
             t.td('A new tag-class flavor (e.g. for custom output)'),
-            t.td([loc(t, 'esm/tag-classes/'), '. Extend ContentTag']),
+            t.td([loc('esm/tag-classes/'), '. Extend ContentTag']),
           ]),
           t.tr([
             t.td('Generated Kensington class behavior'),
-            t.td([loc(t, 'generate/build-kensington.js'), '. The template that emits esm/kensington.js']),
+            t.td([loc('generate/build-kensington.js'), '. The template that emits esm/kensington.js']),
           ]),
         ]),
       ]),
-      callout(t, 'tip', 'Before you change a tracked path',
+      callout('tip', 'Before you change a tracked path',
         t.p([
           'Almost every browser test in ',
-          loc(t, 'tests/browser/signals.spec.js'),
+          loc('tests/browser/signals.spec.js'),
           ' exercises one of the paths above. Running ',
           t.code('npm run test-browser'),
           ' after any change to signal.js, lifecycle.js, dom-tracker.js, or reconcile.js is the fastest way to catch regressions.',

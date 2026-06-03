@@ -1,7 +1,9 @@
+import { t } from 'kensington';
+
 import { apiTable } from '../../components/table.js';
 import { code, exLink } from '../../components/ui.js';
 
-export function reactivitySsr(t) {
+export function reactivitySsr() {
   return t.section({ id: 'hydration' }, [
     t.h2('Server-rendered reactive data'),
     t.p([
@@ -11,7 +13,7 @@ export function reactivitySsr(t) {
       t.code('registerComponents'),
       '. The SSR output is replaced with a live, reactive DOM tree using the same state that was passed on the server.',
     ]),
-    code(t, 'javascript', `// server.js
+    code('javascript', `// server.js
 import { renderForHydration, t } from 'kensington';
 import { counter } from './components/counter.js';
 
@@ -30,7 +32,7 @@ import { counter } from './components/counter.js';
 
 registerComponents({ counter });`),
     t.p('The component function runs on both server and client. Write it so it works in both environments:'),
-    code(t, 'javascript', `// components/counter.js
+    code('javascript', `// components/counter.js
 import { t, signal, effect, isBrowser } from 'kensington';
 
 export function counter({ count: initial }) {
@@ -49,7 +51,7 @@ export function counter({ count: initial }) {
     t.button({ type: 'button', onclick: () => count.set(n => n + 1) }, '+'),
   ]);
 }`),
-    apiTable(t, ['Export', 'Context', 'Description'], [
+    apiTable(['Export', 'Context', 'Description'], [
       [
         t.code('renderForHydration(fn, state, name?)'),
         'Server',
@@ -109,9 +111,9 @@ export function counter({ count: initial }) {
     ]),
 
     t.p([
-      exLink(t, '?page=examples#hydrated-like-button', 'Hydrated like button example'),
+      exLink('?page=examples#hydrated-like-button', 'Hydrated like button example'),
       ' ',
-      exLink(t, '?page=examples#hydrated-form-validation', 'Hydrated form validation example'),
+      exLink('?page=examples#hydrated-form-validation', 'Hydrated form validation example'),
     ]),
   ]);
 }

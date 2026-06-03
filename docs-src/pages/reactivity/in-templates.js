@@ -1,11 +1,13 @@
+import { t } from 'kensington';
+
 import { code, exLink } from '../../components/ui.js';
 
-export function reactivityInTemplates(t) {
+export function reactivityInTemplates() {
   return [
     t.section({ id: 'signals-content' }, [
       t.h2('Content'),
-      t.p('Pass a signal as an element\'s content (or anywhere in a content array) and the text node updates in place when the signal changes.'),
-      code(t, 'javascript', `const count = signal(0);
+      t.p(`Pass a signal as an element's content (or anywhere in a content array) and the text node updates in place when the signal changes.`),
+      code('javascript', `const count = signal(0);
 const label = computed(() => count.get() === 1 ? 'item' : 'items');
 
 t.p([count, ' ', label]).toElement();
@@ -22,8 +24,11 @@ count.set(3);  // renders "3 items"`),
 
     t.section({ id: 'signals-attributes' }, [
       t.h2('Attributes'),
-      t.p('Pass a signal as any attribute value. The attribute is set, removed, or toggled automatically when the signal changes.'),
-      code(t, 'javascript', `const isLoading = signal(false);
+      t.p([
+        'Pass a signal as any attribute value. ',
+        'The attribute is set, removed, or toggled automatically when the signal changes.',
+      ]),
+      code('javascript', `const isLoading = signal(false);
 const cls = computed(() => isLoading.get() ? 'btn-secondary' : 'btn-primary');
 
 t.button({ class: cls, disabled: isLoading }, 'Save').toElement();
@@ -31,9 +36,9 @@ t.button({ class: cls, disabled: isLoading }, 'Save').toElement();
 isLoading.set(true);   // disables button and changes class
 isLoading.set(false);  // restores it`),
       t.p([
-        exLink(t, '?page=examples#character-counter', 'Character counter example'),
+        exLink('?page=examples#character-counter', 'Character counter example'),
         ' ',
-        exLink(t, '?page=examples#dark-mode', 'Dark mode example'),
+        exLink('?page=examples#dark-mode', 'Dark mode example'),
       ]),
     ]),
 
@@ -44,7 +49,7 @@ isLoading.set(false);  // restores it`),
         t.code('style'),
         ' object accept signals. Only the changed property is written to the DOM on each update — all other properties are left untouched.',
       ]),
-      code(t, 'javascript', `const color = signal('red');
+      code('javascript', `const color = signal('red');
 const opacity = signal(1);
 
 t.div({
@@ -102,7 +107,7 @@ opacity.set(0.5);    // writes el.style.setProperty('opacity', '0.5')`),
         t.code('setAttribute'),
         ':',
       ]),
-      code(t, 'javascript', `const userInput = signal('');
+      code('javascript', `const userInput = signal('');
 
 // Assigns el.value = '' reactively, keeping the live property in sync
 t.input({ type: 'text', prop: { value: userInput } }).toElement();
@@ -135,7 +140,7 @@ isMuted.set(false); // unmutes video`),
         t.code('data-key'),
         ' and reuses DOM elements on reorder, addition, and removal. Reused nodes are diffed recursively: only changed attributes and text are written to the DOM. Signal-managed attributes on reused nodes are preserved, and orphaned effects on discarded nodes are stopped immediately.',
       ]),
-      code(t, 'javascript', `const items = signal([
+      code('javascript', `const items = signal([
   { id: 1, name: 'Apple' },
   { id: 2, name: 'Banana' },
 ]);
@@ -145,7 +150,7 @@ const rows = computed(() =>
 );
 
 t.ul(rows).toElement();`),
-      t.p(exLink(t, '?page=examples#sortable-table', 'Sortable table example')),
+      t.p(exLink('?page=examples#sortable-table', 'Sortable table example')),
 
       t.h3({ id: 'signals-keyed-local-state' }, 'Per-item local state'),
       t.p([
@@ -159,7 +164,7 @@ t.ul(rows).toElement();`),
         t.code('signal(initial, key)'),
         ' returns the same signal instance across re-runs when called with the same key. Use the item id.',
       ]),
-      code(t, 'javascript', `const list = computed(() => items.get().map(item => {
+      code('javascript', `const list = computed(() => items.get().map(item => {
   const highlight = signal(false, item.id);
   return t.li({ dataKey: item.id, class: highlight.transform(v => v ? 'on' : '') }, [
     t.button({ onclick: () => highlight.set(true) }, item.name),
@@ -178,7 +183,7 @@ t.ul(list).toElement();`),
 
     t.section({ id: 'signals-literal' }, [
       t.h2('With .literal and .inlineComment'),
-      code(t, 'javascript', `const html = signal('<b>bold</b>');
+      code('javascript', `const html = signal('<b>bold</b>');
 t.div(t.literal(html)).toElement();
 // element is replaced when html changes
 
@@ -198,7 +203,7 @@ t.div([t.p('content'), t.inlineComment(note)]).toElement();
         t.code('.toElement()'),
         '.',
       ]),
-      code(t, 'javascript', `import { signal, effect } from 'kensington';
+      code('javascript', `import { t, signal, effect } from 'kensington';
 
 const theme = signal('light');
 

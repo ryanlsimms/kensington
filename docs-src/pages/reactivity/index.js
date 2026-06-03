@@ -1,3 +1,5 @@
+import { t } from 'kensington';
+
 import { githubLink } from '../../components/ui.js';
 import { reactivityBestPractices } from './best-practices.js';
 import { reactivityCleanup } from './cleanup.js';
@@ -11,7 +13,7 @@ import { reactivityKnownTradeoffs } from './tradeoffs.js';
 import { reactivityValueAndTransform } from './value-and-transform.js';
 import { reactivityWhenUpdates } from './when-updates.js';
 
-export function reactivitySidebar(t) {
+export function reactivitySidebar() {
   return [
     t.ul([
       t.li([
@@ -33,7 +35,7 @@ export function reactivitySidebar(t) {
       t.li(t.a({ href: '#signals-literal' }, '.literal() & comments')),
       t.li(t.a({ href: '#signals-existing-elements' }, 'Existing elements')),
     ]),
-    t.div({ class: 'sidebar-title' }, 'Advanced'),
+    t.h2({ class: 'sidebar-title' }, 'Advanced'),
     t.ul([
       t.li([
         t.a({ href: '#when-updates-fire' }, 'When updates fire'),
@@ -73,22 +75,22 @@ export function reactivitySidebar(t) {
       ]),
       t.li(t.a({ href: '#known-tradeoffs' }, 'Known tradeoffs')),
     ]),
-    githubLink(t),
+    githubLink(),
   ];
 }
 
-export function reactivityContent(t) {
+export function reactivityContent() {
   return [
-    reactivityIntro(t),
-    reactivityPrimitives(t),
-    ...reactivityInTemplates(t),
-    ...reactivityWhenUpdates(t),
-    ...reactivityValueAndTransform(t),
-    reactivityCleanup(t),
-    reactivityLifecycle(t),
-    reactivitySsr(t),
-    reactivityBestPractices(t),
-    reactivityDevtools(t),
-    reactivityKnownTradeoffs(t),
+    reactivityIntro(),
+    reactivityPrimitives(),
+    ...reactivityInTemplates(),
+    ...reactivityWhenUpdates(),
+    ...reactivityValueAndTransform(),
+    reactivityCleanup(),
+    reactivityLifecycle(),
+    reactivitySsr(),
+    reactivityBestPractices(),
+    reactivityDevtools(),
+    reactivityKnownTradeoffs(),
   ];
 }

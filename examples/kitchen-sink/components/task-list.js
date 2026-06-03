@@ -65,7 +65,7 @@ function taskItem({ id, text, done, itemClass }) {
         class: 'task-text',
         ondblclick: enterEditMode,
         title: 'Double-click to rename',
-      }, text),
+      }, [ text]),
       t.input({
         type: 'text',
         class: 'task-edit-input',
@@ -83,7 +83,7 @@ function taskItem({ id, text, done, itemClass }) {
       class: 'remove-btn',
       aria: { label: `Delete task: ${text}` },
       onclick: handleDeleteClick,
-    }, '×'),
+    }, [ '×']),
   ]);
 }
 

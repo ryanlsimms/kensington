@@ -1,4 +1,5 @@
-export function devtoolsMock(t) {
+import { t } from 'kensington';
+export function devtoolsMock() {
   return t.div({ class: 'devtools-mock', ariaHidden: 'true' }, [
     t.div({ class: 'dtm-header' }, [
       t.span('Kensington DevTools'),
@@ -16,11 +17,11 @@ export function devtoolsMock(t) {
     ]),
     t.table({ class: 'dtm-table' }, [
       t.colgroup([
-        t.col({ style: 'width:38px' }),
+        t.col({ style: { width: '38px' } }),
         t.col(),
-        t.col({ style: 'width:42px' }),
-        t.col({ style: 'width:30px' }),
-        t.col({ style: 'width:34px' }),
+        t.col({ style: { width: '42px' } }),
+        t.col({ style: { width: '30px' } }),
+        t.col({ style: { width: '34px' } }),
       ]),
       t.thead(t.tr([
         t.th('ID'),

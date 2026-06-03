@@ -1,3 +1,5 @@
+import { t } from 'kensington';
+
 import { githubLink, headerGithubLink } from '../../components/ui.js';
 import { examplesBuildSystems } from './build-systems.js';
 import { examplesIntegrations } from './integrations.js';
@@ -5,7 +7,7 @@ import { examplesMissingFeatures } from './missing-features.js';
 import { examplesReactiveData } from './reactive-data.js';
 import { examplesStringRendering } from './string-rendering.js';
 
-export function examplesSidebar(t) {
+export function examplesSidebar() {
   return [
     t.ul([
       t.li([
@@ -73,17 +75,17 @@ export function examplesSidebar(t) {
         ]),
       ]),
     ]),
-    githubLink(t),
+    githubLink(),
   ];
 }
 
-export function examplesContent(t) {
+export function examplesContent() {
   return [
-    t.header([headerGithubLink(t), t.h1('Examples')]),
-    examplesStringRendering(t),
-    examplesReactiveData(t),
-    examplesMissingFeatures(t),
-    examplesIntegrations(t),
-    examplesBuildSystems(t),
+    t.header([headerGithubLink(), t.h1('Examples')]),
+    examplesStringRendering(),
+    examplesReactiveData(),
+    examplesMissingFeatures(),
+    examplesIntegrations(),
+    examplesBuildSystems(),
   ];
 }

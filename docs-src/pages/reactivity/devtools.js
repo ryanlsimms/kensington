@@ -1,7 +1,9 @@
-import { code } from '../../components/ui.js';
-import { devtoolsMock } from '../../components/devtools-mock.js';
+import { t } from 'kensington';
 
-export function reactivityDevtools(t) {
+import { devtoolsMock } from '../../components/devtools-mock.js';
+import { code } from '../../components/ui.js';
+
+export function reactivityDevtools() {
   return t.section({ id: 'devtools' }, [
     t.h2('Devtools'),
     t.p([
@@ -14,7 +16,7 @@ export function reactivityDevtools(t) {
       t.code('kensington/devtools'),
       ' in your dev entry point. It mounts the panel overlay in one step. Wrap it in your bundler\'s dev-only guard so it tree-shakes out of production builds.',
     ]),
-    code(t, 'javascript', `// Vite
+    code('javascript', `// Vite
 if (import.meta.env.DEV) {
   await import('kensington/devtools');
 }
@@ -35,7 +37,7 @@ if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
     ]),
 
     t.h3({ id: 'devtools-panel' }, 'Panel'),
-    devtoolsMock(t),
+    devtoolsMock(),
     t.p([
       'The panel has five tabs.',
     ]),

@@ -1,6 +1,8 @@
+import { t } from 'kensington';
+
 import { callout, code, panels } from '../../components/ui.js';
 
-export function basicsQuickStart(t) {
+export function basicsQuickStart() {
   return t.section({ id: 'quick-start' }, [
     t.h2('Quick start'),
     t.p([
@@ -8,10 +10,10 @@ export function basicsQuickStart(t) {
       t.code('.toString()'),
       ' to get an HTML string for server rendering or static generation.',
     ]),
-    panels(t, [
+    panels([
       {
         label: 'JavaScript',
-        content: code(t, 'javascript', `import { t } from 'kensington';
+        content: code('javascript', `import { t } from 'kensington';
 
 function profileCard(name, title) {
   return t.article({ class: 'profile' },
@@ -25,7 +27,7 @@ profileCard('Alice', 'Senior Engineer').toString();`),
       },
       {
         label: 'Output',
-        content: code(t, 'html', `<article class="profile">
+        content: code('html', `<article class="profile">
   <h2>Alice</h2>
   <p class="title">Senior Engineer</p>
   <a href="/users/alice">View profile</a>
@@ -39,10 +41,10 @@ profileCard('Alice', 'Senior Engineer').toString();`),
       t.code('signal()'),
       ' anywhere a static value is accepted and the DOM updates automatically when the value changes.',
     ]),
-    panels(t, [
+    panels([
       {
         label: 'JavaScript',
-        content: code(t, 'javascript', `import { t, signal, computed } from 'kensington';
+        content: code('javascript', `import { t, signal, computed } from 'kensington';
 
 const count = signal(0);
 const label = computed(() => count.get() === 1 ? 'item' : 'items');
@@ -57,7 +59,7 @@ document.body.append(counter);`),
       },
       {
         label: 'TypeScript',
-        content: code(t, 'typescript', `import { t, signal, computed, Signal } from 'kensington';
+        content: code('typescript', `import { t, signal, computed, Signal } from 'kensington';
 
 const count: Signal<number> = signal(0);
 const label = computed(() => count.get() === 1 ? 'item' : 'items');
@@ -80,13 +82,13 @@ document.body.append(counter);`),
       t.code('.toElement()'),
       ' wires up all updates.',
     ]),
-    callout(t, 'tip', 'Two output modes, one codebase',
+    callout('tip', 'Two output modes, one codebase',
       t.p([
         t.code('.toString()'),
         ' renders an HTML string for server-side rendering or static generation. ',
         t.code('.toElement()'),
         ' builds a live DOM element and wires signal subscriptions automatically. The same tag instance works both ways.',
-      ])
+      ]),
     ),
   ]);
 }

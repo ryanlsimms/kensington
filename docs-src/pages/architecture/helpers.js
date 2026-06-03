@@ -1,6 +1,7 @@
+import { t } from 'kensington';
 const GITHUB = 'https://github.com/ryanlsimms/kensington/blob/signals/';
 
-export function loc(t, path, lineNum) {
+export function loc(path, lineNum) {
   const href = GITHUB + path + (lineNum ? `#L${lineNum}` : '');
   const label = path.split('/').pop();
   return t.a({ href, class: 'loc', target: '_blank', rel: 'noopener' }, [
@@ -9,7 +10,7 @@ export function loc(t, path, lineNum) {
   ]);
 }
 
-export function fileCrumb(t, ...parts) {
+export function fileCrumb(...parts) {
   const nodes = [];
   parts.forEach((part, i) => {
     if (i > 0) { nodes.push(t.span({ class: 'slash' }, '/')); }
@@ -18,14 +19,15 @@ export function fileCrumb(t, ...parts) {
   return t.p({ class: 'file-crumb' }, nodes);
 }
 
-export function term(t, text) {
+export function term(text) {
   return t.span({ class: 'term' }, text);
 }
 
-export function stageDot(t, n) {
+export function stageDot(n) {
   return t.span({ class: `stage-dot stage-dot-${n}`, ariaHidden: 'true' });
 }
 
-export function mermaid(t, src) {
+export function mermaid(src) {
+  // eslint-disable-next-line kensington/no-unsafe-literal -- mermaid diagram source is trusted
   return t.unsafeLiteral(`<div class="mermaid-wrap"><pre class="mermaid">${src}</pre></div>`);
 }

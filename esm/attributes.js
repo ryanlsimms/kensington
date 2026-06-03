@@ -112,7 +112,7 @@ export const globalEvents = {
 
 export const svgPresentationAttributes = {
   'alignment-baseline': ['baseline', 'text-bottom', 'alphabetic', 'ideographic', 'middle', 'central', 'mathematical', 'hanging', 'text-top'],
-  'baseline-shift': [Number,String],
+  'baseline-shift': [Number, String],
   'clip-path': String,
   'clip-rule': ['nonzero', 'evenodd'],
   'color': String,
@@ -123,53 +123,53 @@ export const svgPresentationAttributes = {
   'display': String,
   'dominant-baseline': ['auto', 'text-bottom', 'alphabetic', 'ideographic', 'middle', 'central', 'mathematical', 'hanging', 'text-top'],
   'fill': String,
-  'fill-opacity': [Number,String],
+  'fill-opacity': [Number, String],
   'fill-rule': ['nonzero', 'evenodd'],
   'filter': String,
   'flood-color': String,
-  'flood-opacity': [Number,String],
+  'flood-opacity': [Number, String],
   'font-family': String,
-  'font-size': [Number,String],
-  'font-size-adjust': [Number,String],
-  'font-stretch': [Number,String],
+  'font-size': [Number, String],
+  'font-size-adjust': [Number, String],
+  'font-stretch': [Number, String],
   'font-style': String,
   'font-variant': String,
-  'font-weight': [Number,String],
+  'font-weight': [Number, String],
   'glyph-orientation-vertical': String,
   'image-rendering': ['auto', 'smooth', 'high-quality', 'pixelated', 'crisp-edges'],
-  'letter-spacing': [Number,String],
+  'letter-spacing': [Number, String],
   'lighting-color': String,
   'marker-end': String,
   'marker-mid': String,
   'marker-start': String,
   'mask': String,
   'mask-type': ['luminance', 'alpha'],
-  'opacity': [Number,String],
+  'opacity': [Number, String],
   'overflow': ['visible', 'hidden', 'clip', 'scroll', 'auto'],
   'paint-order': ['normal', 'fill', 'stroke', 'markers'],
   'pointer-events': ['auto', 'bounding-box', 'visiblePainted', 'visibleFill', 'visibleStroke', 'visible', 'painted', 'fill', 'stroke', 'all', 'none'],
   'shape-rendering': ['auto', 'optimizeSpeed', 'crispEdges', 'geometricPrecision'],
   'stop-color': String,
-  'stop-opacity': [Number,String],
+  'stop-opacity': [Number, String],
   'stroke': String,
-  'stroke-dasharray': [Number,String],
-  'stroke-dashoffset': [Number,String],
+  'stroke-dasharray': [Number, String],
+  'stroke-dashoffset': [Number, String],
   'stroke-linecap': ['butt', 'round', 'square'],
   'stroke-linejoin': ['crop', 'arcs', 'miter', 'bevel', 'round', 'fallback'],
-  'stroke-miterlimit': [Number,String],
-  'stroke-opacity': [Number,String],
-  'stroke-width': [Number,String],
+  'stroke-miterlimit': [Number, String],
+  'stroke-opacity': [Number, String],
+  'stroke-width': [Number, String],
   'text-anchor': ['start', 'middle', 'end'],
   'text-decoration': String,
   'text-overflow': String,
   'text-rendering': ['auto', 'optimizeSpeed', 'optimizeLegibility', 'geometricPrecision'],
   'transform': String,
-  'transform-origin': [Number,String],
+  'transform-origin': [Number, String],
   'unicode-bidi': ['normal', 'embed', 'isolate', 'bidi-override', 'isolate-override', 'plaintext'],
   'vector-effect': ['none', 'non-scaling-stroke', 'non-scaling-size', 'non-rotation', 'fixed-position'],
   'visibility': ['visible', 'hidden', 'force-hidden', 'collapse'],
   'white-space': ['normal', 'pre', 'pre-wrap', 'pre-line', 'collapse', 'discard', 'preserve', 'preserve-breaks', 'preserve-spaces', 'break-spaces', 'wrap', 'nowrap', 'none', 'discard-before', 'discard-after', 'discard-inner'],
-  'word-spacing': [Number,String],
+  'word-spacing': [Number, String],
   'writing-mode': ['horizontal-tb', 'vertical-rl', 'vertical-lr', 'sideways-rl', 'sideways-lr'],
 };
 
@@ -572,7 +572,7 @@ export const buttonAttributes = {
   'popovertarget': String,
   'popovertargetaction': ['toggle', 'show', 'hide'],
   'type': ['submit', 'SUBMIT', 'reset', 'RESET', 'button', 'BUTTON'],
-  'value': [Number,String],
+  'value': [Number, String],
 };
 export const canvasAttributes = {
   'height': Number,
@@ -583,8 +583,8 @@ export const circleAttributes = {
   ...svgPresentationAttributes,
   'autofocus': Boolean,
   'class': String,
-  'cx': [Number,String],
-  'cy': [Number,String],
+  'cx': [Number, String],
+  'cy': [Number, String],
   'id': String,
   'lang': String,
   'oncancel': [String, Function],
@@ -648,7 +648,7 @@ export const circleAttributes = {
   'onwaiting': [String, Function],
   'onwheel': [String, Function],
   'pathLength': Number,
-  'r': [Number,String],
+  'r': [Number, String],
   'requiredExtensions': String,
   'role': String,
   'style': String,
@@ -660,7 +660,7 @@ export const citeAttributes = {};
 export const clipPathAttributes = {
   ...svgPresentationAttributes,
   'class': String,
-  'externalResourcesRequired': [true,false],
+  'externalResourcesRequired': [true, false],
   'id': String,
   'requiredExtensions': String,
   'requiredFeatures': String,
@@ -679,7 +679,7 @@ export const colgroupAttributes = {
   'span': Number,
 };
 export const dataAttributes = {
-  'value': [Number,String],
+  'value': [Number, String],
 };
 export const datalistAttributes = {};
 export const ddAttributes = {};
@@ -842,8 +842,8 @@ export const ellipseAttributes = {
   ...svgPresentationAttributes,
   'autofocus': Boolean,
   'class': String,
-  'cx': [Number,String],
-  'cy': [Number,String],
+  'cx': [Number, String],
+  'cy': [Number, String],
   'id': String,
   'lang': String,
   'oncancel': [String, Function],
@@ -909,8 +909,8 @@ export const ellipseAttributes = {
   'pathLength': Number,
   'requiredExtensions': String,
   'role': String,
-  'rx': [Number,String],
-  'ry': [Number,String],
+  'rx': [Number, String],
+  'ry': [Number, String],
   'style': String,
   'systemLanguage': String,
   'tabindex': Number,
@@ -1051,7 +1051,7 @@ export const feGaussianBlurAttributes = {
 export const feImageAttributes = {
   ...svgPresentationAttributes,
   'class': String,
-  'externalResourcesRequired': [true,false],
+  'externalResourcesRequired': [true, false],
   'id': String,
   'style': String,
   'xml:base': String,
@@ -1143,7 +1143,7 @@ export const figureAttributes = {};
 export const filterAttributes = {
   ...svgPresentationAttributes,
   'class': String,
-  'externalResourcesRequired': [true,false],
+  'externalResourcesRequired': [true, false],
   'id': String,
   'style': String,
   'xml:base': String,
@@ -1155,7 +1155,7 @@ export const foreignObjectAttributes = {
   ...svgPresentationAttributes,
   'autofocus': Boolean,
   'class': String,
-  'height': [Number,String],
+  'height': [Number, String],
   'id': String,
   'lang': String,
   'oncancel': [String, Function],
@@ -1223,10 +1223,10 @@ export const foreignObjectAttributes = {
   'style': String,
   'systemLanguage': String,
   'tabindex': Number,
-  'width': [Number,String],
-  'x': [Number,String],
+  'width': [Number, String],
+  'x': [Number, String],
   'xml:space': ['default', 'preserve'],
-  'y': [Number,String],
+  'y': [Number, String],
 };
 export const formAttributes = {
   'accept-charset': String,
@@ -1341,7 +1341,7 @@ export const imageAttributes = {
   'autofocus': Boolean,
   'class': String,
   'crossorigin': ['anonymous', 'use-credentials'],
-  'height': [Number,String],
+  'height': [Number, String],
   'href': String,
   'id': String,
   'lang': String,
@@ -1411,12 +1411,12 @@ export const imageAttributes = {
   'style': String,
   'systemLanguage': String,
   'tabindex': Number,
-  'width': [Number,String],
-  'x': [Number,String],
+  'width': [Number, String],
+  'x': [Number, String],
   'xlink:href': String,
   'xlink:title': String,
   'xml:space': ['default', 'preserve'],
-  'y': [Number,String],
+  'y': [Number, String],
 };
 export const imgAttributes = {
   'alt': String,
@@ -1465,9 +1465,9 @@ export const inputAttributes = {
   'required': Boolean,
   'size': Number,
   'src': String,
-  'step': [Number,String],
+  'step': [Number, String],
   'type': ['hidden', 'text', 'search', 'tel', 'url', 'email', 'password', 'date', 'month', 'week', 'time', 'datetime-local', 'number', 'range', 'color', 'checkbox', 'radio', 'file', 'submit', 'image', 'reset', 'button'],
-  'value': [Number,String],
+  'value': [Number, String],
   'width': Number,
 };
 export const insAttributes = {
@@ -1480,7 +1480,7 @@ export const labelAttributes = {
 };
 export const legendAttributes = {};
 export const liAttributes = {
-  'value': [Number,String],
+  'value': [Number, String],
 };
 export const lineAttributes = {
   ...svgPresentationAttributes,
@@ -1554,11 +1554,11 @@ export const lineAttributes = {
   'style': String,
   'systemLanguage': String,
   'tabindex': Number,
-  'x1': [Number,String],
-  'x2': [Number,String],
+  'x1': [Number, String],
+  'x2': [Number, String],
   'xml:space': ['default', 'preserve'],
-  'y1': [Number,String],
-  'y2': [Number,String],
+  'y1': [Number, String],
+  'y2': [Number, String],
 };
 export const linearGradientAttributes = {
   ...svgPresentationAttributes,
@@ -1632,13 +1632,13 @@ export const linearGradientAttributes = {
   'spreadMethod': String,
   'style': String,
   'tabindex': Number,
-  'x1': [Number,String],
-  'x2': [Number,String],
+  'x1': [Number, String],
+  'x2': [Number, String],
   'xlink:href': String,
   'xlink:title': String,
   'xml:space': ['default', 'preserve'],
-  'y1': [Number,String],
-  'y2': [Number,String],
+  'y1': [Number, String],
+  'y2': [Number, String],
 };
 export const linkAttributes = {
   'as': String,
@@ -1880,12 +1880,12 @@ export const metadataAttributes = {
   'xml:space': ['default', 'preserve'],
 };
 export const meterAttributes = {
-  'high': [Number,String],
-  'low': [Number,String],
-  'max': [Number,String],
-  'min': [Number,String],
-  'optimum': [Number,String],
-  'value': [Number,String],
+  'high': [Number, String],
+  'low': [Number, String],
+  'max': [Number, String],
+  'min': [Number, String],
+  'optimum': [Number, String],
+  'value': [Number, String],
 };
 export const mfracAttributes = {
   'autofocus': Boolean,
@@ -1995,7 +1995,7 @@ export const mpaddedAttributes = {
   'depth': String,
   'dir': ['ltr', 'LTR', 'rtl', 'RTL', 'auto', 'AUTO'],
   'displaystyle': String,
-  'height': [Number,String],
+  'height': [Number, String],
   'href': String,
   'id': String,
   'lspace': String,
@@ -2007,7 +2007,7 @@ export const mpaddedAttributes = {
   'style': String,
   'tabindex': Number,
   'voffset': String,
-  'width': [Number,String],
+  'width': [Number, String],
 };
 export const mpathAttributes = {
   ...svgPresentationAttributes,
@@ -2160,7 +2160,7 @@ export const mspaceAttributes = {
   'class': String,
   'dir': ['ltr', 'LTR', 'rtl', 'RTL', 'auto', 'AUTO'],
   'displaystyle': String,
-  'height': [Number,String],
+  'height': [Number, String],
   'href': String,
   'id': String,
   'mathbackground': String,
@@ -2170,7 +2170,7 @@ export const mspaceAttributes = {
   'scriptlevel': String,
   'style': String,
   'tabindex': Number,
-  'width': [Number,String],
+  'width': [Number, String],
 };
 export const msqrtAttributes = {
   'autofocus': Boolean,
@@ -2270,7 +2270,7 @@ export const mtableAttributes = {
   'scriptlevel': String,
   'style': String,
   'tabindex': Number,
-  'width': [Number,String],
+  'width': [Number, String],
 };
 export const mtdAttributes = {
   'autofocus': Boolean,
@@ -2379,7 +2379,7 @@ export const optionAttributes = {
   'disabled': Boolean,
   'label': String,
   'selected': Boolean,
-  'value': [Number,String],
+  'value': [Number, String],
 };
 export const outputAttributes = {
   'for': String,
@@ -2466,7 +2466,7 @@ export const patternAttributes = {
   ...svgPresentationAttributes,
   'autofocus': Boolean,
   'class': String,
-  'height': [Number,String],
+  'height': [Number, String],
   'href': String,
   'id': String,
   'lang': String,
@@ -2537,12 +2537,12 @@ export const patternAttributes = {
   'style': String,
   'tabindex': Number,
   'viewBox': String,
-  'width': [Number,String],
-  'x': [Number,String],
+  'width': [Number, String],
+  'x': [Number, String],
   'xlink:href': String,
   'xlink:title': String,
   'xml:space': ['default', 'preserve'],
-  'y': [Number,String],
+  'y': [Number, String],
 };
 export const pictureAttributes = {};
 export const polygonAttributes = {
@@ -2697,8 +2697,8 @@ export const polylineAttributes = {
 };
 export const preAttributes = {};
 export const progressAttributes = {
-  'max': [Number,String],
-  'value': [Number,String],
+  'max': [Number, String],
+  'value': [Number, String],
 };
 export const qAttributes = {
   'cite': String,
@@ -2707,8 +2707,8 @@ export const radialGradientAttributes = {
   ...svgPresentationAttributes,
   'autofocus': Boolean,
   'class': String,
-  'cx': [Number,String],
-  'cy': [Number,String],
+  'cx': [Number, String],
+  'cy': [Number, String],
   'fr': String,
   'fx': String,
   'fy': String,
@@ -2777,7 +2777,7 @@ export const radialGradientAttributes = {
   'onvolumechange': [String, Function],
   'onwaiting': [String, Function],
   'onwheel': [String, Function],
-  'r': [Number,String],
+  'r': [Number, String],
   'spreadMethod': String,
   'style': String,
   'tabindex': Number,
@@ -2789,7 +2789,7 @@ export const rectAttributes = {
   ...svgPresentationAttributes,
   'autofocus': Boolean,
   'class': String,
-  'height': [Number,String],
+  'height': [Number, String],
   'id': String,
   'lang': String,
   'oncancel': [String, Function],
@@ -2855,15 +2855,15 @@ export const rectAttributes = {
   'pathLength': Number,
   'requiredExtensions': String,
   'role': String,
-  'rx': [Number,String],
-  'ry': [Number,String],
+  'rx': [Number, String],
+  'ry': [Number, String],
   'style': String,
   'systemLanguage': String,
   'tabindex': Number,
-  'width': [Number,String],
-  'x': [Number,String],
+  'width': [Number, String],
+  'x': [Number, String],
   'xml:space': ['default', 'preserve'],
-  'y': [Number,String],
+  'y': [Number, String],
 };
 export const rpAttributes = {};
 export const rtAttributes = {};
@@ -3093,7 +3093,7 @@ export const svgAttributes = {
   ...svgPresentationAttributes,
   'autofocus': Boolean,
   'class': String,
-  'height': [Number,String],
+  'height': [Number, String],
   'id': String,
   'lang': String,
   'onabort': [String, Function],
@@ -3166,11 +3166,11 @@ export const svgAttributes = {
   'tabindex': Number,
   'transform': String,
   'viewBox': String,
-  'width': [Number,String],
-  'x': [Number,String],
+  'width': [Number, String],
+  'x': [Number, String],
   'xml:space': ['default', 'preserve'],
   'xmlns': String,
-  'y': [Number,String],
+  'y': [Number, String],
 };
 export const switchAttributes = {
   ...svgPresentationAttributes,
@@ -3249,7 +3249,7 @@ export const symbolAttributes = {
   ...svgPresentationAttributes,
   'autofocus': Boolean,
   'class': String,
-  'height': [Number,String],
+  'height': [Number, String],
   'id': String,
   'lang': String,
   'oncancel': [String, Function],
@@ -3319,10 +3319,10 @@ export const symbolAttributes = {
   'style': String,
   'tabindex': Number,
   'viewBox': String,
-  'width': [Number,String],
-  'x': [Number,String],
+  'width': [Number, String],
+  'x': [Number, String],
   'xml:space': ['default', 'preserve'],
-  'y': [Number,String],
+  'y': [Number, String],
 };
 export const tableAttributes = {};
 export const tbodyAttributes = {};
@@ -3609,14 +3609,14 @@ export const tspanAttributes = {
   'onwheel': [String, Function],
   'requiredExtensions': String,
   'role': String,
-  'rotate': [Number,String],
+  'rotate': [Number, String],
   'style': String,
   'systemLanguage': String,
   'tabindex': Number,
   'textLength': String,
-  'x': [Number,String],
+  'x': [Number, String],
   'xml:space': ['default', 'preserve'],
-  'y': [Number,String],
+  'y': [Number, String],
 };
 export const uAttributes = {};
 export const ulAttributes = {};
@@ -3624,7 +3624,7 @@ export const useAttributes = {
   ...svgPresentationAttributes,
   'autofocus': Boolean,
   'class': String,
-  'height': [Number,String],
+  'height': [Number, String],
   'href': String,
   'id': String,
   'lang': String,
@@ -3693,12 +3693,12 @@ export const useAttributes = {
   'style': String,
   'systemLanguage': String,
   'tabindex': Number,
-  'width': [Number,String],
-  'x': [Number,String],
+  'width': [Number, String],
+  'x': [Number, String],
   'xlink:href': String,
   'xlink:title': String,
   'xml:space': ['default', 'preserve'],
-  'y': [Number,String],
+  'y': [Number, String],
 };
 export const varAttributes = {};
 export const videoAttributes = {

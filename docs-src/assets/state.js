@@ -1,4 +1,4 @@
-import { signal, isBrowser } from 'kensington';
+import { isBrowser, signal } from 'kensington';
 
 function getActivePage() {
   if (!isBrowser) { return 'basics'; }

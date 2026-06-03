@@ -14,7 +14,7 @@ const app = t.div([
     t.button({
       type: 'button',
       onclick: () => ThemeContext.set(v => v === 'light' ? 'dark' : 'light'),
-    }, ThemeContext.get().transform(v => `Switch to ${v === 'light' ? 'dark' : 'light'} theme`)),
+    }, [ ThemeContext.get().transform(v => `Switch to ${v === 'light' ? 'dark' : 'light'} theme`)]),
     t.button({
       type: 'button',
       onclick: () => UserContext.set(
@@ -22,7 +22,7 @@ const app = t.div([
           ? { name: 'Alice', role: 'admin' }
           : { name: 'Guest', role: 'viewer' },
       ),
-    }, UserContext.get().transform(u => u.name === 'Guest' ? 'Log in as Alice' : 'Log out')),
+    }, [ UserContext.get().transform(u => u.name === 'Guest' ? 'Log in as Alice' : 'Log out')]),
   ]),
 
   t.div({ class: 'section' }, [

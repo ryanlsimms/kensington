@@ -1,6 +1,8 @@
+import { t } from 'kensington';
+
 import { code } from '../../components/ui.js';
 
-export function examplesBuildSystems(t) {
+export function examplesBuildSystems() {
   return t.section({ id: 'build-systems' }, [
     t.h2('Build systems'),
     t.p([
@@ -26,7 +28,7 @@ export function examplesBuildSystems(t) {
         t.code('validationLevel'),
         ' at build time.',
       ]),
-      code(t, 'javascript', `// rollup.config.js
+      code('javascript', `// rollup.config.js
 import alias from '@rollup/plugin-alias';
 import nodeResolve from '@rollup/plugin-node-resolve';
 import replace from '@rollup/plugin-replace';
@@ -47,7 +49,7 @@ export default {
     }),
   ].filter(Boolean),
 };`),
-      code(t, 'javascript', `// src/t.js
+      code('javascript', `// src/t.js
 import Kensington from 'kensington';
 
 export const t = new Kensington({
@@ -71,10 +73,11 @@ export const t = new Kensington({
         t.code('define'),
         '. No plugins required.',
       ]),
-      code(t, 'javascript', `// build.js
+      code('javascript', `// build.js
 import esbuild from 'esbuild';
 
 const production = process.env.NODE_ENV === 'production';
+const alias = production ? { kensington: 'kensington/dist/slim' } : {};
 
 await esbuild.build({
   entryPoints: ['src/main.js'],
@@ -84,11 +87,9 @@ await esbuild.build({
   define: {
     'process.env.NODE_ENV': JSON.stringify(production ? 'production' : 'development'),
   },
-  alias: production
-    ? { kensington: 'kensington/dist/slim' }
-    : {},
+  alias,
 });`),
-      code(t, 'javascript', `// src/t.js
+      code('javascript', `// src/t.js
 import Kensington from 'kensington';
 
 export const t = new Kensington({
@@ -114,22 +115,21 @@ export const t = new Kensington({
         t.code('resolve.alias'),
         ' handles the import swap. A config function receives the mode so the alias map can be built per environment.',
       ]),
-      code(t, 'javascript', `// webpack.config.js
+      code('javascript', `// webpack.config.js
 const path = require('path');
 
-module.exports = (env, argv) => ({
-  entry: './src/main.js',
-  output: {
-    path: path.resolve(__dirname, 'dist'),
-    filename: 'bundle.js',
-  },
-  resolve: {
-    alias: argv.mode === 'production'
-      ? { kensington: 'kensington/dist/slim' }
-      : {},
-  },
-});`),
-      code(t, 'javascript', `// src/t.js
+module.exports = (env, argv) => {
+  const alias = argv.mode === 'production' ? { kensington: 'kensington/dist/slim' } : {};
+  return {
+    entry: './src/main.js',
+    output: {
+      path: path.resolve(__dirname, 'dist'),
+      filename: 'bundle.js',
+    },
+    resolve: { alias },
+  };
+};`),
+      code('javascript', `// src/t.js
 import Kensington from 'kensington';
 
 export const t = new Kensington({

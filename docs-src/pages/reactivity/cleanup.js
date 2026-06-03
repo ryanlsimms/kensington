@@ -1,6 +1,8 @@
+import { t } from 'kensington';
+
 import { code } from '../../components/ui.js';
 
-export function reactivityCleanup(t) {
+export function reactivityCleanup() {
   return t.section({ id: 'signals-cleanup' }, [
     t.h2('Cleanup'),
     t.p([
@@ -10,7 +12,7 @@ export function reactivityCleanup(t) {
       t.code('el.remove()'),
       ' or by removing an ancestor.',
     ]),
-    code(t, 'javascript', `const count = signal(0);
+    code('javascript', `const count = signal(0);
 const el = t.p(count).toElement();
 
 document.body.append(el);
@@ -20,7 +22,7 @@ el.remove(); // effect tracking count stops automatically`),
       t.code('persist: true'),
       ' to the tag options. Effects resume automatically when the element is re-inserted, and pause again if it is removed a second time. This works across unlimited cycles.',
     ]),
-    code(t, 'javascript', `const cls = signal('idle');
+    code('javascript', `const cls = signal('idle');
 const el = t.div({ class: cls, persist: true }).toElement();
 
 document.body.append(el);

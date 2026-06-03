@@ -11,7 +11,7 @@ export function filterBar() {
       // are written to the DOM, not the whole bar.
       class: filter.transform(f => f === value ? 'filter-btn active' : 'filter-btn'),
       onclick: () => filter.set(value),
-    }, label);
+    }, [ label]);
   }
 
   return t.div({ class: 'filter-bar' }, [

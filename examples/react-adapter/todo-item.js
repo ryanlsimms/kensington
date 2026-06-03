@@ -16,7 +16,7 @@ function TodoItem(props) {
       class: 'remove-btn',
       onclick: () => props.onRemove(props.todo.id),
       aria: { label: `Remove ${props.todo.text}` },
-    }, '×'),
+    }, [ '×']),
   );
 }
 

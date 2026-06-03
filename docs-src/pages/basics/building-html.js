@@ -1,6 +1,8 @@
+import { t } from 'kensington';
+
 import { code, exLink, panels } from '../../components/ui.js';
 
-export function basicsBuildingHtml(t) {
+export function basicsBuildingHtml() {
   return t.section({ id: 'building-html' }, [
     t.h2('Building HTML'),
 
@@ -10,17 +12,17 @@ export function basicsBuildingHtml(t) {
       t.code('t'),
       '. All call forms work:',
     ]),
-    code(t, 'javascript', `t.div({ id: 'app' }, 'text');      // options + content
+    code('javascript', `t.div({ id: 'app' }, 'text');      // options + content
 t.div({ id: 'app' });              // options only
 t.div('text');                     // content only
 t.div([t.p('a'), t.p('b')]);       // content array
 t.div();                           // empty`),
     t.p('Void elements take only options (no content):'),
-    code(t, 'javascript', `t.input({ type: 'checkbox', checked: true });
+    code('javascript', `t.input({ type: 'checkbox', checked: true });
 t.br();
 t.meta({ charset: 'utf-8' });`),
     t.p('Content can be strings, numbers, tags, arrays, or any mix. Arrays are flattened:'),
-    code(t, 'javascript', `t.p(['Count: ', 42, t.strong(' items')]).toString();
+    code('javascript', `t.p(['Count: ', 42, t.strong(' items')]).toString();
 // <p>Count: 42<strong> items</strong></p>`),
     t.p([
       'Attributes accept camelCase keys (converted to kebab-case), class as an array, and style as a plain object. Boolean attributes are included when ',
@@ -29,7 +31,7 @@ t.meta({ charset: 'utf-8' });`),
       t.code('false'),
       '.',
     ]),
-    code(t, 'javascript', `t.div({ id: 'app', class: ['card', 'shadow'] });         // class as array
+    code('javascript', `t.div({ id: 'app', class: ['card', 'shadow'] });         // class as array
 t.input({ type: 'checkbox', checked: true });            // boolean attribute
 t.p({ style: { color: 'red' } }, 'Warning');             // style object
 t.div({ dataBsToggle: 'collapse' });                     // camelCase → data-bs-toggle`),
@@ -49,10 +51,10 @@ t.div({ dataBsToggle: 'collapse' });                     // camelCase → data-b
       t.code('.map()'),
       ' is the natural way to render a list of items.',
     ]),
-    panels(t, [
+    panels([
       {
         label: 'JavaScript',
-        content: code(t, 'javascript', `const items = ['Apples', 'Oranges', 'Pears'];
+        content: code('javascript', `const items = ['Apples', 'Oranges', 'Pears'];
 
 t.ul(items.map(item => t.li(item)));
 
@@ -63,7 +65,7 @@ t.tbody(rows.map(row =>
       },
       {
         label: 'HTML output',
-        content: code(t, 'html', `<ul>
+        content: code('html', `<ul>
   <li>Apples</li>
   <li>Oranges</li>
   <li>Pears</li>
@@ -71,9 +73,9 @@ t.tbody(rows.map(row =>
       },
     ]),
     t.p([
-      exLink(t, '?page=examples#todo-list', 'Todo list example'),
+      exLink('?page=examples#todo-list', 'Todo list example'),
       ' ',
-      exLink(t, '?page=examples#form-from-schema', 'Form from schema example'),
+      exLink('?page=examples#form-from-schema', 'Form from schema example'),
     ]),
 
     t.h3({ id: 'conditionals' }, 'Conditionals'),
@@ -88,7 +90,7 @@ t.tbody(rows.map(row =>
       t.code("''"),
       ') are silently dropped from content. No conditional wrappers needed.',
     ]),
-    code(t, 'javascript', `t.ul([
+    code('javascript', `t.ul([
   t.li('always shown'),
   isLoggedIn && t.li(t.a({ href: '/logout' }, 'Log out')),
   show ? t.li('yes') : null,
@@ -102,14 +104,17 @@ t.tbody(rows.map(row =>
       t.code('null'),
       ' in the third slot is dropped the same way.',
     ]),
-    t.p(exLink(t, '?page=examples#live-filter', 'Live filter example')),
+    t.p(exLink('?page=examples#live-filter', 'Live filter example')),
 
     t.h3({ id: 'components' }, 'Components & reuse'),
-    t.p('Plain functions work as components. No framework, no lifecycle, no magic. A component is just a function that takes arguments and returns a tag.'),
-    panels(t, [
+    t.p([
+      'Plain functions work as components. No framework, no lifecycle, no magic. ',
+      'A component is just a function that takes arguments and returns a tag.',
+    ]),
+    panels([
       {
         label: 'JavaScript',
-        content: code(t, 'javascript', `function card(heading, body) {
+        content: code('javascript', `function card(heading, body) {
   return t.div({ class: 'card' }, [
     t.div({ class: 'card-header' }, heading),
     t.div({ class: 'card-body' }, body),
@@ -123,7 +128,7 @@ t.div({ class: 'card-grid' }, [
       },
       {
         label: 'HTML output',
-        content: code(t, 'html', `<div class="card-grid">
+        content: code('html', `<div class="card-grid">
   <div class="card">
     <div class="card-header">Alice</div>
     <div class="card-body">
@@ -147,16 +152,16 @@ t.div({ class: 'card-grid' }, [
       ' are just methods, the same component works in Node and in the browser with no changes.',
     ]),
     t.p([
-      exLink(t, '?page=examples#ssr', 'Server rendering example'),
+      exLink('?page=examples#ssr', 'Server rendering example'),
       ' ',
-      exLink(t, '?page=examples#express-render-helper', 'Express render helper example'),
+      exLink('?page=examples#express-render-helper', 'Express render helper example'),
       ' ',
-      exLink(t, '?page=examples#framework-integration', 'Framework integration example'),
+      exLink('?page=examples#framework-integration', 'Framework integration example'),
       ' ',
-      exLink(t, '?page=examples#elysia', 'Elysia example'),
+      exLink('?page=examples#elysia', 'Elysia example'),
     ]),
     t.p('Tag methods are bound to the instance, so you can destructure them and call them directly:'),
-    code(t, 'javascript', `const { div, p, ul, li, span } = t;
+    code('javascript', `const { div, p, ul, li, span } = t;
 
 div({ class: 'card' }, [
   p('Methods are bound, so destructuring works anywhere.'),

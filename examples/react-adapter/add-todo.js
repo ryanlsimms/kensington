@@ -24,7 +24,7 @@ function AddTodo(props) {
       class: 'add-btn',
       onclick: props.onAdd,
       disabled: !props.draft.trim(),
-    }, 'Add'),
+    }, [ 'Add']),
   );
 }
 

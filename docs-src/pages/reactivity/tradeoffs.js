@@ -1,4 +1,5 @@
-export function reactivityKnownTradeoffs(t) {
+import { t } from 'kensington';
+export function reactivityKnownTradeoffs() {
   return t.section({ id: 'known-tradeoffs' }, [
     t.h2('Known tradeoffs'),
     t.p('These are deliberate simplicity choices, not bugs.'),
@@ -9,7 +10,7 @@ export function reactivityKnownTradeoffs(t) {
         t.code('toElement()'),
         ' call rather than reusing them. In practice the swap is imperceptible. It is synchronous and the visual output is identical. Transitions are suppressed automatically on SSR elements until hydration completes.',
       ]),
-      t.li([t.strong('Non-interactive window.'), ' Elements are non-reactive between the browser\'s first paint and when the hydration script runs. This is inherent to SSR-then-hydrate.']),
+      t.li([t.strong('Non-interactive window.'), ` Elements are non-reactive between the browser's first paint and when the hydration script runs. This is inherent to SSR-then-hydrate.`]),
       t.li([
         t.strong('State is plaintext.'),
         ' State is embedded as a ',
@@ -71,6 +72,7 @@ export function reactivityKnownTradeoffs(t) {
         ' returns the same node after removal and it can be re-inserted directly.',
       ]),
       t.li([
+        // eslint-disable-next-line @stylistic/js/max-len -- single sentence in <strong>
         t.strong('Module-level compute calls that are never subscribed to retain their source subscriptions indefinitely.'),
         ' ',
         t.code('computed()'),

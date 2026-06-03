@@ -20,17 +20,15 @@ export function taskSpotlight({ task }) {
           textDecoration: starred.transform(v => v ? 'line-through' : 'none'),
           fontSize: '1rem',
         },
-      }, task.text),
+      }, [ task.text]),
       t.button({
         type: 'button',
         class: 'star-btn',
         aria: { label: 'Toggle star' },
         onclick: () => starred.set(v => !v),
         // Signal as content: the text node is replaced in place on each toggle.
-      }, starred.transform(v => v ? '★' : '☆')),
+      }, [ starred.transform(v => v ? '★' : '☆')]),
     ]),
-    t.span({ class: task.done ? 'spotlight-badge done' : 'spotlight-badge' },
-      task.done ? 'Done' : 'Active',
-    ),
+    t.span({ class: task.done ? 'spotlight-badge done' : 'spotlight-badge' }, task.done ? 'Done' : 'Active'),
   ]);
 }

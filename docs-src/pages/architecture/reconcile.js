@@ -1,20 +1,25 @@
+import { t } from 'kensington';
+
 import { callout, code } from '../../components/ui.js';
 import { loc } from './helpers.js';
 
-export function architectureReconcile(t) {
+export function architectureReconcile() {
   return t.section({ id: 'reconcile' }, [
     t.h2('Reconciliation'),
     t.p({ class: 'file-crumb' }, [
-      'esm', t.span({ class: 'slash' }, '/'),
-      'lib', t.span({ class: 'slash' }, '/'),
-      'reactive', t.span({ class: 'slash' }, '/'),
-      loc(t, 'esm/lib/reactive/reconcile.js'),
+      'esm',
+      t.span({ class: 'slash' }, '/'),
+      'lib',
+      t.span({ class: 'slash' }, '/'),
+      'reactive',
+      t.span({ class: 'slash' }, '/'),
+      loc('esm/lib/reactive/reconcile.js'),
     ]),
     t.p([
       'Every signal-content update calls ',
       t.code('reconcile'),
       ' at ',
-      loc(t, 'esm/lib/reactive/reconcile.js'),
+      loc('esm/lib/reactive/reconcile.js'),
       '. The function patches the DOM in place rather than tearing it down and rebuilding. It handles both single-value and array-valued signals. Non-arrays are wrapped as ',
       t.code('[val]'),
       ' before passing in, so the algorithm only handles the array case.',
@@ -34,7 +39,7 @@ export function architectureReconcile(t) {
         t.code('data-key'),
         ' attribute. Keyed items match against existing children with the same key, not the same positional index. This enables efficient reordering:',
       ]),
-      code(t, 'javascript', `export function reconcile(parent, startAnchor, endAnchor, newItems) {
+      code('javascript', `export function reconcile(parent, startAnchor, endAnchor, newItems) {
   const oldNodes = new Map();
   let node = startAnchor.nextSibling;
   while (node !== endAnchor) {
@@ -56,11 +61,11 @@ export function architectureReconcile(t) {
         t.code('syncNode'),
         ' chain is skipped. The existing DOM node is reused unchanged.',
       ]),
-      code(t, 'javascript', `if (snapshotMatches(snapshots.get(old), item)) {
+      code('javascript', `if (snapshotMatches(snapshots.get(old), item)) {
   targetNode = old;   // skip itemToNode() and syncNode(); reuse existing
 } else if (snapshotHasSignalRefMismatch(snapshots.get(old), item)) {
   // Replace path. A Signal at the same position is a different reference.
-  // The old node\'s effects are still wired to the stale signal, so patching
+  // The old node's effects are still wired to the stale signal, so patching
   // in place would leave the DOM disconnected from the new signal. Build a
   // fresh node, copy user-visible state across, and swap.
   const fresh = itemToNode(item);
@@ -77,17 +82,17 @@ export function architectureReconcile(t) {
         t.code('valueEqual'),
         ' compares plain objects and arrays structurally, recurses into ContentTag instances (matching on tagName + attributes + content), and falls back to reference equality for everything else (functions, Signal, LiteralTag, CommentTag, DOM nodes, Date, class instances).',
       ]),
-      callout(t, 'key', 'Why value equality, not reference equality',
+      callout('key', 'Why value equality, not reference equality',
         t.p([
           'The natural pattern ',
-          t.code("arr.map(item => t.li({ class: item.cls }, item.label))"),
+          t.code('arr.map(item => t.li({ class: item.cls }, item.label))'),
           ' allocates a fresh attribute object literal on every render. Reference equality on those literals would always miss. Value equality detects the structurally identical literal and skips the rebuild without requiring the developer to memoize.',
         ]),
       ),
       t.p([
         'A stable Signal reference hits the fast path via reference equality. A fresh closure or fresh LiteralTag on each render does not. The snapshot is recorded only on the non-fast-path branch, so an item that keeps hitting the fast path retains its original snapshot indefinitely.',
       ]),
-      callout(t, 'note', 'Circular import',
+      callout('note', 'Circular import',
         t.p([
           t.code('reconcile.js'),
           ' imports ContentTag for the ',
@@ -110,7 +115,7 @@ export function architectureReconcile(t) {
         ' is patched. If they\'re both elements, it applies fresh attributes and recursively syncs child pairs.',
       ]),
       t.h4('The guards'),
-      callout(t, 'key', 'Why guards are needed',
+      callout('key', 'Why guards are needed',
         t.p([
           'The fresh node passed to syncNode is the result of calling ',
           t.code('itemToNode(item)'),
@@ -119,7 +124,7 @@ export function architectureReconcile(t) {
           '. That fresh node is fully wired with its own signal effects pointing at the fresh element. Patching attributes or children naively would corrupt the live element\'s effects.',
         ]),
       ),
-      code(t, 'javascript', `// Attribute guard
+      code('javascript', `// Attribute guard
 if (!isTracked(existing)) {
   for (const attr of oldAttrNames) {
     existing.removeAttribute(attr);
@@ -153,7 +158,7 @@ if (!isContentTracked(existing)) {
         t.code('signalRefMismatch'),
         ' walks the snapshot in parallel with the new item, returning true at the first paired position where both sides are Signal instances but the references differ. Static value changes, function-reference changes, and ContentTag content changes do not trigger this branch.',
       ]),
-      callout(t, 'key', 'When this fires',
+      callout('key', 'When this fires',
         t.p([
           'The dominant case is ',
           t.code('signal()'),
@@ -168,7 +173,7 @@ if (!isContentTracked(existing)) {
         'The replace branch builds a fresh DOM element via ',
         t.code('item.toElement()'),
         ' (so the new signal\'s effect is wired to it), captures user-visible state from the old node via ',
-        loc(t, 'esm/lib/reactive/preserve-state.js'),
+        loc('esm/lib/reactive/preserve-state.js'),
         ', swaps the nodes with ',
         t.code('parent.insertBefore(fresh, cursor); old.remove()'),
         ', restores state to fresh, and advances the cursor past it. ',
@@ -179,7 +184,18 @@ if (!isContentTracked(existing)) {
       t.ul([
         t.li([t.code('document.activeElement'), ' focus, plus selection range for text inputs.']),
         t.li([t.code('scrollTop'), ' and ', t.code('scrollLeft'), ' on every scrollable descendant.']),
-        t.li([t.code('value'), ', ', t.code('checked'), ', ', t.code('indeterminate'), ' on ', t.code('<input>'), ' and ', t.code('<textarea>'), '.']),
+        t.li([
+          t.code('value'),
+          ', ',
+          t.code('checked'),
+          ', ',
+          t.code('indeterminate'),
+          ' on ',
+          t.code('<input>'),
+          ' and ',
+          t.code('<textarea>'),
+          '.',
+        ]),
         t.li([t.code('value'), ' on ', t.code('<select>'), ' (selectedIndex follows).']),
         t.li([t.code('open'), ' on ', t.code('<details>'), ' and ', t.code('<dialog>'), '.']),
       ]),
@@ -193,7 +209,7 @@ if (!isContentTracked(existing)) {
         t.li('Web component instance state. connectedCallback re-runs.'),
         t.li('Third-party event listeners attached outside Kensington.'),
       ]),
-      callout(t, 'note', 'Positional state mapping',
+      callout('note', 'Positional state mapping',
         t.p([
           'State on descendants is identified by child-index path from the root. This assumes the new subtree has the same shape as the old (the dominant case when only signal references differ). If the structure shifted, paths that no longer resolve are silently dropped, so the failure mode is "state lost," not "state misapplied."',
         ]),
@@ -205,7 +221,11 @@ if (!isContentTracked(existing)) {
       t.p('The main reconcile loop walks newItems in order:'),
       t.ol({ class: 'numbered' }, [
         t.li([t.code('null'), ', ', t.code('undefined'), ', and ', t.code('false'), ' items are skipped.']),
-        t.li('If the item has a key and matches an existing keyed node, branch on the snapshot: fast-path reuse if value-equal, replace + state copy if a Signal reference changed, otherwise syncNode patches in place.'),
+        t.li([
+          'If the item has a key and matches an existing keyed node, branch on the snapshot: ',
+          'fast-path reuse if value-equal, replace + state copy if a Signal reference changed, ',
+          'otherwise syncNode patches in place.',
+        ]),
         t.li('If no match (or no key), build a new node via itemToNode.'),
         t.li([
           'If ',

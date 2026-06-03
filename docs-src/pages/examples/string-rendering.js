@@ -1,6 +1,8 @@
+import { t } from 'kensington';
+
 import { code, panels } from '../../components/ui.js';
 
-export function examplesStringRendering(t) {
+export function examplesStringRendering() {
   return t.section({ id: 'string-rendering' }, [
     t.h2('String rendering'),
 
@@ -13,7 +15,7 @@ export function examplesStringRendering(t) {
         t.code('res.send()'),
         ', which won\'t coerce the argument otherwise.',
       ]),
-      code(t, 'javascript', `import express from 'express';
+      code('javascript', `import express from 'express';
 import { t } from 'kensington';
 
 function layout(title, content) {
@@ -54,10 +56,10 @@ app.get('/users', async (req, res) => {
         t.code('.toString()'),
         ', and pass the string to the framework\'s response method.',
       ]),
-      panels(t, [
+      panels([
         {
           label: 'Hono',
-          content: code(t, 'javascript', `import { Hono } from 'hono';
+          content: code('javascript', `import { Hono } from 'hono';
 import { t } from 'kensington';
 
 const app = new Hono();
@@ -69,7 +71,7 @@ app.get('/users', async (c) => {
         },
         {
           label: 'Fastify',
-          content: code(t, 'javascript', `import Fastify from 'fastify';
+          content: code('javascript', `import Fastify from 'fastify';
 import { t } from 'kensington';
 
 const app = Fastify();
@@ -100,10 +102,10 @@ app.get('/users', async (req, reply) => {
         t.code('.toString()'),
         ' directly and the layout is applied in one place.',
       ]),
-      panels(t, [
+      panels([
         {
           label: 'middleware/render.js',
-          content: code(t, 'javascript', `import { layout } from './layout.js';
+          content: code('javascript', `import { layout } from './layout.js';
 
 export function renderMiddleware(req, res, next) {
   res.renderKensington = (pageFunc, ...args) => {
@@ -115,7 +117,7 @@ export function renderMiddleware(req, res, next) {
         },
         {
           label: 'server.js',
-          content: code(t, 'javascript', `import express from 'express';
+          content: code('javascript', `import express from 'express';
 import { homePage, usersPage } from './pages.js';
 import { renderMiddleware } from './middleware/render.js';
 
@@ -137,16 +139,20 @@ app.get('/users', async (req, res) => {
     t.section({ id: 'kensington-express' }, [
       t.h3('kensington-express'),
       t.p([
-        t.a({ href: 'https://www.npmjs.com/package/kensington-express', target: '_blank', rel: 'noopener' }, 'kensington-express'),
+        t.a({
+          href: 'https://www.npmjs.com/package/kensington-express',
+          target: '_blank',
+          rel: 'noopener',
+        }, 'kensington-express'),
         ' is an Express middleware that attaches ',
         t.code('res.renderView()'),
         ' to each response. It applies a default layout, merges locals, and sets the content-type header automatically.',
       ]),
-      code(t, 'bash', 'npm install kensington-express'),
-      panels(t, [
+      code('bash', 'npm install kensington-express'),
+      panels([
         {
           label: 'views/layout.js',
-          content: code(t, 'javascript', `import { t } from 'kensington';
+          content: code('javascript', `import { t } from 'kensington';
 
 export default function layout(locals, page) {
   return t.htmlWithDocType({ lang: 'en' }, [
@@ -161,7 +167,7 @@ export default function layout(locals, page) {
         },
         {
           label: 'views/home.js',
-          content: code(t, 'javascript', `import { t } from 'kensington';
+          content: code('javascript', `import { t } from 'kensington';
 
 export default function homePage({ title, items }) {
   return t.main([
@@ -171,7 +177,7 @@ export default function homePage({ title, items }) {
 }`),
         },
       ]),
-      code(t, 'javascript', `// app.js
+      code('javascript', `// app.js
 import express from 'express';
 import kensingtonView from 'kensington-express';
 import layout from './views/layout.js';
@@ -198,7 +204,7 @@ app.get('/', (req, res) => {
         t.code('layout: null'),
         ' to skip the layout entirely, which is useful for returning bare HTML fragments for htmx swap targets.',
       ]),
-      code(t, 'javascript', `// Alternate layout for one route
+      code('javascript', `// Alternate layout for one route
 app.get('/admin', (req, res) => {
   res.renderView(adminPage, { layout: adminLayout, title: 'Admin' });
 });
@@ -212,15 +218,19 @@ app.get('/fragment', (req, res) => {
     t.section({ id: 'kensington-fastify' }, [
       t.h3('kensington-fastify'),
       t.p([
-        t.a({ href: 'https://www.npmjs.com/package/kensington-fastify', target: '_blank', rel: 'noopener' }, 'kensington-fastify'),
+        t.a({
+          href: 'https://www.npmjs.com/package/kensington-fastify',
+          target: '_blank',
+          rel: 'noopener',
+        }, 'kensington-fastify'),
         ' is a Fastify plugin that attaches ',
         t.code('reply.renderView()'),
         ' and decorates each reply with ',
         t.code('reply.locals'),
         ' for per-request data.',
       ]),
-      code(t, 'bash', 'npm install kensington-fastify'),
-      code(t, 'javascript', `// server.js
+      code('bash', 'npm install kensington-fastify'),
+      code('javascript', `// server.js
 import Fastify from 'fastify';
 import kensingtonView from 'kensington-fastify';
 import layout from './views/layout.js';
@@ -249,7 +259,7 @@ fastify.get('/', async (request, reply) => {
         t.code('renderView'),
         ' call.',
       ]),
-      code(t, 'javascript', `// Attach the current user in a hook — available in every page renderer
+      code('javascript', `// Attach the current user in a hook — available in every page renderer
 fastify.addHook('preHandler', async (request, reply) => {
   reply.locals.user = await getUserFromSession(request);
 });
@@ -265,7 +275,7 @@ fastify.get('/', async (request, reply) => {
         t.code('layout: null'),
         ' for bare HTML fragments.',
       ]),
-      code(t, 'javascript', `// Alternate layout
+      code('javascript', `// Alternate layout
 fastify.get('/admin', async (request, reply) => {
   reply.renderView(adminPage, { layout: adminLayout, title: 'Admin' });
 });
@@ -279,10 +289,10 @@ fastify.get('/fragment', async (request, reply) => {
     t.section({ id: 'form-from-schema' }, [
       t.h3('Form from schema'),
       t.p('Build forms from a field definition array using a helper function.'),
-      panels(t, [
+      panels([
         {
           label: 'JavaScript',
-          content: code(t, 'javascript', `const fields = [
+          content: code('javascript', `const fields = [
   { name: 'email',    type: 'email',    label: 'Email',    required: true },
   { name: 'password', type: 'password', label: 'Password', required: true },
   { name: 'remember', type: 'checkbox', label: 'Remember me' },
@@ -302,7 +312,7 @@ t.form({ action: '/login', method: 'post' }, [
         },
         {
           label: 'HTML output',
-          content: code(t, 'html', `<form action="/login" method="post">
+          content: code('html', `<form action="/login" method="post">
   <div class="field">
     <label for="email">Email</label>
     <input id="email" name="email" type="email" required>
@@ -333,10 +343,10 @@ t.form({ action: '/login', method: 'post' }, [
         t.code('textarea'),
         ' join content arrays with newlines and skip indentation, so string content is inserted without modification.',
       ]),
-      panels(t, [
+      panels([
         {
           label: 'JavaScript',
-          content: code(t, 'javascript', `t.style([
+          content: code('javascript', `t.style([
   'body { margin: 0; }',
   'h1 { color: steelblue; }',
 ]);
@@ -348,7 +358,7 @@ t.script(\`
         },
         {
           label: 'HTML output',
-          content: code(t, 'html', `<style>
+          content: code('html', `<style>
 body { margin: 0; }
 h1 { color: steelblue; }
 </style>

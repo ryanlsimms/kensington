@@ -20,7 +20,7 @@ function modal() {
           type: 'button',
           class: 'close-btn',
           onclick: () => isOpen.set(false),
-        }, '×'),
+        }, [ '×']),
       ]),
       t.div({ class: 'modal-body' }, [
         t.p([

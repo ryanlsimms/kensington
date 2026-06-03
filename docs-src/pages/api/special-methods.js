@@ -1,7 +1,9 @@
+import { t } from 'kensington';
+
 import { apiTable } from '../../components/table.js';
 import { code } from '../../components/ui.js';
 
-export function apiSpecialMethods(t) {
+export function apiSpecialMethods() {
   return t.section({ id: 'special-methods' }, [
     t.h2('Special methods'),
 
@@ -13,11 +15,11 @@ export function apiSpecialMethods(t) {
       t.code('<!DOCTYPE html>'),
       ' to the output.',
     ]),
-    code(t, 'typescript', `t.htmlWithDocType(attributes: HtmlAttributes, content?: HtmlContent): ContentTag
+    code('typescript', `t.htmlWithDocType(attributes: HtmlAttributes, content?: HtmlContent): ContentTag
 t.htmlWithDocType(content?: HtmlContent): ContentTag`),
 
     t.h3({ id: 'literal' }, 'literal / unsafeLiteral'),
-    code(t, 'typescript', `t.literal(str: string): LiteralTag
+    code('typescript', `t.literal(str: string): LiteralTag
 t.unsafeLiteral(str: string): LiteralTag`),
     t.p([
       t.code('literal'),
@@ -29,7 +31,7 @@ t.unsafeLiteral(str: string): LiteralTag`),
     ]),
 
     t.h3({ id: 'inline-comment' }, 'inlineComment'),
-    code(t, 'typescript', `t.inlineComment(str: string | number): CommentTag`),
+    code('typescript', 't.inlineComment(str: string | number): CommentTag'),
     t.p([
       'Single-line strings produce ',
       t.code('<!-- text -->'),
@@ -37,7 +39,7 @@ t.unsafeLiteral(str: string): LiteralTag`),
     ]),
 
     t.h3({ id: 'create-custom-tag' }, 'createCustomTag'),
-    code(t, 'typescript', `t.createCustomTag(
+    code('typescript', `t.createCustomTag(
   tagName: string,
   allowedAttributes?: Record<string, AttributeValidator>
 ): ContentMethod<T>`),
@@ -51,19 +53,19 @@ t.unsafeLiteral(str: string): LiteralTag`),
       t.code('allowedAttributes'),
       ' is a validator:',
     ]),
-    apiTable(t, ['Validator', 'Accepts'], [
+    apiTable(['Validator', 'Accepts'], [
       [t.code('String'), 'Any string value'],
       [t.code('Number'), 'Any number value'],
       [t.code('Boolean'), [t.code('true'), ' or ', t.code('false')]],
       [t.code("['a', 'b', ...]"), 'One of the listed string literals'],
       [t.code('v => boolean'), 'Custom predicate function'],
     ]),
-    code(t, 'javascript', `class MyEngine extends Kensington {
+    code('javascript', `class MyEngine extends Kensington {
   myCard = this.createCustomTag('my-card', {
-    'card-type': ['primary', 'secondary'],
-    'loading': Boolean,
-    'max-items': Number,
-    'score': v => typeof v === 'number' && v <= 100,
+    cardType: ['primary', 'secondary'],
+    loading: Boolean,
+    maxItems: Number,
+    score: v => typeof v === 'number' && v <= 100,
   });
 }`),
     t.p([
@@ -71,7 +73,7 @@ t.unsafeLiteral(str: string): LiteralTag`),
       t.code('kensington/attributes'),
       ':',
     ]),
-    code(t, 'javascript', `import { buttonAttributes } from 'kensington/attributes';
+    code('javascript', `import { buttonAttributes } from 'kensington/attributes';
 
 class MyEngine extends Kensington {
   button = this.createCustomTag('button', {

@@ -7,7 +7,7 @@
   overflow: hidden;
   border: 1px solid var(--color-ide-border);
   max-width: 600px;
-  margin: 1.5rem 0;
+  margin: var(--space-lg) 0;
   line-height: 1.5;
   color: var(--color-ide-text);
   box-shadow: 4px 4px 0 var(--color-ide-shadow);
@@ -36,19 +36,21 @@
 .ide-filename {
   font-size: 0.7rem;
   color: var(--color-ide-filename);
-  margin-left: 0.5rem;
+  margin-left: var(--space-sm);
   letter-spacing: 0.01em;
 }
 
 .ide-editor {
   background: var(--color-ide-editor);
-  padding: 0.75rem 1rem;
-  overflow: hidden;
+  padding: 0.75rem var(--space-md);
+  overflow-x: auto;
+  scrollbar-width: thin;
+  /* Fade the right edge to hint at clipped content the user can swipe to see. */
+  mask-image: linear-gradient(to right, black calc(100% - 1.5rem), transparent);
 }
 
 .ide-line {
   white-space: nowrap;
-  overflow: hidden;
 }
 
 .ide-ln {
@@ -140,7 +142,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.25rem 0.875rem;
+  padding: var(--space-xs) 0.875rem;
   color: var(--color-ide-text);
   gap: 1.5rem;
 }

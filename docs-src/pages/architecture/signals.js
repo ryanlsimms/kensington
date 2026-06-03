@@ -1,12 +1,14 @@
+import { t } from 'kensington';
+
 import { callout, code } from '../../components/ui.js';
 import { loc, mermaid } from './helpers.js';
 
-export function architectureSignals(t) {
+export function architectureSignals() {
   return t.section({ id: 'signal-anatomy' }, [
     t.h2('Signal Anatomy'),
     t.p([
       'Before tracing the lifecycle module, here is how a Signal works. The full implementation is at ',
-      loc(t, 'esm/lib/reactive/signal.js'),
+      loc('esm/lib/reactive/signal.js'),
       '.',
     ]),
 
@@ -23,7 +25,7 @@ export function architectureSignals(t) {
         t.code('computed()'),
         ' run:',
       ]),
-      code(t, 'javascript', `get() {
+      code('javascript', `get() {
   if (currentEffect !== null && !this.#subscribers.has(currentEffect)) {
     this.#subscribers.add(currentEffect);
     const sub = currentEffect;
@@ -52,7 +54,7 @@ export function architectureSignals(t) {
           ' helper drains and resets on each re-run.',
         ]),
       ]),
-      callout(t, 'note', '.value and .toJSON() never subscribe',
+      callout('note', '.value and .toJSON() never subscribe',
         t.p([
           t.code('.value'),
           ' (getter) and ',
@@ -75,12 +77,12 @@ export function architectureSignals(t) {
       t.p([
         t.code('.set(next)'),
         ' at ',
-        loc(t, 'esm/lib/reactive/signal.js'),
+        loc('esm/lib/reactive/signal.js'),
         ' compares via ',
         t.code('Object.is'),
         ' and bails on equality. Otherwise it updates the value and notifies subscribers:',
       ]),
-      mermaid(t, `sequenceDiagram
+      mermaid(`sequenceDiagram
   participant U as User code
   participant S as Signal
   participant Q as pending Set
@@ -125,7 +127,7 @@ export function architectureSignals(t) {
         t.code('b'),
         '.',
       ]),
-      callout(t, 'warn', 'Error isolation in batches',
+      callout('warn', 'Error isolation in batches',
         t.p([
           t.code('flush()'),
           ' wraps each effect run in try/catch and re-throws via ',
@@ -133,7 +135,7 @@ export function architectureSignals(t) {
           '. One effect\'s thrown error does not abort the batch. Every queued effect still runs.',
         ]),
       ),
-      callout(t, 'warn', 'Loop guards',
+      callout('warn', 'Loop guards',
         t.p([
           t.code('flush()'),
           ' tracks re-queue counts per effect via a runCounts Map. After ',
@@ -156,12 +158,12 @@ export function architectureSignals(t) {
       t.p([
         t.code('effect(fn)'),
         ' at ',
-        loc(t, 'esm/lib/reactive/signal.js'),
+        loc('esm/lib/reactive/signal.js'),
         ' guards against misuse before delegating to an internal ',
         t.code('createEffect(fn)'),
         ' helper. If called inside a running effect or computed body, it fires a throttled error because a new effect is started on every re-run without stopping the old one.',
       ]),
-      code(t, 'javascript', `export function effect(fn) {
+      code('javascript', `export function effect(fn) {
   if (inComputedFn) {
     throttledError('effect-in-computed', 'kensington: effect() called inside a computed or transform callback...');
   } else if (currentEffect !== null) {
@@ -173,7 +175,7 @@ export function architectureSignals(t) {
         t.code('createEffect(fn)'),
         ' is the shared implementation:',
       ]),
-      code(t, 'javascript', `function createEffect(fn) {
+      code('javascript', `function createEffect(fn) {
   if (ssrDepth > 0) {
     return { pause() {}, resume() {}, stop() {} };
   }
@@ -208,7 +210,7 @@ export function architectureSignals(t) {
       t.div({ class: 'compare-grid' }, [
         t.div([
           t.h4('pause'),
-          t.p({ style: 'margin:0;font-size:0.88rem' }, [
+          t.p({ style: { margin: '0', fontSize: '0.88rem' } }, [
             'Drains ',
             t.code('_cleanups'),
             ' (unsubscribing from every signal) and removes itself from ',
@@ -220,7 +222,7 @@ export function architectureSignals(t) {
         ]),
         t.div([
           t.h4('resume'),
-          t.p({ style: 'margin:0;font-size:0.88rem' }, [
+          t.p({ style: { margin: '0', fontSize: '0.88rem' } }, [
             'Calls ',
             t.code('run()'),
             ' immediately, re-tracking subscriptions to every signal read inside it. No-op if ',
@@ -252,7 +254,7 @@ export function architectureSignals(t) {
       t.p([
         t.code('computed(fn)'),
         ' at ',
-        loc(t, 'esm/lib/reactive/signal.js'),
+        loc('esm/lib/reactive/signal.js'),
         ' creates a Signal whose value is derived from other signals. Updates are synchronous (unlike effects).',
       ]),
       t.p([
@@ -275,7 +277,7 @@ export function architectureSignals(t) {
         t.code('.stop()'),
         ' call is rarely needed. When the parent effect re-runs and clears its subscriptions, the inner computed auto-sleeps and releases its source subscriptions automatically.',
       ]),
-      callout(t, 'note', 'signal() inside computed',
+      callout('note', 'signal() inside computed',
         t.p([
           t.code('signal()'),
           ' called inside a ',
@@ -283,9 +285,9 @@ export function architectureSignals(t) {
           ' callback without a key emits a throttled ',
           t.code('console.warn'),
           ' via filterStack (see ',
-          loc(t, 'esm/lib/util/filter-stack.js'),
+          loc('esm/lib/util/filter-stack.js'),
           '). A new signal is created on every re-run; the reconciler handles this by replacing the DOM node so the fresh signal\'s effect drives the new live element, and ',
-          loc(t, 'esm/lib/reactive/preserve-state.js'),
+          loc('esm/lib/reactive/preserve-state.js'),
           ' copies focus, scroll, input values, and selection across the swap. Local signal state still resets to the initial value. Pass a stable key as the second argument (',
           t.code('signal(initial, key)'),
           ') to scope the signal to the surrounding computed so the same instance is reused across re-runs.',
@@ -301,14 +303,14 @@ export function architectureSignals(t) {
         ' turns it into a keyed signal scoped to the innermost running ',
         t.code('computed'),
         '. The implementation in ',
-        loc(t, 'esm/lib/reactive/signal.js'),
+        loc('esm/lib/reactive/signal.js'),
         ' tracks the active computed in a module-level ',
         t.code('currentComputed'),
         ' variable, and stores a per-computed registry in a ',
         t.code('keyedRegistries'),
         ' WeakMap:',
       ]),
-      code(t, 'javascript', `export function signal(initial, key) {
+      code('javascript', `export function signal(initial, key) {
   if (key !== undefined && currentComputed !== null) {
     const owner = currentComputed;
     let registry = keyedRegistries.get(owner);
@@ -333,7 +335,7 @@ export function architectureSignals(t) {
         t.code('accessed'),
         ' set before invoking the user\'s function. After the run completes, any key in the registry that wasn\'t accessed is stopped and removed:',
       ]),
-      code(t, 'javascript', `// Sweep keyed signals that weren't touched this run.
+      code('javascript', `// Sweep keyed signals that weren't touched this run.
 if (registry !== undefined) {
   for (const [k, sig] of registry.signals) {
     if (!registry.accessed.has(k)) {
@@ -356,7 +358,7 @@ if (registry !== undefined) {
         t.code('signalRefMismatch'),
         ' returns false for the keyed-signal position, so the reconciler patches in place rather than replacing.',
       ]),
-      callout(t, 'note', 'sleep vs stop',
+      callout('note', 'sleep vs stop',
         t.p([
           'When the owning computed is permanently stopped (via ',
           t.code('.stop()'),

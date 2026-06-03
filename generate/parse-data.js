@@ -124,7 +124,7 @@ export default function parseData(htmlData, svgData, mathData, { cssPropertyType
   function getAttributeType(attr) {
     const values = (attr.value ?? []).filter(value => value !== 'the empty string' && value !== '');
     if (attr.attribute === 'value') {
-      return ['[Number,String]', 'number | string'];
+      return ['[Number, String]', 'number | string'];
     }
     if (values[0]?.toLowerCase?.() === 'boolean attribute') {
       return ['Boolean', 'boolean'];
@@ -139,7 +139,7 @@ export default function parseData(htmlData, svgData, mathData, { cssPropertyType
     }
     if (values[0] === '<boolean>') {
       return [
-        `[true,false]`,
+        `[true, false]`,
         '"true" | "false"',
       ];
     }
@@ -147,14 +147,14 @@ export default function parseData(htmlData, svgData, mathData, { cssPropertyType
       return ['Number', numberTsType];
     }
     if (['<length>', '<coordinate>', '<integer>', '<long>', '<length-percentage>'].includes(values[0])) {
-      return ['[Number,String]', 'number | string'];
+      return ['[Number, String]', 'number | string'];
     }
     if (
       values[0] === 'Valid floating-point number' ||
       values[0] === 'Valid floating-point number*' ||
       values[0] === 'Valid floating-point number greater than zero, or "any"'
     ) {
-      return ['[Number,String]', 'number | string'];
+      return ['[Number, String]', 'number | string'];
     }
     if (values.length && values.every(value => /^".*"$/.test(value))) {
       return [

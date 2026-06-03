@@ -86,7 +86,7 @@ export default class Kensington {
     if (allowedAttributes === null || typeof allowedAttributes !== 'object' || Array.isArray(allowedAttributes)) {
       throw new Error(\`createCustomTag: allowedAttributes must be a plain object; got: \${typeof allowedAttributes}\`);
     }
-    const kebabAttributes = Object.fromEntries(Object.entries(allowedAttributes).map(([k,v]) => [camelToKebab(k), v]));
+    const kebabAttributes = Object.fromEntries(Object.entries(allowedAttributes).map(([k, v]) => [camelToKebab(k), v]));
     return this.createTag(tagName, kebabAttributes, ContentTag, {
       includeGlobalAttributes: true,
       includeGlobalEvents: true,

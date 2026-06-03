@@ -1,14 +1,19 @@
+import { t } from 'kensington';
+
 import { callout, code } from '../../components/ui.js';
 import { loc } from './helpers.js';
 
-export function architectureHydration(t) {
+export function architectureHydration() {
   return t.section({ id: 'hydration' }, [
     t.h2('SSR and Hydration'),
     t.p({ class: 'file-crumb' }, [
-      'esm', t.span({ class: 'slash' }, '/'),
-      'lib', t.span({ class: 'slash' }, '/'),
-      'render', t.span({ class: 'slash' }, '/'),
-      loc(t, 'esm/lib/render/hydration.js'),
+      'esm',
+      t.span({ class: 'slash' }, '/'),
+      'lib',
+      t.span({ class: 'slash' }, '/'),
+      'render',
+      t.span({ class: 'slash' }, '/'),
+      loc('esm/lib/render/hydration.js'),
     ]),
     t.p([
       'On the server (or any environment without a real DOM), reactive subscriptions must not be created. They would have nothing to update and no cleanup path, so they would leak immediately. Both ',
@@ -18,13 +23,13 @@ export function architectureHydration(t) {
       ' consult the ',
       t.code('ssrDepth'),
       ' counter at ',
-      loc(t, 'esm/lib/reactive/signal.js'),
+      loc('esm/lib/reactive/signal.js'),
       '.',
     ]),
 
     t.section({ id: 'hydration-bypass' }, [
       t.h3('The SSR bypass'),
-      code(t, 'javascript', `export function effect(fn) {
+      code('javascript', `export function effect(fn) {
   if (ssrDepth > 0) {
     return { pause() {}, resume() {}, stop() {} };  // no-op stub
   }
@@ -50,7 +55,7 @@ export function computed(fn) {
         t.code('.get()'),
         ' (which works fine without a current effect) and produces a static HTML snapshot.',
       ]),
-      callout(t, 'warn', 'Why computed() needs the bypass too',
+      callout('warn', 'Why computed() needs the bypass too',
         t.p([
           'Without it, a per-request ',
           t.code('computed'),
@@ -68,7 +73,7 @@ export function computed(fn) {
       t.p([
         t.code('renderForHydration(fn, state, name)'),
         ' in ',
-        loc(t, 'esm/lib/render/hydration.js'),
+        loc('esm/lib/render/hydration.js'),
         ' wraps a component for isomorphic rendering. On the server, it increments ',
         t.code('ssrDepth'),
         ', invokes ',
@@ -102,7 +107,7 @@ export function computed(fn) {
       t.p([
         'This is "remove and replace" hydration, not "reuse and attach." The SSR HTML serves time-to-first-paint. The live version takes over once JS is ready.',
       ]),
-      callout(t, 'note', 'Why not reuse?',
+      callout('note', 'Why not reuse?',
         t.p([
           'Reuse hydration requires the SSR HTML and the client\'s tag tree to match exactly. The current strategy avoids that constraint at the cost of one extra DOM swap per component.',
         ]),

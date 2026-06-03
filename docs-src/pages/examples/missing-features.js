@@ -1,6 +1,8 @@
+import { t } from 'kensington';
+
 import { code } from '../../components/ui.js';
 
-export function examplesMissingFeatures(t) {
+export function examplesMissingFeatures() {
   return t.section({ id: 'missing-features' }, [
     t.h2('"Missing" features'),
     t.p([
@@ -26,7 +28,7 @@ export function examplesMissingFeatures(t) {
         t.code('fn()'),
         ' to build the subtree, then pops. Consumers hold the signal reference after construction and update reactively through the normal signal subscription mechanism.',
       ]),
-      code(t, 'javascript', `// create-context.js
+      code('javascript', `// create-context.js
 import { signal } from 'kensington';
 
 function createContext(defaultValue) {
@@ -54,7 +56,7 @@ function createContext(defaultValue) {
     },
   };
 }`),
-      code(t, 'javascript', `import { t } from 'kensington';
+      code('javascript', `import { t } from 'kensington';
 import { createContext } from './create-context.js';
 
 const ThemeContext = createContext('light');
@@ -80,11 +82,11 @@ const app = t.div([
   }, 'Toggle theme'),
   t.button({
     type: 'button',
-    onclick: () => UserContext.set(
-      u => u.name === 'Guest'
-        ? { name: 'Alice', role: 'admin' }
-        : { name: 'Guest', role: 'viewer' }
-    ),
+    onclick: () => UserContext.set(u => {
+      const alice = { name: 'Alice', role: 'admin' };
+      const guest = { name: 'Guest', role: 'viewer' };
+      return u.name === 'Guest' ? alice : guest;
+    }),
   }, 'Toggle login'),
 
   // No provider. Reads from the default signals.
@@ -114,7 +116,7 @@ document.body.append(app.toElement());`),
         t.code('signal.set'),
         ' with a reducer to get the same pattern: complex state machines stay readable and the call sites only send action objects.',
       ]),
-      code(t, 'javascript', `// use-reducer.js
+      code('javascript', `// use-reducer.js
 import { signal } from 'kensington';
 
 function useReducer(reducer, initialState) {
@@ -124,7 +126,7 @@ function useReducer(reducer, initialState) {
   }
   return { state, dispatch };
 }`),
-      code(t, 'javascript', `import { t } from 'kensington';
+      code('javascript', `import { t } from 'kensington';
 import { useReducer } from './use-reducer.js';
 
 function cartReducer(state, action) {
@@ -183,7 +185,7 @@ document.body.append(
         t.code('isBrowser'),
         ' so server-rendered components do not throw.',
       ]),
-      code(t, 'javascript', `// use-local-storage.js
+      code('javascript', `// use-local-storage.js
 import { signal, effect, isBrowser } from 'kensington';
 
 function useLocalStorage(key, defaultValue) {
@@ -194,7 +196,7 @@ function useLocalStorage(key, defaultValue) {
   });
   return s;
 }`),
-      code(t, 'javascript', `import { t } from 'kensington';
+      code('javascript', `import { t } from 'kensington';
 import { useLocalStorage } from './use-local-storage.js';
 
 const theme = useLocalStorage('theme', 'light');
@@ -219,7 +221,7 @@ document.body.append(
         t.code('effect'),
         ' does not support a cleanup return value, the timeout ID lives in the enclosing closure.',
       ]),
-      code(t, 'javascript', `// use-debounce.js
+      code('javascript', `// use-debounce.js
 import { signal, effect } from 'kensington';
 
 function useDebounce(source, delay) {
@@ -232,7 +234,7 @@ function useDebounce(source, delay) {
   });
   return debounced;
 }`),
-      code(t, 'javascript', `import { signal, effect, t } from 'kensington';
+      code('javascript', `import { signal, effect, t } from 'kensington';
 import { useDebounce } from './use-debounce.js';
 
 const query    = signal('');
@@ -271,7 +273,7 @@ document.body.append(
         t.code('effect'),
         ' does not support a cleanup return value.',
       ]),
-      code(t, 'javascript', `// use-fetch.js
+      code('javascript', `// use-fetch.js
 import { signal, effect } from 'kensington';
 
 function useFetch(urlSignal) {
@@ -296,7 +298,7 @@ function useFetch(urlSignal) {
 
   return { data, loading, error };
 }`),
-      code(t, 'javascript', `import { signal, t } from 'kensington';
+      code('javascript', `import { signal, t } from 'kensington';
 import { useFetch } from './use-fetch.js';
 
 const userId = signal(1);
@@ -311,12 +313,11 @@ document.body.append(
       t.button({ type: 'button', onclick: () => userId.set(v => v + 1) }, 'Next'),
     ]),
     // signal content can be a tag — switches between loading, error, and data views reactively
-    loading.transform(l => l
-      ? t.p('Loading...')
-      : error.get()
-        ? t.p({ class: 'error' }, error.get())
-        : t.pre(JSON.stringify(data.get(), null, 2))
-    ),
+    loading.transform(l => {
+      if (l) { return t.p('Loading...'); }
+      const err = error.get();
+      return err ? t.p({ class: 'error' }, err) : t.pre(JSON.stringify(data.get(), null, 2));
+    }),
   ]).toElement()
 );`),
     ]),
@@ -326,13 +327,13 @@ document.body.append(
       t.p([
         'Generates a unique, stable ID for pairing form labels with inputs. A module-level counter increments once per call. On the server it produces the same sequence on every request, so IDs in SSR output and client hydration match as long as components are called in the same order.',
       ]),
-      code(t, 'javascript', `// use-id.js
+      code('javascript', `// use-id.js
 let _id = 0;
 
 function useId(prefix = 'k') {
   return \`\${prefix}-\${++_id}\`;
 }`),
-      code(t, 'javascript', `import { t } from 'kensington';
+      code('javascript', `import { t } from 'kensington';
 import { useId } from './use-id.js';
 
 function labeledInput(label, type = 'text') {

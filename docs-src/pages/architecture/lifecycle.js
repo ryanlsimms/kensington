@@ -1,15 +1,20 @@
+import { t } from 'kensington';
+
 import { callout, code } from '../../components/ui.js';
 import { loc } from './helpers.js';
 
-export function architectureLifecycle(t) {
+export function architectureLifecycle() {
   return [
     t.section({ id: 'lifecycle', class: 'stage stage-4' }, [
       t.h2('The Lifecycle Module'),
       t.p({ class: 'file-crumb' }, [
-        'esm', t.span({ class: 'slash' }, '/'),
-        'lib', t.span({ class: 'slash' }, '/'),
-        'reactive', t.span({ class: 'slash' }, '/'),
-        loc(t, 'esm/lib/reactive/lifecycle.js'),
+        'esm',
+        t.span({ class: 'slash' }, '/'),
+        'lib',
+        t.span({ class: 'slash' }, '/'),
+        'reactive',
+        t.span({ class: 'slash' }, '/'),
+        loc('esm/lib/reactive/lifecycle.js'),
       ]),
       t.p([
         t.code('createLifecycle({ element, persist })'),
@@ -24,7 +29,7 @@ export function architectureLifecycle(t) {
       t.p('This module is the only place that decides whether to pause or stop an effect on removal.'),
 
       t.h3('Internal state'),
-      code(t, 'javascript', `export function createLifecycle({ element, persist }) {
+      code('javascript', `export function createLifecycle({ element, persist }) {
   const stops = [];                              // pause-or-stop closures, one per signal effect
   const devIds = [];                             // effect IDs for devtools
   const resumables = persist ? [] : null;        // effect objects for resume() on reconnect
@@ -47,7 +52,7 @@ export function architectureLifecycle(t) {
       ]),
 
       t.h3('signalEffect'),
-      code(t, 'javascript', `signalEffect(sig, apply, label) {
+      code('javascript', `signalEffect(sig, apply, label) {
   markNextEffectAsBinding(label);   // devtools: categorise as DOM binding with this label
   const eff = _internalEffect(() => {
     const el = elementRef.deref();
@@ -69,7 +74,7 @@ export function architectureLifecycle(t) {
         t.code('effect()'),
         ' export would fire spuriously.',
       ]),
-      callout(t, 'tip', 'WeakRef is the GC safety net',
+      callout('tip', 'WeakRef is the GC safety net',
         t.p([
           'If a user creates a tag, calls ',
           t.code('toElement'),
@@ -85,15 +90,15 @@ export function architectureLifecycle(t) {
       t.div({ class: 'compare-grid' }, [
         t.div([
           t.h4('persist: false (default)'),
-          t.p({ style: 'font-size:0.88rem;margin:0' }, 'On removal, every effect\'s stop() is called. Permanent teardown. Disconnect callbacks fire once. Connect callback fires once on first insertion only.'),
+          t.p({ style: { fontSize: '0.88rem', margin: '0' } }, `On removal, every effect's stop() is called. Permanent teardown. Disconnect callbacks fire once. Connect callback fires once on first insertion only.`),
         ]),
         t.div([
           t.h4('persist: true'),
-          t.p({ style: 'font-size:0.88rem;margin:0' }, 'On removal, every effect\'s pause() is called. The stop chain rebuilds for the next cycle via reFireAndRegister. On reconnect, every effect\'s resume() is called and the connect callback re-fires.'),
+          t.p({ style: { fontSize: '0.88rem', margin: '0' } }, `On removal, every effect's pause() is called. The stop chain rebuilds for the next cycle via reFireAndRegister. On reconnect, every effect's resume() is called and the connect callback re-fires.`),
         ]),
       ]),
       t.h4('The disconnect chain'),
-      code(t, 'javascript', `function registerDisconnectChain() {
+      code('javascript', `function registerDisconnectChain() {
   trackForStop(element, () => { for (const stop of stops) { stop(); } }, devIds);
   if (onCleared) { addOnStop(element, onCleared); }
   for (const fn of disconnectCallbacks) {
@@ -114,7 +119,7 @@ export function architectureLifecycle(t) {
       t.p([
         'When persist is true, the chain rebuilds every cycle so disconnect callbacks fire on every removal, not just the first:',
       ]),
-      code(t, 'javascript', `if (persist) {
+      code('javascript', `if (persist) {
   const reFireAndRegister = () => {
     trackForStop(element, () => {});
     if (onCleared) { addOnStop(element, onCleared); }
@@ -126,7 +131,7 @@ export function architectureLifecycle(t) {
   addOnStop(element, reFireAndRegister);
 }`),
       t.h4('The connect path'),
-      code(t, 'javascript', `const needsConnect = persist || connectCallbacks.length > 0;
+      code('javascript', `const needsConnect = persist || connectCallbacks.length > 0;
 if (needsConnect) {
   let firstConnection = true;
   trackForConnect(element, () => {
@@ -143,16 +148,22 @@ if (needsConnect) {
     for (const fn of connectCallbacks) { fn.call(element, element); }
   }, persist);
 }`),
-      t.p('The shared callback-fire loop runs on both first connection and reconnection. Only the reconnect-specific work is gated on !firstConnection.'),
+      t.p([
+        'The shared callback-fire loop runs on both first connection and reconnection. ',
+        'Only the reconnect-specific work is gated on !firstConnection.',
+      ]),
     ]),
 
     t.section({ id: 'dom-tracker' }, [
       t.h2('The DOM Tracker'),
       t.p({ class: 'file-crumb' }, [
-        'esm', t.span({ class: 'slash' }, '/'),
-        'lib', t.span({ class: 'slash' }, '/'),
-        'reactive', t.span({ class: 'slash' }, '/'),
-        loc(t, 'esm/lib/reactive/dom-tracker.js'),
+        'esm',
+        t.span({ class: 'slash' }, '/'),
+        'lib',
+        t.span({ class: 'slash' }, '/'),
+        'reactive',
+        t.span({ class: 'slash' }, '/'),
+        loc('esm/lib/reactive/dom-tracker.js'),
       ]),
       t.p([
         'A shared ',
@@ -163,7 +174,7 @@ if (needsConnect) {
       ]),
 
       t.h3('The entries map'),
-      code(t, 'javascript', `const entries = new WeakMap();
+      code('javascript', `const entries = new WeakMap();
 const trackedRefs = new Set();
 const trackedCleanup = new FinalizationRegistry(ref => trackedRefs.delete(ref));
 const contentTracked = new WeakSet();`),
@@ -177,7 +188,7 @@ const contentTracked = new WeakSet();`),
         t.code('trackedRefs.size'),
         ' short-circuit stays approximately accurate.',
       ]),
-      callout(t, 'key', 'Why WeakMap + a parallel ref set?',
+      callout('key', 'Why WeakMap + a parallel ref set?',
         t.p([
           'A plain Map would pin every tracked element by key, so an element produced by ',
           t.code('toElement()'),
@@ -190,7 +201,7 @@ const contentTracked = new WeakSet();`),
       ),
 
       t.h3('The observer'),
-      code(t, 'javascript', `function buildObserver() {
+      code('javascript', `function buildObserver() {
   if (observer !== null) { return; }
   observer = new MutationObserver(records => {
     if (trackedRefs.size === 0) { return; }  // skip when nothing is tracked
@@ -223,7 +234,7 @@ const contentTracked = new WeakSet();`),
         t.code('visit(node, fn)'),
         ' handles two cases for a mutation record\'s node: the node itself might be tracked, or it might be an ancestor of one or more tracked elements:',
       ]),
-      code(t, 'javascript', `function visit(node, fn) {
+      code('javascript', `function visit(node, fn) {
   const own = entries.get(node);
   if (own !== undefined) {
     fn(node, own);
@@ -242,7 +253,7 @@ const contentTracked = new WeakSet();`),
     }
   }
 }`),
-      callout(t, 'note', 'visit() does not return early',
+      callout('note', 'visit() does not return early',
         t.p([
           'Even when the node itself has an entry, ',
           t.code('visit()'),
@@ -265,14 +276,29 @@ const contentTracked = new WeakSet();`),
           t.th('Purpose'),
         ])),
         t.tbody([
-          t.tr([t.td(t.code('trackForStop(el, fn, devIds)')), t.td('Register the initial stop function and associated devtools effect IDs.')]),
-          t.tr([t.td(t.code('trackForConnect(el, fn, persist)')), t.td('Register the connect callback. persist controls re-fire and entry survival after removal.')]),
+          t.tr([
+            t.td(t.code('trackForStop(el, fn, devIds)')),
+            t.td('Register the initial stop function and associated devtools effect IDs.'),
+          ]),
+          t.tr([
+            t.td(t.code('trackForConnect(el, fn, persist)')),
+            t.td('Register the connect callback. persist controls re-fire and entry survival after removal.'),
+          ]),
           t.tr([t.td(t.code('addOnStop(el, fn)')), t.td('Append to the stop chain. No-op if stop is not set.')]),
           t.tr([t.td(t.code('markContentTracked(el)')), t.td('Flag an element as owning signal-content anchors.')]),
           t.tr([t.td(t.code('isTracked(el)')), t.td('Does this element have an active stop registration?')]),
           t.tr([t.td(t.code('isContentTracked(el)')), t.td('Was this element flagged via markContentTracked?')]),
-          t.tr([t.td(t.code('stopTracked(el)')), t.td('Force synchronous teardown. Used by the reconciler for discarded fresh nodes.')]),
-          t.tr([t.td(t.code('stopRemoved(node)')), t.td('Called by the MutationObserver. Calls visit() to find and stop all tracked entries for node or its descendants.')]),
+          t.tr([
+            t.td(t.code('stopTracked(el)')),
+            t.td('Force synchronous teardown. Used by the reconciler for discarded fresh nodes.'),
+          ]),
+          t.tr([
+            t.td(t.code('stopRemoved(node)')),
+            t.td([
+              'Called by the MutationObserver. ',
+              'Calls visit() to find and stop all tracked entries for node or its descendants.',
+            ]),
+          ]),
         ]),
       ]),
     ]),

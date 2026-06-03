@@ -1,6 +1,8 @@
+import { t } from 'kensington';
+
 import { code } from '../../components/ui.js';
 
-export function reactivityLifecycle(t) {
+export function reactivityLifecycle() {
   return t.section({ id: 'lifecycle' }, [
     t.h2('Lifecycle'),
     t.p([
@@ -21,7 +23,7 @@ export function reactivityLifecycle(t) {
     t.p([
       'Fires when the element is inserted into the DOM. Use it for initialization that requires DOM presence, such as reading layout dimensions, starting side effects that should only run while the element is mounted, or initializing third-party libraries that need a live element.',
     ]),
-    code(t, 'javascript', `const panel = t.div({ class: 'panel' }, content);
+    code('javascript', `const panel = t.div({ class: 'panel' }, content);
 
 panel.addConnectedCallback(function(el) {
   // el (and \`this\`) is the DOM element — layout is readable here
@@ -37,19 +39,25 @@ document.body.append(panel.toElement()); // callback fires here`),
       t.code('persist: true'),
       ' in the tag options, all connected and disconnected callbacks re-fire on every cycle.',
     ]),
-    code(t, 'javascript', `const tag = t.div({ persist: true }, content);
+    code('javascript', `const tag = t.div({ persist: true }, content);
 tag.addConnectedCallback(setup);
 tag.addDisconnectedCallback(teardown);
 tag.toElement();  // both callbacks re-fire on every insert/remove cycle`),
 
-    t.h3({ id: 'disconnected-callback', style: { fontSize: 'clamp(1rem, 6vw, 1.35rem);'} }, 'addDisconnectedCallback'),
-    t.p('Fires when the element leaves the DOM. Signal effects are stopped first, then disconnected callbacks run. Use it for cleanup that signals cannot handle automatically, such as clearing intervals and timers, destroying third-party library instances, or removing portal elements.'),
+    t.h3({ id: 'disconnected-callback', style: { fontSize: 'clamp(1rem, 6vw, 1.35rem);' } }, 'addDisconnectedCallback'),
+    t.p([
+      'Fires when the element leaves the DOM. ',
+      'Signal effects are stopped first, then disconnected callbacks run. ',
+      'Use it for cleanup that signals cannot handle automatically, ',
+      'such as clearing intervals and timers, destroying third-party library instances, ',
+      'or removing portal elements.',
+    ]),
     t.p([
       'By default the callback fires once and is not re-registered. With ',
       t.code('persist: true'),
       ' in the tag options, all disconnect callbacks re-fire on every removal.',
     ]),
-    code(t, 'javascript', `let intervalId;
+    code('javascript', `let intervalId;
 const ticker = t.div({ class: 'ticker' }, price);
 
 ticker.addDisconnectedCallback(() => {

@@ -1,6 +1,8 @@
+import { t } from 'kensington';
+
 import { code, panels } from '../../components/ui.js';
 
-export function examplesReactiveData(t) {
+export function examplesReactiveData() {
   return t.section({ id: 'reactive-data' }, [
     t.h2('Reactive data'),
 
@@ -17,7 +19,7 @@ export function examplesReactiveData(t) {
         t.code('set()'),
         ' calls batch into a single DOM update via microtask.',
       ]),
-      code(t, 'javascript', `import { t, signal, computed, effect } from 'kensington';
+      code('javascript', `import { t, signal, computed, effect } from 'kensington';
 
 const count = signal(0);
 const label = computed(() => count.get() === 1 ? 'click' : 'clicks');
@@ -43,7 +45,7 @@ document.body.append(app.toElement());`),
         t.code('computed'),
         ' signal derives the visible rows. Passing the computed signal as content means the table body updates automatically as the user types, with no manual DOM writes needed.',
       ]),
-      code(t, 'javascript', `import { t, signal, computed } from 'kensington';
+      code('javascript', `import { t, signal, computed } from 'kensington';
 
 const people = [
   { name: 'Alice', role: 'Admin'  },
@@ -86,7 +88,7 @@ document.body.append(
         t.code('dataKey'),
         ' to each item lets the reconciler match nodes by key on re-render, so only changed items are written to the DOM.',
       ]),
-      code(t, 'javascript', `import { t, signal } from 'kensington';
+      code('javascript', `import { t, signal } from 'kensington';
 
 let nextId = 1;
 const todos = signal([
@@ -145,7 +147,7 @@ document.body.append(
         t.code('computed'),
         ' scopes the per-row state to the surrounding computed so the same signal instance is reused for the same key across renders. State persists when other rows change, and the keyed signal is stopped automatically when its row leaves the list.',
       ]),
-      code(t, 'javascript', `import { t, signal, computed } from 'kensington';
+      code('javascript', `import { t, signal, computed } from 'kensington';
 
 const items = signal([
   { id: 1, label: 'Apples' },
@@ -161,15 +163,14 @@ const rows = computed(() => items.get().map(item => {
   // Keyed per row. Same signal instance returned across re-runs for the same item.id.
   const editing = signal(false, item.id);
 
+  const input = t.input({
+    type: 'text',
+    value: item.label,
+    onblur: e => { rename(item.id, e.target.value); editing.set(false); },
+  });
+  const label = t.span({ onclick: () => editing.set(true) }, item.label);
   return t.li({ dataKey: item.id }, [
-    computed(() => editing.get()
-      ? t.input({
-          type: 'text',
-          value: item.label,
-          onblur: e => { rename(item.id, e.target.value); editing.set(false); },
-        })
-      : t.span({ onclick: () => editing.set(true) }, item.label)
-    ),
+    computed(() => editing.get() ? input : label),
   ]);
 }));
 
@@ -191,7 +192,7 @@ document.body.append(t.ul(rows).toElement());`),
         t.code('computed'),
         ' that flips with the signal.',
       ]),
-      code(t, 'javascript', `import { t, signal, computed, effect } from 'kensington';
+      code('javascript', `import { t, signal, computed, effect } from 'kensington';
 
 const dark = signal(matchMedia('(prefers-color-scheme: dark)').matches);
 
@@ -214,7 +215,7 @@ document.body.append(
         t.code('remaining'),
         ' signal as content means the number updates in place without replacing surrounding text nodes.',
       ]),
-      code(t, 'javascript', `import { t, signal, computed } from 'kensington';
+      code('javascript', `import { t, signal, computed } from 'kensington';
 
 const MAX = 280;
 const text = signal('');
@@ -243,27 +244,25 @@ document.body.append(
         t.code('"cats"'),
         '), existing results can be filtered client-side instantly with no spinner.',
       ]),
-      t.aside(
-        t.p([
-          t.code('previousTerm'),
-          ' is read via ',
-          t.code('.value'),
-          ' rather than ',
-          t.code('.get()'),
-          '. If ',
-          t.code('.get()'),
-          ' were used, calling ',
-          t.code('previousTerm.set(current)'),
-          ' inside the fetch callback would re-trigger the effect and fire a duplicate request for every search. ',
-          t.code('previousTerm'),
-          ' cannot be a plain variable because it is shown reactively in the UI. The updater pattern cannot help because ',
-          t.code('previousTerm'),
-          ' is being read to compute ',
-          t.code('isRefinement'),
-          ', not written back to itself.',
-        ])
-      ),
-      code(t, 'javascript', `import { t, signal, computed, effect } from 'kensington';
+      t.aside(t.p([
+        t.code('previousTerm'),
+        ' is read via ',
+        t.code('.value'),
+        ' rather than ',
+        t.code('.get()'),
+        '. If ',
+        t.code('.get()'),
+        ' were used, calling ',
+        t.code('previousTerm.set(current)'),
+        ' inside the fetch callback would re-trigger the effect and fire a duplicate request for every search. ',
+        t.code('previousTerm'),
+        ' cannot be a plain variable because it is shown reactively in the UI. The updater pattern cannot help because ',
+        t.code('previousTerm'),
+        ' is being read to compute ',
+        t.code('isRefinement'),
+        ', not written back to itself.',
+      ])),
+      code('javascript', `import { t, signal, computed, effect } from 'kensington';
 
 const searchTerm   = signal('');
 const previousTerm = signal('');
@@ -322,7 +321,7 @@ document.body.append(
         t.code('sortCol'),
         '. Stale subscriptions are cleaned up automatically between runs.',
       ]),
-      code(t, 'javascript', `import { t, signal, computed } from 'kensington';
+      code('javascript', `import { t, signal, computed } from 'kensington';
 
 const people = [
   { name: 'Alice', age: 32, role: 'Admin'  },
@@ -346,11 +345,10 @@ const rows = computed(() => {
 });
 
 function sortHeader(col, label) {
-  const heading = computed(() =>
-    sortCol.get() === col
-      ? \`\${label} \${sortAsc.get() ? '↑' : '↓'}\`
-      : label
-  );
+  const heading = computed(() => {
+    const labelWithArrow = \`\${label} \${sortAsc.get() ? '↑' : '↓'}\`;
+    return sortCol.get() === col ? labelWithArrow : label;
+  });
   return t.th({
     style: { cursor: 'pointer' },
     onclick: () => {
@@ -385,10 +383,10 @@ document.body.append(
         t.code('effect'),
         ' to update its class. The initial active tab is read from the HTML itself so the page works before JavaScript runs.',
       ]),
-      panels(t, [
+      panels([
         {
           label: 'HTML',
-          content: code(t, 'html', `<nav class="tabs">
+          content: code('html', `<nav class="tabs">
   <button class="tab tab--active" data-tab="overview">Overview</button>
   <button class="tab" data-tab="install">Install</button>
   <button class="tab" data-tab="api">API</button>
@@ -399,7 +397,7 @@ document.body.append(
         },
         {
           label: 'JavaScript',
-          content: code(t, 'javascript', `import { signal, effect } from 'kensington';
+          content: code('javascript', `import { signal, effect } from 'kensington';
 
 // Read the initial active tab from the DOM so the page is valid before JS runs.
 const activeTab = signal(
@@ -435,10 +433,10 @@ document.querySelectorAll('[data-panel]').forEach(panel => {
         t.code('hidden'),
         ' property on the panel in sync as the signal changes. The pattern scales to any number of items with no shared state.',
       ]),
-      panels(t, [
+      panels([
         {
           label: 'HTML',
-          content: code(t, 'html', `<div class="accordion">
+          content: code('html', `<div class="accordion">
   <button class="accordion-toggle"
     aria-expanded="false"
     aria-controls="panel-1">What is Kensington?</button>
@@ -457,7 +455,7 @@ document.querySelectorAll('[data-panel]').forEach(panel => {
         },
         {
           label: 'JavaScript',
-          content: code(t, 'javascript', `import { signal, effect } from 'kensington';
+          content: code('javascript', `import { signal, effect } from 'kensington';
 
 document.querySelectorAll('.accordion-toggle').forEach(btn => {
   const panel = document.getElementById(btn.getAttribute('aria-controls'));
@@ -484,7 +482,7 @@ document.querySelectorAll('.accordion-toggle').forEach(btn => {
         t.code('registerComponents'),
         ' mounts it reactively. The click handler applies an optimistic update and reverts if the request fails.',
       ]),
-      code(t, 'javascript', `// components/like-button.js
+      code('javascript', `// components/like-button.js
 import { t, signal } from 'kensington';
 
 export function likeButton({ postId, likeCount, userLiked }) {
@@ -510,10 +508,10 @@ export function likeButton({ postId, likeCount, userLiked }) {
     onclick: toggle,
   }, [t.span({ ariaHidden: 'true' }, '♥'), ' ', likes]);
 }`),
-      panels(t, [
+      panels([
         {
           label: 'server.js',
-          content: code(t, 'javascript', `import { renderForHydration, t } from 'kensington';
+          content: code('javascript', `import { renderForHydration, t } from 'kensington';
 import { likeButton } from './components/like-button.js';
 
 app.get('/posts/:id', async (req, res) => {
@@ -543,7 +541,7 @@ app.get('/posts/:id', async (req, res) => {
         },
         {
           label: 'client.js',
-          content: code(t, 'javascript', `import { registerComponents } from 'kensington';
+          content: code('javascript', `import { registerComponents } from 'kensington';
 import { likeButton } from './components/like-button.js';
 
 registerComponents({ likeButton });`),
@@ -566,7 +564,7 @@ registerComponents({ likeButton });`),
         t.code('{ success: true }'),
         ' and the client navigates away.',
       ]),
-      code(t, 'javascript', `// components/registration-form.js
+      code('javascript', `// components/registration-form.js
 import { t, signal } from 'kensington';
 
 export function registrationForm() {
@@ -606,10 +604,10 @@ function formField(name, label, type, errors) {
     error.transform(e => e ? t.p({ class: 'field-error' }, e) : null),
   ]);
 }`),
-      panels(t, [
+      panels([
         {
           label: 'server.js',
-          content: code(t, 'javascript', `import { renderForHydration, t } from 'kensington';
+          content: code('javascript', `import { renderForHydration, t } from 'kensington';
 import { registrationForm } from './components/registration-form.js';
 
 app.use(express.json());
@@ -639,7 +637,7 @@ app.post('/register', async (req, res) => {
         },
         {
           label: 'client.js',
-          content: code(t, 'javascript', `import { registerComponents } from 'kensington';
+          content: code('javascript', `import { registerComponents } from 'kensington';
 import { registrationForm } from './components/registration-form.js';
 
 registerComponents({ registrationForm });`),
@@ -658,7 +656,7 @@ registerComponents({ registrationForm });`),
         t.code('persist: true'),
         ' keeps the element\'s signal effects paused rather than destroyed on DOM removal, so the element can be re-inserted and resume reactivity. The connected and disconnected callbacks re-fire on each cycle as part of that mechanism.',
       ]),
-      code(t, 'javascript', `import { t, signal } from 'kensington';
+      code('javascript', `import { t, signal } from 'kensington';
 
 function PriceTicker({ symbol }) {
   const price = signal('--');
@@ -719,7 +717,7 @@ function PriceTicker({ symbol }) {
         t.code('disconnectedCallback'),
         ' stops it again so signal updates do not fire against a detached element.',
       ]),
-      code(t, 'javascript', `import { signal, effect } from 'kensington';
+      code('javascript', `import { signal, effect } from 'kensington';
 
 class LiveClock extends HTMLElement {
   #time = signal('');
@@ -772,7 +770,7 @@ customElements.define('live-clock', LiveClock);`),
         t.code('computed'),
         ' that reads it re-runs automatically when the URL changes.',
       ]),
-      code(t, 'javascript', `import { t, signal, effect } from 'kensington';
+      code('javascript', `import { t, signal, effect } from 'kensington';
 
 function parseRoute() {
   const [path, search] = window.location.pathname.split('?');

@@ -1,7 +1,9 @@
-import { callout, code } from '../../components/ui.js';
+import { t } from 'kensington';
+
+import { code } from '../../components/ui.js';
 import { loc } from './helpers.js';
 
-export function architectureStringOutput(t) {
+export function architectureStringOutput() {
   return t.section({ id: 'serialize', class: 'stage stage-2' }, [
     t.h2('Stage 2: String Output'),
     t.p([
@@ -9,12 +11,19 @@ export function architectureStringOutput(t) {
       ' delegates to ',
       t.code('renderToString'),
       ' at ',
-      loc(t, 'esm/lib/render/serialize.js'),
+      loc('esm/lib/render/serialize.js'),
       ':',
     ]),
     t.ol({ class: 'numbered' }, [
-      t.li([t.strong('Filter invalid content'), ' via ', t.code('validateContent()'), '. Items that aren\'t a string, finite number, tag instance, or Signal are dropped and reported via showInvalid.']),
-      t.li([t.strong('Open the tag.'), ' Concatenate ', t.code("'<'"), ', the tag name, the attribute string, and ', t.code("'>'"), '.']),
+      t.li([t.strong('Filter invalid content'), ' via ', t.code('validateContent()'), `. Items that aren't a string, finite number, tag instance, or Signal are dropped and reported via showInvalid.`]),
+      t.li([
+        t.strong('Open the tag.'),
+        ' Concatenate ',
+        t.code("'<'"),
+        ', the tag name, the attribute string, and ',
+        t.code("'>'"),
+        '.',
+      ]),
       t.li([t.strong('Render the content body'), ' via one of three paths (below).']),
       t.li([t.strong('Close the tag.'), ' Concatenate ', t.code("'</'"), ', the tag name, ', t.code("'>'"), '.']),
     ]),
@@ -60,10 +69,10 @@ export function architectureStringOutput(t) {
         'The selector is ',
         t.code('contentIsShort(tag)'),
         ' at ',
-        loc(t, 'esm/lib/render/serialize.js'),
+        loc('esm/lib/render/serialize.js'),
         ':',
       ]),
-      code(t, 'javascript', `export function contentIsShort(tag) {
+      code('javascript', `export function contentIsShort(tag) {
   if (!tag.content.length) { return true; }
   if (tag.content.length > 1) { return false; }
   let [content] = tag.content;
@@ -79,7 +88,7 @@ export function architectureStringOutput(t) {
         ' calls ',
         t.code('attributesStringFromObject'),
         ' at ',
-        loc(t, 'esm/lib/render/attributes.js'),
+        loc('esm/lib/render/attributes.js'),
         '. It iterates the attribute array and serializes each pair as ',
         t.code('name="value"'),
         ' with HTML encoding. Booleans render as the bare attribute name (',

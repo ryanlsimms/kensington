@@ -100,7 +100,7 @@ export default function parseCssPropertyTypes(properties, cssTypes) {
       continue;
     }
     if (hasNumericType(syntax)) {
-      result.set(name, { value: '[Number,String]', type: 'number | string' });
+      result.set(name, { value: '[Number, String]', type: 'number | string' });
     } else {
       const keywords = extractKeywords(syntax, typeMap, propMap);
       if (keywords) {

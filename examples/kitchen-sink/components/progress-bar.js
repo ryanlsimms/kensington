@@ -33,7 +33,7 @@ export function progressBar() {
     t.svg({
       viewBox: `0 0 ${BAR_WIDTH} 12`,
       style: { width: '100%', height: '12px', display: 'block' },
-      'aria-hidden': 'true',
+      ariaHidden: 'true',
     }, [
       t.rect({ x: 0, y: 0, width: String(BAR_WIDTH), height: 12, rx: 6, class: 'progress-track' }),
       // barFill is a signal — the width attribute updates in place as pct changes.

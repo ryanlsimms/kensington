@@ -1,4 +1,4 @@
-import { effect,signal } from 'kensington';
+import { effect, signal } from 'kensington';
 
 function useFetch(urlSignal) {
   const data = signal(null);

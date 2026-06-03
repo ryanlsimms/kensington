@@ -1,4 +1,4 @@
-import { effect, isBrowser,signal } from 'kensington';
+import { effect, isBrowser, signal } from 'kensington';
 
 function useLocalStorage(key, defaultValue) {
   const stored = isBrowser ? localStorage.getItem(key) : null;

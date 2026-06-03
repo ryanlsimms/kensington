@@ -1,4 +1,4 @@
-import { effect,t } from 'kensington';
+import { effect, t } from 'kensington';
 
 import { useLocalStorage } from './use-local-storage.js';
 

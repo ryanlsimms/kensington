@@ -96,19 +96,19 @@ export function dashboard({ tasks: initialTasks }) {
         // The button is disabled whenever nothing has been saved yet.
         disabled: hasSaved.transform(v => !v),
         onclick: load,
-      }, 'Load'),
+      }, [ 'Load']),
       t.button({
         type: 'button',
         class: 'storage-btn',
         disabled: titleStopped,
         onclick: toggleTitle,
-      }, titleLive.transform(v => v ? 'Pause Title' : 'Resume Title')),
+      }, [ titleLive.transform(v => v ? 'Pause Title' : 'Resume Title')]),
       t.button({
         type: 'button',
         class: 'storage-btn',
         disabled: titleStopped,
         onclick: stopTitle,
-      }, 'Stop Title'),
+      }, [ 'Stop Title']),
     ]),
   ]);
 }

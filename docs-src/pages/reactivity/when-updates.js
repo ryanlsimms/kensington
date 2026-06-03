@@ -1,11 +1,16 @@
+import { t } from 'kensington';
+
 import { apiTable } from '../../components/table.js';
 import { code } from '../../components/ui.js';
 
-export function reactivityWhenUpdates(t) {
+export function reactivityWhenUpdates() {
   return [
     t.header([
       t.h1('Advanced Usage'),
-      t.p('The above usage may be enough for many projects, but if you are building a more complex app, you may need these tools.'),
+      t.p([
+        'The above usage may be enough for many projects, ',
+        'but if you are building a more complex app, you may need these tools.',
+      ]),
     ]),
 
     t.section({ id: 'when-updates-fire' }, [
@@ -17,10 +22,26 @@ export function reactivityWhenUpdates(t) {
         t.code('Object.is'),
         '), not deep.',
       ]),
-      apiTable(t, ['Value type', 'What "differs" means'], [
+      apiTable(['Value type', 'What "differs" means'], [
         [
-          [t.code('string'), ', ', t.code('number'), ', ', t.code('boolean'), ', ', t.code('null'), ', ', t.code('undefined')],
-          ['Different value. ', t.code('signal.set(3)'), ' when the current value is ', t.code('3'), ' is a no-op.'],
+          [
+            t.code('string'),
+            ', ',
+            t.code('number'),
+            ', ',
+            t.code('boolean'),
+            ', ',
+            t.code('null'),
+            ', ',
+            t.code('undefined'),
+          ],
+          [
+            'Different value. ',
+            t.code('signal.set(3)'),
+            ' when the current value is ',
+            t.code('3'),
+            ' is a no-op.',
+          ],
         ],
         [
           [t.code('Array'), ', ', t.code('Object'), ', anything else'],
@@ -31,7 +52,7 @@ export function reactivityWhenUpdates(t) {
 
       t.h3({ id: 'immutable-updates' }, 'Immutable update patterns'),
       t.p('The same shapes work for any reactive library and all have built-in support in modern JavaScript.'),
-      code(t, 'javascript', `// Array: replace one item by id, keep the others
+      code('javascript', `// Array: replace one item by id, keep the others
 items.set(prev => prev.map(it => it.id === 5 ? { ...it, done: true } : it));
 
 // Array: add an item
@@ -55,7 +76,7 @@ state.set(prev => ({
       ]),
 
       t.h3({ id: 'what-does-not-trigger' }, ['What does ', t.em('not'), ' trigger an update']),
-      code(t, 'javascript', `const items = signal([{ id: 1, label: 'a' }, { id: 2, label: 'b' }]);
+      code('javascript', `const items = signal([{ id: 1, label: 'a' }, { id: 2, label: 'b' }]);
 
 // 1. Mutating an element of the array. No update.
 items.get()[0].label = 'changed';
@@ -97,7 +118,7 @@ items.set(arr);                       // no update`),
         t.code('Object.assign'),
         ' are particularly easy to reach for because they look like they "update" the value. They do, but the signal doesn\'t know. The non-mutating forms work as expected:',
       ]),
-      code(t, 'javascript', `// Remove an item: filter to a new array
+      code('javascript', `// Remove an item: filter to a new array
 items.set(prev => prev.filter((_, i) => i !== 0));
 
 // Add an item: spread into a new array
@@ -113,7 +134,7 @@ items.set(prev => prev.map(it =>
 
       t.h3({ id: 'when-the-dom-updates' }, 'When the DOM actually updates'),
       t.p('Once a signal fires, what happens to the DOM depends on where the signal is used.'),
-      apiTable(t, ['Use site', 'What updates'], [
+      apiTable(['Use site', 'What updates'], [
         [
           [t.code('t.div(signal)'), ' (signal as content)'],
           'The text node (or the matching set of child nodes for an array signal) is patched in place. Surrounding content is untouched.',
@@ -124,11 +145,21 @@ items.set(prev => prev.map(it =>
         ],
         [
           [t.code('t.input({ prop: { value: signal } })'), ' (signal as DOM property)'],
-          ['Just that property. ', t.code('element[prop] = value'), ' is called. Required for things like ', t.code('input.value'), ' after the user has typed into the field.'],
+          [
+            'Just that property. ',
+            t.code('element[prop] = value'),
+            ' is called. Required for things like ',
+            t.code('input.value'),
+            ' after the user has typed into the field.',
+          ],
         ],
         [
           [t.code('effect(() => ...)'), ' inside'],
-          ['The effect re-runs. Multiple ', t.code('.set()'), ' calls in the same synchronous turn coalesce into a single re-run via microtask batching.'],
+          [
+            'The effect re-runs. Multiple ',
+            t.code('.set()'),
+            ' calls in the same synchronous turn coalesce into a single re-run via microtask batching.',
+          ],
         ],
         [
           [t.code('computed(() => ...)'), ' inside'],
@@ -137,8 +168,11 @@ items.set(prev => prev.map(it =>
       ]),
 
       t.h3({ id: 'per-row-signals' }, 'Per-row signals for fine-grained updates'),
-      t.p('For lists where individual rows change often, store a signal on each item rather than reactively re-rendering the entire array.'),
-      code(t, 'javascript', `// The whole \`items\` array doesn't need to re-render when one row's done flag flips.
+      t.p([
+        'For lists where individual rows change often, store a signal on each item ',
+        'rather than reactively re-rendering the entire array.',
+      ]),
+      code('javascript', `// The whole \`items\` array doesn't need to re-render when one row's done flag flips.
 const items = signal([
   { id: 1, label: 'Buy milk', done: signal(false) },
   { id: 2, label: 'Walk dog', done: signal(true)  },
@@ -160,7 +194,7 @@ const list = t.ul(items.transform(arr => arr.map(row))).toElement();
 // class attribute is rewritten. Adding or removing a row still uses items.set() with a
 // fresh array.
 items.get()[0].done.set(true);`),
-      t.p('The keyed reconciler is built for the array-set path (adding, removing, reordering rows). Per-row signals are the right tool when only a row\'s contents change.'),
+      t.p(`The keyed reconciler is built for the array-set path (adding, removing, reordering rows). Per-row signals are the right tool when only a row's contents change.`),
     ]),
   ];
 }

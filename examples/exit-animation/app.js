@@ -1,4 +1,4 @@
-import { signal,t } from 'kensington';
+import { signal, t } from 'kensington';
 
 let nextId = 4;
 const items = signal([
@@ -8,7 +8,7 @@ const items = signal([
 ]);
 
 function item({ id, name }) {
-  const tag = t.li({ 'data-key': id, class: 'item' }, [
+  const tag = t.li({ dataKey: id, class: 'item' }, [
     t.span({ class: 'item-name' }, name),
     t.button({
       type: 'button',
@@ -21,7 +21,7 @@ function item({ id, name }) {
           items.set(list => list.filter(i => i.id !== id));
         }, { once: true });
       },
-    }, 'Remove'),
+    }, [ 'Remove']),
   ]);
   return tag;
 }
@@ -47,7 +47,7 @@ const app = t.div([
         el.value = '';
         el.focus();
       },
-    }, 'Add'),
+    }, [ 'Add']),
   ]),
 ]);
 

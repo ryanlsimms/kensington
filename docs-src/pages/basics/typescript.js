@@ -1,9 +1,11 @@
+import { t } from 'kensington';
+
 import { ideMock } from '../../components/ui.js';
 
-export function basicsTypescript(t) {
+export function basicsTypescript() {
   return t.section({ id: 'typescript' }, [
     t.h2('TypeScript'),
-    ideMock(t, {
+    ideMock({
       filename: 'index.ts',
       lines: [
         `<span>t</span><span>.</span><span class="ide-t-fn">input</span><span>({</span> <span class="ide-t-prop">formenctype</span><span>:</span> <span class="ide-squiggly"><span class="ide-t-str">'text'</span></span> <span>})</span>`,
@@ -43,7 +45,7 @@ export function basicsTypescript(t) {
       t.code('ContentTag'),
       ' still works.',
     ]),
-    ideMock(t, {
+    ideMock({
       filename: 'index.ts',
       lines: [
         `<span>t</span><span>.</span><span class="ide-t-fn">tr</span><span>(</span><span>t</span><span>.</span><span class="ide-t-fn">td</span><span>(</span><span class="ide-t-str">'Name'</span><span>))</span>`,
@@ -52,8 +54,8 @@ export function basicsTypescript(t) {
       popup: {
         type: 'error',
         code: 'TS2345',
-        message: `Argument of type <span class="ide-ts-type">DivTag</span> is not assignable to parameter of type`,
-        typeContent: `<span class="ide-ts-type">TdTag</span> | <span class="ide-ts-type">ThTag</span>`,
+        message: 'Argument of type <span class="ide-ts-type">DivTag</span> is not assignable to parameter of type',
+        typeContent: '<span class="ide-ts-type">TdTag</span> | <span class="ide-ts-type">ThTag</span>',
       },
     }),
     t.p([

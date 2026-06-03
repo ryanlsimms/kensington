@@ -1,7 +1,9 @@
-import { callout, code } from '../../components/ui.js';
+import { t } from 'kensington';
+
+import { callout } from '../../components/ui.js';
 import { loc, mermaid } from './helpers.js';
 
-export function architectureRemoval(t) {
+export function architectureRemoval() {
   return [
     t.section({ id: 'removal', class: 'stage stage-5' }, [
       t.h2('Removal Flow'),
@@ -14,7 +16,7 @@ export function architectureRemoval(t) {
         t.code('parent.replaceChildren(...)'),
         ', etc. The browser fires a mutation record. The shared MutationObserver picks it up.',
       ]),
-      mermaid(t, `sequenceDiagram
+      mermaid(`sequenceDiagram
   participant U as User code
   participant B as Browser
   participant Mo as MutationObserver
@@ -33,20 +35,38 @@ export function architectureRemoval(t) {
   L->>S: eff.stop() or eff.pause()
   Note over S: Drains _cleanups, removes from subscribers`),
       t.ol({ class: 'numbered' }, [
-        t.li([t.strong('Browser fires the MutationRecord.'), ' removedNodes contains the directly-removed node. The tracked element may be that node or a descendant.']),
-        t.li([t.strong('stopRemoved(node).'), ' Calls visit(node, fn) which finds the tracked entry for the node or any tracked descendant.']),
-        t.li([t.strong('clearStop(entry, el).'), ' Deletes entry.stop. If not persisted, also deletes connect and persist. If both halves are gone, removes the entry entirely.']),
-        t.li([t.strong('The captured stop function runs.'), ' This is the chained closure built via trackForStop and every addOnStop.']),
-        t.li([t.strong('For each signal effect: eff.pause() or eff.stop().'), ' Driven by the persist flag. pause() drains _cleanups (unsubscribing from each Signal); stop() does the same and sets destroyed.']),
+        t.li([
+          t.strong('Browser fires the MutationRecord.'),
+          ' removedNodes contains the directly-removed node. ',
+          'The tracked element may be that node or a descendant.',
+        ]),
+        t.li([
+          t.strong('stopRemoved(node).'),
+          ' Calls visit(node, fn) which finds the tracked entry for the node or any tracked descendant.',
+        ]),
+        t.li([
+          t.strong('clearStop(entry, el).'),
+          ' Deletes entry.stop. If not persisted, also deletes connect and persist. ',
+          'If both halves are gone, removes the entry entirely.',
+        ]),
+        t.li([
+          t.strong('The captured stop function runs.'),
+          ' This is the chained closure built via trackForStop and every addOnStop.',
+        ]),
+        t.li([
+          t.strong('For each signal effect: eff.pause() or eff.stop().'),
+          ' Driven by the persist flag. ',
+          'pause() drains _cleanups (unsubscribing from each Signal); stop() does the same and sets destroyed.',
+        ]),
         t.li([t.strong('onCleared runs.'), ' Resets the tag\'s #domElement cache to null.']),
         t.li([t.strong('Each user disconnect callback runs.'), ' In registration order.']),
       ]),
-      callout(t, 'warn', 'Removal vs stopTracked()',
+      callout('warn', 'Removal vs stopTracked()',
         t.p([
           'The removal path above is triggered automatically by the MutationObserver. ',
           t.code('stopTracked(el)'),
           ' at ',
-          loc(t, 'esm/lib/reactive/dom-tracker.js'),
+          loc('esm/lib/reactive/dom-tracker.js'),
           ' does the same teardown synchronously without waiting for a mutation record. The reconciler calls this on discarded fresh nodes before returning to the caller.',
         ]),
       ),
@@ -68,8 +88,11 @@ export function architectureRemoval(t) {
         t.code('#domElement'),
         ' restores when the element returns. The disconnect-callback chain rebuilds so it fires on every cycle, not just the first.',
       ]),
-      t.p('This is the pattern for elements that move between containers without losing identity: tabs that swap, modals that hide and reshow, custom elements whose connectedCallback fires multiple times.'),
-      mermaid(t, `sequenceDiagram
+      t.p([
+        'This is the pattern for elements that move between containers without losing identity: ',
+        'tabs that swap, modals that hide and reshow, custom elements whose connectedCallback fires multiple times.',
+      ]),
+      mermaid(`sequenceDiagram
   participant U as User code
   participant E as Element
   participant Mo as MutationObserver
@@ -99,10 +122,25 @@ export function architectureRemoval(t) {
 
       t.h3('The persist invariants'),
       t.ol({ class: 'numbered' }, [
-        t.li([t.strong('Pause, don\'t stop.'), ' Every signal effect is captured in resumables. On removal, pauseOrStop picks pause(). The effect closure still exists, just unsubscribed.']),
-        t.li([t.strong('Disconnect callbacks re-arm.'), ' reFireAndRegister installs a fresh stop chain after each removal so the next removal fires them again.']),
-        t.li([t.strong('Reconnect resumes.'), ' eff.resume() calls run(), which re-tracks subscriptions and applies the current signal value. Any updates that happened during the gap are visible immediately.']),
-        t.li([t.strong('Resume wires its own pause.'), ' Right after eff.resume(), the lifecycle adds () => eff.pause() to the new stop chain. The cycle continues.']),
+        t.li([
+          t.strong("Pause, don't stop."),
+          ' Every signal effect is captured in resumables. On removal, pauseOrStop picks pause(). ',
+          'The effect closure still exists, just unsubscribed.',
+        ]),
+        t.li([
+          t.strong('Disconnect callbacks re-arm.'),
+          ' reFireAndRegister installs a fresh stop chain after each removal so the next removal fires them again.',
+        ]),
+        t.li([
+          t.strong('Reconnect resumes.'),
+          ' eff.resume() calls run(), which re-tracks subscriptions and applies the current signal value. ',
+          'Any updates that happened during the gap are visible immediately.',
+        ]),
+        t.li([
+          t.strong('Resume wires its own pause.'),
+          ' Right after eff.resume(), the lifecycle adds () => eff.pause() to the new stop chain. ',
+          'The cycle continues.',
+        ]),
         t.li([t.strong('Connect callbacks fire every cycle.'), ' On first insertion and on every reconnect.']),
       ]),
 
@@ -116,13 +154,25 @@ export function architectureRemoval(t) {
         t.tbody([
           t.tr([t.td('On removal: effects'), t.td('eff.stop(). Permanent'), t.td('eff.pause(). Temporary')]),
           t.tr([t.td('On removal: connect entry'), t.td('Deleted from entries map'), t.td('Survives in entries map')]),
-          t.tr([t.td('On removal: disconnect callbacks'), t.td('Fire once total'), t.td('Fire on every removal cycle')]),
+          t.tr([
+            t.td('On removal: disconnect callbacks'),
+            t.td('Fire once total'),
+            t.td('Fire on every removal cycle'),
+          ]),
           t.tr([t.td('On reinsert: connect callbacks'), t.td('Do not fire (entry gone)'), t.td('Fire every cycle')]),
-          t.tr([t.td('On reinsert: signal state'), t.td('Subscriptions gone; tag must be rebuilt'), t.td('eff.resume() reconnects with current value')]),
-          t.tr([t.td('Memory footprint'), t.td('Lower. resumables is null'), t.td('Higher. Effects and chain survive')]),
+          t.tr([
+            t.td('On reinsert: signal state'),
+            t.td('Subscriptions gone; tag must be rebuilt'),
+            t.td('eff.resume() reconnects with current value'),
+          ]),
+          t.tr([
+            t.td('Memory footprint'),
+            t.td('Lower. resumables is null'),
+            t.td('Higher. Effects and chain survive'),
+          ]),
         ]),
       ]),
-      callout(t, 'key', 'When NOT to use persist',
+      callout('key', 'When NOT to use persist',
         t.p([
           'If connectedCallback creates a fresh element each time (the common Web Components pattern), persist is wrong. The old paused effects become orphaned when the new element replaces them. Use ',
           t.code('persist: true'),

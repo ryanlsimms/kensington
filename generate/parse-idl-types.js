@@ -27,7 +27,7 @@ export default function parseIdlTypes(idlDefs) {
         // eslint-disable-next-line no-template-curly-in-string
         result.set(attrName, { value: 'Number', type: 'number | `${number}`' });
       } else if (IDL_FLOAT.has(idlType)) {
-        result.set(attrName, { value: '[Number,String]', type: 'number | string' });
+        result.set(attrName, { value: '[Number, String]', type: 'number | string' });
       }
     }
   }

@@ -1,8 +1,10 @@
+import { t } from 'kensington';
+
 import { headerGithubLink } from '../../components/ui.js';
 
-export function reactivityIntro(t) {
+export function reactivityIntro() {
   return t.header([
-    headerGithubLink(t),
+    headerGithubLink(),
     t.h1('Reactive data'),
     t.p([
       'Pass a ',
