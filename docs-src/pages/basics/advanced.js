@@ -13,8 +13,8 @@ export function basicsAdvanced() {
       ]),
     ]),
 
-    t.section({ id: 'advanced' }, [
-      t.h2({ id: 'options' }, 'Attributes & options'),
+    t.section({ id: 'options' }, [
+      t.h2('Attributes & options'),
       t.table({ class: 'option-table' }, [
         t.tbody([
           t.tr([
@@ -115,7 +115,10 @@ export function basicsAdvanced() {
         ]),
       ]),
 
-      t.h2({ id: 'dev-vs-prod' }, 'Dev vs production'),
+    ]),
+
+    t.section({ id: 'dev-vs-prod' }, [
+      t.h2('Dev vs production'),
       t.p([
         'Two settings are worth flipping between local development and production. ',
         'Use them together to catch attribute typos and bad values during development ',
@@ -202,7 +205,10 @@ export const t = new Kensington({
         ' in the examples page for equivalent setups.',
       ]),
 
-      t.h2({ id: 'constructor' }, 'Constructor options'),
+    ]),
+
+    t.section({ id: 'constructor' }, [
+      t.h2('Constructor options'),
       code('javascript', `import Kensington from 'kensington';
 
 const t = new Kensington({
@@ -234,7 +240,10 @@ const t = new Kensington({
 t.svg({ xmlns: 'http://www.w3.org/2000/svg', 'xmlns:xlink': 'http://www.w3.org/1999/xlink' });`),
       ]),
 
-      t.h2({ id: 'validation' }, 'Validation'),
+    ]),
+
+    t.section({ id: 'validation' }, [
+      t.h2('Validation'),
       apiTable(['Level', 'Behavior'], [
         [t.code("'off'"), ['No validation. Best for production. ', t.strong('Default.')]],
         [t.code("'warn'"), ['Logs via ', t.code('logger'), ' (default ', t.code('console.log'), '). Does not throw.']],
@@ -277,7 +286,10 @@ t.div({ unknownAttr: 'x' });    // throws: not a known attribute
 t.input({ type: 'checkbox' });  // fine
 t.input({ type: 'notatype' });  // throws: not an allowed value`),
 
-      t.h2({ id: 'custom-elements' }, 'Custom elements'),
+    ]),
+
+    t.section({ id: 'custom-elements' }, [
+      t.h2('Custom elements'),
       code('javascript', `import Kensington from 'kensington';
 
 class MyEngine extends Kensington {
@@ -362,7 +374,10 @@ t.div({ hxBoost: 'true' });  // now valid`),
         exLink('?page=examples#alpine', 'Alpine.js example'),
       ]),
 
-      t.h2({ id: 'persist' }, 'Persist effects'),
+    ]),
+
+    t.section({ id: 'persist' }, [
+      t.h2('Persist effects'),
       t.p([
         'By default, ',
         t.code('.toElement()'),
@@ -386,7 +401,10 @@ const item = t.li({ dataKey: task.id, class: statusClass, persist: true }, [
         ' is removed and re-inserted into the DOM.',
       ]),
 
-      t.h2({ id: 'raw-html' }, 'Raw HTML & comments'),
+    ]),
+
+    t.section({ id: 'raw-html' }, [
+      t.h2('Raw HTML & comments'),
       code('javascript', `t.literal('<li>verbatim, HTML-encoded</li>');    // <script> tags flagged via validationLevel
 t.unsafeLiteral('<li>trusted HTML, no encoding</li>');
 
