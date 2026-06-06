@@ -286,7 +286,7 @@ export function architectureSignals() {
           t.code('console.warn'),
           ' via filterStack (see ',
           loc('esm/lib/util/filter-stack.js'),
-          '). A new signal is created on every re-run; the reconciler handles this by replacing the DOM node so the fresh signal\'s effect drives the new live element, and ',
+          '). A new signal is created on every re-run. The reconciler handles this by replacing the DOM node so the fresh signal\'s effect drives the new live element, and ',
           loc('esm/lib/reactive/preserve-state.js'),
           ' copies focus, scroll, input values, and selection across the swap. Local signal state still resets to the initial value. Pass a stable key as the second argument (',
           t.code('signal(initial, key)'),
@@ -358,11 +358,107 @@ if (registry !== undefined) {
         t.code('signalRefMismatch'),
         ' returns false for the keyed-signal position, so the reconciler patches in place rather than replacing.',
       ]),
+      t.p([
+        'The registry uses a plain ',
+        t.code('Map'),
+        ' for the per-key lookup and a plain ',
+        t.code('Set'),
+        ' for accessed-key tracking, so the key can be any value with ',
+        t.code('SameValueZero'),
+        ' identity. String, number, symbol, or object reference. Object keys work when the same reference is passed across outer re-runs (e.g. mutating items in place). Immutable update patterns that clone the item object on every change break the match and lose state, so ',
+        t.code('item.id'),
+        ' is the safer default. The TypeScript signature reflects this with the exported alias ',
+        t.code('SignalKey = string | number | object | symbol'),
+        '.',
+      ]),
       callout('note', 'sleep vs stop',
         t.p([
           'When the owning computed is permanently stopped (via ',
           t.code('.stop()'),
           '), the registry is torn down: every keyed signal is stopped and the WeakMap entry is deleted. When the computed merely sleeps (its last subscriber went away via auto-dispose), the registry is preserved. If the computed wakes later, the same keys return the same signal instances.',
+        ]),
+      ),
+    ]),
+
+    t.section({ id: 'computed-keyed' }, [
+      t.h3('Keyed computeds'),
+      t.p([
+        'A second argument to ',
+        t.code('computed()'),
+        ' works the same way as for ',
+        t.code('signal()'),
+        ': it scopes the inner computed to the innermost running ',
+        t.code('computed'),
+        ' and returns the same instance for the same key across outer re-runs. The implementation stores a separate ',
+        t.code('keyedComputedRegistries'),
+        ' WeakMap alongside ',
+        t.code('keyedRegistries'),
+        '.',
+      ]),
+      t.p([
+        'The fn closure cannot be stored in a ',
+        t.code('Signal'),
+        ' directly because ',
+        t.code('Signal.set()'),
+        ' treats function-type arguments as updater functions. Instead, the registry entry holds a mutable ',
+        t.code('fnWrapper'),
+        ' object and a plain numeric ',
+        t.code('versionSig'),
+        ' counter. The inner computed closes over both:',
+      ]),
+      code('javascript', `const versionSig = new Signal(0);
+const fnWrapper  = { fn };
+const inner = computed(() => { versionSig.get(); return fnWrapper.fn(); });`),
+      t.p([
+        'On each outer re-run, if the fn reference changed, the wrapper is updated and the version counter is incremented. The increment triggers the inner computed to re-run with the new fn:',
+      ]),
+      code('javascript', `if (existing.fnWrapper.fn !== fn) {
+  existing.fnWrapper.fn = fn;
+  derivedWriteDepth++;
+  try {
+    existing.versionSig.set(v => v + 1);
+  } finally {
+    derivedWriteDepth--;
+  }
+}
+return existing.inner;`),
+      t.p([
+        'If the inner computed is sleeping when ',
+        t.code('versionSig.set()'),
+        ' is called, there are no subscribers to notify. The increment is a no-op at that moment. When the outer then calls ',
+        t.code('inner.get()'),
+        ', the wake path re-runs the inner\'s ',
+        t.code('update()'),
+        ' function, which reads ',
+        t.code('fnWrapper.fn'),
+        '. Already updated. And produces the correct value.',
+      ]),
+      t.p([
+        'A ',
+        t.code('keyedComputedOwnerSignals'),
+        ' WeakMap records the owner outer computed for each keyed inner computed. ',
+        t.code('Signal.get()'),
+        ' checks this map when adding a subscriber: if the subscriber is a user-land effect or computed that is not the owner, a throttled warning fires. DOM-binding effects created via ',
+        t.code('_internalEffect()'),
+        ' carry an ',
+        t.code('_isInternal'),
+        ' flag and are skipped. Their lifetime is tied to a DOM node that is part of the owner\'s own render cycle, so a key drop and the corresponding DOM removal happen together. The warning only fires for true escapes: user code capturing a keyed instance in a long-lived effect or computed.',
+      ]),
+      t.p([
+        t.code('Signal.prototype.transform'),
+        ' is a thin wrapper that forwards its optional key to ',
+        t.code('computed'),
+        ', so ',
+        t.code('signal.transform(fn, key)'),
+        ' uses the same keyed-computed registry and lifecycle.',
+      ]),
+      callout('note', 'sleep vs stop',
+        t.p([
+          'Same rule as keyed signals: permanent ',
+          t.code('.stop()'),
+          ' on the outer tears down the ',
+          t.code('keyedComputedRegistries'),
+          ' entry and stops every inner computed and version signal. Sleep (auto-dispose) preserves the registry so the same instances are returned when the outer wakes.',
         ]),
       ),
     ]),

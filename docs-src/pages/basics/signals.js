@@ -36,8 +36,8 @@ document.body.append(
       t.div({ class: 'card accent' }, [
         t.div({ class: 'card-title' }, t.code('signal(value)')),
         t.div({ class: 'card-body' }, [
-          'Creates a reactive value. Pass it anywhere a static value is accepted — ',
-          'content, attributes, or DOM properties — and the DOM updates automatically when the value changes.',
+          'Creates a reactive value. Pass it anywhere a static value is accepted . ',
+          'content, attributes, or DOM properties. And the DOM updates automatically when the value changes.',
         ]),
       ]),
       t.div({ class: 'card accent' }, [
@@ -51,7 +51,7 @@ document.body.append(
         t.div({ class: 'card-title' }, t.code('effect(fn)')),
         t.div({ class: 'card-body' }, [
           'Runs a callback whenever the signals it reads change. ',
-          'Use it for side effects outside the DOM — page title, localStorage, analytics, ',
+          'Use it for side effects outside the DOM. Page title, localStorage, analytics, ',
           'or any imperative update.',
         ]),
       ]),

@@ -156,7 +156,7 @@ document.body.append(
   t.div([
     t.h2('Shop'),
     t.ul(products.map(p =>
-      t.li([p.name, ' — ', t.button({ type: 'button', onclick: () => dispatch({ type: 'add', item: p }) }, 'Add')])
+      t.li([p.name, ' . ', t.button({ type: 'button', onclick: () => dispatch({ type: 'add', item: p }) }, 'Add')])
     )),
     t.h2('Cart'),
     t.ul(state.transform(s =>
@@ -181,7 +181,7 @@ document.body.append(
         t.code('localStorage'),
         ' and writes back on every change. The ',
         t.code('effect'),
-        ' handles the sync; the rest of your code just reads and sets the signal normally. Guard the initial read with ',
+        ' handles the sync. The rest of your code just reads and sets the signal normally. Guard the initial read with ',
         t.code('isBrowser'),
         ' so server-rendered components do not throw.',
       ]),
@@ -312,7 +312,7 @@ document.body.append(
       t.span([' User ', userId, ' ']),
       t.button({ type: 'button', onclick: () => userId.set(v => v + 1) }, 'Next'),
     ]),
-    // signal content can be a tag — switches between loading, error, and data views reactively
+    // signal content can be a tag. Switches between loading, error, and data views reactively
     loading.transform(l => {
       if (l) { return t.p('Loading...'); }
       const err = error.get();

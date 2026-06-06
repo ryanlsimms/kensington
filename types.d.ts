@@ -78,18 +78,27 @@ export class TrTag extends ContentTag { private readonly _k: 'tr' }
 export class UlTag extends ContentTag { private readonly _k: 'ul' }
 
 /**
+ * Key used to scope a `signal()`, `computed()`, or `.transform()` call to its surrounding
+ * computed. Any value with SameValueZero identity works. Strings and numbers are the common
+ * choice (e.g. `item.id`), but symbols and object references are accepted. Object keys require
+ * the same reference across outer re-runs; immutable-update patterns that clone the item lose
+ * the match and reset the keyed instance.
+ */
+export type SignalKey = string | number | object | symbol;
+
+/**
  * Read-only view of a signal. Returned by `computed()` and `.transform()`.
- * Pass as content or an attribute value — the DOM updates automatically when the value changes.
+ * Pass as content or an attribute value. The DOM updates automatically when the value changes.
  */
 export interface ReadonlySignal<T> {
   get(): T;
   readonly value: T;
   stop(): void;
-  transform<U>(fn: (value: T) => U): ReadonlySignal<U>;
+  transform<U>(fn: (value: T) => U, key?: SignalKey): ReadonlySignal<U>;
 }
 
 /**
- * Returned by `signal()`. Pass as content or an attribute value — the DOM updates automatically
+ * Returned by `signal()`. Pass as content or an attribute value. The DOM updates automatically
  * when the signal changes. In `.toString()` the current value is used as a snapshot.
  * Use `signal()` to create instances; do not construct directly.
  */
@@ -99,7 +108,7 @@ export class Signal<T> implements ReadonlySignal<T> {
   readonly value: T;
   set(valueOrFn: T | ((current: T) => T)): void;
   stop(): void;
-  transform<U>(fn: (value: T) => U): ReadonlySignal<U>;
+  transform<U>(fn: (value: T) => U, key?: SignalKey): ReadonlySignal<U>;
 }
 
 export type Reactive<T> = T | ReadonlySignal<T>;
@@ -4369,7 +4378,7 @@ export default class Kensington {
   literal(str: string | ReadonlySignal<string>): LiteralTag
 
   /**
-   * Like `.literal()` but skips HTML encoding — use only for trusted HTML.
+   * Like `.literal()` but skips HTML encoding. Use only for trusted HTML.
    */
   unsafeLiteral(str: string | ReadonlySignal<string>): LiteralTag
 
@@ -4792,7 +4801,7 @@ export default class Kensington {
 export const t: InstanceType<typeof Kensington>;
 
 /**
- * Creates a reactive signal. Pass as content or an attribute value — the DOM updates live.
+ * Creates a reactive signal. Pass as content or an attribute value. The DOM updates live.
  * When called inside a `computed` callback with a stable `key`, returns the same signal
  * instance across re-runs (scoped to that computed). Use this for local state inside
  * list mappings. Pass the item's id as the key.
@@ -4807,7 +4816,7 @@ export const t: InstanceType<typeof Kensington>;
  *   return t.li({ dataKey: item.id, class: highlight }, item.label);
  * }));
  */
-export function signal<T>(initial: T, key?: string | number): Signal<T>;
+export function signal<T>(initial: T, key?: SignalKey): Signal<T>;
 
 /**
  * Creates a read-only signal derived from other signals. Re-runs automatically whenever
@@ -4816,12 +4825,12 @@ export function signal<T>(initial: T, key?: string | number): Signal<T>;
  * const active = signal(true);
  * const cls = computed(() => active.get() ? 'btn-primary' : 'btn-outline');
  */
-export function computed<T>(fn: () => T): ReadonlySignal<T>;
+export function computed<T>(fn: () => T, key?: SignalKey): ReadonlySignal<T>;
 
 /**
  * Runs `fn` immediately and re-runs it whenever any signal read via `.get()` inside changes.
  * Use for side effects: syncing to localStorage, updating the URL, fetching data, etc.
- * Returns a handle with a `stop()` method — call it to unsubscribe and prevent further runs.
+ * Returns a handle with a `stop()` method. Call it to unsubscribe and prevent further runs.
  * @example
  * const e = effect(() => {
  *   localStorage.setItem('sort', sortKey.get());

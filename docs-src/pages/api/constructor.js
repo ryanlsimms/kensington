@@ -31,7 +31,7 @@ export function apiConstructor() {
       ],
       [
         t.code('additionalNamespaces'),
-        '—',
+        '.',
         [
           'Allow extra attribute prefixes on all elements, e.g. ',
           t.code("'hx'"),
@@ -44,7 +44,7 @@ export function apiConstructor() {
       ],
       [
         t.code('additionalGlobalAttributes'),
-        '—',
+        '.',
         ['Allow specific extra attributes on all elements. Same validator format as ', t.code('createCustomTag'), '.'],
       ],
       [

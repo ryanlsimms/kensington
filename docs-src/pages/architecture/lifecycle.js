@@ -238,7 +238,7 @@ const contentTracked = new WeakSet();`),
   const own = entries.get(node);
   if (own !== undefined) {
     fn(node, own);
-    // Don't return — also process tracked child elements so that effects on
+    // Don't return. Also process tracked child elements so that effects on
     // descendants are paused or stopped together with the parent.
   }
   if (node.nodeType !== 1) { return; }

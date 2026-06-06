@@ -248,7 +248,7 @@ return element;`),
           t.strong('connectCallbacks.'),
           ' User-registered via ',
           t.code('addConnectedCallback'),
-          '. Fire on every insertion when persist is true; once otherwise.',
+          '. Fire on every insertion when persist is true. Once otherwise.',
         ]),
         t.li([
           t.strong('disconnectCallbacks.'),

@@ -26,7 +26,7 @@ export function reactivityLifecycle() {
     code('javascript', `const panel = t.div({ class: 'panel' }, content);
 
 panel.addConnectedCallback(function(el) {
-  // el (and \`this\`) is the DOM element — layout is readable here
+  // el (and \`this\`) is the DOM element. Layout is readable here
   const { width } = el.getBoundingClientRect();
   el.dataset.initialWidth = width;
 });

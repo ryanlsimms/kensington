@@ -63,7 +63,7 @@ const e = effect(() => {
         t.code('effect()'),
         ' is a no-op during server-side rendering, so browser globals inside it are safe. ',
         t.code('computed()'),
-        ' is not suppressed — it runs synchronously on the server. Guard browser-only ',
+        ' is not suppressed. It runs synchronously on the server. Guard browser-only ',
         t.code('computed()'),
         ' values with ',
         t.code('isBrowser'),

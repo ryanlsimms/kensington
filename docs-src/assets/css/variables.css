@@ -16,7 +16,7 @@
   --color-heading: hsl(0, 0%, 3%);
   --color-badge-bg: hsl(39, 14%, 88%);
   --color-table-head: hsl(41, 12%, 85%);
-  --color-inline-code-bg: hsla(30, 50%, 8%, 0.07);
+  --color-inline-code-bg: hsl(40, 18%, 92%);
   --color-toolbar: hsl(41, 12%, 85%);
   --color-tab-active: hsl(0, 0%, 100%);
   --color-tab-inactive: hsl(42, 9%, 78%);
@@ -152,7 +152,7 @@
     --color-heading: hsl(0, 0%, 91%);
     --color-badge-bg: hsl(0, 0%, 13%);
     --color-table-head: hsl(0, 0%, 10%);
-    --color-inline-code-bg: hsla(0, 0%, 100%, 0.07);
+    --color-inline-code-bg: hsl(0, 0%, 15%);
     --color-toolbar: hsl(0, 0%, 10%);
     --color-tab-active: hsl(0, 0%, 13%);
     --color-tab-inactive: hsl(0, 0%, 7%);

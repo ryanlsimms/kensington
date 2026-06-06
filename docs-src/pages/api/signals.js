@@ -4,7 +4,7 @@ import { apiTable } from '../../components/table.js';
 import { code } from '../../components/ui.js';
 
 export function apiSignals() {
-  return t.section({ id: 'signals' }, [
+  return t.section({ id: 'api-signals' }, [
     t.h2('Signals'),
     t.p([
       'Signals are reactive values. Read them with ',
@@ -20,13 +20,20 @@ export function apiSignals() {
       ' wires up live DOM updates automatically.',
     ]),
 
-    t.h3({ id: 'signal' }, 'signal'),
-    code('typescript', `import { t, signal } from 'kensington';
+    t.h3({ id: 'api-signal' }, 'signal'),
+    code('typescript', `import { signal } from 'kensington';
 
-signal<T>(initialValue: T): Signal<T>`),
+signal<T>(initialValue: T): Signal<T>
+signal<T>(initialValue: T, key: SignalKey): Signal<T>  // keyed form`),
     t.p([
       'Creates a writable signal holding ',
       t.code('initialValue'),
+      '. Inside a ',
+      t.code('computed'),
+      ' callback, pass a stable ',
+      t.code('key'),
+      ' to scope the signal to the surrounding computed. See ',
+      t.a({ href: '#api-keyed-forms' }, 'Keyed forms inside a computed'),
       '.',
     ]),
 
@@ -68,13 +75,19 @@ signal<T>(initialValue: T): Signal<T>`),
         ],
       ],
       [
-        t.code('.transform<U>(fn: (value: T) => U): Signal<U>'),
+        t.code('.transform<U>(fn, key?): Signal<U>'),
         [
           'Returns a new read-only derived signal equivalent to ',
-          t.code('computed(() => fn(this.get()))'),
+          t.code('computed(() => fn(this.get()), key)'),
           '. Tracks all signals read inside ',
           t.code('fn'),
-          ', not just the source.',
+          ', not just the source. When called inside a ',
+          t.code('computed'),
+          ' callback with a stable ',
+          t.code('key'),
+          ', returns the same inner instance across outer re-runs. Same lifecycle as ',
+          t.code('computed(fn, key)'),
+          '.',
         ],
       ],
       [
@@ -105,10 +118,11 @@ signal<T>(initialValue: T): Signal<T>`),
       ],
     ]),
 
-    t.h3({ id: 'computed' }, 'computed'),
+    t.h3({ id: 'api-computed' }, 'computed'),
     code('typescript', `import { computed } from 'kensington';
 
-computed<T>(fn: () => T): Signal<T>`),
+computed<T>(fn: () => T): Signal<T>
+computed<T>(fn: () => T, key: SignalKey): Signal<T>  // keyed form`),
     t.p([
       'Creates a read-only signal whose value is derived from other signals. Re-evaluates ',
       t.code('fn'),
@@ -120,8 +134,96 @@ computed<T>(fn: () => T): Signal<T>`),
 const label = computed(() => count.get() === 1 ? 'item' : 'items');
 
 label.stop(); // unsubscribes from tracked signals, value freezes`),
+    t.p([
+      'Inside a ',
+      t.code('computed'),
+      ' callback, pass a stable ',
+      t.code('key'),
+      ' to scope the inner computed to the surrounding computed. See ',
+      t.a({ href: '#api-keyed-forms' }, 'Keyed forms inside a computed'),
+      '. The same pattern applies to ',
+      t.code('signal()'),
+      ' and ',
+      t.code('.transform()'),
+      '.',
+    ]),
 
-    t.h3({ id: 'effect' }, 'effect'),
+    t.h3({ id: 'api-keyed-forms' }, 'Keyed forms inside a computed'),
+    t.p([
+      'When you create a ',
+      t.code('signal()'),
+      ', ',
+      t.code('computed()'),
+      ', or ',
+      t.code('.transform()'),
+      ' inside a ',
+      t.code('computed'),
+      ' callback, pass a stable ',
+      t.code('key'),
+      ' as the second argument. All three forms behave the same way, the same key returns the same instance across outer re-runs, the instance is stopped automatically when its key leaves the list, and the whole registry is torn down when the owning computed is stopped.',
+    ]),
+    code('javascript', `const filter = signal('fruit');
+
+const list = computed(() => items.get().map(item => {
+  // signal(initial, key). Per-item local state
+  const highlight = signal(false, item.id);
+  // computed(fn, key). Derived value reading multiple signals
+  const cls = computed(() => [
+    filter.get() === item.category && 'match',
+    highlight.get() && 'on',
+  ].filter(Boolean).join(' '), item.id);
+  // signal.transform(fn, key). Single-source derivation chained off filter
+  const tag = filter.transform(f => f === item.category ? 'in' : 'out', item.id);
+  return t.li({ dataKey: item.id, class: cls, data: { tag } }, item.name);
+}));`),
+    t.p([
+      'For ',
+      t.code('computed(fn, key)'),
+      ' and ',
+      t.code('signal.transform(fn, key)'),
+      ', the fn closure is replaced on every outer re-run so captured variables (e.g. ',
+      t.code('item.category'),
+      ') stay fresh while the instance identity is stable. For ',
+      t.code('signal(initial, key)'),
+      ', only the first call\'s ',
+      t.code('initial'),
+      ' is used. Subsequent calls return the existing signal unchanged. Duplicate keys in the same outer run log an error.',
+    ]),
+    t.h4({ id: 'api-keyed-no-escape' }, 'Don\'t reference a keyed instance from outside its scope'),
+    t.p([
+      'The owner can stop a keyed instance whenever its key isn\'t accessed during a re-run (e.g. during a loading or filter state). After that point, external subscribers held in user-land code silently stop receiving updates. Use the instance freely inside the owning callback (read it, transform it, pass it as tag content or an attribute value), but don\'t let the instance reference itself escape. The unsafe patterns are assigning it to a module-level variable, returning it bare from the callback, or passing it to a function that retains it.',
+    ]),
+    t.p([
+      'The library emits a runtime warning, and the ',
+      t.code('no-out-of-scope-reactive-reference'),
+      ' ESLint rule catches it statically, when a keyed instance is referenced from outside its owner.',
+    ]),
+    t.h4({ id: 'api-keyed-signalkey' }, 'SignalKey'),
+    code('typescript', 'type SignalKey = string | number | object | symbol;'),
+    t.p([
+      'Any value usable in a ',
+      t.code('Map'),
+      ' works. Object keys (e.g. passing ',
+      t.code('item'),
+      ' itself) require a stable reference across outer re-runs. Immutable update patterns that clone the item break the match and lose state. Prefer ',
+      t.code('item.id'),
+      ' for the common immutable-update style. Reach for object keys only when you have stable item references.',
+    ]),
+    t.h4({ id: 'api-keyed-unkeyed' }, 'Without a key'),
+    t.p([
+      t.code('signal()'),
+      ', ',
+      t.code('computed()'),
+      ', and ',
+      t.code('.transform()'),
+      ' inside a computed without a key still work. The reconciler detects the changed instance reference and replaces the DOM node so the fresh instance drives it. Focus, scroll, input value, and selection are preserved. Local state resets to the initial value. The library logs a ',
+      t.code('console.warn'),
+      ' for each form steering you toward the keyed alternative. Outside any ',
+      t.code('computed'),
+      ' callback, the key argument is ignored.',
+    ]),
+
+    t.h3({ id: 'api-effect' }, 'effect'),
     code('typescript', `import { effect } from 'kensington';
 
 effect(fn: () => void): { pause(): void, resume(): void, stop(): void }`),
@@ -159,11 +261,11 @@ e.stop();   // permanently destroys. resume() after stop() is a no-op`),
       t.code('el[name] = value'),
       ') instead of using ',
       t.code('setAttribute'),
-      '. This matters for properties that diverge from their HTML attributes after user interaction — notably ',
+      '. This matters for properties that diverge from their HTML attributes after user interaction. Notably ',
       t.code('value'),
       ' and ',
       t.code('checked'),
-      ' on form elements — and for properties with no attribute equivalent such as ',
+      ' on form elements. And for properties with no attribute equivalent such as ',
       t.code('muted'),
       ' and ',
       t.code('playbackRate'),
@@ -171,10 +273,10 @@ e.stop();   // permanently destroys. resume() after stop() is a no-op`),
     ]),
     code('javascript', `const query = signal('');
 
-// Assigns el.value reactively — keeps the live property in sync
+// Assigns el.value reactively. Keeps the live property in sync
 t.input({ type: 'search', prop: { value: query } }).toElement();
 
-// Static prop — assigned once at render time
+// Static prop. Assigned once at render time
 t.video({ src: '/intro.mp4', prop: { muted: true, playbackRate: 1.5 } }).toElement();`),
     t.p([
       'Accepts a plain object whose values are static or ',

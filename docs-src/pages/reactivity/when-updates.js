@@ -3,16 +3,18 @@ import { t } from 'kensington';
 import { apiTable } from '../../components/table.js';
 import { code } from '../../components/ui.js';
 
+export function reactivityAdvancedHeader() {
+  return t.header([
+    t.h1('Advanced Usage'),
+    t.p([
+      'The above usage may be enough for many projects, ',
+      'but if you are building a more complex app, you may need these tools.',
+    ]),
+  ]);
+}
+
 export function reactivityWhenUpdates() {
   return [
-    t.header([
-      t.h1('Advanced Usage'),
-      t.p([
-        'The above usage may be enough for many projects, ',
-        'but if you are building a more complex app, you may need these tools.',
-      ]),
-    ]),
-
     t.section({ id: 'when-updates-fire' }, [
       t.h2('When updates fire'),
       t.p([

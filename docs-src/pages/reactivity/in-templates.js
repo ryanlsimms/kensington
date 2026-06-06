@@ -47,16 +47,16 @@ isLoading.set(false);  // restores it`),
       t.p([
         'Individual properties inside a ',
         t.code('style'),
-        ' object accept signals. Only the changed property is written to the DOM on each update — all other properties are left untouched.',
+        ' object accept signals. Only the changed property is written to the DOM on each update. All other properties are left untouched.',
       ]),
       code('javascript', `const color = signal('red');
 const opacity = signal(1);
 
 t.div({
   style: {
-    color,             // reactive — only color is updated when the signal changes
-    opacity,           // reactive — only opacity is updated when the signal changes
-    fontSize: '1rem',  // static — set once at render time
+    color,             // reactive. Only color is updated when the signal changes
+    opacity,           // reactive. Only opacity is updated when the signal changes
+    fontSize: '1rem',  // static. Set once at render time
   },
 }).toElement();
 
@@ -128,56 +128,6 @@ isMuted.set(false); // unmutes video`),
           t.code('.toString()'),
           '. Known writable properties on the element\'s DOM interface are typed in TypeScript. Expando properties are also accepted. Property existence and writability are validated at render time.',
         ]),
-      ]),
-    ]),
-
-    t.section({ id: 'signals-keyed-lists' }, [
-      t.h2('Keyed lists'),
-      t.p([
-        'When a signal holds an array, add ',
-        t.code('dataKey'),
-        ' to items. The reconciler matches nodes by ',
-        t.code('data-key'),
-        ' and reuses DOM elements on reorder, addition, and removal. Reused nodes are diffed recursively: only changed attributes and text are written to the DOM. Signal-managed attributes on reused nodes are preserved, and orphaned effects on discarded nodes are stopped immediately.',
-      ]),
-      code('javascript', `const items = signal([
-  { id: 1, name: 'Apple' },
-  { id: 2, name: 'Banana' },
-]);
-
-const rows = computed(() =>
-  items.get().map(item => t.li({ dataKey: item.id }, item.name)),
-);
-
-t.ul(rows).toElement();`),
-      t.p(exLink('?page=examples#sortable-table', 'Sortable table example')),
-
-      t.h3({ id: 'signals-keyed-local-state' }, 'Per-item local state'),
-      t.p([
-        'For state that belongs to a row rather than the outer data (a selected flag, an editing toggle, a draft value), pass a stable ',
-        t.code('key'),
-        ' as the second argument to ',
-        t.code('signal()'),
-        '. Inside a ',
-        t.code('computed'),
-        ' callback, ',
-        t.code('signal(initial, key)'),
-        ' returns the same signal instance across re-runs when called with the same key. Use the item id.',
-      ]),
-      code('javascript', `const list = computed(() => items.get().map(item => {
-  const highlight = signal(false, item.id);
-  return t.li({ dataKey: item.id, class: highlight.transform(v => v ? 'on' : '') }, [
-    t.button({ onclick: () => highlight.set(true) }, item.name),
-  ]);
-}));
-
-t.ul(list).toElement();`),
-      t.p([
-        'The keyed signal persists across outer re-renders, the DOM node stays in place, and the signal is stopped automatically when its item leaves the list. ',
-        t.code('signal()'),
-        ' without a key inside a computed also works, but the reconciler replaces the DOM node on every outer re-render so the fresh signal can drive it. Focus, scroll, input values, and selection are preserved across the swap; local signal state resets to the initial value. The library logs a ',
-        t.code('console.warn'),
-        ' steering you toward the keyed form.',
       ]),
     ]),
 

@@ -259,7 +259,7 @@ fastify.get('/', async (request, reply) => {
         t.code('renderView'),
         ' call.',
       ]),
-      code('javascript', `// Attach the current user in a hook — available in every page renderer
+      code('javascript', `// Attach the current user in a hook. Available in every page renderer
 fastify.addHook('preHandler', async (request, reply) => {
   reply.locals.user = await getUserFromSession(request);
 });

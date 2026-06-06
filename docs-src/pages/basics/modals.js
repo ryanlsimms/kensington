@@ -28,7 +28,7 @@ export function comparisonsModal() {
         t.a({ href: 'https://github.com/developit/htm' }, 'htm'),
         ' are lightweight and familiar, but TypeScript can only see the outer string, so it cannot validate attribute names or values inside the template. Because markup is structured data, Kensington also handles camelCase-to-kebab conversion, boolean attributes, and ',
         t.code('class'),
-        ' as an array — things template-based libraries need runtime string parsing to support.',
+        ' as an array. Things template-based libraries need runtime string parsing to support.',
       ]),
       panels([
         {

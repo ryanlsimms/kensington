@@ -1335,7 +1335,7 @@ describe('slim build', () => {
 describe('bundle sizes', () => {
   const BUDGETS = [
     { path: '../../dist/kensington.min.js', maxKb: 200 },
-    { path: '../../dist/kensington.slim.min.js', maxKb: 40 },
+    { path: '../../dist/kensington.slim.min.js', maxKb: 42 },
   ];
   for (const { path, maxKb } of BUDGETS) {
     it(`${path.replace('../../dist/', '')} stays under ${maxKb} KB`, () => {
@@ -2389,5 +2389,417 @@ describe('renderForHydration checkState', () => {
   it('warns for Symbol', () => {
     const w = capture(() => renderForHydration(comp, { s: Symbol('x') }));
     assert.ok(w.some(s => s.includes('Symbol will be dropped')));
+  });
+});
+
+// ─── keyed computed ───────────────────────────────────────────────────────────
+
+describe('keyed computed', () => {
+  beforeEach(() => { _resetWarningThrottle(); });
+
+  it('returns the same computed instance across outer re-runs for the same key', () => {
+    const items = signal([{ id: 'a', v: 1 }]);
+    const instances = [];
+    const outer = computed(() =>
+      items.get().map(item => {
+        const inner = computed(() => item.v * 2, item.id);
+        instances.push(inner);
+        return inner.get();
+      }),
+    );
+    outer.get();
+    items.set([{ id: 'a', v: 2 }]);
+    outer.get();
+    assert.strictEqual(instances[0], instances[1]);
+  });
+
+  it('produces the correct value on first run', () => {
+    const items = signal([{ id: 'a', v: 3 }]);
+    const outer = computed(() =>
+      items.get().map(item => computed(() => item.v * 10, item.id).get()),
+    );
+    assert.deepStrictEqual(outer.get(), [30]);
+  });
+
+  it('reflects updated fn closure when outer re-runs', () => {
+    const items = signal([{ id: 'a', v: 1 }]);
+    const outer = computed(() =>
+      items.get().map(item => computed(() => item.v * 2, item.id).get()),
+    );
+    assert.deepStrictEqual(outer.get(), [2]);
+    items.set([{ id: 'a', v: 5 }]);
+    assert.deepStrictEqual(outer.get(), [10]);
+  });
+
+  it('stops the inner computed when its key is removed from the list', () => {
+    const items = signal([{ id: 'a' }, { id: 'b' }]);
+    let bRuns = 0;
+    const outer = computed(() =>
+      items.get().map(item => {
+        const inner = computed(() => {
+          if (item.id === 'b') { bRuns++; }
+          return item.id;
+        }, item.id);
+        return inner.get();
+      }),
+    );
+    outer.get();
+    bRuns = 0;
+    items.set([{ id: 'a' }]);
+    outer.get();
+    assert.strictEqual(bRuns, 0);
+  });
+
+  it('creates a fresh inner computed when a key reappears after being removed', () => {
+    const items = signal([{ id: 'a', v: 1 }]);
+    const instancesA = [];
+    const outer = computed(() =>
+      items.get().map(item => {
+        const inner = computed(() => item.v, item.id);
+        instancesA.push(inner);
+        return inner.get();
+      }),
+    );
+    outer.get();
+    items.set([{ id: 'b', v: 2 }]);
+    outer.get();
+    items.set([{ id: 'a', v: 3 }]);
+    outer.get();
+    // Third push is a new instance because the key was swept when 'a' was absent.
+    assert.notStrictEqual(instancesA[0], instancesA[1]);
+  });
+
+  it('stops all keyed inner computeds when the outer computed is stopped', () => {
+    const items = signal([{ id: 'a', v: 1 }, { id: 'b', v: 2 }]);
+    let innerRuns = 0;
+    const outer = computed(() =>
+      items.get().map(item => {
+        const inner = computed(() => { innerRuns++; return item.v; }, item.id);
+        return inner.get();
+      }),
+    );
+    outer.get();
+    outer.stop();
+    innerRuns = 0;
+    // After outer stops, inner computeds should not react.
+    items.set([{ id: 'a', v: 99 }, { id: 'b', v: 88 }]);
+    assert.strictEqual(innerRuns, 0);
+  });
+
+  it('each key is scoped to its own outer computed instance', () => {
+    const src = signal(1);
+    const instA = [];
+    const instB = [];
+    const outerA = computed(() => {
+      const inner = computed(() => src.get(), 'k');
+      instA.push(inner);
+      return inner.get();
+    });
+    const outerB = computed(() => {
+      const inner = computed(() => src.get() * 10, 'k');
+      instB.push(inner);
+      return inner.get();
+    });
+    outerA.get();
+    outerB.get();
+    src.set(2);
+    outerA.get();
+    outerB.get();
+    // Same key in different outer computeds → independent instances.
+    assert.strictEqual(instA[0], instA[1]);
+    assert.strictEqual(instB[0], instB[1]);
+    assert.notStrictEqual(instA[0], instB[0]);
+    assert.strictEqual(outerA.get(), 2);
+    assert.strictEqual(outerB.get(), 20);
+  });
+
+  it('warns when computed() is called inside a computed without a key', () => {
+    const warns = [];
+    const origWarn = console.warn;
+    console.warn = msg => warns.push(msg);
+    const src = signal(0);
+    computed(() => {
+      computed(() => src.get() * 2);
+      return 0;
+    });
+    console.warn = origWarn;
+    assert.ok(warns.some(w => w.includes('without a key')));
+  });
+
+  it('does not warn when computed() is called inside a computed with a key', () => {
+    const warns = [];
+    const errs = [];
+    const origWarn = console.warn;
+    const origError = console.error;
+    console.warn = msg => warns.push(msg);
+    console.error = msg => errs.push(msg);
+    const src = signal(0);
+    computed(() => computed(() => src.get() * 2, 'k').get());
+    console.warn = origWarn;
+    console.error = origError;
+    assert.ok(!warns.some(w => w.includes('without a key')));
+    assert.ok(!errs.some(e => e.includes('computed')));
+  });
+
+  it('warns when a keyed inner computed is subscribed outside its owner', () => {
+    const warns = [];
+    const origWarn = console.warn;
+    console.warn = msg => warns.push(msg);
+    const items = signal([{ id: 'a', v: 1 }]);
+    const instances = [];
+    computed(() => {
+      items.get().forEach(item => {
+        const inner = computed(() => item.v, item.id);
+        instances.push(inner);
+      });
+      return 0;
+    });
+    // Subscribe from outside the owner.
+    const e = effect(() => instances[0].get());
+    e.stop();
+    console.warn = origWarn;
+    assert.ok(warns.some(w => w.includes('is being subscribed')));
+  });
+
+  it('does not warn when the owner subscribes to its own keyed inner computed', () => {
+    const warns = [];
+    const errs = [];
+    const origWarn = console.warn;
+    const origError = console.error;
+    console.warn = msg => warns.push(msg);
+    console.error = msg => errs.push(msg);
+    const items = signal([{ id: 'a', v: 1 }]);
+    // The owner reads via .get() inline — no external subscription.
+    computed(() => items.get().map(item => computed(() => item.v * 2, item.id).get()));
+    console.warn = origWarn;
+    console.error = origError;
+    assert.ok(!warns.some(w => w.includes('keyed computed')));
+    assert.ok(!errs.some(e => e.includes('keyed computed')));
+  });
+
+  it('warns on duplicate keys in the same outer run', () => {
+    const errs = [];
+    const origError = console.error;
+    console.error = msg => errs.push(msg);
+    const src = signal(0);
+    computed(() => {
+      computed(() => src.get(), 'same');
+      computed(() => src.get() * 2, 'same');
+      return 0;
+    });
+    console.error = origError;
+    assert.ok(errs.some(e => e.includes('"same"')));
+  });
+
+  it('keyed computed key outside reactive context is ignored and creates a normal computed', () => {
+    const src = signal(5);
+    const c = computed(() => src.get() * 3, 'ignored-key');
+    assert.strictEqual(c.get(), 15);
+    src.set(6);
+    assert.strictEqual(c.get(), 18);
+  });
+
+  it('keyed transform returns the same instance per key across outer re-runs', () => {
+    const items = signal([{ id: 'a', v: 1 }]);
+    const src = signal('x');
+    const instances = [];
+    const outer = computed(() =>
+      items.get().map(item => {
+        const tr = src.transform(v => `${v}-${item.v}`, item.id);
+        instances.push(tr);
+        return tr.get();
+      }),
+    );
+    outer.get();
+    items.set([{ id: 'a', v: 2 }]);
+    outer.get();
+    assert.strictEqual(instances[0], instances[1]);
+  });
+
+  it('keyed transform reflects updated fn closure when outer re-runs', () => {
+    const items = signal([{ id: 'a', v: 1 }]);
+    const src = signal(10);
+    const outer = computed(() =>
+      items.get().map(item => src.transform(v => v * item.v, item.id).get()),
+    );
+    assert.deepStrictEqual(outer.get(), [10]);
+    items.set([{ id: 'a', v: 3 }]);
+    assert.deepStrictEqual(outer.get(), [30]);
+  });
+
+  it('keyed transform outside reactive context ignores the key', () => {
+    const src = signal(5);
+    const doubled = src.transform(v => v * 2, 'k');
+    assert.strictEqual(doubled.get(), 10);
+    src.set(6);
+    assert.strictEqual(doubled.get(), 12);
+  });
+
+  it('unkeyed transform inside a computed warns with transform-specific wording', () => {
+    const warns = [];
+    const origWarn = console.warn;
+    console.warn = msg => warns.push(msg);
+    const src = signal(0);
+    computed(() => {
+      src.transform(v => v * 2);
+      return 0;
+    });
+    console.warn = origWarn;
+    assert.ok(warns.some(w => w.includes('.transform()') && w.includes('without a key')));
+    assert.ok(!warns.some(w => w.startsWith('kensington: computed()')));
+  });
+
+  // ── nested keyed computeds (depth > 1) ───────────────────────────────────
+
+  it('three-level nested keyed computeds produce correct values on first run', () => {
+    const groups = signal([
+      { id: 'g1', items: [{ id: 'i1', v: 1 }, { id: 'i2', v: 2 }] },
+      { id: 'g2', items: [{ id: 'i3', v: 3 }] },
+    ]);
+    const view = computed(() =>
+      groups.get().map(group =>
+        computed(() =>
+          group.items.map(item =>
+            computed(() => item.v * 10, item.id).get(),
+          ),
+        group.id).get(),
+      ),
+    );
+    assert.deepStrictEqual(view.get(), [[10, 20], [30]]);
+  });
+
+  it('three-level nested keyed computeds reuse the same instance per key across outer re-runs', () => {
+    const groups = signal([{ id: 'g1', items: [{ id: 'i1', v: 1 }] }]);
+    const middleInstances = [];
+    const innerInstances = [];
+    const view = computed(() =>
+      groups.get().map(group => {
+        const middle = computed(() =>
+          group.items.map(item => {
+            const inner = computed(() => item.v * 10, item.id);
+            innerInstances.push(inner);
+            return inner.get();
+          }),
+        group.id);
+        middleInstances.push(middle);
+        return middle.get();
+      }),
+    );
+    view.get();
+    groups.set([{ id: 'g1', items: [{ id: 'i1', v: 2 }] }]);
+    view.get();
+    assert.strictEqual(middleInstances[0], middleInstances[1]);
+    assert.strictEqual(innerInstances[0], innerInstances[1]);
+  });
+
+  it('three-level nested keyed computeds reflect updated fn closure at every level', () => {
+    const groups = signal([{ id: 'g1', items: [{ id: 'i1', v: 1 }] }]);
+    const view = computed(() =>
+      groups.get().map(group =>
+        computed(() =>
+          group.items.map(item =>
+            computed(() => item.v * 10, item.id).get(),
+          ),
+        group.id).get(),
+      ),
+    );
+    assert.deepStrictEqual(view.get(), [[10]]);
+    groups.set([{ id: 'g1', items: [{ id: 'i1', v: 5 }] }]);
+    assert.deepStrictEqual(view.get(), [[50]]);
+  });
+
+  it('stopping the outermost computed cascades through every nesting level', () => {
+    const groups = signal([{ id: 'g1', items: [{ id: 'i1', v: 1 }] }]);
+    let middleRuns = 0;
+    let innerRuns = 0;
+    const view = computed(() =>
+      groups.get().map(group =>
+        computed(() => {
+          middleRuns++;
+          return group.items.map(item =>
+            computed(() => { innerRuns++; return item.v; }, item.id).get(),
+          );
+        }, group.id).get(),
+      ),
+    );
+    view.get();
+    view.stop();
+    middleRuns = 0;
+    innerRuns = 0;
+    // After view stops, middle and inner should be torn down — no further runs from source changes.
+    groups.set([{ id: 'g1', items: [{ id: 'i1', v: 99 }] }]);
+    assert.strictEqual(middleRuns, 0);
+    assert.strictEqual(innerRuns, 0);
+  });
+
+  it('sweep at the middle level cascades inner cleanup', () => {
+    const groups = signal([
+      { id: 'g1', items: [{ id: 'i1', v: 1 }] },
+      { id: 'g2', items: [{ id: 'i2', v: 2 }] },
+    ]);
+    let i2Runs = 0;
+    const view = computed(() =>
+      groups.get().map(group =>
+        computed(() =>
+          group.items.map(item =>
+            computed(() => {
+              if (item.id === 'i2') { i2Runs++; }
+              return item.v;
+            }, item.id).get(),
+          ),
+        group.id).get(),
+      ),
+    );
+    view.get();
+    i2Runs = 0;
+    // Remove g2. Its middle is swept, which should cascade to stop i2's inner.
+    groups.set([{ id: 'g1', items: [{ id: 'i1', v: 1 }] }]);
+    view.get();
+    assert.strictEqual(i2Runs, 0);
+  });
+
+  it('warns when a keyed signal is subscribed outside its owner', () => {
+    const warns = [];
+    const origWarn = console.warn;
+    console.warn = msg => warns.push(msg);
+    const items = signal([{ id: 'a' }]);
+    const escaped = [];
+    computed(() => {
+      items.get().forEach(item => {
+        escaped.push(signal(false, item.id));
+      });
+      return 0;
+    });
+    const e = effect(() => escaped[0].get());
+    e.stop();
+    console.warn = origWarn;
+    assert.ok(warns.some(w => w.includes('is being subscribed')));
+  });
+
+  it('owner check at depth: external effect on a deep inner warns; inline use does not', () => {
+    const warns = [];
+    const origWarn = console.warn;
+    console.warn = msg => warns.push(msg);
+    const groups = signal([{ id: 'g1', items: [{ id: 'i1', v: 1 }] }]);
+    const innerInstances = [];
+    computed(() =>
+      groups.get().map(group =>
+        computed(() =>
+          group.items.map(item => {
+            const inner = computed(() => item.v, item.id);
+            innerInstances.push(inner);
+            return inner.get();
+          }),
+        group.id).get(),
+      ),
+    ).get();
+    // No warning so far — every subscription was the direct owner.
+    const beforeWarn = warns.length;
+    // External effect on the deepest inner — fires the warning.
+    const e = effect(() => innerInstances[0].get());
+    e.stop();
+    console.warn = origWarn;
+    assert.strictEqual(beforeWarn, 0);
+    assert.ok(warns.some(w => w.includes('is being subscribed')));
   });
 });

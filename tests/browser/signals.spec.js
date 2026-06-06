@@ -2070,8 +2070,11 @@ test('inComputedFn flag is correctly restored after a nested computed inside a c
   const result = await page.evaluate(async src => {
     const { signal, computed } = await import(src);
     const errors = [];
-    const orig = console.error;
+    const warns = [];
+    const origError = console.error;
+    const origWarn = console.warn;
     console.error = msg => errors.push(msg);
+    console.warn = msg => warns.push(msg);
     const x = signal(0);
     const y = signal(0);
     computed(() => {
@@ -2079,10 +2082,12 @@ test('inComputedFn flag is correctly restored after a nested computed inside a c
       y.set(1);
       return x.get();
     });
-    console.error = orig;
-    return errors;
+    console.error = origError;
+    console.warn = origWarn;
+    return { errors, warns };
   }, bundle);
-  expect(result.some(e => e.includes('.set() called inside a computed'))).toBe(true);
+  expect(result.errors.some(e => e.includes('.set() called inside a computed'))).toBe(true);
+  expect(result.warns.some(w => w.includes('without a key'))).toBe(true);
 });
 
 test(`requestAnimationFrame loop bypasses the flush counter and runs indefinitely without detection`, async ({ page, bundle }) => {

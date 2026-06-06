@@ -5,8 +5,8 @@ HTML/SVG/MathML library for JavaScript and TypeScript. Tags are method calls on 
 ## Imports
 
 ```javascript
-import { t } from 'kensington';               // shared default instance — use this in most cases
-import Kensington from 'kensington';           // class — use when subclassing or custom config
+import { t } from 'kensington';               // shared default instance. Use this in most cases
+import Kensington from 'kensington';           // class. Use when subclassing or custom config
 import { formAttributes } from 'kensington/attributes';  // attribute objects for each element
 ```
 
@@ -19,7 +19,7 @@ import type { NameSpaceAttributes, GlobalAttributes, GlobalEvents, UniversalAttr
 
 ```javascript
 t.div({ class: 'container' }, t.p('Hello'));   // options, then content
-t.div(t.p('Hello'));                           // content only — options are optional
+t.div(t.p('Hello'));                           // content only. Options are optional
 t.input({ type: 'checkbox', checked: true });  // void elements take no content
 t.div([t.p('one'), t.p('two')]);              // array of children
 ```
@@ -30,7 +30,7 @@ Tag objects coerce to strings in template literals automatically, but not when p
 
 ```javascript
 res.send(t.div('hello').toString());   // correct
-res.send(t.div('hello'));              // wrong — sends [object Object]
+res.send(t.div('hello'));              // wrong. Sends [object Object]
 ```
 
 ## Options
@@ -41,10 +41,10 @@ The first argument to any tag method is a plain object. It accepts HTML attribut
 - Nested objects flatten: `{ data: { id: '1' } }` → `data-id="1"`
 - Boolean: `{ checked: true }` → `checked`; `{ checked: false }` → attribute omitted
 - `class` accepts a string or array: `{ class: ['a', 'b'] }` → `class="a b"`
-- `style` accepts an object: `{ style: { backgroundColor: 'red' } }` → `style="background-color: red"`. Keys can be camelCase or kebab-case. Static values of `null`, `undefined`, `false`, or `''` are silently omitted. Individual property values also accept signals — only the changed property is written to the DOM on each update. `style: { color: colorSignal, fontSize: '1rem' }` sets `font-size` once at render time and updates only `color` reactively.
+- `style` accepts an object: `{ style: { backgroundColor: 'red' } }` → `style="background-color: red"`. Keys can be camelCase or kebab-case. Static values of `null`, `undefined`, `false`, or `''` are silently omitted. Individual property values also accept signals. Only the changed property is written to the DOM on each update. `style: { color: colorSignal, fontSize: '1rem' }` sets `font-size` once at render time and updates only `color` reactively.
 - `data-*` and `aria-*` are always allowed without configuration
 - Standard event handler attributes (`onclick`, `oninput`, etc.) accept a string or function. Functions are wired via `addEventListener` in `toElement()`.
-- `on` key for custom event listeners — pass a plain object mapping event names verbatim to functions: `{ on: { bricksSelectorChange: handler } }`. Names are passed directly to `addEventListener` with no transformation. Silently ignored in `.toString()`.
+- `on` key for custom event listeners. Pass a plain object mapping event names verbatim to functions: `{ on: { bricksSelectorChange: handler } }`. Names are passed directly to `addEventListener` with no transformation. Silently ignored in `.toString()`.
 
 ### DOM properties with `prop`
 
@@ -59,7 +59,7 @@ t.video({ src: '/intro.mp4', prop: { muted: true, playbackRate: 1.5 } }).toEleme
 
 ## Content rules
 
-`null`, `undefined`, `false`, `true`, and `''` are silently dropped — use this for conditionals:
+`null`, `undefined`, `false`, `true`, and `''` are silently dropped. Use this for conditionals:
 
 ```javascript
 t.ul([
@@ -69,7 +69,7 @@ t.ul([
 ]);
 ```
 
-Arrays anywhere in content are flattened — `items.map(i => t.li(i))` works directly:
+Arrays anywhere in content are flattened . `items.map(i => t.li(i))` works directly:
 
 ```javascript
 t.ul(items.map(item => t.li(item.name)));
@@ -79,7 +79,7 @@ t.ul(items.map(item => t.li(item.name)));
 
 ```javascript
 t.literal('<p>trusted raw html</p>');    // HTML-encodes content, blocks script tags
-t.unsafeLiteral('<script>...</script>'); // no encoding — trusted HTML only
+t.unsafeLiteral('<script>...</script>'); // no encoding. Trusted HTML only
 ```
 
 ## inlineComment()
@@ -90,7 +90,7 @@ t.inlineComment('line 1\nline 2');        // <!--\n  line 1\n  line 2\n-->
 t.div([t.p('before'), t.inlineComment('note'), t.p('after')]);
 ```
 
-`.toElement()` returns a DOM `Comment` node via `document.createComment()`. Accepts a `Signal` — the comment `nodeValue` updates in place on each change.
+`.toElement()` returns a DOM `Comment` node via `document.createComment()`. Accepts a `Signal`. The comment `nodeValue` updates in place on each change.
 
 ## Full documents
 
@@ -124,14 +124,14 @@ t.script([
 import Kensington from 'kensington';
 
 const t = new Kensington({
-  validationLevel: 'warn',        // 'off' | 'warn' | 'error' — default 'off'
+  validationLevel: 'warn',        // 'off' | 'warn' | 'error'. Default 'off'
   additionalNamespaces: ['hx'],   // allow hx-* attributes (htmx), x-* (alpine), etc.
   additionalGlobalAttributes: {   // allow extra attributes on every element with type validation
     'data-theme': ['light', 'dark', 'auto'],
     'wire:loading': Boolean,
   },
-  indentationLevel: 2,            // spaces per indent level — default 2, 0 to disable
-  logger: console.warn,           // called when validationLevel is 'warn' — default console.log
+  indentationLevel: 2,            // spaces per indent level. Default 2, 0 to disable
+  logger: console.warn,           // called when validationLevel is 'warn'. Default console.log
 });
 ```
 
@@ -146,7 +146,7 @@ class MyEngine extends Kensington {
 }
 ```
 
-## TypeScript — namespace augmentation
+## TypeScript. Namespace augmentation
 
 Add attribute namespaces globally via module augmentation so custom attributes are valid everywhere in your project:
 
@@ -164,7 +164,7 @@ t.form({ hxPost: '/api/submit', hxSwap: 'outerHTML' });
 
 ## Reactive data
 
-Signals and `computed` work in any JavaScript environment. `.toElement()` and DOM-mutating effects require a browser. During `renderForHydration`, `effect()` is suppressed entirely — browser-only code inside an `effect()` is safe to call on the server.
+Signals and `computed` work in any JavaScript environment. `.toElement()` and DOM-mutating effects require a browser. During `renderForHydration`, `effect()` is suppressed entirely. Browser-only code inside an `effect()` is safe to call on the server.
 
 ```javascript
 import { t, signal, computed, effect, isBrowser, Signal } from 'kensington';
@@ -189,6 +189,14 @@ const label  = computed(() => n.get() === 1 ? 'item' : 'items')  // read multipl
 // Keyed form. Inside a computed, returns the same instance per key across re-runs.
 // Outside a computed the key is ignored and a fresh signal is returned each call.
 const editing = signal(false, item.id)
+
+// Keyed computed form. Inside a computed, returns the same inner computed instance per
+// key across re-runs. The fn closure is updated automatically on each outer re-run.
+// Outside a computed the key is ignored and a normal computed is returned.
+const matches = computed(() => activeFilter.get() === item.category, item.id)
+
+// .transform() also accepts a key. Same lifecycle as computed(fn, key).
+const matchesT = activeFilter.transform(f => f === item.category, item.id)
 ```
 
 `Signal` is exported as a named export so callers can use `instanceof Signal` instead of duck-typing:
@@ -244,7 +252,7 @@ HTML attributes and DOM properties diverge after user interaction. For example, 
 ```javascript
 const userInput = signal('');
 
-// Assigns el.value = '' — syncs the live property, not the HTML attribute
+// Assigns el.value = ''. Syncs the live property, not the HTML attribute
 t.input({ type: 'text', prop: { value: userInput } }).toElement();
 
 // Resetting a controlled input
@@ -289,26 +297,51 @@ Add `dataKey` whenever items may reorder, be added, or removed. Reused nodes are
 
 For drag-and-drop sortable lists where DOM nodes are moved via `insertBefore`, add `persist: true` to each item tag so signal effects survive the move. See **Cleanup** below.
 
-### Local state inside a computed (keyed signals)
+### Reactive primitives inside a computed need a key
 
-Sometimes a per-item piece of interactive state belongs alongside the item rather than in the outer data. Pass a stable `key` as the second argument to `signal()` to scope it to the surrounding `computed`:
+When you create a `signal()`, `computed()`, or `.transform()` inside a `computed` callback, pass a stable `key` as the second argument. This applies uniformly to all three forms: the key scopes the instance to the surrounding `computed` so the same instance is reused across outer re-runs. Use the item identity (typically `item.id`).
 
 ```javascript
-const items = signal([{ id: 'a', label: 'Apple' }, { id: 'b', label: 'Banana' }]);
+const items  = signal([{ id: 'a', name: 'Apple', cat: 'fruit' }, { id: 'b', name: 'Bagel', cat: 'bread' }]);
+const filter = signal('fruit');
 
 const list = computed(() => items.get().map(item => {
+  // Keyed signal. Per-item local interactive state.
   const highlight = signal(false, item.id);
-  return t.li({ dataKey: item.id, class: highlight.transform(v => v ? 'active' : 'idle') }, [
-    t.button({ onclick: () => highlight.set(true) }, item.label),
-  ]);
+  // Keyed computed. Derived value that reads multiple signals.
+  const cls = computed(() => [
+    filter.get() === item.cat && 'match',
+    highlight.get() && 'starred',
+  ].filter(Boolean).join(' '), item.id);
+  // Keyed transform. Single-source derivation, chained off the filter signal.
+  const matches = filter.transform(f => f === item.cat ? 'in-filter' : 'out', item.id);
+  return t.li({
+    dataKey: item.id,
+    class: cls,
+    data: { state: matches },
+    onclick: () => highlight.set(v => !v),
+  }, item.name);
 }));
 
 t.ul(list);
 ```
 
-`signal(initial, key)` looks the signal up in a per-computed registry. The same key returns the same instance across re-runs, so the local state persists when the outer signal changes. When an item leaves the list, its keyed signal is stopped automatically. Use the item identity (typically `item.id`) as the key. Two `signal()` calls with the same key inside the same computed run would share a single signal between two items and would log an error to console.
+**Shared lifecycle.** The three forms use the same per-computed registry. Same key returns the same instance across re-runs. When an item leaves the list, its keyed instance is stopped automatically and removed from the registry on the next sweep. When the outer computed is permanently stopped, all its keyed instances are stopped too. When the outer sleeps (auto-dispose), the registry is preserved so a later wake reuses the same instances.
 
-For best DOM identity preservation, bind the keyed signal directly to an attribute or use it via a CSS class toggle, rather than through a fresh `.transform()` each render. The transform creates a new derived signal per run, which the reconciler treats as a signal-reference mismatch and rebuilds the node. State still persists via the keyed source signal, but a `data-*` attribute or a direct class binding lets the node stay in place:
+**Closure refresh.** For `computed(fn, key)` and `signal.transform(fn, key)`, the fn closure is replaced on every outer re-run, so captured variables (like `item.label`) stay fresh even though the instance identity is stable. For `signal(initial, key)`, only the first call's `initial` is used; subsequent calls return the existing signal unchanged.
+
+**Don't escape the scope.** Don't reference a keyed instance from outside the owning `computed`. The owner can stop it at any time, after which external subscribers silently stop receiving updates. Two safe inline patterns:
+
+1. Consume via method chain: `.get()`, `.transform(...)`, `.toString()`, etc.
+2. Pass directly to a tag as content or an attribute value. The DOM binding's lifetime is tied to the DOM, which the owner controls anyway.
+
+The library emits a runtime warning (and the `no-out-of-scope-reactive-reference` lint rule catches it statically) when a keyed instance is subscribed to from outside the owner.
+
+**Key types.** The `key` argument accepts any value usable in a `Map`: `string`, `number`, `symbol`, or `object` (exported as the `SignalKey` type). Object keys (e.g. passing `item` itself as the key) work as long as the same reference survives across outer re-runs. Immutable update patterns that clone the item (`items.set(list.map(i => i.id === x ? { ...i, … } : i))`) produce a new object reference, so its object-as-key would change and the keyed state would be lost. Prefer `item.id`; reach for object keys only with stable item references.
+
+**Duplicates.** Two calls with the same key in the same outer run share a single instance between two items and log a `throttledError` to console. Use the item identity to ensure uniqueness.
+
+**DOM identity.** For best DOM identity preservation, bind keyed signals directly to attributes or via `.transform(fn, item.id)` rather than through a fresh unkeyed `.transform()` each render. An unkeyed `.transform()` creates a new derived signal per outer run, which the reconciler treats as a signal-reference mismatch and rebuilds the node. State still persists via the keyed source signal, but a direct attribute binding or a keyed transform lets the node stay in place:
 
 ```javascript
 // Editing state toggled via a data attribute. CSS swaps the visible element.
@@ -323,13 +356,13 @@ const list = computed(() => items.get().map(item => {
 //      .task-item[data-editing="edit"] .task-text       { display: none; }
 ```
 
-`signal()` without a key inside a `computed` still works, but the reconciler must replace the DOM node when the outer state changes (so the fresh signal can drive the new live element). Focus, scroll, input value, and selection are preserved across the replacement; local signal state resets to the initial value. The library logs a `console.warn` suggesting the keyed form for best performance and persistent state.
+**Unkeyed fallback.** `signal()`, `computed()`, and `.transform()` inside a `computed` without a key still work. The reconciler detects the changed instance reference and replaces the DOM node so the fresh instance can drive it. Focus, scroll, input value, and selection are preserved across the swap; local state resets to the initial value. The library logs a `console.warn` for each form (with form-specific wording) suggesting the keyed alternative.
 
 ### Cleanup
 
-`computed()` and `transform()` signals auto-dispose: when the last subscriber (a DOM effect or a downstream computed) is removed, the computed unsubscribes from its source signals and freezes its value. When something reads it inside a reactive context again, it revives and re-subscribes. This means computed chains used to build a DOM subtree clean themselves up automatically when that subtree is removed — no manual teardown needed.
+`computed()` and `transform()` signals auto-dispose: when the last subscriber (a DOM effect or a downstream computed) is removed, the computed unsubscribes from its source signals and freezes its value. When something reads it inside a reactive context again, it revives and re-subscribes. This means computed chains used to build a DOM subtree clean themselves up automatically when that subtree is removed. No manual teardown needed.
 
-`.get()`, `.value`, and `.toJSON()` on a sleeping computed always return a fresh value even outside a reactive context — the computed wakes briefly, re-runs its function, and sleeps again without leaving a subscription behind.
+`.get()`, `.value`, and `.toJSON()` on a sleeping computed always return a fresh value even outside a reactive context. The computed wakes briefly, re-runs its function, and sleeps again without leaving a subscription behind.
 
 `.toElement()` stops reactive effects automatically when the element is removed from the DOM. For elements that will be moved or temporarily removed and re-inserted, add `persist: true` to the tag options. Effects pause on removal and resume on re-insertion, across any number of cycles. The main use case is items in a drag-and-drop sortable list, where the reconciler reorders nodes via `insertBefore`:
 
@@ -361,7 +394,7 @@ class MyWidget extends HTMLElement {
 // Guard module-level or computed() code that calls browser-only APIs
 const stored = isBrowser ? localStorage.getItem('theme') : null;
 
-// Inside effect() — always safe; effect is a no-op on the server
+// Inside effect(). Always safe; effect is a no-op on the server
 effect(() => { localStorage.setItem('theme', dark.get() ? 'dark' : 'light'); });
 ```
 
@@ -377,16 +410,16 @@ if (import.meta.env.DEV) {
 
 The panel is a shadow-DOM-isolated overlay in the bottom-right corner. Click the **K** badge to open it. Four tabs:
 
-- **Signals** — plain signals: current value, set count, DOM visibility indicator (● visible, ○ in DOM but hidden, — not in DOM), subscriber count. Hover the subscriber count for a tooltip listing subscribed effects. Click a row to highlight and scroll to the bound DOM element. Keyed signals (created via `signal(initial, key)` inside a computed) show their key as a pink chip alongside binding labels.
-- **Computed** — computed signals, same columns. Entries disappear when auto-disposed (no subscribers) and reappear on re-subscription.
-- **Effects** — user `effect()` calls: state (active/paused), run count, function source.
-- **DOM** — live signal-to-DOM bindings (attributes, props, content): element descriptor, binding label (e.g. `class`, `prop:checked`, `style:color`, `(content)`), state, run count. Hover a row to outline the element in the page; click to scroll to it.
+- **Signals**. Plain signals: current value, set count, DOM visibility indicator (● visible, ○ in DOM but hidden,. Not in DOM), subscriber count. Hover the subscriber count for a tooltip listing subscribed effects. Click a row to highlight and scroll to the bound DOM element. Keyed signals (created via `signal(initial, key)` inside a computed) show their key as a pink chip alongside binding labels.
+- **Computed**. Computed signals, same columns. Entries disappear when auto-disposed (no subscribers) and reappear on re-subscription.
+- **Effects**. User `effect()` calls: state (active/paused), run count, function source.
+- **DOM**. Live signal-to-DOM bindings (attributes, props, content): element descriptor, binding label (e.g. `class`, `prop:checked`, `style:color`, `(content)`), state, run count. Hover a row to outline the element in the page; click to scroll to it.
 
 The hook is zero-cost when not enabled. All instrumentation calls are guarded by an `enabled` flag and return immediately when disabled. Do not enable in production.
 
 ### Loading state
 
-A signal can hold a tag, a string, an array, or `null` — switching types is fine:
+A signal can hold a tag, a string, an array, or `null`. Switching types is fine:
 
 ```javascript
 import { t, signal } from 'kensington';
@@ -453,7 +486,7 @@ The key in `registerComponents` must match the name passed to `renderForHydratio
 The same component function runs on both server and client. Write components so they work in both environments:
 
 - Create signals inside the component function body, not at module level.
-- Wrap any browser-only side effects in `effect()` — `effect()` is a no-op during `renderForHydration`, so it is safe to reference `document`, `window`, or `localStorage` inside one. Direct references to browser globals in the function body outside an `effect()` will throw on the server.
+- Wrap any browser-only side effects in `effect()` . `effect()` is a no-op during `renderForHydration`, so it is safe to reference `document`, `window`, or `localStorage` inside one. Direct references to browser globals in the function body outside an `effect()` will throw on the server.
 - For browser-only code that cannot go inside `effect()` (module-level code, `computed()` values, direct assignments), use the `isBrowser` export: `if (isBrowser) { ... }`.
 - State passed to `renderForHydration` must be JSON-serializable. It warns on lossy values (Date, Map, Set, RegExp, undefined, function, Symbol, non-finite numbers, class instances) and throws on unserializable ones (BigInt, circular references).
 
@@ -462,7 +495,7 @@ export function dashboard({ tasks: initialTasks }) {
   const tasks = signal(initialTasks);  // signal created inside the function
 
   effect(() => {
-    // safe — effect() is suppressed on the server
+    // safe. Effect() is suppressed on the server
     document.title = `${tasks.get().length} tasks`;
   });
 
@@ -492,11 +525,11 @@ These are deliberate simplicity tradeoffs, not bugs.
 
 ## Common mistakes to avoid
 
-- Do not use JSX or tagged template literals — Kensington uses method calls only
-- Do not pass content to void elements (`input`, `br`, `img`, `hr`, `meta`, `link`) — they take options only, no content
-- Do not import `t` as a default import — `t` is a named export; the default export is the `Kensington` class
+- Do not use JSX or tagged template literals. Kensington uses method calls only
+- Do not pass content to void elements (`input`, `br`, `img`, `hr`, `meta`, `link`). They take options only, no content
+- Do not import `t` as a default import . `t` is a named export; the default export is the `Kensington` class
 - Do not skip `.toString()` when passing to HTTP framework response methods
-- Do not use `onclick="string"` for DOM usage — pass a function; string handlers only serialize in `.toString()`
+- Do not use `onclick="string"` for DOM usage. Pass a function; string handlers only serialize in `.toString()`
 - For drag-and-drop sortable lists: add `persist: true` to the item tag, not the container. Without it, `insertBefore` reorders fire a remove event that permanently stops the item's signal effects (class updates, checked state, etc. all break silently after the first drag). `persist: true` causes effects to pause on removal and resume on re-insertion instead.
 - For per-row local state inside a list mapping, use the keyed form: `signal(initial, item.id)` inside the surrounding `computed` callback returns the same instance per key across re-runs. Without a key, the DOM node is replaced on every outer re-render (focus, scroll, input value, and selection are copied over, but local signal state resets to the initial value).
 
@@ -522,17 +555,17 @@ export default [
 Calling `.get()` on a signal creates a subscription. If the same run then calls `.set()` on the same signal, the write re-triggers the run, which writes again, creating an infinite loop. Use `.value` when you need the current value without subscribing.
 
 ```javascript
-// Wrong — .get() subscribes, then .set() re-triggers the effect
+// Wrong . .get() subscribes, then .set() re-triggers the effect
 effect(() => {
   if (counter.get() > 10) {
     counter.set(0); // re-triggers this effect every time counter changes
   }
 });
 
-// Correct — .value reads without subscribing
+// Correct . .value reads without subscribing
 effect(() => {
   if (someOtherSignal.get() && counter.value > 10) {
-    counter.set(0); // safe — counter is not a dependency of this effect
+    counter.set(0); // safe. Counter is not a dependency of this effect
   }
 });
 ```
@@ -549,7 +582,7 @@ const rows = computed(() => {
   return visible.map(item => t.li(item.name));
 });
 
-// Correct — pure computed for the UI, separate effect for the side effect
+// Correct. Pure computed for the UI, separate effect for the side effect
 const visibleItems = computed(() => items.get().filter(isActive));
 
 effect(() => {
@@ -559,12 +592,12 @@ effect(() => {
 
 ### Do not use `queueMicrotask` to defer a `.set()` inside an effect or computed
 
-If the surrounding effect or computed reads the signal via `.get()`, it is subscribed. The deferred write re-triggers the run, which queues another microtask, which writes again — an infinite chain that freezes the browser tab. Use `.value` for reads that should not create a dependency, and write directly without the deferral.
+If the surrounding effect or computed reads the signal via `.get()`, it is subscribed. The deferred write re-triggers the run, which queues another microtask, which writes again. An infinite chain that freezes the browser tab. Use `.value` for reads that should not create a dependency, and write directly without the deferral.
 
 The canonical case is auto-selecting the first item when a filtered list changes:
 
 ```javascript
-// Wrong — .get() subscribes, queueMicrotask fires after the flush and re-triggers
+// Wrong . .get() subscribes, queueMicrotask fires after the flush and re-triggers
 computed(() => {
   const visible = items.get().filter(isActive);
   if (!selectedId.get() || !visible.some(i => i.id === selectedId.get())) {
@@ -573,7 +606,7 @@ computed(() => {
   return visible.map(item => t.li({ dataKey: item.id }, item.name));
 });
 
-// Correct — dedicated effect, .value avoids subscribing to selectedId
+// Correct. Dedicated effect, .value avoids subscribing to selectedId
 effect(() => {
   const visible = items.get().filter(isActive);
   if (!selectedId.value || !visible.some(i => i.id === selectedId.value)) {
@@ -603,7 +636,7 @@ const rows = tasks.transform(list =>
   })
 );
 
-// Correct — create itemClass once when the task is created and store it on the object.
+// Correct. Create itemClass once when the task is created and store it on the object.
 // The snapshot sees the same signal reference every render and hits the fast-path.
 function makeTask(text) {
   const done = signal(false);
@@ -682,7 +715,7 @@ The class array makes long Tailwind class lists easier to read and conditionally
 ```javascript
 import { t } from 'kensington';
 
-// Conditional classes are natural with arrays — false/null entries are dropped
+// Conditional classes are natural with arrays. False/null entries are dropped
 function button(label, { variant = 'primary', disabled = false } = {}) {
   return t.button({
     type: 'button',
@@ -774,7 +807,7 @@ app.get('/users', async (req, res) => {
 app.listen(3000);
 ```
 
-### Express — render helper middleware
+### Express. Render helper middleware
 
 Attach a `res.renderKensington` helper so routes never call `.toString()` directly:
 
@@ -983,7 +1016,7 @@ t.form([
 ```
 
 ```javascript
-// Head meta tags as a fragment — no wrapping element
+// Head meta tags as a fragment. No wrapping element
 function standardMeta(title, description) {
   return [
     t.meta({ charset: 'utf-8' }),
@@ -1001,7 +1034,7 @@ t.head([
 
 ### Caching and reuse
 
-Tag objects are immutable — build shared pieces once and reuse them across renders:
+Tag objects are immutable. Build shared pieces once and reuse them across renders:
 
 ```javascript
 const loadingSpinner = t.div({ class: 'spinner', role: 'status', ariaLabel: 'Loading' });
@@ -1216,7 +1249,7 @@ function pageWithData(title, data, content) {
 // In the browser:
 // const data = JSON.parse(document.getElementById('page-data').textContent);
 
-// Inline CSS — array items are joined with newlines
+// Inline CSS. Array items are joined with newlines
 function pageWithInlineStyles(content) {
   return t.htmlWithDocType({ lang: 'en' }, [
     t.head([
@@ -1256,16 +1289,16 @@ function searchPage() {
   ]);
 }
 
-// Returns only the result fragment — htmx swaps it into #results
+// Returns only the result fragment. Htmx swaps it into #results
 app.get('/search', async (c) => {
   const rows = await db.search(c.req.query('q') ?? '');
   return c.html(rows.map(r => t.li(r.name).toString()).join(''));
 });
 ```
 
-### Hydration — form with server-side validation
+### Hydration. Form with server-side validation
 
-The form is rendered on the server with `renderForHydration` and mounted as a reactive component on the client. Submitting calls `fetch` with the form data as JSON. On validation failure the server returns `{ errors }` and the `errors` signal updates, reactively showing each message and adding an error class to the affected field. Input values are preserved because the form element stays in place — no DOM swap, no re-render. On success the server returns `{ success: true }` and the client navigates away.
+The form is rendered on the server with `renderForHydration` and mounted as a reactive component on the client. Submitting calls `fetch` with the form data as JSON. On validation failure the server returns `{ errors }` and the `errors` signal updates, reactively showing each message and adding an error class to the affected field. Input values are preserved because the form element stays in place. No DOM swap, no re-render. On success the server returns `{ success: true }` and the client navigates away.
 
 ```javascript
 // components/registration-form.js
@@ -1371,7 +1404,7 @@ const modal = createModal('Confirm', t.p('Are you sure?'));
 document.body.append(modal);
 ```
 
-### TypeScript — typed components
+### TypeScript. Typed components
 
 ```typescript
 import { t } from 'kensington';
@@ -1404,7 +1437,7 @@ function usersTable(users: User[]): ContentTag {
 }
 ```
 
-### TypeScript — design system with custom elements, htmx, and module augmentation
+### TypeScript. Design system with custom elements, htmx, and module augmentation
 
 A more complete pattern: a `Kensington` subclass that defines typed custom design-system elements, module augmentation for htmx attributes, typed domain components, and a typed layout function.
 
@@ -1588,7 +1621,7 @@ const formula = t.math({ display: 'block' },
 t.p(['The solutions are ', formula, '.']);
 ```
 
-### Reactive data — counter
+### Reactive data. Counter
 
 ```javascript
 import { t, signal, computed, effect } from 'kensington';
@@ -1607,7 +1640,7 @@ document.body.append(
 );
 ```
 
-### Reactive data — live filter
+### Reactive data. Live filter
 
 ```javascript
 import { t, signal, computed } from 'kensington';
@@ -1630,7 +1663,7 @@ document.body.append(
 );
 ```
 
-### Reactive data — keyed todo list
+### Reactive data. Keyed todo list
 
 ```javascript
 import { t, signal } from 'kensington';
@@ -1679,7 +1712,7 @@ document.body.append(
 );
 ```
 
-### Reactive data — form with live validation
+### Reactive data. Form with live validation
 
 ```javascript
 import { t, signal, computed } from 'kensington';
@@ -1712,7 +1745,7 @@ document.body.append(
 );
 ```
 
-### Reactive data — hydrated like button
+### Reactive data. Hydrated like button
 
 Optimistic update with revert on error. The component runs unchanged on server and client.
 
@@ -1780,9 +1813,9 @@ import { likeButton } from './components/like-button.js';
 registerComponents({ likeButton });
 ```
 
-### Reactive data — sortable table
+### Reactive data. Sortable table
 
-Two signals drive both the rows and the column headers. Each header creates its own `computed` that tracks only the signals it reads — the active header tracks both `sortCol` and `sortAsc`; inactive headers track only `sortCol`. Stale subscriptions are cleaned up automatically between runs.
+Two signals drive both the rows and the column headers. Each header creates its own `computed` that tracks only the signals it reads. The active header tracks both `sortCol` and `sortAsc`; inactive headers track only `sortCol`. Stale subscriptions are cleaned up automatically between runs.
 
 ```javascript
 import { t, signal, computed } from 'kensington';
@@ -1832,14 +1865,14 @@ document.body.append(
 );
 ```
 
-### Reactive data — making static HTML elements reactive
+### Reactive data. Making static HTML elements reactive
 
 When most of a page is static HTML, use `effect()` directly against existing DOM elements rather than rebuilding markup with `.toElement()`. A signal holds the shared state; each element gets its own `effect` that reads the signal and updates the DOM.
 
 ```javascript
 import { signal, effect } from 'kensington';
 
-// Tab switcher — read initial state from the HTML so the page works before JS runs
+// Tab switcher. Read initial state from the HTML so the page works before JS runs
 const activeTab = signal(
   document.querySelector('.tab--active')?.dataset.tab ?? 'overview'
 );
@@ -1860,7 +1893,7 @@ document.querySelectorAll('[data-panel]').forEach(panel => {
 
 Effects created this way are not auto-stopped when the element is removed from the DOM. For page-lifetime effects that is fine. If cleanup is needed, store the return value and call `.stop()` manually, or use `addDisconnectedCallback` on a Kensington-created ancestor.
 
-### Reactive data — accordion with per-element signals
+### Reactive data. Accordion with per-element signals
 
 Each accordion item gets its own signal, seeded from its `aria-expanded` attribute so the HTML is the source of truth. An `effect` keeps `aria-expanded` and the `hidden` property in sync on every change.
 
@@ -1881,7 +1914,7 @@ document.querySelectorAll('.accordion-toggle').forEach(btn => {
 });
 ```
 
-### Reactive data — context
+### Reactive data. Context
 
 The `createContext` pattern builds a signal stack so components read the nearest provider's value during synchronous construction. Consumers hold the signal reference and update reactively. `provide()` always wraps its argument in a new signal.
 
@@ -1953,10 +1986,10 @@ document.body.append(app.toElement());
 | Type | Description |
 |------|-------------|
 | `ContentTag` | Returned by content element methods (`div`, `p`, `span`, ...). Has `.toString()` and `.toElement()`. |
-| `VoidTag` | Returned by void element methods (`br`, `hr`, `input`, ...). Extends `ContentTag` — has `.toString()` and `.toElement()`. |
+| `VoidTag` | Returned by void element methods (`br`, `hr`, `input`, ...). Extends `ContentTag`. Has `.toString()` and `.toElement()`. |
 | `LiteralTag` | Returned by `.literal()` / `.unsafeLiteral()`. |
 | `CommentTag` | Returned by `.inlineComment()`. |
-| `Content` | `string \| number \| ContentTag \| VoidTag \| LiteralTag \| CommentTag \| Content[]` — valid content for any tag method. |
+| `Content` | `string \| number \| ContentTag \| VoidTag \| LiteralTag \| CommentTag \| Content[]`. Valid content for any tag method. |
 | `ContentMethod<T>` | Type of a custom element method. `T` is the element-specific attribute type. |
 | `GlobalAttributes` | Attributes shared by all HTML elements. |
 | `GlobalEvents` | Event handler attributes (`onclick`, `oninput`, ...) with specific DOM event types. |

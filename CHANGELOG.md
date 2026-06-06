@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- Keyed computeds and transforms. `computed(fn, key)` and `signal.transform(fn, key)` inside a `computed` callback return the same inner instance across outer re-runs when called with the same key, mirroring `signal(initial, key)`. The fn closure is refreshed on every outer re-run so captured variables stay fresh while the instance identity is stable. Use this for per-item derived values (e.g. `computed(() => filter.get() === item.cat, item.id)`).
+- The `key` argument accepts any `Map`-compatible value (`string | number | object | symbol`), exported as the `SignalKey` type. Object keys require a stable reference across outer re-runs; immutable updates that clone the item break the match, so `item.id` is the recommended default.
+- Devtools surfaces the key on keyed computeds and transforms in the signals panel, matching the existing display for keyed signals.
+
+### Changed
+- The warning for `computed()` or `.transform()` called inside a `computed` without a key is now `console.warn` (was `console.error`). The library handles the unkeyed case via reconciler-driven node replacement, matching the existing behavior for unkeyed `signal()`. The warning text differs between the `computed()` and `.transform()` call sites.
+- A reactive primitive (signal, computed, or transform) created inside a `computed` callback and subscribed to from user-land code outside its owner (e.g. an external `effect()`) now emits a runtime warning. DOM-binding effects created during `toElement()` are skipped. Passing the instance directly to a tag is the natural pattern. Covers keyed signals as well as keyed computeds; both share the same lifetime concern (stopped when the key isn't accessed during a re-run).
+
 ## [2.0.0-signals.15] - 2026-06-02
 
 ### Added
@@ -21,7 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [2.0.0-signals.13] - 2026-05-29
 
 ### Fixed
-- Reconciler keyed fast-path now recognises `data-key` passed as a nested object (`{ data: { key: id } }`). Previously only the flat forms `{ dataKey: id }` and `{ 'data-key': id }` were matched, so all keyed items were treated as unkeyed on every reconcile — causing full re-renders and unnecessary effect churn.
+- Reconciler keyed fast-path now recognises `data-key` passed as a nested object (`{ data: { key: id } }`). Previously only the flat forms `{ dataKey: id }` and `{ 'data-key': id }` were matched, so all keyed items were treated as unkeyed on every reconcile. Causing full re-renders and unnecessary effect churn.
 
 ### Added
 - Reactive per-property style objects. Individual values inside a `style` object now accept signals. Only the changed property is written to the DOM on each signal update.
@@ -99,10 +110,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [2.0.0-signals.6] - 2026-05-12
 
 ### Added
-- `.getDomElement()` on `ContentTag`, `VoidTag`, and `CommentTag`. Returns the element if it is currently connected to the DOM, `null` otherwise. Does not create an element and never throws — returns `null` in non-browser environments. Use `.toElement()` to get or create the element; use `.getDomElement()` to check whether it is live.
+- `.getDomElement()` on `ContentTag`, `VoidTag`, and `CommentTag`. Returns the element if it is currently connected to the DOM, `null` otherwise. Does not create an element and never throws. Returns `null` in non-browser environments. Use `.toElement()` to get or create the element; use `.getDomElement()` to check whether it is live.
 
 ### Changed
-- `.toElement()` is now idempotent. The first call creates the element; subsequent calls return the same cached node. For reactive elements (those with signal attributes or signal content), the cache is cleared after the element is removed from the DOM via MutationObserver, so the next `.toElement()` call produces a fresh element with live effects. For non-reactive elements, `.toElement()` continues to return the same node after removal — the element remains valid and can be re-inserted directly.
+- `.toElement()` is now idempotent. The first call creates the element; subsequent calls return the same cached node. For reactive elements (those with signal attributes or signal content), the cache is cleared after the element is removed from the DOM via MutationObserver, so the next `.toElement()` call produces a fresh element with live effects. For non-reactive elements, `.toElement()` continues to return the same node after removal. The element remains valid and can be re-inserted directly.
 - Signal-based `inlineComment` elements now stop their reactive effect when removed from the DOM, matching the existing behaviour of reactive `ContentTag` elements.
 
 ## [2.0.0-signals.5] - 2026-05-12
@@ -111,13 +122,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `on` attribute key for wiring custom event listeners in `toElement()`. Pass a plain object mapping event names verbatim to handler functions: `t.div({ on: { bricksSelectorChange: handler } })`. Event names are passed directly to `addEventListener` with no case transformation, so both camelCase and kebab-case custom event names work correctly.
 
 ### Changed
-- `on*` function attributes now only wire standard all-lowercase DOM event listeners (e.g. `onclick`, `oninput`). A camelCase key like `onbricksSelectorChange` is no longer silently treated as an event listener — it is instead subject to the normal `validationLevel` contract: silently discarded at `'off'`, warned at `'warn'`, throws at `'error'`. Use the new `on` key for custom event names.
+- `on*` function attributes now only wire standard all-lowercase DOM event listeners (e.g. `onclick`, `oninput`). A camelCase key like `onbricksSelectorChange` is no longer silently treated as an event listener. It is instead subject to the normal `validationLevel` contract: silently discarded at `'off'`, warned at `'warn'`, throws at `'error'`. Use the new `on` key for custom event names.
 
 ## [2.0.0-signals.4] - 2026-05-11
 
 ### Added
 - `Signal.toJSON()` returns the current value, making signals transparent to `JSON.stringify`. Nested signal trees serialize correctly without manual `.get()` calls: `JSON.stringify({ done: signal(true) })` → `'{"done":true}'`.
-- `Signal.toString()` delegates to `String(this.get())`, so signals work in template literals and string concatenation. Because it calls `.get()`, it participates in dependency tracking — `` `${mySignal}` `` inside a `computed` or `effect` correctly subscribes to the signal.
+- `Signal.toString()` delegates to `String(this.get())`, so signals work in template literals and string concatenation. Because it calls `.get()`, it participates in dependency tracking . `` `${mySignal}` `` inside a `computed` or `effect` correctly subscribes to the signal.
 
 ### Changed
 - Keyed list reconciliation now performs a full recursive positional diff on reused nodes rather than replacing their children. Only attributes and text that actually differ are written to the DOM. Signal-managed attributes on reused nodes are preserved correctly and orphaned signal effects on discarded fresh nodes are stopped immediately.

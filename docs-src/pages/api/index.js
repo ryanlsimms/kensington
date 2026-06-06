@@ -29,11 +29,12 @@ export function apiSidebar() {
         ]),
       ]),
       t.li([
-        t.a({ href: '#signals' }, 'Signals'),
+        t.a({ href: '#api-signals' }, 'Signals'),
         t.ul([
-          t.li(t.a({ href: '#signal' }, 'signal()')),
-          t.li(t.a({ href: '#computed' }, 'computed()')),
-          t.li(t.a({ href: '#effect' }, 'effect()')),
+          t.li(t.a({ href: '#api-signal' }, 'signal()')),
+          t.li(t.a({ href: '#api-computed' }, 'computed()')),
+          t.li(t.a({ href: '#api-keyed-forms' }, 'Keyed forms')),
+          t.li(t.a({ href: '#api-effect' }, 'effect()')),
           t.li(t.a({ href: '#prop-key' }, 'prop key')),
           t.li(t.a({ href: '#render-for-hydration' }, 'renderForHydration()')),
           t.li(t.a({ href: '#register-components' }, 'registerComponents()')),

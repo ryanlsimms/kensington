@@ -1,6 +1,6 @@
 import { t } from 'kensington';
 
-import { code, panels } from '../../components/ui.js';
+import { code, exLink, panels } from '../../components/ui.js';
 
 export function examplesReactiveData() {
   return t.section({ id: 'reactive-data' }, [
@@ -143,9 +143,18 @@ document.body.append(
       t.p([
         'Each row has its own edit mode that does not belong on the outer data array. ',
         t.code('signal(false, item.id)'),
-        ' inside the ',
-        t.code('computed'),
-        ' scopes the per-row state to the surrounding computed so the same signal instance is reused for the same key across renders. State persists when other rows change, and the keyed signal is stopped automatically when its row leaves the list.',
+        ' scopes the per-row state to the surrounding computed so the same signal instance is reused across renders. The inner ',
+        t.code('computed(() => editing.get() ? input : label, item.id)'),
+        ' swaps the visible element when ',
+        t.code('editing'),
+        ' toggles. Keying it gives the inner computed a stable Signal identity across outer re-runs and lets it react to ',
+        t.code('editing'),
+        ' independently of changes to the items array. Both are stopped automatically when their row leaves the list.',
+      ]),
+      t.p([
+        'See ',
+        exLink('?page=reactivity&section=signals-keyed-local-state', 'Per-item local state and derived values'),
+        ' for a full description of the keyed signal and keyed computed patterns.',
       ]),
       code('javascript', `import { t, signal, computed } from 'kensington';
 
@@ -160,7 +169,7 @@ function rename(id, label) {
 }
 
 const rows = computed(() => items.get().map(item => {
-  // Keyed per row. Same signal instance returned across re-runs for the same item.id.
+  // Keyed signal: same instance across re-runs for the same item.id.
   const editing = signal(false, item.id);
 
   const input = t.input({
@@ -169,8 +178,11 @@ const rows = computed(() => items.get().map(item => {
     onblur: e => { rename(item.id, e.target.value); editing.set(false); },
   });
   const label = t.span({ onclick: () => editing.set(true) }, item.label);
+
+  // Keyed computed: stable instance, re-runs when 'editing' toggles. The fn closure
+  // is refreshed on each outer re-run so 'input' and 'label' track the current item.
   return t.li({ dataKey: item.id }, [
-    computed(() => editing.get() ? input : label),
+    computed(() => editing.get() ? input : label, item.id),
   ]);
 }));
 

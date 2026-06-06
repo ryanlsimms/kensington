@@ -42,7 +42,7 @@ effect(() => {
       t.h2('.transform'),
       t.p([
         'Returns a new read-only signal whose value is derived by passing the source signal\'s value through a function. Equivalent to ',
-        t.code('computed(() => fn(source.get()))'),
+        t.code('computed(() => fn(source.get()), key)'),
         ', but attached directly to the signal.',
       ]),
       code('javascript', `const count = signal(0);
@@ -53,6 +53,23 @@ t.p(label).toElement(); // "0 items", updates when count changes
 // useful for coercing a signal's type before passing it as an attribute
 const sortAsc = signal(true);
 t.th({ ariaSort: sortAsc.transform(v => v ? 'ascending' : 'descending') });`),
+      t.p([
+        'Inside a ',
+        t.code('computed'),
+        ' callback, pass an optional stable ',
+        t.code('key'),
+        ' as the second argument to scope the transform to the owning computed. Same lifecycle as ',
+        t.code('computed(fn, key)'),
+        ': the same instance is reused across outer re-runs, the fn closure is updated automatically, and the instance is stopped when its key leaves the list.',
+      ]),
+      code('javascript', `const filter = signal('fruit');
+
+const list = computed(() => items.get().map(item =>
+  t.li({
+    dataKey: item.id,
+    class: filter.transform(f => f === item.category ? 'match' : '', item.id),
+  }, item.name),
+));`),
     ]),
   ];
 }

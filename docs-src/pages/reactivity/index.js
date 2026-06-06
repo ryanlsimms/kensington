@@ -6,12 +6,13 @@ import { reactivityCleanup } from './cleanup.js';
 import { reactivityDevtools } from './devtools.js';
 import { reactivityInTemplates } from './in-templates.js';
 import { reactivityIntro } from './intro.js';
+import { reactivityKeyedLists } from './keyed-lists.js';
 import { reactivityLifecycle } from './lifecycle.js';
 import { reactivityPrimitives } from './primitives.js';
 import { reactivitySsr } from './ssr.js';
 import { reactivityKnownTradeoffs } from './tradeoffs.js';
 import { reactivityValueAndTransform } from './value-and-transform.js';
-import { reactivityWhenUpdates } from './when-updates.js';
+import { reactivityAdvancedHeader, reactivityWhenUpdates } from './when-updates.js';
 
 export function reactivitySidebar() {
   return [
@@ -26,17 +27,19 @@ export function reactivitySidebar() {
       t.li(t.a({ href: '#signals-content' }, 'Content')),
       t.li(t.a({ href: '#signals-attributes' }, 'Attributes')),
       t.li(t.a({ href: '#signals-dom-props' }, 'DOM properties')),
+      t.li(t.a({ href: '#signals-literal' }, '.literal() & comments')),
+      t.li(t.a({ href: '#signals-existing-elements' }, 'Existing elements')),
+    ]),
+    t.h2({ class: 'sidebar-title' }, 'Advanced'),
+    t.ul([
+      t.li(t.a({ href: '#signal-value' }, '.value')),
+      t.li(t.a({ href: '#signal-transform' }, '.transform()')),
       t.li([
         t.a({ href: '#signals-keyed-lists' }, 'Keyed lists'),
         t.ul([
           t.li(t.a({ href: '#signals-keyed-local-state' }, 'Per-item local state')),
         ]),
       ]),
-      t.li(t.a({ href: '#signals-literal' }, '.literal() & comments')),
-      t.li(t.a({ href: '#signals-existing-elements' }, 'Existing elements')),
-    ]),
-    t.h2({ class: 'sidebar-title' }, 'Advanced'),
-    t.ul([
       t.li([
         t.a({ href: '#when-updates-fire' }, 'When updates fire'),
         t.ul([
@@ -46,8 +49,6 @@ export function reactivitySidebar() {
           t.li(t.a({ href: '#per-row-signals' }, 'Per-row signals')),
         ]),
       ]),
-      t.li(t.a({ href: '#signal-value' }, '.value')),
-      t.li(t.a({ href: '#signal-transform' }, '.transform()')),
       t.li(t.a({ href: '#signals-cleanup' }, 'Cleanup')),
       t.li([
         t.a({ href: '#lifecycle' }, 'Lifecycle'),
@@ -84,8 +85,10 @@ export function reactivityContent() {
     reactivityIntro(),
     reactivityPrimitives(),
     ...reactivityInTemplates(),
-    ...reactivityWhenUpdates(),
+    reactivityAdvancedHeader(),
     ...reactivityValueAndTransform(),
+    reactivityKeyedLists(),
+    ...reactivityWhenUpdates(),
     reactivityCleanup(),
     reactivityLifecycle(),
     reactivitySsr(),

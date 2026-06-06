@@ -18,7 +18,7 @@ import {
 
 let currentEffect = null;
 // Tracks whether we are inside a renderForHydration call. On the server we only need a static
-// HTML snapshot, so effects must not run — they would set up subscriptions with no DOM to update
+// HTML snapshot, so effects must not run. They would set up subscriptions with no DOM to update
 // and no cleanup path, leaking memory. Counter rather than boolean so nested calls are safe.
 let ssrDepth = 0;
 
@@ -52,7 +52,7 @@ const sleepFns = new WeakMap();
 const wakeFns = new WeakMap();
 // Computed signals whose sleep has been deferred until after the current flush. If the
 // subscriber comes back before the microtask fires (the common case when a DOM-binding
-// effect re-runs), the entry is removed and sleep is cancelled — no sleep/wake round-trip.
+// effect re-runs), the entry is removed and sleep is cancelled. No sleep/wake round-trip.
 const pendingSleep = new Set();
 // Tracks signals created by computed()/transform() so .set() can be blocked on them.
 const derivedSignals = new WeakSet();
@@ -87,10 +87,23 @@ export function _resetWarningThrottle() {
 // keyed signal lookups to that computed instance. Saved/restored as a stack across nested
 // computed runs (which are warned against but otherwise tolerated).
 let currentComputed = null;
+// Set by Signal.prototype.transform before it calls computed() so the warning fired from
+// inside computed() can use transform-specific wording. Cleared in transform's finally.
+let computedCallSite = null;
 // Per-computed registry of keyed signals. Each entry has `signals: Map<key, Signal>` and
 // `accessed: Set<key>`. After each computed run, keys not accessed are stopped and removed,
 // so signals tied to items that have left the list are cleaned up automatically.
 const keyedRegistries = new WeakMap();
+// Per-computed registry of keyed inner computeds. Same lifecycle as keyedRegistries.
+// Each entry has `computeds: Map<key, { fnSig: Signal, inner: Signal }>` and `accessed: Set<key>`.
+// fnSig holds the current fn closure; setting it triggers the inner computed to re-run with the
+// updated fn, which handles the case where the fn captures outer-scope variables that changed.
+const keyedComputedRegistries = new WeakMap();
+// Maps a keyed inner Signal (signal, computed, or transform created inside a computed
+// callback with a stable key) back to its owner outer computed. Signal.get() warns when
+// something outside the owner subscribes. The owner can stop the inner at any time when
+// its key isn't accessed during a re-run, so external references silently drop subscribers.
+const keyedScopeOwners = new WeakMap();
 
 function rethrowAsync(err) {
   queueMicrotask(() => { throw err; });
@@ -206,6 +219,20 @@ export default class Signal {
       this.#subscribers.add(currentEffect);
       currentEffect._reads.add(this);
       notifySignalEffectSubscription(this, currentEffect._devId, this.#subscribers.size);
+      const ownerSig = keyedScopeOwners.get(this);
+      if (
+        ownerSig !== undefined
+        && currentComputed !== ownerSig
+        && !currentEffect._isInternal
+      ) {
+        throttledWarn(
+          'out-of-scope-reactive-reference',
+          'kensington: a signal/computed/transform created inside a computed callback is being subscribed to from outside its owning scope. ' +
+          'If the owning computed re-runs and temporarily drops this key (e.g. during a loading state), ' +
+          'the instance will be stopped and this subscriber will receive no further updates. ' +
+          'Consume the value inline (call .get() on it, or pass it directly to a tag) instead of passing the instance out.',
+        );
+      }
       const sub = currentEffect;
       sub._cleanups.push(() => {
         this.#subscribers.delete(sub);
@@ -250,7 +277,7 @@ export default class Signal {
       throttledError(
         'set-in-effect',
         'kensington: a signal was read via .get() and written via .set() in the same effect or computed run. ' +
-        'This creates a reactive loop — the write re-triggers the run, which writes again. ' +
+        'This creates a reactive loop. The write re-triggers the run, which writes again. ' +
         'Use .value instead of .get() if you need the current value without subscribing.',
       );
     }
@@ -310,11 +337,11 @@ function track(run, fn) {
 /**
  * Runs `fn` immediately and re-runs it whenever any signal read via `.get()` inside changes.
  * Returns `{ pause(), resume(), stop() }`. `pause()` unsubscribes temporarily; `resume()` restarts.
- * `stop()` permanently destroys the effect — calling `resume()` after `stop()` is a no-op.
+ * `stop()` permanently destroys the effect. Calling `resume()` after `stop()` is a no-op.
  * @param {function(): void} fn
  * @returns {{ pause: function(): void, resume: function(): void, stop: function(): void }}
  */
-function createEffect(fn) {
+function createEffect(fn, isInternal = false) {
   if (ssrDepth > 0) {
     return { pause() {}, resume() {}, stop() {} };
   }
@@ -330,6 +357,7 @@ function createEffect(fn) {
   }
   run._cleanups = [];
   run._isEffect = true;
+  run._isInternal = isInternal;
   run._devId = _devId;
   run();
   return {
@@ -379,24 +407,99 @@ export function effect(fn) {
 }
 
 // For library-internal use only. Creates an effect without the effect-in-effect/computed
-// warning checks — lifecycle.js legitimately creates effects inside running effects during
-// reconcile, and those effects are correctly managed and stopped by dom-tracker.
+// warning checks. Lifecycle.js legitimately creates effects inside running effects during
+// reconcile, and those effects are correctly managed and stopped by dom-tracker. The
+// `_isInternal` flag also tells Signal.get() to skip the keyed-computed-external-subscriber
+// warning: DOM-binding effects subscribing to a keyed inner are part of the owner's own
+// render cycle, so their lifetime is tied to the DOM and not a true external escape.
 export function _internalEffect(fn) {
-  return createEffect(fn);
+  return createEffect(fn, true);
 }
 
 /**
  * Creates a read-only signal derived from other signals. Re-runs automatically whenever
  * any signal read via `.get()` inside the function changes. Call `.stop()` to unsubscribe
  * from all tracked signals and freeze the value.
+ *
+ * When called inside another `computed` callback with a stable `key`, returns the same
+ * inner computed instance across outer re-runs. The fn closure is updated on each outer
+ * re-run so the inner computed always reflects the latest captured variables.
  * @template T
  * @param {function(): T} fn
+ * @param {string | number | object | symbol} [key]
  * @returns {Signal<T>}
  * @example
  * const active = signal(true);
  * const cls = computed(() => active.get() ? 'btn-primary' : 'btn-outline');
+ * @example
+ * // Keyed computed inside a computed. Stable instance per key across outer re-runs.
+ * const list = computed(() => items.get().map(item =>
+ *   computed(() => item.label.toUpperCase(), item.id).get()
+ * ));
  */
-export function computed(fn) {
+export function computed(fn, key) {
+  // Keyed path: inside an outer computed with a stable key → reuse the same inner computed
+  // across outer re-runs, updating the fn closure each time so captured variables stay fresh.
+  if (key !== undefined && currentComputed !== null) {
+    const owner = currentComputed;
+    let computedReg = keyedComputedRegistries.get(owner);
+    if (computedReg === undefined) {
+      computedReg = { computeds: new Map(), accessed: new Set() };
+      keyedComputedRegistries.set(owner, computedReg);
+    }
+    if (computedReg.accessed.has(key)) {
+      throttledError(
+        'duplicate-keyed-computed',
+        `kensington: computed() called twice with key "${key}" in the same computed run. ` +
+        'Each keyed computed needs a unique key per computed run, or two items will share state. ' +
+        'Use a key that includes the item identity (e.g., item.id).',
+      );
+    }
+    computedReg.accessed.add(key);
+    const existing = computedReg.computeds.get(key);
+    if (existing !== undefined) {
+      // Update the fn wrapper so the inner computed reflects any outer-scope variable changes,
+      // then increment the version signal to trigger a re-run. versionSig is a plain number
+      // counter. Avoids the issue where Signal.set() treats function arguments as updaters.
+      if (existing.fnWrapper.fn !== fn) {
+        existing.fnWrapper.fn = fn;
+        derivedWriteDepth++;
+        try {
+          existing.versionSig.set(v => v + 1);
+        } finally {
+          derivedWriteDepth--;
+        }
+      }
+      return existing.inner;
+    }
+    // First time this key is seen: create a mutable fn wrapper and a version counter signal,
+    // then create an inner computed that calls fnWrapper.fn() and re-runs when the version
+    // increments. Temporarily clear all reactive context so the recursive computed() call
+    // below does not trigger warnings and does not enter the keyed path.
+    suppressReactiveCheck = true;
+    const versionSig = new Signal(0);
+    suppressReactiveCheck = false;
+    const fnWrapper = { fn };
+    const prevInComputedFn = inComputedFn;
+    const prevCurrentComputed = currentComputed;
+    const prevCurrentEffect = currentEffect;
+    inComputedFn = false;
+    currentComputed = null;
+    currentEffect = null;
+    let inner;
+    try {
+      inner = computed(() => { versionSig.get(); return fnWrapper.fn(); });
+    } finally {
+      inComputedFn = prevInComputedFn;
+      currentComputed = prevCurrentComputed;
+      currentEffect = prevCurrentEffect;
+    }
+    keyedScopeOwners.set(inner, owner);
+    computedReg.computeds.set(key, { versionSig, fnWrapper, inner });
+    notifySignalMarkKeyed(inner, key);
+    return inner;
+  }
+
   // Under SSR we want the value but not the subscription. Subscribing to a source signal
   // that outlives the request (e.g. a module-level signal) would permanently retain the
   // computed's update function in that source's subscriber set, leaking once per request.
@@ -409,12 +512,21 @@ export function computed(fn) {
     return s;
   }
   if (inComputedFn) {
-    throttledError(
-      'computed-in-computed',
-      'kensington: computed() called inside a computed or transform callback. ' +
-      'A new computed is created on every re-run, breaking the reconciler snapshot fast-path and leaving orphaned sleeping signals. ' +
-      'Create computeds outside the reactive callback and pass them in.',
-    );
+    if (computedCallSite === 'transform') {
+      throttledWarn(
+        'transform-in-computed',
+        'kensington: .transform() called inside a computed or transform callback without a key. ' +
+        'The DOM node will be replaced when outer state changes. ' +
+        'For best performance and to persist inner state, pass a stable key as the second argument: signal.transform(fn, key).',
+      );
+    } else {
+      throttledWarn(
+        'computed-in-computed',
+        'kensington: computed() called inside a computed or transform callback without a key. ' +
+        'The DOM node will be replaced when outer state changes. ' +
+        'For best performance and to persist inner computed state, pass a stable key as the second argument: computed(fn, key).',
+      );
+    }
   } else if (currentEffect !== null) {
     throttledError(
       'computed-in-effect',
@@ -442,6 +554,8 @@ export function computed(fn) {
       // accessed during this run is swept after the run completes.
       const registry = keyedRegistries.get(s);
       if (registry !== undefined) { registry.accessed.clear(); }
+      const computedReg = keyedComputedRegistries.get(s);
+      if (computedReg !== undefined) { computedReg.accessed.clear(); }
       try {
         result = fn();
       } catch (err) {
@@ -458,6 +572,16 @@ export function computed(fn) {
           if (!registry.accessed.has(k)) {
             sig.stop();
             registry.signals.delete(k);
+          }
+        }
+      }
+      // Sweep keyed inner computeds that weren't touched this run.
+      if (computedReg !== undefined) {
+        for (const [k, entry] of computedReg.computeds) {
+          if (!computedReg.accessed.has(k)) {
+            entry.inner.stop();
+            entry.versionSig.stop();
+            computedReg.computeds.delete(k);
           }
         }
       }
@@ -516,25 +640,36 @@ export function computed(fn) {
       }
       keyedRegistries.delete(s);
     }
+    // Stop any keyed inner computeds that this computed owned.
+    const computedReg = keyedComputedRegistries.get(s);
+    if (computedReg !== undefined) {
+      for (const { inner, versionSig } of computedReg.computeds.values()) {
+        inner.stop();
+        versionSig.stop();
+      }
+      keyedComputedRegistries.delete(s);
+    }
   });
   derivedSignals.add(s);
   return s;
 }
 
 /**
- * Creates a reactive signal. Pass as content or an attribute value — the DOM updates live.
+ * Creates a reactive signal. Pass as content or an attribute value. The DOM updates live.
  * When called inside a computed callback with a stable `key`, returns the same signal
  * instance across re-runs (scoped to that computed). This is the recommended pattern for
  * local interactive state inside list mappings: pass the item's id as the key.
+ *
+ * See also `computed(fn, key)` for keying a derived computation to a list item.
  * @template T
  * @param {T} initial
- * @param {string | number} [key]
+ * @param {string | number | object | symbol} [key]
  * @returns {Signal<T>}
  * @example
- * // Module-level signal — same instance for the lifetime of the page.
+ * // Module-level signal. Same instance for the lifetime of the page.
  * const count = signal(0);
  * @example
- * // Keyed signal inside a computed — same instance per key across re-runs.
+ * // Keyed signal inside a computed. Same instance per key across re-runs.
  * const list = computed(() => items.get().map(item => {
  *   const highlight = signal(false, item.id);
  *   return t.li({ dataKey: item.id, class: highlight }, item.label);
@@ -568,6 +703,7 @@ export function signal(initial, key) {
     const sig = new Signal(initial);
     suppressReactiveCheck = prevSuppress;
     notifySignalMarkKeyed(sig, key);
+    keyedScopeOwners.set(sig, owner);
     registry.signals.set(key, sig);
     return sig;
   }
@@ -577,6 +713,16 @@ export function signal(initial, key) {
 // Defined here rather than in the class body because transform calls computed, and computed
 // must be defined after Signal (it creates one). Putting this inside the class would reference
 // computed before its definition, triggering no-use-before-define.
-Signal.prototype.transform = function transform(fn) {
-  return computed(() => fn(this.get()));
+//
+// The optional `key` argument is forwarded to computed. Inside an outer `computed` callback,
+// a keyed transform returns the same inner instance across outer re-runs. Same lifecycle as
+// `computed(fn, key)`. Outside a computed the key is ignored.
+Signal.prototype.transform = function transform(fn, key) {
+  const prev = computedCallSite;
+  computedCallSite = 'transform';
+  try {
+    return computed(() => fn(this.get()), key);
+  } finally {
+    computedCallSite = prev;
+  }
 };

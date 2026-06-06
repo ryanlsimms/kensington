@@ -11,7 +11,7 @@ export function reactivityBestPractices() {
     t.p([
       'Attributes, content, and ',
       t.code('prop'),
-      ' values are read once when the tag is built. A plain variable passed at that point is a snapshot — changing it later has no effect on the DOM. Wrap the value in a signal so updates flow through automatically.',
+      ' values are read once when the tag is built. A plain variable passed at that point is a snapshot. Changing it later has no effect on the DOM. Wrap the value in a signal so updates flow through automatically.',
     ]),
     code('javascript', `// Problem: the attribute is read once at creation. Changing the variable does nothing.
 let submitting = false;

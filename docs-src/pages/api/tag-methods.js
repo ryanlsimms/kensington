@@ -9,7 +9,7 @@ export function apiTagMethods() {
     t.p([
       'Every HTML, SVG, and MathML element is available as a method on the ',
       t.code('Kensington'),
-      ' instance. Attribute types are generated from the official specs; each element\'s attribute type is named ',
+      ' instance. Attribute types are generated from the official specs. Each element\'s attribute type is named ',
       t.code('{PascalTag}Attributes'),
       ' (e.g. ',
       t.code('InputAttributes'),
