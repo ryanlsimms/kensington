@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [2.0.0-signals.16] - 2026-06-06
 
 ### Added
 - Keyed computeds and transforms. `computed(fn, key)` and `signal.transform(fn, key)` inside a `computed` callback return the same inner instance across outer re-runs when called with the same key, mirroring `signal(initial, key)`. The fn closure is refreshed on every outer re-run so captured variables stay fresh while the instance identity is stable. Use this for per-item derived values (e.g. `computed(() => filter.get() === item.cat, item.id)`).
