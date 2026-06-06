@@ -17,8 +17,8 @@ if ! command -v gh &>/dev/null; then
   exit 1
 fi
 
-if ! gh auth status &>/dev/null; then
-  echo "Error: gh is not authenticated — run: gh auth login"
+if ! gh auth status -h github.com &>/dev/null; then
+  echo "Error: gh is not authenticated for github.com — run: gh auth login"
   exit 1
 fi
 
