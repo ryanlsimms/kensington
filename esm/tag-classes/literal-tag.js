@@ -40,3 +40,4 @@ export default class LiteralTag {
     return template.content;
   }
 }
+LiteralTag.prototype._isKensingtonTag = true;

@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- Tags from a different Kensington module instance (for example, when two packages each carry their own copy of kensington) are now accepted as valid content in each other's tag trees. A `_isKensingtonTag` prototype marker replaces the previous `instanceof` check, which failed across module boundaries.
+
 ### Changed
 - Validation warnings now pass the full stack trace to the logger as a single call. Previously the logger was called twice per warning, once with the plain message and once with the stack. Stack frames internal to Kensington are stripped so the trace points to the caller's code.
 - SVG presentation attributes now match the properties defined as presentation attributes in the SVG spec. Previously all standard CSS properties were accepted as valid SVG attributes. The `style` attribute continues to accept any CSS property.

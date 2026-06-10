@@ -15,6 +15,26 @@ import Kensington from 'kensington';           // class — use when subclassing
 import type { ContentTag, VoidTag, LiteralTag, CommentTag, Content, ContentMethod } from 'kensington';
 ```
 
+## One instance per project
+
+The named `t` export is a pre-built instance with default settings. Use it everywhere unless you need custom configuration.
+
+When your project requires custom configuration (additional namespaces, a custom validation level, or design-system subclass), create one instance in a central module and import from there:
+
+```javascript
+// lib/html.js
+import Kensington from 'kensington';
+
+export const t = new Kensington({ additionalNamespaces: ['hx'] });
+```
+
+```javascript
+// any other file
+import { t } from './lib/html.js';
+```
+
+One shared instance keeps configuration consistent. Tags from different instances work as content in each other's trees, but a single instance avoids any ambiguity.
+
 ## The basics
 
 ```javascript

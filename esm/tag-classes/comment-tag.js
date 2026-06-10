@@ -43,3 +43,4 @@ export default class CommentTag {
     return document.createComment(text);
   }
 }
+CommentTag.prototype._isKensingtonTag = true;

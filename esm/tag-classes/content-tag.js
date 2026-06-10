@@ -6,11 +6,13 @@ import showInvalid from '../lib/show-invalid.js';
 import stringifyContentArray from '../lib/stringify-content-array.js';
 import { styleObjectToCss } from '../lib/style-utils.js';
 import { camelToKebab, LINE_BREAK_TEST_REGEX, preserveSpaces } from '../lib/text-utils.js';
-import CommentTag from './comment-tag.js';
-import LiteralTag from './literal-tag.js';
 
 function isValidStyleValue(v) {
   return [null, undefined, false].includes(v) || ['string', 'number'].includes(typeof v); // null/undefined/false are valid. They're silently omitted at render time, not errors
+}
+
+function isKensingtonTag(c) {
+  return c !== null && typeof c === 'object' && c._isKensingtonTag === true;
 }
 
 function isValidContentItem(c, contentIsLiteral) {
@@ -20,7 +22,7 @@ function isValidContentItem(c, contentIsLiteral) {
   if (typeof c === 'number') {
     return isFinite(c); // NaN/Infinity cannot be rendered as text
   }
-  return !contentIsLiteral && (c instanceof ContentTag || c instanceof LiteralTag || c instanceof CommentTag); // literal tags (script/style) accept only raw strings, not child tag objects
+  return !contentIsLiteral && isKensingtonTag(c); // literal tags (script/style) accept only raw strings, not child tag objects
 }
 
 function isPropWritable(element, propName) {
@@ -320,7 +322,7 @@ export default class ContentTag {
     }
 
     for (let node of this.content) { // let, not const: node is reassigned to preserveSpaces(node) below
-      if (node instanceof ContentTag || node instanceof LiteralTag || node instanceof CommentTag) {
+      if (isKensingtonTag(node)) {
         element.append(node.toElement());
         continue;
       }
@@ -333,3 +335,4 @@ export default class ContentTag {
     return element;
   }
 }
+ContentTag.prototype._isKensingtonTag = true;

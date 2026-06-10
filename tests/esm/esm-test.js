@@ -142,6 +142,47 @@ describe('content tag', () => {
   });
 });
 
+// ─── cross-instance tag compatibility ─────────────────────────────────────
+
+describe('cross-instance tag compatibility', () => {
+  // Simulate a ContentTag/LiteralTag/CommentTag from a foreign kensington module instance.
+  // In the real scenario, the inner component's class has a different identity than this
+  // module's class, so instanceof fails. The _isKensingtonTag prototype marker is the fix.
+  class ForeignTag {
+    constructor(html) { this.html = html; }
+    toString() { return this.html; }
+  }
+  ForeignTag.prototype._isKensingtonTag = true;
+
+  it('ContentTag instances have _isKensingtonTag on the prototype', () => {
+    assert.strictEqual(t.div()._isKensingtonTag, true);
+    assert.ok(!Object.hasOwn(t.div(), '_isKensingtonTag'));
+  });
+  it('LiteralTag instances have _isKensingtonTag on the prototype', () => {
+    assert.strictEqual(t.literal('x')._isKensingtonTag, true);
+    assert.ok(!Object.hasOwn(t.literal('x'), '_isKensingtonTag'));
+  });
+  it('CommentTag instances have _isKensingtonTag on the prototype', () => {
+    assert.strictEqual(t.inlineComment('x')._isKensingtonTag, true);
+    assert.ok(!Object.hasOwn(t.inlineComment('x'), '_isKensingtonTag'));
+  });
+  it('accepts a tag from a different kensington module instance as content', () => {
+    const te = new Kensington({ validationLevel: 'error' });
+    const foreignTag = new ForeignTag('<span>foreign</span>');
+    assert.strictEqual(te.div(foreignTag).toString(), '<div>\n  <span>foreign</span>\n</div>');
+  });
+  it('accepts a literal from a different kensington module instance as content', () => {
+    const te = new Kensington({ validationLevel: 'error' });
+    const foreignLiteral = new ForeignTag('<b>bold</b>');
+    assert.strictEqual(te.div(foreignLiteral).toString(), '<div>\n  <b>bold</b>\n</div>');
+  });
+  it('accepts a comment from a different kensington module instance as content', () => {
+    const te = new Kensington({ validationLevel: 'error' });
+    const foreignComment = new ForeignTag('<!-- note -->');
+    assert.strictEqual(te.div(foreignComment).toString(), '<div>\n  <!-- note -->\n</div>');
+  });
+});
+
 // ─── literal content ───────────────────────────────────────────────────────
 
 describe('literal content', () => {
