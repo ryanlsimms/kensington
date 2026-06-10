@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [1.0.0-rc.2] - 2026-06-10
 
 ### Fixed
 - Tags from a different Kensington module instance (for example, when two packages each carry their own copy of kensington) are now accepted as valid content in each other's tag trees. A `_isKensingtonTag` prototype marker replaces the previous `instanceof` check, which failed across module boundaries.
