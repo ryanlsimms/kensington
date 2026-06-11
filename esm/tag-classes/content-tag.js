@@ -1,13 +1,8 @@
 import { markContentTracked } from '../lib/reactive/dom-tracker.js';
 import { recordListeners } from '../lib/reactive/element-listeners.js';
 import { createLifecycle } from '../lib/reactive/lifecycle.js';
-// Forms a known cycle with reconcile.js (reconcile imports ContentTag for its structural
-// equality check). Benign because `reconcile` here is only invoked inside the signal-content
-// effect callback at runtime, not at module-load time. ESM live bindings resolve correctly
-// by the time the callback fires. Rollup emits a CIRCULAR_DEPENDENCY warning that's
-// informational only. See reconcile.js for the other half of the cycle.
 import { reconcile, recordStaticProps } from '../lib/reactive/reconcile.js';
-import Signal from '../lib/reactive/signal.js';
+import { isKensingtonSignal } from '../lib/reactive/signal.js';
 import {
   attributeArray,
   attributeString,
@@ -23,8 +18,9 @@ import {
 } from '../lib/render/validate.js';
 import showInvalid from '../lib/util/show-invalid.js';
 import { camelToKebab, preserveSpaces } from '../lib/util/text-utils.js';
-import CommentTag from './comment-tag.js';
-import LiteralTag from './literal-tag.js';
+function isKensingtonTag(c) {
+  return c !== null && typeof c === 'object' && c._isKensingtonTag === true;
+}
 
 function isValidContentItem(c, contentIsLiteral) {
   if (typeof c === 'string') {
@@ -35,7 +31,7 @@ function isValidContentItem(c, contentIsLiteral) {
   }
   // literal tags (script/style) accept only raw strings, not child tag objects
   return !contentIsLiteral
-    && (c instanceof ContentTag || c instanceof LiteralTag || c instanceof CommentTag || c instanceof Signal);
+    && (isKensingtonTag(c) || isKensingtonSignal(c));
 }
 
 function isPropWritable(element, propName) {
@@ -84,12 +80,12 @@ export default class ContentTag {
     const rawStyle = options.attributes?.style ?? null;
     let hasSignalStyleProp = false;
     const isPlainStyleObj = rawStyle !== null && typeof rawStyle === 'object'
-      && !(rawStyle instanceof Signal) && !Array.isArray(rawStyle);
+      && !isKensingtonSignal(rawStyle) && !Array.isArray(rawStyle);
     if (isPlainStyleObj) {
       for (const k of Object.keys(rawStyle)) {
         let v;
         try { v = rawStyle[k]; } catch { continue; }
-        if (v instanceof Signal) { hasSignalStyleProp = true; break; }
+        if (isKensingtonSignal(v)) { hasSignalStyleProp = true; break; }
       }
     }
     this.styleProps = hasSignalStyleProp ? rawStyle : null;
@@ -177,7 +173,7 @@ export default class ContentTag {
         element.addEventListener(attrName.slice(2), attrValue);
         if (listeners === null) { listeners = new Map(); }
         listeners.set(attrName.slice(2), attrValue);
-      } else if (attrValue instanceof Signal) {
+      } else if (isKensingtonSignal(attrValue)) {
         lifecycle.signalEffect(attrValue, (el, val) => {
           if (val === false || val === null || val === undefined) {
             el.removeAttribute(attrName);
@@ -211,7 +207,7 @@ export default class ContentTag {
           showInvalid(`prop key \`${propName}\` is read-only on <${this.tagName}>`, this.validationLevel, this.logger);
           continue;
         }
-        if (propValue instanceof Signal) {
+        if (isKensingtonSignal(propValue)) {
           lifecycle.signalEffect(propValue, (el, val) => { el[propName] = val; }, `prop:${propName}`);
         } else {
           element[propName] = propValue;
@@ -226,7 +222,7 @@ export default class ContentTag {
 
     if (this.styleProps) {
       for (const [propName, propValue] of Object.entries(this.styleProps)) {
-        if (!(propValue instanceof Signal)) {
+        if (!isKensingtonSignal(propValue)) {
           continue; // static values are already set via the initial style attribute
         }
         const cssProp = camelToKebab(propName);
@@ -241,11 +237,11 @@ export default class ContentTag {
     }
 
     for (let node of this.content) { // let, not const. node is reassigned to preserveSpaces(node) below
-      if (node instanceof ContentTag || node instanceof LiteralTag || node instanceof CommentTag) {
-        element.append(node.toElement(node instanceof ContentTag ? { _inheritPersist: persist } : undefined));
+      if (isKensingtonTag(node)) {
+        element.append(node.toElement(node._isKensingtonContentTag ? { _inheritPersist: persist } : undefined));
         continue;
       }
-      if (node instanceof Signal) {
+      if (isKensingtonSignal(node)) {
         hasSignalContent = true;
         const startAnchor = document.createComment('');
         const endAnchor = document.createComment('');
@@ -282,3 +278,5 @@ export default class ContentTag {
     return this.#domElement?.isConnected ? this.#domElement : null;
   }
 }
+ContentTag.prototype._isKensingtonTag = true;
+ContentTag.prototype._isKensingtonContentTag = true;

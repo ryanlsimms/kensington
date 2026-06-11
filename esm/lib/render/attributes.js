@@ -1,4 +1,4 @@
-import Signal from '../reactive/signal.js';
+import { isKensingtonSignal } from '../reactive/signal.js';
 import he from '../util/he.js';
 import { styleObjectToCss } from '../util/style-utils.js';
 import { getAttrName } from '../util/text-utils.js';
@@ -8,7 +8,7 @@ function resolveStyleSignals(obj) {
   for (const k of Object.keys(obj)) {
     let v;
     try { v = obj[k]; } catch { continue; }
-    resolved[k] = v instanceof Signal ? v.get() : v;
+    resolved[k] = isKensingtonSignal(v) ? v.get() : v;
   }
   return resolved;
 }
@@ -44,7 +44,7 @@ export function attributesArrayFromObject(obj, options = {}) {
       for (const k of Object.keys(val)) {
         let v;
         try { v = val[k]; } catch { continue; }
-        if (v instanceof Signal) { hasSignal = true; break; }
+        if (isKensingtonSignal(v)) { hasSignal = true; break; }
       }
       if (hasSignal) {
         // Resolve signal values for the initial render / toString. Per-property
@@ -61,7 +61,7 @@ export function attributesArrayFromObject(obj, options = {}) {
       }
       continue;
     }
-    if (val instanceof Signal) {
+    if (isKensingtonSignal(val)) {
       result.push([attrName, val]);
       continue;
     }
@@ -109,7 +109,7 @@ export function attributesStringFromObject(obj, options = {}) {
   let result = '';
   for (const [name, rawVal] of attributesArrayFromObject(obj, options)) {
     let val = rawVal;
-    if (val instanceof Signal) {
+    if (isKensingtonSignal(val)) {
       val = val.get();
       if (val === false || val === null || val === undefined) {
         continue;

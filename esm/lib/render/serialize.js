@@ -1,4 +1,4 @@
-import Signal, { isSSRMode } from '../reactive/signal.js';
+import { isKensingtonSignal, isSSRMode } from '../reactive/signal.js';
 import he from '../util/he.js';
 import indent from '../util/indent.js';
 import showInvalid from '../util/show-invalid.js';
@@ -16,7 +16,7 @@ export function contentIsShort(tag) { // fast path. Avoids the heavier stringify
   }
 
   let [content] = tag.content;
-  if (content instanceof Signal) { content = content.get(); }
+  if (isKensingtonSignal(content)) { content = content.get(); }
 
   if (!['string', 'number'].includes(typeof content)) {
     return false;
@@ -61,7 +61,7 @@ export function renderToString(tag) {
     str += literalStr;
   } else if (contentIsShort(tag)) {
     for (const c of tag.content) {
-      const val = c instanceof Signal ? c.get() : c;
+      const val = isKensingtonSignal(c) ? c.get() : c;
       if (typeof val === 'string' && tag.encodeContent) {
         str += he.encode(preserveSpaces(val));
       } else {
@@ -70,7 +70,7 @@ export function renderToString(tag) {
     }
   } else {
     const resolved = tag.content.flatMap(c => {
-      const val = c instanceof Signal ? c.get() : c;
+      const val = isKensingtonSignal(c) ? c.get() : c;
       return Array.isArray(val) ? val : [val];
     });
     let content = stringifyContentArray(resolved);

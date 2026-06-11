@@ -1,5 +1,5 @@
 import { addOnStop, trackForStop } from '../lib/reactive/dom-tracker.js';
-import Signal, { effect } from '../lib/reactive/signal.js';
+import { effect, isKensingtonSignal } from '../lib/reactive/signal.js';
 import showInvalid from '../lib/util/show-invalid.js';
 
 const TYPE_ERROR = 'inlineComment only accepts a string or number';
@@ -28,7 +28,7 @@ export default class CommentTag {
   }
 
   toString() {
-    const raw = this.text instanceof Signal ? this.text.get() : this.text;
+    const raw = isKensingtonSignal(this.text) ? this.text.get() : this.text;
     const text = this.#normalize(raw);
     if (text === null) { return ''; }
     if (/[\r\n]/.test(text)) {
@@ -49,7 +49,7 @@ export default class CommentTag {
     if (typeof document === 'undefined') {
       throw new Error('toElement only supported in browser');
     }
-    if (this.text instanceof Signal) {
+    if (isKensingtonSignal(this.text)) {
       const sig = this.text;
       const comment = document.createComment('');
       const ref = new WeakRef(comment);
@@ -76,3 +76,4 @@ export default class CommentTag {
     return this.#domElement?.isConnected ? this.#domElement : null;
   }
 }
+CommentTag.prototype._isKensingtonTag = true;

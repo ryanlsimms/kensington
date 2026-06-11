@@ -1,13 +1,7 @@
-// Forms a known cycle with content-tag.js (which imports reconcile for signal-content
-// effects). Benign because `ContentTag` here is only consulted inside `valueEqual` at
-// runtime, not at module-load time. ESM live bindings resolve correctly by the time
-// `reconcile()` is called. Rollup emits a CIRCULAR_DEPENDENCY warning that's informational
-// only. See content-tag.js for the other half of the cycle.
-import ContentTag from '../../tag-classes/content-tag.js';
 import { isContentTracked, isTracked, stopRemoved, stopTracked } from './dom-tracker.js';
 import { transferListeners } from './element-listeners.js';
 import { captureState, restoreState } from './preserve-state.js';
-import Signal from './signal.js';
+import { isKensingtonSignal } from './signal.js';
 
 // Snapshot of a tag's (attributes, content) after the render that produced the keyed DOM
 // node. The next reconcile pass compares the new tag against this snapshot by value, not by
@@ -44,7 +38,7 @@ function valueEqual(a, b) {
   if (typeof a !== typeof b) { return false; }
   if (typeof a !== 'object') { return false; }
   // ContentTag and its subclasses.
-  if (a instanceof ContentTag && b instanceof ContentTag) {
+  if (a._isKensingtonContentTag && b._isKensingtonContentTag) {
     if (a.tagName !== b.tagName) { return false; }
     if (!valueEqual(a.attributes, b.attributes)) { return false; }
     if (a.content.length !== b.content.length) { return false; }
@@ -88,8 +82,8 @@ function snapshotMatches(prev, item) {
 // changed" (must rebuild the node so the fresh signal's effect drives the live element).
 function signalRefMismatch(a, b) {
   if (a === b) { return false; }
-  if (a instanceof Signal && b instanceof Signal) { return true; }
-  if (a instanceof ContentTag && b instanceof ContentTag) {
+  if (isKensingtonSignal(a) && isKensingtonSignal(b)) { return true; }
+  if (a._isKensingtonContentTag && b._isKensingtonContentTag) {
     if (a.attributes !== undefined && b.attributes !== undefined) {
       for (const k of Object.keys(a.attributes)) {
         if (signalRefMismatch(a.attributes[k], b.attributes[k])) { return true; }

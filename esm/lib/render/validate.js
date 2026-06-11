@@ -1,4 +1,4 @@
-import Signal from '../reactive/signal.js';
+import { isKensingtonSignal } from '../reactive/signal.js';
 import showInvalid from '../util/show-invalid.js';
 import { styleObjectToCss } from '../util/style-utils.js';
 import { camelToKebab } from '../util/text-utils.js';
@@ -54,9 +54,9 @@ export function attributeValueIsValid(tag, attr, value) {
   }
   if (attr === 'on' || attr === 'prop') {
     if (value === null || value === undefined) { return true; }
-    return typeof value === 'object' && !Array.isArray(value) && !(value instanceof Signal);
+    return typeof value === 'object' && !Array.isArray(value) && !isKensingtonSignal(value);
   }
-  if (value instanceof Signal) { return true; }
+  if (isKensingtonSignal(value)) { return true; }
   if ([undefined, null].includes(value)) {
     return true;
   }
@@ -83,7 +83,7 @@ export function attributeValueIsValid(tag, attr, value) {
       } catch {
         continue;
       }
-      if (!(v instanceof Signal) && !isValidStyleValue(v)) {
+      if (!isKensingtonSignal(v) && !isValidStyleValue(v)) {
         return false;
       }
     }
@@ -108,7 +108,7 @@ export function validate(tag) {
   if (invalidAttributeValues.length) {
     const attrString = invalidAttributeValues.map(([attr, value]) => {
       if (attr === 'style' && value !== null && typeof value === 'object' && !Array.isArray(value)) { // !Array.isArray. typeof [] === 'object'
-        return `style="${styleObjectToCss(value, (_, v) => !(v instanceof Signal) && !isValidStyleValue(v))}"`;
+        return `style="${styleObjectToCss(value, (_, v) => !isKensingtonSignal(v) && !isValidStyleValue(v))}"`;
       }
       if (Array.isArray(value)) {
         // JSON.stringify(Symbol) returns undefined, which JSON array serialization renders as null. String() gives 'Symbol(x)'

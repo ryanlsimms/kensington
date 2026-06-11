@@ -168,7 +168,7 @@ t.input({ value: count.get() })      // frozen attribute set at construction tim
         t.code('isPropWritable'),
         ' validates each property against the live element before assignment. If the property exists on the prototype but is read-only, showInvalid reports it and the assignment is skipped. Otherwise:',
       ]),
-      code('javascript', `if (propValue instanceof Signal) {
+      code('javascript', `if (isKensingtonSignal(propValue)) {
   lifecycle.signalEffect(propValue, (el, val) => { el[propName] = val; }, 'prop:' + propName);
 } else {
   element[propName] = propValue;
@@ -208,7 +208,7 @@ t.input({ value: count.get() })      // frozen attribute set at construction tim
         ]),
       ]),
       t.p('The signal-content wiring:'),
-      code('javascript', `if (node instanceof Signal) {
+      code('javascript', `if (isKensingtonSignal(node)) {
   hasSignalContent = true;
   const startAnchor = document.createComment('');
   const endAnchor = document.createComment('');

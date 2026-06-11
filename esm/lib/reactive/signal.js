@@ -726,3 +726,8 @@ Signal.prototype.transform = function transform(fn, key) {
     computedCallSite = prev;
   }
 };
+Signal.prototype._isKensingtonSignal = true;
+
+export function isKensingtonSignal(v) {
+  return v !== null && typeof v === 'object' && v._isKensingtonSignal === true;
+}

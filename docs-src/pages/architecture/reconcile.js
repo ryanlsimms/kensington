@@ -80,7 +80,9 @@ export function architectureReconcile() {
 }`),
       t.p([
         t.code('valueEqual'),
-        ' compares plain objects and arrays structurally, recurses into ContentTag instances (matching on tagName + attributes + content), and falls back to reference equality for everything else (functions, Signal, LiteralTag, CommentTag, DOM nodes, Date, class instances).',
+        ' compares plain objects and arrays structurally, recurses into ContentTag instances (identified by ',
+        t.code('_isKensingtonContentTag'),
+        ' — matching on tagName + attributes + content across any module copy), and falls back to reference equality for everything else (functions, signals, LiteralTag, CommentTag, DOM nodes, Date, class instances).',
       ]),
       callout('key', 'Why value equality, not reference equality',
         t.p([
@@ -90,20 +92,8 @@ export function architectureReconcile() {
         ]),
       ),
       t.p([
-        'A stable Signal reference hits the fast path via reference equality. A fresh closure or fresh LiteralTag on each render does not. The snapshot is recorded only on the non-fast-path branch, so an item that keeps hitting the fast path retains its original snapshot indefinitely.',
+        'A stable signal reference hits the fast path via reference equality. A fresh closure or fresh LiteralTag on each render does not. The snapshot is recorded only on the non-fast-path branch, so an item that keeps hitting the fast path retains its original snapshot indefinitely.',
       ]),
-      callout('note', 'Circular import',
-        t.p([
-          t.code('reconcile.js'),
-          ' imports ContentTag for the ',
-          t.code('instanceof'),
-          ' check in ',
-          t.code('valueEqual'),
-          ', and ',
-          t.code('content-tag.js'),
-          ' imports reconcile for its signal-content effect. Both sides use the other inside function bodies at call time, not at module-load time, so ESM live bindings resolve correctly. Rollup emits a CIRCULAR_DEPENDENCY warning that is informational only.',
-        ]),
-      ),
     ]),
 
     t.section({ id: 'reconcile-sync' }, [

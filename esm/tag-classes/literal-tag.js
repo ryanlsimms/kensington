@@ -1,5 +1,5 @@
 import { trackForStop } from '../lib/reactive/dom-tracker.js';
-import Signal, { effect } from '../lib/reactive/signal.js';
+import { effect, isKensingtonSignal } from '../lib/reactive/signal.js';
 import showInvalid from '../lib/util/show-invalid.js';
 
 const TYPE_ERROR = 'literal() only accepts a string';
@@ -14,7 +14,7 @@ export default class LiteralTag {
   }
 
   toString() {
-    const value = this.str instanceof Signal ? this.str.get() : this.str;
+    const value = isKensingtonSignal(this.str) ? this.str.get() : this.str;
     if (typeof value !== 'string') {
       showInvalid(TYPE_ERROR, this.validationLevel, this.logger);
       return '';
@@ -30,7 +30,7 @@ export default class LiteralTag {
     if (typeof document === 'undefined') {
       throw new Error('toElement only supported in browser');
     }
-    if (this.str instanceof Signal) {
+    if (isKensingtonSignal(this.str)) {
       const startAnchor = document.createComment('');
       const endAnchor = document.createComment('');
       const frag = document.createDocumentFragment();
@@ -81,3 +81,4 @@ export default class LiteralTag {
     return template.content;
   }
 }
+LiteralTag.prototype._isKensingtonTag = true;

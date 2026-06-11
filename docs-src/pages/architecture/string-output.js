@@ -76,7 +76,7 @@ export function architectureStringOutput() {
   if (!tag.content.length) { return true; }
   if (tag.content.length > 1) { return false; }
   let [content] = tag.content;
-  if (content instanceof Signal) { content = content.get(); }
+  if (isKensingtonSignal(content)) { content = content.get(); }
   if (!['string', 'number'].includes(typeof content)) { return false; }
   if (content.length > 100) { return false; }
   return !LINE_BREAK_TEST_REGEX.test(content);

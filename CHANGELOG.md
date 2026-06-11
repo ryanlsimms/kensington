@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Fixed
+- Tags and signals from a different Kensington module instance (for example, when two packages each carry their own copy of kensington) are now accepted as valid content and attribute values in each other's tag trees. `_isKensingtonTag` and `_isKensingtonSignal` prototype markers replace all `instanceof` checks throughout the library. The circular dependency between `content-tag.js` and `reconcile.js` is also eliminated as a result.
+
 ## [2.0.0-signals.16] - 2026-06-06
 
 ### Added

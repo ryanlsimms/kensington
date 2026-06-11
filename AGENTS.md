@@ -15,6 +15,26 @@ import type { ContentTag, VoidTag, LiteralTag, CommentTag, Content, ContentMetho
 import type { NameSpaceAttributes, GlobalAttributes, GlobalEvents, UniversalAttributes } from 'kensington';
 ```
 
+## One instance per project
+
+The named `t` export is a pre-built instance with default settings. Use it everywhere unless you need custom configuration.
+
+When your project requires custom configuration (additional namespaces, a custom validation level, or design-system subclass), create one instance in a central module and import from there:
+
+```javascript
+// lib/html.js
+import Kensington from 'kensington';
+
+export const t = new Kensington({ additionalNamespaces: ['hx'] });
+```
+
+```javascript
+// any other file
+import { t } from './lib/html.js';
+```
+
+One shared instance keeps configuration consistent. Tags and signals from different instances work as content and attribute values in each other's trees, but a single instance avoids any ambiguity.
+
 ## The basics
 
 ```javascript
@@ -199,13 +219,13 @@ const matches = computed(() => activeFilter.get() === item.category, item.id)
 const matchesT = activeFilter.transform(f => f === item.category, item.id)
 ```
 
-`Signal` is exported as a named export so callers can use `instanceof Signal` instead of duck-typing:
+`isKensingtonSignal` is exported as a named export for duck-typing signal checks that work across module instances:
 
 ```javascript
-import { Signal, signal } from 'kensington';
+import { isKensingtonSignal, signal } from 'kensington';
 
 function maybeSignal(value) {
-  return value instanceof Signal ? value : signal(value);
+  return isKensingtonSignal(value) ? value : signal(value);
 }
 ```
 
