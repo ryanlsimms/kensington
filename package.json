@@ -29,6 +29,9 @@
       ],
       "devtools": [
         "./devtools.d.ts"
+      ],
+      "vite": [
+        "./esm/vite/index.d.ts"
       ]
     }
   },
@@ -46,6 +49,10 @@
     "./devtools": {
       "types": "./devtools.d.ts",
       "import": "./esm/devtools.js"
+    },
+    "./vite": {
+      "types": "./esm/vite/index.d.ts",
+      "import": "./esm/vite/index.js"
     },
     ".": {
       "import": {
@@ -137,5 +144,17 @@
   "dependencies": {
     "csstype": "^3.2.3",
     "parse5": "^8.0.1"
+  },
+  "peerDependencies": {
+    "acorn": "^8.0.0",
+    "magic-string": "^0.30.0"
+  },
+  "peerDependenciesMeta": {
+    "acorn": {
+      "optional": true
+    },
+    "magic-string": {
+      "optional": true
+    }
   }
 }

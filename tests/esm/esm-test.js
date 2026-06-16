@@ -4,7 +4,12 @@ import { before, beforeEach, describe, it } from 'node:test';
 
 import Kensington, { computed, effect, isBrowser, renderForHydration, signal, t } from 'kensington';
 
-import { _resetWarningThrottle } from '../../esm/lib/reactive/signal.js';
+import {
+  _disposeHydrationScope,
+  _enterHydrationScope,
+  _exitHydrationScope,
+  _resetWarningThrottle,
+} from '../../esm/lib/reactive/signal.js';
 import { attributesArrayFromObject } from '../../esm/lib/render/attributes.js';
 
 // ─── content tag ───────────────────────────────────────────────────────────
@@ -1405,7 +1410,7 @@ describe('slim build', () => {
 describe('bundle sizes', () => {
   const BUDGETS = [
     { path: '../../dist/kensington.min.js', maxKb: 200 },
-    { path: '../../dist/kensington.slim.min.js', maxKb: 42 },
+    { path: '../../dist/kensington.slim.min.js', maxKb: 43 },
   ];
   for (const { path, maxKb } of BUDGETS) {
     it(`${path.replace('../../dist/', '')} stays under ${maxKb} KB`, () => {
@@ -2871,5 +2876,61 @@ describe('keyed computed', () => {
     console.warn = origWarn;
     assert.strictEqual(beforeWarn, 0);
     assert.ok(warns.some(w => w.includes('is being subscribed')));
+  });
+});
+
+describe('hydration scope', () => {
+  it('returns the same signal instance across enter/exit cycles for the same key', () => {
+    _enterHydrationScope('scope-a');
+    const a = signal(0, 'count');
+    a.set(7);
+    _exitHydrationScope();
+
+    _enterHydrationScope('scope-a');
+    const b = signal(0, 'count');
+    _exitHydrationScope();
+
+    assert.strictEqual(a, b);
+    assert.strictEqual(b.get(), 7);
+    _disposeHydrationScope('scope-a');
+  });
+
+  it('scopes are isolated by id', () => {
+    _enterHydrationScope('scope-x');
+    const x = signal(1, 'count');
+    _exitHydrationScope();
+
+    _enterHydrationScope('scope-y');
+    const y = signal(2, 'count');
+    _exitHydrationScope();
+
+    assert.notStrictEqual(x, y);
+    assert.strictEqual(x.get(), 1);
+    assert.strictEqual(y.get(), 2);
+    _disposeHydrationScope('scope-x');
+    _disposeHydrationScope('scope-y');
+  });
+
+  it('unkeyed signal inside a scope creates a fresh instance each call', () => {
+    _enterHydrationScope('scope-u');
+    const a = signal(0);
+    const b = signal(0);
+    _exitHydrationScope();
+    assert.notStrictEqual(a, b);
+    _disposeHydrationScope('scope-u');
+  });
+
+  it('_disposeHydrationScope stops contained signals', () => {
+    _enterHydrationScope('scope-d');
+    const a = signal(5, 'value');
+    _exitHydrationScope();
+
+    let runs = 0;
+    const e = effect(() => { a.get(); runs++; });
+    const initialRuns = runs;
+    _disposeHydrationScope('scope-d');
+    a.set(99);
+    assert.strictEqual(runs, initialRuns);
+    e.stop();
   });
 });

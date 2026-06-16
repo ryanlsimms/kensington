@@ -26,7 +26,7 @@ esm/                          ESM source (the authoritative one — cjs/ and dis
       serialize.js            toString() pipeline. Short-content fast path, indentation, literal handling, encoding
       attributes.js           Attribute object → array of [name, value] pairs and → serialized string. Nested namespaces, class arrays, style objects
       stringify-content-array.js  Joins tag/literal/string/Signal children for the toString() multi-line path
-      hydration.js            Server-side render (renderForHydration) and browser-side rehydration (registerComponents)
+      hydration.js            Server-side render (renderForHydration), browser-side rehydration (registerComponents), and HMR (__kInstrument, hmrReplaceComponent, liveInstances registry)
     util/                     Small generic helpers with no dependencies on reactive/ or render/
       he.js                   Wrapper over the `he` HTML-encoder package
       indent.js               Indents a multi-line string by N spaces
@@ -34,6 +34,8 @@ esm/                          ESM source (the authoritative one — cjs/ and dis
       text-utils.js           camelCase ↔ kebab-case, preserveSpaces, line-break regexes, getAttrName
       style-utils.js          Plain object → CSS string. camelCase keys, drops null/undefined/false
       get-prototype-methods.js  Walks the prototype chain to bind every tag method in the Kensington constructor
+  vite/                       The kensington/vite subpath export. Vite plugin for component HMR
+    index.js                  kensingtonHmr({ include }). Apply: 'serve' only. Lazy-loads optional peer deps (acorn, magic-string). Rewrites matched files to wrap exports with __kInstrument and appends import.meta.hot.accept blocks calling hmrReplaceComponent
 generate/                     Code generation. Reads spec data, emits esm/kensington.js, attributes.js, types.d.ts, dist/, cjs/
   bin/                        Scripts. write-code-files.js (build), fetch-all.js (refresh spec data)
   fetched-data/               Cached HTML/SVG/MathML spec data (committed)
@@ -94,6 +96,9 @@ A user calls `t.div(...)`. That call chain:
 | HTML string output                                 | `lib/render/serialize.js`                             |
 | Attribute object → string/array conversion         | `lib/render/attributes.js`                            |
 | SSR and rehydration                                | `lib/render/hydration.js`                             |
+| Component HMR runtime                              | `lib/render/hydration.js` (`__kInstrument`, `hmrReplaceComponent`, `liveInstances`) |
+| Vite plugin that rewrites component exports        | `esm/vite/index.js`                                   |
+| Per-mount keyed signal/computed scopes for HMR     | `lib/reactive/signal.js` (`_enterHydrationScope` etc.) |
 | HTML entity encoding                               | `lib/util/he.js`                                      |
 | The on/warn/error validation contract              | `lib/util/show-invalid.js`                            |
 | A new tag-class flavor                             | `tag-classes/`                                        |
@@ -110,3 +115,5 @@ A user calls `t.div(...)`. That call chain:
 - **`reconcile.js` uses two patching guards and one removal guard.** `isTracked(existing)` skips attribute removal on signal-managed elements. `isContentTracked(existing)` skips child patching on elements that hold signal-content comment anchors. `stopRemoved` is called synchronously on every node the reconciler removes so effects stop immediately, before the MutationObserver fires.
 - **`_reads` tracks which signals were read via `.get()` in the current reactive run.** `track()` resets the set at the start of each run. `Signal.set()` checks `currentEffect._reads` to warn on same-run read/write cycles, and checks `inComputedFn` to warn on writes inside a `computed()` body. Both are `console.error` warnings, not throws.
 - **`.value` and `.toJSON()` do NOT subscribe.** Only `.get()` and `.toString()` register reactive dependencies. This is intentional — see the docstring in `signal.js`.
+- **HMR is opt-in via the Vite plugin.** Importing `kensington` never pulls in `acorn` or `magic-string`. Those are optional peer deps and only load when `kensington/vite` is used. `__kInstrument` and `hmrReplaceComponent` are no-ops in SSR mode (`isSSRMode()`) and re-entrant calls (`_inHydrationScope()`), so production hot paths are unaffected.
+- **Hydration scopes are not swept per render.** A `computed`'s keyed registry drops entries that weren't accessed on the latest run. Hydration scopes do NOT. They are tied to a mount id and disposed only when the mount is removed via `_disposeHydrationScope`. Re-rendering a component during a hot-swap intentionally keeps every keyed signal alive, even if the new module doesn't read it.

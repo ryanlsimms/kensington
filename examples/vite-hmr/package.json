@@ -1,0 +1,16 @@
+{
+  "name": "kensington-vite-hmr-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite"
+  },
+  "dependencies": {
+    "kensington": "file:../.."
+  },
+  "devDependencies": {
+    "acorn": "^8.12.0",
+    "magic-string": "^0.30.0",
+    "vite": "^5.4.0"
+  }
+}

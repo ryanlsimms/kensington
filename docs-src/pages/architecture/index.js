@@ -4,6 +4,7 @@ import { githubLink } from '../../components/ui.js';
 import { architectureConstruction } from './construction.js';
 import { architectureDomOutput } from './dom-output.js';
 import { stageDot } from './helpers.js';
+import { architectureHmr } from './hmr.js';
 import { architectureHydration } from './hydration.js';
 import { architectureLifecycle } from './lifecycle.js';
 import { architectureOverview } from './overview.js';
@@ -84,6 +85,16 @@ export function architectureSidebar() {
         ]),
       ]),
       t.li(t.a({ href: '#hydration' }, 'SSR and Hydration')),
+      t.li([
+        t.a({ href: '#hmr' }, 'HMR'),
+        t.ul([
+          t.li(t.a({ href: '#hmr-plugin' }, 'The Vite plugin')),
+          t.li(t.a({ href: '#hmr-instrument' }, '__kInstrument')),
+          t.li(t.a({ href: '#hmr-replace' }, 'hmrReplaceComponent')),
+          t.li(t.a({ href: '#hmr-scopes' }, 'Hydration scopes')),
+          t.li(t.a({ href: '#hmr-ssr' }, 'SSR + HMR parity')),
+        ]),
+      ]),
       t.li(t.a({ href: '#invariants' }, 'Invariants')),
       t.li(t.a({ href: '#cheatsheet' }, 'Where to look')),
     ]),
@@ -128,6 +139,7 @@ export function architectureContent() {
     ...architectureRemoval(),
     architectureReconcile(),
     architectureHydration(),
+    architectureHmr(),
     ...architectureReference(),
     // eslint-disable-next-line kensington/no-unsafe-literal -- inline script tag, content controlled by us
     t.unsafeLiteral(`<script type="module">${MERMAID_INIT}</script>`),

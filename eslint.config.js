@@ -22,6 +22,7 @@ export default [
     'ignores': [
       'cjs/**',
       'dist/**',
+      '**/dist/**',
       '**/node_modules/**',
     ],
   },

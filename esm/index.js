@@ -13,4 +13,4 @@ export const t = /* @__PURE__ */ new Kensington();
 export { computed, effect, signal };
 export const isBrowser = typeof window !== 'undefined';
 
-export { registerComponents, renderForHydration } from './lib/render/hydration.js';
+export { __kInstrument, hmrReplaceComponent, registerComponents, renderForHydration } from './lib/render/hydration.js';

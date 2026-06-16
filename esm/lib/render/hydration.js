@@ -1,5 +1,39 @@
 import LiteralTag from '../../tag-classes/literal-tag.js';
-import { _enterSSRMode, _exitSSRMode } from '../reactive/signal.js';
+import { captureState, restoreState } from '../reactive/preserve-state.js';
+import {
+  _disposeHydrationScope,
+  _enterHydrationScope,
+  _enterSSRMode,
+  _exitHydrationScope,
+  _exitSSRMode,
+  _inHydrationScope,
+  isSSRMode,
+} from '../reactive/signal.js';
+
+// Tracks every live hydrated component instance so hmrReplaceComponent can find them and
+// swap them in place when the source module is hot-reloaded. Keyed by component name.
+// Each entry is { mountId, mountNodes: Node[], fn, state }. mountNodes are the live DOM
+// roots after hydration. A pre-flight isConnected check on swap drops detached entries.
+const liveInstances = new Map();
+// Registry of component name -> latest function. Populated by registerComponents and updated
+// by hmrReplaceComponent. Used by the MutationObserver to hydrate newly inserted scripts.
+const componentRegistry = new Map();
+
+function recordInstance(name, instance) {
+  let set = liveInstances.get(name);
+  if (set === undefined) {
+    set = new Set();
+    liveInstances.set(name, set);
+  }
+  set.add(instance);
+}
+
+function dropInstance(name, instance) {
+  const set = liveInstances.get(name);
+  if (set !== undefined) {
+    set.delete(instance);
+  }
+}
 
 const NAME_UNSET = Symbol('unset');
 const SCRIPT_CLOSE_RE = /<\/script>/gi;
@@ -95,13 +129,21 @@ function withMountTarget(el, id, name) {
 }
 
 function hydrateComponent(script, fn, name) {
-  const mountEls = [...document.querySelectorAll(`[data-k-mount-target="${script.dataset.kMount}"]`)];
+  const mountId = script.dataset.kMount;
+  const mountEls = [...document.querySelectorAll(`[data-k-mount-target="${mountId}"]`)];
   if (!mountEls.length) {
     console.warn(`renderForHydration: mount point for "${name}" not found. The component may have already been hydrated.`);
     return;
   }
   try {
-    const result = fn(JSON.parse(script.textContent));
+    const state = JSON.parse(script.textContent);
+    _enterHydrationScope(mountId);
+    let result;
+    try {
+      result = fn(state);
+    } finally {
+      _exitHydrationScope();
+    }
     assertSync(result, name);
     if (result === null || result === undefined) {
       console.warn(`renderForHydration: "${name}" returned ${String(result)} on the client — skipping hydration, SSR element preserved`);
@@ -109,10 +151,91 @@ function hydrateComponent(script, fn, name) {
     }
     const newEls = Array.isArray(result) ? result : [result];
     mountEls.slice(1).forEach(el => el.remove());
-    mountEls[0].replaceWith(...newEls.map(el => el.toElement()));
+    const newNodes = newEls.map(el => el.toElement());
+    // Stamp the live nodes with the mount-target attribute so external tooling (DOM-morph
+    // HMR, devtools, etc.) can identify kensington-managed regions in the rendered DOM.
+    for (const node of newNodes) {
+      if (node !== null && node !== undefined && typeof node.setAttribute === 'function') {
+        node.setAttribute('data-k-mount-target', mountId);
+      }
+    }
+    mountEls[0].replaceWith(...newNodes);
     script.remove();
+    recordInstance(name, { mountId, mountNodes: newNodes, fn, state });
   } catch (err) {
     console.error(`renderForHydration: failed to hydrate "${name}"`, err);
+  }
+}
+
+/**
+ * Hot-swaps every live instance of a component with a new function. State held in keyed
+ * signals (signal(initial, key) called inside the component) persists across the swap.
+ * Form state (focus, scroll, input values, selection) is preserved via preserve-state.js.
+ * Effects on the discarded DOM are stopped automatically by dom-tracker's MutationObserver.
+ *
+ * Intended to be called from a Vite (or other bundler) HMR accept handler:
+ *   import.meta.hot?.accept(mod => hmrReplaceComponent('counter', mod.counter));
+ *
+ * @param {string} name - The component name passed to registerComponents.
+ * @param {function} newFn - The new component function.
+ */
+export function hmrReplaceComponent(name, newFn) {
+  const actualFn = newFn !== null && newFn !== undefined && newFn.__kFn !== undefined ? newFn.__kFn : newFn;
+  componentRegistry.set(name, actualFn);
+  const set = liveInstances.get(name);
+  if (set === undefined || set.size === 0) {
+    return;
+  }
+  for (const inst of [...set]) {
+    const firstNode = inst.mountNodes[0];
+    if (firstNode === undefined || !firstNode.isConnected) {
+      _disposeHydrationScope(inst.mountId);
+      dropInstance(name, inst);
+      continue;
+    }
+    const parent = firstNode.parentNode;
+    if (parent === null) {
+      dropInstance(name, inst);
+      continue;
+    }
+    let captured = null;
+    try {
+      captured = captureState(firstNode);
+    } catch (err) {
+      console.warn(`hmrReplaceComponent: failed to capture state for "${name}"`, err);
+    }
+    let newNodes;
+    try {
+      _enterHydrationScope(inst.mountId);
+      let result;
+      try {
+        result = actualFn(inst.state);
+      } finally {
+        _exitHydrationScope();
+      }
+      assertSync(result, name);
+      if (result === null || result === undefined) {
+        console.warn(`hmrReplaceComponent: "${name}" returned ${String(result)} on swap — keeping previous DOM`);
+        continue;
+      }
+      const newEls = Array.isArray(result) ? result : [result];
+      newNodes = newEls.map(el => el.toElement());
+    } catch (err) {
+      console.error(`hmrReplaceComponent: failed to render new version of "${name}"`, err);
+      continue;
+    }
+    const before = firstNode;
+    inst.mountNodes.slice(1).forEach(n => { if (n.parentNode !== null) { n.remove(); } });
+    before.replaceWith(...newNodes);
+    if (captured !== null) {
+      try {
+        restoreState(newNodes[0], captured);
+      } catch (err) {
+        console.warn(`hmrReplaceComponent: failed to restore state for "${name}"`, err);
+      }
+    }
+    inst.mountNodes = newNodes;
+    inst.fn = actualFn;
   }
 }
 
@@ -231,6 +354,75 @@ export function renderForHydration(fn, state, name = NAME_UNSET) {
  * const { stop } = registerComponents({ counter, userCard });
  */
 export function registerComponents(components) {
-  const registry = new Map(Object.entries(components));
-  return hydrateAll(registry);
+  for (const [name, fn] of Object.entries(components)) {
+    const actualFn = fn !== null && fn !== undefined && fn.__kFn !== undefined ? fn.__kFn : fn;
+    componentRegistry.set(name, actualFn);
+  }
+  return hydrateAll(componentRegistry);
+}
+
+/**
+ * Dev-only HMR instrumentation. Wraps a component function so that the live DOM element it
+ * produces gets recorded in liveInstances, the same registry hmrReplaceComponent reads from.
+ *
+ * Injected automatically by the kensington Vite plugin (apply: 'serve'). User code never
+ * references this. Production builds strip the wrapping entirely.
+ *
+ * The wrapper:
+ *   1. Calls the original fn(state) inside a hydration scope, so signal(initial, key) calls
+ *      keyed state survives hot-swaps.
+ *   2. Replaces the returned tag's toElement on the instance with a version that, on first
+ *      call, attaches a mount-target attribute and records the instance.
+ *
+ * Only single-tag returns are tracked. Array returns and null/undefined are passed through.
+ *
+ * @param {string} name - Component name. Used to look up live instances on hot-replace.
+ * @param {function} fn - The original component function.
+ * @returns {function} Wrapper with fn exposed as wrapper.__kFn.
+ */
+export function __kInstrument(name, fn) {
+  componentRegistry.set(name, fn);
+  function instrumented(...args) {
+    // Server-side or inside renderForHydration/hydrateComponent: the SSR/hydration code
+    // owns instance tracking. The wrapper steps aside and just calls the original. Pass all
+    // arguments through, since non-component exports (layouts, helpers) may take more than
+    // one argument and the plugin can't always tell them apart from components.
+    if (typeof window === 'undefined' || isSSRMode() || _inHydrationScope()) {
+      return fn(...args);
+    }
+    const state = args[0];
+    const mountId = makeId();
+    _enterHydrationScope(mountId);
+    let result;
+    try {
+      result = fn(state);
+    } finally {
+      _exitHydrationScope();
+    }
+    if (result === null || result === undefined || Array.isArray(result)) {
+      return result;
+    }
+    if (typeof result.toElement !== 'function') {
+      return result;
+    }
+    const origToElement = result.toElement.bind(result);
+    let recorded = false;
+    result.toElement = function toElement() {
+      const el = origToElement();
+      if (!recorded && el !== null && el !== undefined && typeof el.setAttribute === 'function') {
+        recorded = true;
+        el.setAttribute('data-k-mount-target', mountId);
+        recordInstance(name, { mountId, mountNodes: [el], fn, state });
+      }
+      return el;
+    };
+    return result;
+  }
+  instrumented.__kFn = fn;
+  // Keep the original component name visible on the wrapper so server-side calls like
+  // renderForHydration(counter, state) (which read fn.name when no explicit name is given)
+  // see "counter" rather than the wrapper's internal name. Without this the SSR mount
+  // markers would carry the wrong component name and registerComponents wouldn't match.
+  Object.defineProperty(instrumented, 'name', { value: name, configurable: true });
+  return instrumented;
 }

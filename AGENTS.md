@@ -539,6 +539,50 @@ These are deliberate simplicity tradeoffs, not bugs.
 
 **Module-level computeds that are never subscribed to retain their source subscriptions indefinitely.** `computed()` auto-disposes when its last subscriber is removed, but a computed that never gains a subscriber never enters that cycle. Its internal `update` function stays subscribed to its source signals for the lifetime of the module. This is only a concern for computeds declared at module scope that are intentionally read outside a reactive context (e.g. in route handlers or CLI scripts). The fix is to call `.stop()` explicitly when the computed is no longer needed.
 
+### HMR (`kensington/vite`)
+
+Component HMR is opt-in via the `kensington/vite` subpath export. Add the plugin to a Vite config and matching files get transparent hot-swap of live elements with signal state preserved.
+
+```javascript
+// vite.config.js
+import { defineConfig } from 'vite';
+import { kensingtonHmr } from 'kensington/vite';
+
+export default defineConfig({
+  plugins: [
+    kensingtonHmr({ include: 'src/components/**/*.{js,ts}' }),
+  ],
+});
+```
+
+`include` accepts a glob, an array of globs, or a callback `(server) => glob | globs | null`. The callback form receives the Vite dev-server reference, which lets adapters like `kensington-dev-server` read globs from runtime config (stashed on the dev-server reference after `vite.config.js` has already run).
+
+```bash
+npm install --save-dev acorn magic-string
+```
+
+`acorn` and `magic-string` are optional peer dependencies. They are loaded only when `kensington/vite` is used; the rest of the library does not depend on them.
+
+The plugin parses each matched file, finds component exports, wraps each one with `__kInstrument(name, fn)`, and appends an `import.meta.hot.accept` block calling `hmrReplaceComponent(name, mod.<access>.__kFn)`. Detected export forms (others silently keep no-HMR behaviour):
+
+- `export function NAME(...)`
+- `export const NAME = function|()=>`
+- `export default function NAME(...)`
+- `export default function(...)`              (anonymous, name = file basename)
+- `export default () => ...`                  (name = file basename)
+- `export default NAME`                       (re-export of a local declaration)
+- `export { NAME, NAME2, ... }`               (specifier list of local declarations)
+
+Hot-swaps preserve state through three mechanisms:
+
+1. **Keyed signals and computeds persist across the swap.** A component re-rendered into the same mount keeps its existing per-mount registry. Any `signal(initial, key)` or `computed(fn, key)` call inside the component reuses the existing instance, so user-visible reactive state survives.
+2. **User-visible DOM state is captured and restored.** Focus, text selection, scroll positions, input values, checked/indeterminate, `<select>` value, and `<details>`/`<dialog>` open state all carry over via `preserve-state.js`.
+3. **Effects on the discarded DOM are stopped automatically.** `dom-tracker`'s `MutationObserver` catches the node swap and stops the old element's signal effects without any explicit cleanup.
+
+HMR works for both SSR-hydrated components (registered via `registerComponents`) and client-only components (mounted directly via `.toElement()`). The Vite plugin's apply mode is `'serve'` only, so `vite build` ships the user's original source with no instrumentation.
+
+For Express and Fastify projects there is also a separate package, `kensington-dev-server`, that wires this plugin together with view-morph and CSS HMR through one CLI. See its `AGENTS.md` for usage. Building an HMR setup against `kensington/vite` directly is also fully supported.
+
 ## Validation and error policy
 
 `validationLevel` controls how invalid input is handled: `'off'` silently renders nothing (no errors, no warnings), `'warn'` logs via `logger` and renders nothing, `'error'` throws. Never throw when `validationLevel` is `'off'`. Production deployments use `'off'` for performance, and an unexpected throw can crash a server or break a user-facing page. Invalid input at `'off'` must be silently skipped. This applies to invalid attribute values, invalid content items, bad `literal()` input, bad `inlineComment()` input, and any other runtime validation.

@@ -364,3 +364,114 @@ test('defers hydration until DOMContentLoaded when document is loading', async (
   expect(result.duringLoad).toBe(true);
   expect(result.afterLoad).toBe(true);
 });
+
+// ─── hmrReplaceComponent ───────────────────────────────────────────────────
+
+test('hmrReplaceComponent preserves keyed signal state across swap', async ({ page: pg, bundle }) => {
+  function counter({ start }) {
+    return t.div({ id: 'target' }, String(start));
+  }
+
+  await inject(pg, renderForHydration(counter, { start: 0 }).toString());
+
+  await pg.evaluate(async src => {
+    const { registerComponents, signal, t: tg } = await import(src);
+    function counterLive({ start }) {
+      const n = signal(start, 'count');
+      return tg.button({ id: 'target', onclick: () => n.set(v => v + 1) }, n);
+    }
+    registerComponents({ counter: counterLive });
+  }, bundle);
+
+  await expect(pg.locator('#target')).toHaveText('0');
+  await pg.locator('#target').click();
+  await pg.locator('#target').click();
+  await pg.locator('#target').click();
+  await expect(pg.locator('#target')).toHaveText('3');
+
+  await pg.evaluate(async src => {
+    const { hmrReplaceComponent, signal, t: tg } = await import(src);
+    function counterV2({ start }) {
+      const n = signal(start, 'count');
+      return tg.button({ id: 'target', 'data-v': '2', onclick: () => n.set(v => v + 10) }, n);
+    }
+    hmrReplaceComponent('counter', counterV2);
+  }, bundle);
+
+  // State preserved through the swap.
+  await expect(pg.locator('#target')).toHaveText('3');
+  // New DOM in place.
+  await expect(pg.locator('#target')).toHaveAttribute('data-v', '2');
+  // New behavior wired up — click now adds 10.
+  await pg.locator('#target').click();
+  await expect(pg.locator('#target')).toHaveText('13');
+});
+
+test('hmrReplaceComponent preserves form input value across swap', async ({ page: pg, bundle }) => {
+  function form() {
+    return t.div({ id: 'wrap' }, [
+      t.input({ id: 'field', type: 'text', value: '' }),
+    ]);
+  }
+
+  await inject(pg, renderForHydration(form, {}).toString());
+
+  await pg.evaluate(async src => {
+    const { registerComponents, t: tg } = await import(src);
+    function formLive() {
+      return tg.div({ id: 'wrap' }, [
+        tg.input({ id: 'field', type: 'text' }),
+      ]);
+    }
+    registerComponents({ form: formLive });
+  }, bundle);
+
+  await pg.locator('#field').fill('hello world');
+  await expect(pg.locator('#field')).toHaveValue('hello world');
+
+  await pg.evaluate(async src => {
+    const { hmrReplaceComponent, t: tg } = await import(src);
+    function formV2() {
+      return tg.div({ id: 'wrap', 'data-v': '2' }, [
+        tg.input({ id: 'field', type: 'text' }),
+      ]);
+    }
+    hmrReplaceComponent('form', formV2);
+  }, bundle);
+
+  await expect(pg.locator('#field')).toHaveValue('hello world');
+  await expect(pg.locator('#wrap')).toHaveAttribute('data-v', '2');
+});
+
+test('hmrReplaceComponent stops effects on the discarded subtree', async ({ page: pg, bundle }) => {
+  function widget() {
+    return t.div({ id: 'w' }, '0');
+  }
+
+  await inject(pg, renderForHydration(widget, {}).toString());
+
+  const runs = await pg.evaluate(async src => {
+    const { registerComponents, hmrReplaceComponent, signal, t: tg } = await import(src);
+    const counts = { v1: 0, v2: 0 };
+    const tick = signal(0);
+    function v1() {
+      return tg.div({ id: 'w' }, tick.transform(n => { counts.v1++; return `v1:${n}`; }));
+    }
+    registerComponents({ widget: v1 });
+    tick.set(1);
+    function v2() {
+      return tg.div({ id: 'w' }, tick.transform(n => { counts.v2++; return `v2:${n}`; }));
+    }
+    hmrReplaceComponent('widget', v2);
+    await new Promise(r => { requestAnimationFrame(r); });
+    await new Promise(r => { requestAnimationFrame(r); });
+    const before = { ...counts };
+    tick.set(2);
+    await new Promise(r => { requestAnimationFrame(r); });
+    await new Promise(r => { requestAnimationFrame(r); });
+    return { before, after: { ...counts } };
+  }, bundle);
+
+  expect(runs.after.v1).toBe(runs.before.v1);
+  expect(runs.after.v2).toBeGreaterThan(runs.before.v2);
+});

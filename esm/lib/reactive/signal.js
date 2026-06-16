@@ -35,6 +35,49 @@ export function _exitSSRMode() {
 export function isSSRMode() {
   return ssrDepth > 0;
 }
+
+// Hydration scope stack for HMR. When a component is hydrated (or hot-swapped) on the client,
+// the renderer pushes a scope keyed by the mount instance id. Inside the scope, signal(initial, key)
+// and computed(fn, key) look up a per-scope registry instead of creating a fresh instance.
+// Across a hot-swap, the same scope id means the new module's signal/computed calls reuse the
+// existing instances, so user-visible values persist. Unlike keyedRegistries inside a computed,
+// hydration scopes do not sweep unaccessed keys per run. They are disposed only when the mount
+// is removed via _disposeHydrationScope.
+const hydrationScopes = new Map();
+const hydrationScopeStack = [];
+let currentHydrationScope = null;
+
+export function _enterHydrationScope(scopeId) {
+  let scope = hydrationScopes.get(scopeId);
+  if (scope === undefined) {
+    scope = { signals: new Map(), computeds: new Map() };
+    hydrationScopes.set(scopeId, scope);
+  }
+  hydrationScopeStack.push(currentHydrationScope);
+  currentHydrationScope = scope;
+}
+
+export function _exitHydrationScope() {
+  currentHydrationScope = hydrationScopeStack.length > 0 ? hydrationScopeStack.pop() : null;
+}
+
+export function _inHydrationScope() {
+  return currentHydrationScope !== null;
+}
+
+export function _disposeHydrationScope(scopeId) {
+  const scope = hydrationScopes.get(scopeId);
+  if (scope === undefined) {
+    return;
+  }
+  for (const sig of scope.signals.values()) {
+    sig.stop();
+  }
+  for (const sig of scope.computeds.values()) {
+    sig.stop();
+  }
+  hydrationScopes.delete(scopeId);
+}
 const pending = new Set();
 const runCounts = new Map();
 const MAX_EFFECT_LOOPS = 100;
@@ -676,6 +719,19 @@ export function computed(fn, key) {
  * }));
  */
 export function signal(initial, key) {
+  if (key !== undefined && currentComputed === null && currentHydrationScope !== null) {
+    const scope = currentHydrationScope;
+    const existing = scope.signals.get(key);
+    if (existing !== undefined) {
+      return existing;
+    }
+    const prevSuppress = suppressReactiveCheck;
+    suppressReactiveCheck = true;
+    const sig = new Signal(initial);
+    suppressReactiveCheck = prevSuppress;
+    scope.signals.set(key, sig);
+    return sig;
+  }
   if (key !== undefined && currentComputed !== null) {
     const owner = currentComputed;
     let registry = keyedRegistries.get(owner);

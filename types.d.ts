@@ -4867,4 +4867,20 @@ export function renderForHydration<S extends Record<string, unknown>>(
   name?: string
 ): LiteralTag;
 
+/**
+ * Hot-swaps every live instance of a hydrated component with a new function. State held
+ * in keyed signals (`signal(initial, key)` called inside the component body) persists
+ * across the swap. Form state is preserved via the reconciler's preserve-state path.
+ *
+ * Call from a bundler HMR accept handler.
+ *
+ * @example
+ * import { hmrReplaceComponent } from 'kensington';
+ * import.meta.hot?.accept(mod => hmrReplaceComponent('counter', mod.counter));
+ */
+export function hmrReplaceComponent(
+  name: string,
+  newFn: (state: Record<string, unknown>) => ContentTag | ContentTag[] | null
+): void;
+
 
