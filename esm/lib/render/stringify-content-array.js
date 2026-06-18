@@ -4,6 +4,7 @@ import { LINE_BREAK_REGEX, preserveSpaces } from '../util/text-utils.js';
 export default function stringifyContentArray(arr) {
   let result = '';
   for (const node of arr) {
+    if (node === null || node === undefined) { continue; }
     if (result) { result += '\n'; } // guarded increment avoids an intermediate array just to .join('\n')
     if (typeof node !== 'string') {
       result += String(node);

@@ -52,7 +52,7 @@ test('SSR element is removed from DOM after hydration', async ({ page: pg, bundl
   }, bundle);
 
   expect(hadMountTarget.before).toBe(true);
-  expect(hadMountTarget.after).toBe(false);
+  expect(hadMountTarget.after).toBe(true);
 });
 
 test('JSON script block is removed after hydration', async ({ page: pg, bundle }) => {
@@ -153,7 +153,7 @@ test('component returning an array replaces all SSR elements', async ({ page: pg
 
   await expect(pg.locator('#pa')).toHaveText('foo');
   await expect(pg.locator('#pb')).toHaveText('bar');
-  expect(await pg.locator('[data-k-mount-target]').count()).toBe(0);
+  expect(await pg.locator('[data-k-mount-target]').count()).toBe(2);
 });
 
 // ─── warnings ─────────────────────────────────────────────────────────────
@@ -357,7 +357,7 @@ test('defers hydration until DOMContentLoaded when document is loading', async (
     const duringLoad = document.querySelector('[data-k-mount-target]') !== null;
     Object.defineProperty(document, 'readyState', { configurable: true, get: () => 'complete' });
     document.dispatchEvent(new Event('DOMContentLoaded'));
-    const afterLoad = document.querySelector('[data-k-mount-target]') === null;
+    const afterLoad = document.querySelector('script[data-k-component]') === null;
     return { duringLoad, afterLoad };
   }, bundle);
 

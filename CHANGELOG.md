@@ -11,7 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - support for `kensington-dev-server`.
 
 ### Fixed
-- Tags and signals from a different Kensington module instance (for example, when two packages each carry their own copy of kensington) are now accepted as valid content and attribute values in each other's tag trees. `_isKensingtonTag` and `_isKensingtonSignal` prototype markers replace all `instanceof` checks throughout the library. The circular dependency between `content-tag.js` and `reconcile.js` is also eliminated as a result.
+- `stringifyContentArray` now skips `null` and `undefined` entries, matching the client-side reconciler's behavior. Previously, a reactive Signal in tag content that resolved to `null` during server-side `toString()` would render the literal string `"null"` in the SSR output.
+- Tags and signals from a different Kensington module instance (for example, when two packages each carry their own copy of kensington) are now accepted as valid content and attribute values in each other's tag trees. `_isKensingtonTag` and `_isKensingtonSignal` prototype markers replace all `instanceof` checks throughout the library.
 - `renderForHydration` state serialization warnings are now grouped by issue type. When many values share the same problem (for example, `undefined` entries across a large list), a single summary line is emitted instead of one line per path. The "no component registered" warning from `registerComponents` is now emitted once per missing component name, not once per mount point on the page.
 
 ## [2.0.0-signals.16] - 2026-06-06

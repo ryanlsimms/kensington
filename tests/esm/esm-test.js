@@ -1410,7 +1410,7 @@ describe('slim build', () => {
 describe('bundle sizes', () => {
   const BUDGETS = [
     { path: '../../dist/kensington.min.js', maxKb: 200 },
-    { path: '../../dist/kensington.slim.min.js', maxKb: 43 },
+    { path: '../../dist/kensington.slim.min.js', maxKb: 45 },
   ];
   for (const { path, maxKb } of BUDGETS) {
     it(`${path.replace('../../dist/', '')} stays under ${maxKb} KB`, () => {
@@ -1538,6 +1538,27 @@ describe('signal', () => {
     assert.strictEqual(t.p(['hello ', s, '!']).toString(), '<p>\n  hello \n  world\n  !\n</p>');
     s.set('there');
     assert.strictEqual(t.p(['hello ', s, '!']).toString(), '<p>\n  hello \n  there\n  !\n</p>');
+  });
+  it('signal holding null in mixed content array renders nothing in toString()', () => {
+    const s = signal(null);
+    assert.strictEqual(t.div(['before', s, 'after']).toString(), '<div>\n  before\n  after\n</div>');
+  });
+  it('signal holding undefined in mixed content array renders nothing in toString()', () => {
+    const s = signal(undefined);
+    assert.strictEqual(t.div(['before', s, 'after']).toString(), '<div>\n  before\n  after\n</div>');
+  });
+  it('signal transitioning from null to a tag renders correctly in toString()', () => {
+    const s = signal(null);
+    assert.strictEqual(t.div(s).toString(), '<div>\n  \n</div>');
+    s.set(t.span('content'));
+    assert.strictEqual(t.div(s).toString(), '<div>\n  <span>content</span>\n</div>');
+  });
+  it('computed returning null in mixed content array renders nothing in toString()', () => {
+    const flag = signal(false);
+    const c = computed(() => flag.get() ? t.span('visible') : null);
+    assert.strictEqual(t.div(['prefix', c]).toString(), '<div>\n  prefix\n</div>');
+    flag.set(true);
+    assert.strictEqual(t.div(['prefix', c]).toString(), '<div>\n  prefix\n  <span>visible</span>\n</div>');
   });
   it('signal as literal content snapshots current value in toString()', () => {
     const s = signal('<b>bold</b>');

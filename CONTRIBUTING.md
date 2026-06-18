@@ -35,8 +35,17 @@ npm test               # all suites
 npm run test-esm       # ESM unit tests
 npm run test-cjs       # CJS unit tests
 npm run test-ts        # TypeScript type-checking
-npm run test-browser   # Playwright browser tests
+npm run test-browser   # Playwright browser tests (requires the dev server — see below)
 ```
+
+The browser tests need the local dev server running on port 3847. Start it once before running them and leave it running across test invocations:
+
+```bash
+npm run dom-server &   # start in the background
+npm run test-browser   # run as many times as you need
+```
+
+`npm run stop-server` kills it when you are finished.
 
 ## Linting
 
