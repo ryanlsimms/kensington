@@ -50,6 +50,8 @@ export function examplesSidebar() {
           t.li(t.a({ href: '#use-local-storage' }, 'useLocalStorage')),
           t.li(t.a({ href: '#use-debounce' }, 'useDebounce')),
           t.li(t.a({ href: '#use-fetch' }, 'useFetch')),
+          t.li(t.a({ href: '#portal' }, 'Portal')),
+          t.li(t.a({ href: '#styled' }, 'Styled components')),
           t.li(t.a({ href: '#use-id' }, 'useId')),
         ]),
       ]),

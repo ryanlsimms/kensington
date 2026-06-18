@@ -322,6 +322,192 @@ document.body.append(
 );`),
     ]),
 
+    t.section({ id: 'portal' }, [
+      t.h3('Portal'),
+      t.p([
+        'React\'s ',
+        t.code('createPortal'),
+        ' renders a subtree into a DOM node outside the parent component. Kensington has no portal API because ',
+        t.code('.toElement()'),
+        ' returns a real DOM node. Mount it wherever you want. A two-line helper appends the node and returns a remover. Wrap the call in an ',
+        t.code('effect'),
+        ' to tie the mount/unmount lifecycle to a signal.',
+      ]),
+      code('javascript', `// portal.js
+function portal(target, fn) {
+  const node = fn().toElement();
+  target.append(node);
+  return () => node.remove();
+}`),
+      code('javascript', `import { signal, effect, t } from 'kensington';
+import { portal } from './portal.js';
+
+const modalRoot = document.createElement('div');
+modalRoot.id = 'modal-root';
+document.body.append(modalRoot);
+
+const isOpen = signal(false);
+
+let remove = null;
+effect(() => {
+  if (isOpen.get()) {
+    remove = portal(modalRoot, () =>
+      t.div({
+        class: 'overlay',
+        onclick: e => { if (e.target === e.currentTarget) { isOpen.set(false); } },
+      }, [
+        t.div({ class: 'modal' }, [
+          t.h2('Confirm'),
+          t.p('Rendered outside the main app tree.'),
+          t.button({ type: 'button', onclick: () => isOpen.set(false) }, 'Close'),
+        ]),
+      ]),
+    );
+  } else {
+    remove?.();
+    remove = null;
+  }
+});
+
+document.body.append(
+  t.button({ type: 'button', onclick: () => isOpen.set(true) }, 'Open modal').toElement(),
+);`),
+    ]),
+
+    t.section({ id: 'styled' }, [
+      t.h3('Styled components'),
+      t.p([
+        'Kensington already takes a style object on every tag (',
+        t.code('{ style: { backgroundColor: \'red\' } }'),
+        '). What inline styles can\'t do is pseudo-selectors, media queries, and reuse across components. ',
+        t.code('styled(tag, styles)'),
+        ' fills the gap. It takes a tag closure and a style object (same camelCase keys as the built-in ',
+        t.code('style'),
+        ' attribute, plus nested keys for pseudo-selectors and at-rules), injects a class into a shared stylesheet, and returns a new tag closure.',
+      ]),
+      code('javascript', `// styled.js
+let _id = 0;
+let _style;
+const sheet = () => (_style ??= document.head.appendChild(document.createElement('style')));
+const kebab = s => s.replace(/[A-Z]/g, c => \`-\${c.toLowerCase()}\`);
+
+function toCss(selector, styles) {
+  const decls = [];
+  let nested = '';
+  for (const [k, v] of Object.entries(styles)) {
+    if (v && typeof v === 'object') {
+      nested += k.startsWith('@')
+        ? \`\${k} { \${toCss(selector, v)} } \`     // @media, @supports, ...
+        : \`\${toCss(selector + k, v)} \`;          // :hover, > .child, &.primary, ...
+    } else if (v !== null && v !== undefined && v !== false) {
+      decls.push(\`\${kebab(k)}:\${v}\`);
+    }
+  }
+  return (decls.length ? \`\${selector} { \${decls.join(';')} } \` : '') + nested;
+}
+
+// A plain attrs object is anything that isn't a tag, signal, array, or null/primitive.
+// Matches how Kensington's own tag closures disambiguate (attrs, content) from (content).
+function isAttrs(x) {
+  return x !== null
+    && typeof x === 'object'
+    && !Array.isArray(x)
+    && !x._isKensingtonTag
+    && !x._isKensingtonSignal;
+}
+
+export function styled(tag, styles) {
+  const className = \`k-\${++_id}\`;
+  sheet().textContent += toCss(\`.\${className}\`, styles);
+  return (...args) => {
+    const hasAttrs = args.length > 0 && isAttrs(args[0]);
+    const attrs = hasAttrs ? args[0] : {};
+    const rest = hasAttrs ? args.slice(1) : args;
+    const merged = { ...attrs, class: [className, attrs.class].filter(Boolean) };
+    return tag(merged, ...rest);
+  };
+}`),
+      t.p([
+        'The returned tag is a plain Kensington tag closure. It takes the same arguments any tag does, ',
+        'and any extra props the caller passes (attributes, event handlers, content) flow through unchanged.',
+      ]),
+      code('javascript', `import { signal, t } from 'kensington';
+import { styled } from './styled.js';
+
+const Card = styled(t.section, {
+  background: 'white',
+  borderRadius: '0.5rem',
+  padding: '1rem',
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+});
+
+const Button = styled(t.button, {
+  background: 'hsl(220 10% 90%)',
+  color: 'hsl(220 10% 20%)',
+  border: 0,
+  padding: '0.5rem 1rem',
+  borderRadius: '4px',
+  cursor: 'pointer',
+  ':hover':         { background: 'hsl(220 10% 85%)' },
+  ':focus-visible': { outline: '2px solid hsl(220 80% 70%)' },
+});
+
+// Caller passes ordinary props: attributes, on-handlers, dataKey, signal content.
+const count = signal(0);
+Button({ type: 'button', onclick: () => count.set(n => n + 1) }, [
+  count.transform(n => \`Clicked \${n} times\`),
+]);`),
+      t.h4('Extending a styled component'),
+      t.p([
+        'Passing a styled tag as the first argument to ',
+        t.code('styled'),
+        ' composes them. Both classes apply, and later-defined styles win by source order in the stylesheet. No new helper, no new API.',
+      ]),
+      code('javascript', `const PrimaryButton = styled(Button, {
+  background: 'hsl(220 80% 50%)',
+  color: 'white',
+  ':hover': { background: 'hsl(220 80% 40%)' },
+});
+
+const DangerButton = styled(Button, {
+  background: 'hsl(0 70% 50%)',
+  color: 'white',
+  ':hover': { background: 'hsl(0 70% 40%)' },
+});
+
+// Each carries Button's base styles AND its own overrides.
+Card([
+  t.h2('Confirm'),
+  PrimaryButton({ type: 'button' }, 'Save'),
+  DangerButton({ type: 'button' }, 'Delete'),
+]);`),
+      t.h4('Variant props'),
+      t.p([
+        'For per-call variants, declare modifier classes inside the styles object and let the caller pick one. Combine with signal-derived ',
+        t.code('class'),
+        ' arrays for reactive variants.',
+      ]),
+      code('javascript', `const Alert = styled(t.div, {
+  padding: '0.75rem 1rem',
+  borderRadius: '4px',
+  borderLeft: '4px solid',
+  '.info':    { background: 'hsl(220 80% 95%)', borderLeftColor: 'hsl(220 80% 50%)' },
+  '.warn':    { background: 'hsl(40 90% 95%)',  borderLeftColor: 'hsl(40 90% 50%)'  },
+  '.error':   { background: 'hsl(0 80% 95%)',   borderLeftColor: 'hsl(0 80% 50%)'   },
+});
+
+const level = signal('info');
+
+Alert({ class: level }, level.transform(l => \`Status: \${l}\`));`),
+      t.p([
+        'Reactive ',
+        t.code('class'),
+        ' values are already first-class in Kensington. Flipping ',
+        t.code('level.set(\'warn\')'),
+        ' swaps the modifier class on the live element. The static base styles live in the generated class once.',
+      ]),
+    ]),
+
     t.section({ id: 'use-id' }, [
       t.h3('useId'),
       t.p([
