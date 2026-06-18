@@ -101,8 +101,24 @@ function checkState(name, state) {
 
   walk(state, 'state', new Set());
 
+  const byReason = new Map();
   for (const msg of warnings) {
-    console.warn(`renderForHydration "${name}": ${msg}`);
+    const sep = msg.indexOf(': ');
+    const reason = sep === -1 ? msg : msg.slice(sep + 2);
+    const path = sep === -1 ? '' : msg.slice(0, sep);
+    if (!byReason.has(reason)) {
+      byReason.set(reason, []);
+    }
+    byReason.get(reason).push(path);
+  }
+  for (const [reason, paths] of byReason) {
+    if (paths.length === 1) {
+      console.warn(`renderForHydration "${name}": ${paths[0]}: ${reason}`);
+    } else {
+      const shown = paths.slice(0, 3).join(', ');
+      const extra = paths.length > 3 ? ` and ${paths.length - 3} more` : '';
+      console.warn(`renderForHydration "${name}": ${paths.length} values — ${reason} (${shown}${extra})`);
+    }
   }
   if (errors.length > 0) {
     throw new Error(`renderForHydration "${name}": state cannot be serialized — ${errors.join(', ')}`);
@@ -255,11 +271,15 @@ function hydrateAll(registry) {
 
   injectSSRStyle();
 
+  const warnedMissing = new Set();
   function tryHydrate(script) {
     const name = script.dataset.kComponent;
     const fn = registry.get(name);
     if (!fn) {
-      console.warn(`renderForHydration: no component registered for "${name}". Did you call registerComponents({ ${name} })?`);
+      if (!warnedMissing.has(name)) {
+        warnedMissing.add(name);
+        console.warn(`renderForHydration: no component registered for "${name}". Did you call registerComponents({ ${name} })?`);
+      }
       return;
     }
     hydrateComponent(script, fn, name);
@@ -303,7 +323,7 @@ function hydrateAll(registry) {
  *
  * @param {function} fn - Component function. Must be a named function.
  * @param {Record<string, *>} state - Plain serializable state object.
- * @param {string} [name] - Component name. Required when called in the browser (function names are not safe after minification). Defaults to fn.name server-side.
+ * @param {string | symbol} [name] - Component name. Required when called in the browser (function names are not safe after minification). Defaults to fn.name server-side.
  * @returns {LiteralTag}
  * @throws if the component name cannot be determined
  * @throws if the component function is async

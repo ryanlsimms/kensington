@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 - Tags and signals from a different Kensington module instance (for example, when two packages each carry their own copy of kensington) are now accepted as valid content and attribute values in each other's tag trees. `_isKensingtonTag` and `_isKensingtonSignal` prototype markers replace all `instanceof` checks throughout the library. The circular dependency between `content-tag.js` and `reconcile.js` is also eliminated as a result.
+- `renderForHydration` state serialization warnings are now grouped by issue type. When many values share the same problem (for example, `undefined` entries across a large list), a single summary line is emitted instead of one line per path. The "no component registered" warning from `registerComponents` is now emitted once per missing component name, not once per mount point on the page.
 
 ## [2.0.0-signals.16] - 2026-06-06
 
