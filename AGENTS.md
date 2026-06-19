@@ -98,8 +98,8 @@ t.ul(items.map(item => t.li(item.name)));
 ## Raw HTML
 
 ```javascript
-t.literal('<p>trusted raw html</p>');    // HTML-encodes content, blocks script tags
-t.unsafeLiteral('<script>...</script>'); // no encoding. Trusted HTML only
+t.literal('<p>trusted raw html</p>');    // outputs raw HTML; blocks <script> tags
+t.unsafeLiteral('<script>...</script>'); // outputs raw HTML; no script-tag check
 ```
 
 ## inlineComment()
@@ -599,15 +599,15 @@ For Express and Fastify projects there is also a separate package, `kensington-d
 
 ## Reactive pitfalls
 
-Most of these are caught at lint time by [`eslint-plugin-kensington`](https://www.npmjs.com/package/eslint-plugin-kensington). Install it in any project that uses signals. It catches `.set()` inside a computed, `.get()`-then-`.set()` self-loops, async writes inside effects, missing keys on `signal()` calls inside a computed, and other patterns covered below.
+Most of these are caught at lint time by [`kensington-eslint-plugin`](https://www.npmjs.com/package/kensington-eslint-plugin). Install it in any project that uses signals. It catches `.set()` inside a computed, `.get()`-then-`.set()` self-loops, async writes inside effects, missing keys on `signal()` calls inside a computed, and other patterns covered below.
 
 ```bash
-npm install --save-dev eslint-plugin-kensington
+npm install --save-dev kensington-eslint-plugin
 ```
 
 ```javascript
 // eslint.config.js
-import kensington from 'eslint-plugin-kensington';
+import kensington from 'kensington-eslint-plugin';
 
 export default [
   kensington.configs.recommended,
@@ -716,6 +716,27 @@ const rows = tasks.transform(list =>
   list.map(({ id, text, itemClass }) => t.li({ dataKey: id, class: itemClass }, text))
 );
 ```
+
+### Mutating an array or object passed to `.set()` doesn't trigger updates
+
+`signal.set()` skips the notification if `Object.is(prev, next)` is true. Pushing into an array (or assigning into an object) and then calling `.set()` with the same reference passes the identity check and silently does nothing. Subscribers stay on the old value visually because no run is scheduled. Always replace the reference.
+
+```javascript
+// Wrong. push mutates in place; the reference is unchanged
+items.value.push(newItem);
+items.set(items.value);            // Object.is(prev, next) is true. No re-run
+
+// Wrong, same shape with objects
+const u = user.value;
+u.name = 'Alice';
+user.set(u);                        // Object.is is true. No re-run
+
+// Correct. Spread or rebuild to get a fresh reference
+items.set(list => [...list, newItem]);
+user.set(prev => ({ ...prev, name: 'Alice' }));
+```
+
+This applies equally to `Map` and `Set` instances and any other reference type. If you need mutable state semantics, wrap the field you actually mutate in its own signal.
 
 ## HTML to Kensington CLI
 

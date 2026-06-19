@@ -151,16 +151,17 @@ export default class ContentTag {
   toElement({ _inheritPersist = false } = {}) {
     const persist = this.persist || _inheritPersist;
     if (this.#domElement) {
-      if (!persist && !this.#domElement.isConnected) {
-        // The element was removed from the DOM but the MutationObserver-driven
-        // stop/onCleared cycle hasn't fired yet. Its reactive effects may be in
-        // an inconsistent state. Discard it and build a fresh element so the new
-        // mount gets clean, fully-subscribed bindings.
+      if (this.#domElement.parentNode !== null) {
+        showInvalid(`toElement() called on a tag instance already in the DOM — the same node will be moved. Call the tag as a function to create a new independent node.`, this.validationLevel, this.logger);
+        return this.#domElement;
+      }
+      if (!persist && this.#hasStaleDescendantBindings()) {
+        // The element was removed from the DOM and at least one descendant's signal
+        // effects were stopped by dom-tracker. Reusing this element would yield a
+        // subtree with dead bindings. Discard it and build a fresh element so the
+        // new mount gets fully-subscribed effects.
         this.#domElement = null;
       } else {
-        if (this.#domElement.parentNode !== null) {
-          showInvalid(`toElement() called on a tag instance already in the DOM — the same node will be moved. Call the tag as a function to create a new independent node.`, this.validationLevel, this.logger);
-        }
         return this.#domElement;
       }
     }
@@ -284,6 +285,26 @@ export default class ContentTag {
 
   getDomElement() {
     return this.#domElement?.isConnected ? this.#domElement : null;
+  }
+
+  // Walks the static content tree asking each descendant tag whether its bindings
+  // were stopped by dom-tracker on removal. A null #domElement on a tag we already
+  // rendered (or a tracked anchor whose effect was stopped, in LiteralTag's case)
+  // is a reliable signal that the subtree's effects are dead and the cached parent
+  // element must be rebuilt.
+  #hasStaleDescendantBindings() {
+    for (const node of this.content) {
+      if (node === null || typeof node !== 'object') { continue; }
+      if (typeof node._isStaleAfterRemoval === 'function' && node._isStaleAfterRemoval()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  _isStaleAfterRemoval() {
+    if (this.#domElement === null) { return true; }
+    return this.#hasStaleDescendantBindings();
   }
 }
 ContentTag.prototype._isKensingtonTag = true;

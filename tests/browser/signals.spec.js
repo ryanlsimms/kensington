@@ -2666,3 +2666,88 @@ test('sleeping chain stays reactive on conditional child after collapse-expand',
   expect(result.step5Collapse).toBe('closed');
   expect(result.step6Reexpand).toBe('open');
 });
+
+test('signal-text comment inside conditional child stays reactive after collapse-expand', async ({ page, bundle }) => {
+  // The parent div has no own signal effects; the only reactivity in the subtree is
+  // the signal-text comment. After collapse-expand the comment's text must reflect
+  // the current signal value and continue updating on future signal changes.
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+
+    const note = signal('one');
+    const child = t.div(t.inlineComment(note));
+    const show = signal(true);
+    const root = t.div(show.transform(v => v ? child : null));
+    document.body.append(root.toElement());
+    await Promise.resolve();
+
+    const findComment = () => {
+      const inner = document.body.lastElementChild.firstElementChild;
+      return inner ? inner.firstChild : null;
+    };
+    const initial = findComment()?.nodeValue;
+
+    note.set('two');
+    await Promise.resolve();
+    const afterSet = findComment()?.nodeValue;
+
+    show.set(false);
+    await Promise.resolve();
+
+    show.set(true);
+    await Promise.resolve();
+    const afterRemount = findComment()?.nodeValue;
+
+    note.set('three');
+    await Promise.resolve();
+    const afterRemountSet = findComment()?.nodeValue;
+
+    return { initial, afterSet, afterRemount, afterRemountSet };
+  }, bundle);
+
+  expect(result.initial).toBe('one');
+  expect(result.afterSet).toBe('two');
+  expect(result.afterRemount).toBe('two');
+  expect(result.afterRemountSet).toBe('three');
+});
+
+test('signal literal inside conditional child stays reactive after collapse-expand', async ({ page, bundle }) => {
+  // Same shape as the comment test, but the reactive descendant is a t.literal
+  // driven by a signal. LiteralTag has no #domElement of its own, so staleness is
+  // tracked via a flag set by the dom-tracker stop callback on its start anchor.
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+
+    const html = signal('<span>one</span>');
+    const child = t.div(t.literal(html));
+    const show = signal(true);
+    const root = t.div(show.transform(v => v ? child : null));
+    document.body.append(root.toElement());
+    await Promise.resolve();
+
+    const findSpan = () => document.body.lastElementChild.querySelector('span');
+    const initial = findSpan()?.textContent;
+
+    html.set('<span>two</span>');
+    await Promise.resolve();
+    const afterSet = findSpan()?.textContent;
+
+    show.set(false);
+    await Promise.resolve();
+
+    show.set(true);
+    await Promise.resolve();
+    const afterRemount = findSpan()?.textContent;
+
+    html.set('<span>three</span>');
+    await Promise.resolve();
+    const afterRemountSet = findSpan()?.textContent;
+
+    return { initial, afterSet, afterRemount, afterRemountSet };
+  }, bundle);
+
+  expect(result.initial).toBe('one');
+  expect(result.afterSet).toBe('two');
+  expect(result.afterRemount).toBe('two');
+  expect(result.afterRemountSet).toBe('three');
+});

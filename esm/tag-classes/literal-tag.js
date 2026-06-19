@@ -1,11 +1,13 @@
 import { trackForStop } from '../lib/reactive/dom-tracker.js';
-import { effect, isKensingtonSignal } from '../lib/reactive/signal.js';
+import { _internalEffect, isKensingtonSignal } from '../lib/reactive/signal.js';
 import showInvalid from '../lib/util/show-invalid.js';
 
 const TYPE_ERROR = 'literal() only accepts a string';
 const SCRIPT_ERROR = '<script> tags are not allowed in literal html. Use unsafeLiteral if you can vouch for the string';
 
 export default class LiteralTag {
+  #reactiveStopped = false;
+
   constructor(str, safe = false, validationLevel = 'off', logger = undefined) {
     this.str = str;
     this.safe = safe;
@@ -31,6 +33,7 @@ export default class LiteralTag {
       throw new Error('toElement only supported in browser');
     }
     if (isKensingtonSignal(this.str)) {
+      this.#reactiveStopped = false;
       const startAnchor = document.createComment('');
       const endAnchor = document.createComment('');
       const frag = document.createDocumentFragment();
@@ -38,7 +41,7 @@ export default class LiteralTag {
       const sig = this.str;
       const startRef = new WeakRef(startAnchor);
       const endRef = new WeakRef(endAnchor);
-      const e = effect(() => {
+      const e = _internalEffect(() => {
         const start = startRef.deref();
         const end = endRef.deref();
         if (!start || !end) { e.stop(); return; }
@@ -64,7 +67,10 @@ export default class LiteralTag {
       // Register against the start anchor so dom-tracker stops the effect when the anchor
       // (or any ancestor of it) is removed from the DOM. Without this the effect would
       // re-run forever on every signal change, leaking the run closure and its subscription.
-      trackForStop(startAnchor, () => e.stop());
+      trackForStop(startAnchor, () => {
+        this.#reactiveStopped = true;
+        e.stop();
+      });
       return frag;
     }
 
@@ -79,6 +85,14 @@ export default class LiteralTag {
     const template = document.createElement('template');
     template.innerHTML = this.str;
     return template.content;
+  }
+
+  // Reports whether the most recent toElement() created a signal-driven effect that
+  // dom-tracker has since stopped. Stays false for static-string LiteralTags, which
+  // have nothing to lose on removal. A parent ContentTag's reuse check uses this to
+  // decide whether to rebuild.
+  _isStaleAfterRemoval() {
+    return this.#reactiveStopped;
   }
 }
 LiteralTag.prototype._isKensingtonTag = true;

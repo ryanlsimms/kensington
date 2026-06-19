@@ -17,8 +17,13 @@ export function architectureDomOutput() {
     ]),
     mermaid(`flowchart TD
   S(["toElement()"]) --> A{"domElement cached?"}
-  A -- yes --> R1["return cached"]
+  A -- yes --> A1{"parentNode != null?"}
+  A1 -- yes --> R1["showInvalid + return cached"]
+  A1 -- no --> A2{"persist or no stale descendant?"}
+  A2 -- yes --> R2["return cached"]
+  A2 -- no --> A3["clear cache, fall through"]
   A -- no --> B["validateContent"]
+  A3 --> B
   B --> C["createElement(NS)"]
   C --> D["createLifecycle(element, persist)"]
   D --> E["For each attribute"]
@@ -41,25 +46,60 @@ export function architectureDomOutput() {
   J -- yes --> K["markContentTracked"]
   J -- no --> L["cache domElement"]
   K --> L
-  L --> R2["return element"]`),
+  L --> R3["return element"]`),
 
     t.section({ id: 'render-cache' }, [
       t.h3('Cache check'),
       t.p([
         'If ',
         t.code('#domElement'),
-        ' is set, return it immediately. If the cached element is already in the DOM (',
-        t.code('parentNode !== null'),
-        '), this would silently move the node. ',
-        t.code('showInvalid'),
-        ' reports it.',
+        ' is set, the cache check has three branches:',
+      ]),
+      t.ul([
+        t.li([
+          t.strong('Still in the DOM ('),
+          t.code('parentNode !== null'),
+          t.strong(').'),
+          ' Returning the cached element would silently move the node. ',
+          t.code('showInvalid'),
+          ' reports it, then the cached element is returned anyway.',
+        ]),
+        t.li([
+          t.strong('Detached, but the subtree\'s bindings are still live.'),
+          ' Reuse the cached element. This covers static subtrees, never-mounted instances, and elements pre-built before their parent mounts.',
+        ]),
+        t.li([
+          t.strong('Detached and a descendant\'s bindings were stopped on removal.'),
+          ' Reusing would return a tree with dead effects. Drop the cache and fall through to a fresh build.',
+        ]),
       ]),
       code('javascript', `if (this.#domElement) {
   if (this.#domElement.parentNode !== null) {
     showInvalid('toElement() called on a tag instance already in the DOM ...', ...);
+    return this.#domElement;
   }
-  return this.#domElement;
+  if (!persist && this.#hasStaleDescendantBindings()) {
+    this.#domElement = null;
+  } else {
+    return this.#domElement;
+  }
 }`),
+      callout('note', 'Detecting stale descendants',
+        t.p([
+          t.code('#hasStaleDescendantBindings()'),
+          ' walks the static content tree and asks each tag with a ',
+          t.code('_isStaleAfterRemoval()'),
+          ' method whether its bindings were stopped on removal. ',
+          t.code('ContentTag'),
+          ' and ',
+          t.code('CommentTag'),
+          ' report true when their ',
+          t.code('#domElement'),
+          ' was nulled by the dom-tracker stop chain. ',
+          t.code('LiteralTag'),
+          ' has no cached node, so it tracks a flag flipped by its anchor\'s stop callback. Static subtrees never report true. The walk costs nothing on never-stopped trees because the first tag whose binding survives short-circuits the result.',
+        ]),
+      ),
       callout('note', 'Why cache?',
         t.p([
           'So that ',

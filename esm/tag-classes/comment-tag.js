@@ -1,5 +1,5 @@
 import { addOnStop, trackForStop } from '../lib/reactive/dom-tracker.js';
-import { effect, isKensingtonSignal } from '../lib/reactive/signal.js';
+import { _internalEffect, isKensingtonSignal } from '../lib/reactive/signal.js';
 import showInvalid from '../lib/util/show-invalid.js';
 
 const TYPE_ERROR = 'inlineComment only accepts a string or number';
@@ -53,7 +53,7 @@ export default class CommentTag {
       const sig = this.text;
       const comment = document.createComment('');
       const ref = new WeakRef(comment);
-      const e = effect(() => {
+      const e = _internalEffect(() => {
         const c = ref.deref();
         if (!c) { e.stop(); return; }
         const text = this.#normalize(sig.get());
@@ -74,6 +74,14 @@ export default class CommentTag {
 
   getDomElement() {
     return this.#domElement?.isConnected ? this.#domElement : null;
+  }
+
+  // Reports whether the tag was rendered into a host element that has since been
+  // removed. For static comments #domElement stays set after the first render, so
+  // this only fires when clearCache nulled it on removal of a signal-text comment.
+  // A parent ContentTag's reuse check uses this to decide whether to rebuild.
+  _isStaleAfterRemoval() {
+    return this.#domElement === null;
   }
 }
 CommentTag.prototype._isKensingtonTag = true;
