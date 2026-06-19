@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Fixed
+- A signal-bound attribute on an element nested inside a conditionally rendered subtree now stays reactive after the subtree is hidden and shown again. Previously, the attribute could freeze at its last value if the signal lived on a child of the conditionally rendered root rather than directly on the root itself. The bug was most visible with a sleeping computed in the chain, for example a class driven by `isExpanded` reading both a shared search state and a per-item open flag.
+
 ## [2.0.0-signals.17] - 2026-06-18
 
 ### Added

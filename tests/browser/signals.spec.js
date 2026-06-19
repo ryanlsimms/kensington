@@ -2510,3 +2510,159 @@ test('errors when two keyed signals use the same key in one computed run', async
   expect(errors.some(e => e.includes('called twice with key'))).toBe(true);
 });
 
+test(`sleeping computed attribute reflects current value when element is re-mounted via toElement()`, async ({ page, bundle }) => {
+  // Regression: when an element with a computed class is conditionally removed (signals sleep)
+  // and then re-shown, toElement() should produce an element whose class reflects the
+  // current signal value — not the value at the time of the last sleep.
+  const result = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+
+    const openSignal = signal(false);
+    const isExpanded = computed(() => openSignal.get());
+    const btnClass = isExpanded.transform(open => open ? 'open' : 'closed');
+    const child = t.div({ class: btnClass });
+
+    const show = signal(true);
+    const container = t.div(show.transform(v => v ? child : null));
+    document.body.append(container.toElement());
+    await Promise.resolve();
+
+    const initial = document.body.lastElementChild.firstElementChild?.className;
+
+    openSignal.set(true);
+    await Promise.resolve();
+    const afterSet = document.body.lastElementChild.firstElementChild?.className;
+
+    // Collapse — child removed, effects stop, signals sleep
+    show.set(false);
+    await Promise.resolve();
+
+    // Re-show — child re-mounted via toElement()
+    show.set(true);
+    await Promise.resolve();
+    const afterRemount = document.body.lastElementChild.firstElementChild?.className;
+
+    return { initial, afterSet, afterRemount };
+  }, bundle);
+
+  expect(result.initial).toBe('closed');
+  expect(result.afterSet).toBe('open');
+  expect(result.afterRemount).toBe('open');
+});
+
+test('sleeping computed with two-level chain reflects current value on re-mount', async ({ page, bundle }) => {
+  // Closer to the real-world case: isExpanded reads a second sleeping computed (searchState)
+  // before falling back to openSignal.
+  const result = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+
+    const term = signal('');
+    const searchState = computed(() => term.get() ? `search:${term.get()}` : null);
+
+    const openSignal = signal(false);
+    const isExpanded = computed(() => {
+      const state = searchState.get();
+      // auto-collapsed during search
+      if (state !== null) { return false; }
+      return openSignal.get();
+    });
+    const btnClass = isExpanded.transform(open => open ? 'open' : 'closed');
+    const child = t.div({ class: btnClass });
+
+    const show = signal(true);
+    const container = t.div(show.transform(v => v ? child : null));
+    document.body.append(container.toElement());
+    await Promise.resolve();
+
+    const initial = document.body.lastElementChild.firstElementChild?.className;
+
+    openSignal.set(true);
+    await Promise.resolve();
+    const afterSet = document.body.lastElementChild.firstElementChild?.className;
+
+    // Collapse — child removed, all signals sleep (isExpanded, searchState, btnClass)
+    show.set(false);
+    await Promise.resolve();
+
+    // Re-show — child re-mounted, sleeping two-level chain must wake correctly
+    show.set(true);
+    await Promise.resolve();
+    const afterRemount = document.body.lastElementChild.firstElementChild?.className;
+
+    return { initial, afterSet, afterRemount };
+  }, bundle);
+
+  expect(result.initial).toBe('closed');
+  expect(result.afterSet).toBe('open');
+  expect(result.afterRemount).toBe('open');
+});
+
+test('sleeping chain stays reactive on conditional child after collapse-expand', async ({ page, bundle }) => {
+  // Mirrors the pulse-web hierarchy picker: a parent has children, each child has
+  // openSignal + isExpanded (reads searchState then openSignal). When the parent
+  // collapses and re-expands, the child's button class must reflect the current
+  // openSignal value AND remain reactive to future openSignal changes.
+  const result = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+
+    // Shared searchState (sleeping computed)
+    const searchTerm = signal('');
+    const searchState = computed(() => searchTerm.get() || null);
+
+    // Child node with its own openSignal + isExpanded chain
+    const openSignal = signal(false);
+    const isExpanded = computed(() => {
+      const state = searchState.get();
+      if (state !== null) { return false; }
+      return openSignal.get();
+    });
+
+    const child = t.div(
+      t.button({ class: isExpanded.transform(open => open ? 'open' : 'closed') }),
+    );
+
+    // Parent conditionally renders the child
+    const showChildren = signal(false);
+    const parent = t.div(showChildren.transform(v => v ? [child] : []));
+    document.body.append(parent.toElement());
+    await Promise.resolve();
+
+    // Step 1: show children — button should start 'closed'
+    showChildren.set(true);
+    await Promise.resolve();
+    const btn = () => document.body.lastElementChild.querySelector('button');
+    const step1 = btn()?.className;
+
+    // Step 2: manually expand the child
+    openSignal.set(true);
+    await Promise.resolve();
+    const step2 = btn()?.className;
+
+    // Step 3: collapse parent — child removed, signals sleep
+    showChildren.set(false);
+    await Promise.resolve();
+
+    // Step 4: re-expand — child re-mounted via toElement()
+    showChildren.set(true);
+    await Promise.resolve();
+    const step4Remount = btn()?.className;
+
+    // Step 5: verify reactivity still works — collapse the child
+    openSignal.set(false);
+    await Promise.resolve();
+    const step5Collapse = btn()?.className;
+
+    // Step 6: re-expand the child again
+    openSignal.set(true);
+    await Promise.resolve();
+    const step6Reexpand = btn()?.className;
+
+    return { step1, step2, step4Remount, step5Collapse, step6Reexpand };
+  }, bundle);
+
+  expect(result.step1).toBe('closed');
+  expect(result.step2).toBe('open');
+  expect(result.step4Remount).toBe('open');
+  expect(result.step5Collapse).toBe('closed');
+  expect(result.step6Reexpand).toBe('open');
+});

@@ -151,10 +151,18 @@ export default class ContentTag {
   toElement({ _inheritPersist = false } = {}) {
     const persist = this.persist || _inheritPersist;
     if (this.#domElement) {
-      if (this.#domElement.parentNode !== null) {
-        showInvalid(`toElement() called on a tag instance already in the DOM — the same node will be moved. Call the tag as a function to create a new independent node.`, this.validationLevel, this.logger);
+      if (!persist && !this.#domElement.isConnected) {
+        // The element was removed from the DOM but the MutationObserver-driven
+        // stop/onCleared cycle hasn't fired yet. Its reactive effects may be in
+        // an inconsistent state. Discard it and build a fresh element so the new
+        // mount gets clean, fully-subscribed bindings.
+        this.#domElement = null;
+      } else {
+        if (this.#domElement.parentNode !== null) {
+          showInvalid(`toElement() called on a tag instance already in the DOM — the same node will be moved. Call the tag as a function to create a new independent node.`, this.validationLevel, this.logger);
+        }
+        return this.#domElement;
       }
-      return this.#domElement;
     }
     if (typeof document === 'undefined') {
       throw new Error('toElement only supported in browser');
