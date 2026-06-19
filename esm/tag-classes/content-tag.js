@@ -151,17 +151,19 @@ export default class ContentTag {
   toElement({ _inheritPersist = false } = {}) {
     const persist = this.persist || _inheritPersist;
     if (this.#domElement) {
-      if (this.#domElement.parentNode !== null) {
+      if (this.#domElement.isConnected) {
         showInvalid(`toElement() called on a tag instance already in the DOM — the same node will be moved. Call the tag as a function to create a new independent node.`, this.validationLevel, this.logger);
         return this.#domElement;
       }
-      if (!persist && this.#hasStaleDescendantBindings()) {
-        // The element was removed from the DOM and at least one descendant's signal
-        // effects were stopped by dom-tracker. Reusing this element would yield a
-        // subtree with dead bindings. Discard it and build a fresh element so the
-        // new mount gets fully-subscribed effects.
+      if (persist) {
+        return this.#domElement;
+      }
+      if (this.#hasStaleDescendantBindings()) {
         this.#domElement = null;
       } else {
+        if (this.#domElement.parentNode !== null) {
+          showInvalid(`toElement() called on a tag instance already in the DOM — the same node will be moved. Call the tag as a function to create a new independent node.`, this.validationLevel, this.logger);
+        }
         return this.#domElement;
       }
     }

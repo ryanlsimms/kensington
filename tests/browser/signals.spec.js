@@ -2751,3 +2751,165 @@ test('signal literal inside conditional child stays reactive after collapse-expa
   expect(result.afterRemount).toBe('two');
   expect(result.afterRemountSet).toBe('three');
 });
+
+test('keyed nested child: reactive button stays reactive after parent collapse-expand', async ({ page, bundle }) => {
+  // Mirrors pulse-web's hierarchy picker: each child uses a dataKey, the reactive button
+  // is nested inside a header div which is inside the keyed item div.
+  const result = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+
+    // Shared sleeping computed
+    const searchTerm = signal('');
+    const searchState = computed(() => searchTerm.get() || null);
+
+    // Child A
+    const openSignalA = signal(false);
+    const isExpandedA = computed(() => {
+      const state = searchState.get();
+      if (state !== null) { return false; }
+      return openSignalA.get();
+    });
+
+    const matchSigA = signal(false);
+    const headerClassA = computed(() => `header${matchSigA.get() ? ' match' : ''}`);
+    const headerA = t.div({ class: headerClassA }, [
+      t.div({ class: 'controls' }, [
+        t.button({
+          'data-testid': 'btn-a',
+          class: isExpandedA.transform(open => open ? 'btn open' : 'btn closed'),
+        }),
+      ]),
+    ]);
+
+    // Keyed hierarchy-item with header + signal content
+    const childChildrenA = computed(() => isExpandedA.get() ? [t.div('a-child')] : []);
+    const itemA = t.div({ class: 'hierarchy-item', dataKey: 'a' }, [headerA, childChildrenA]);
+
+    // Outer hierarchy-list — conditionally renders the item via a parent's open state
+    const parentOpen = signal(false);
+    const list = t.div(
+      { class: 'hierarchy-list' },
+      parentOpen.transform(open => open ? [itemA] : []),
+    );
+    document.body.append(list.toElement());
+    await Promise.resolve();
+
+    const btn = () => document.body.querySelector('[data-testid="btn-a"]');
+
+    // Show, then expand the child
+    parentOpen.set(true);
+    await Promise.resolve();
+    const step1 = btn()?.className;
+
+    openSignalA.set(true);
+    await Promise.resolve();
+    const step2 = btn()?.className;
+
+    // Collapse parent — itemA is removed
+    parentOpen.set(false);
+    await Promise.resolve();
+    const step3HasBtn = btn() !== null;
+
+    // Re-expand parent — itemA is re-mounted
+    parentOpen.set(true);
+    await Promise.resolve();
+    const step4Remount = btn()?.className;
+
+    // Now click-equivalent: toggle openSignalA. Class should react.
+    openSignalA.set(false);
+    await Promise.resolve();
+    const step5Collapse = btn()?.className;
+
+    openSignalA.set(true);
+    await Promise.resolve();
+    const step6Reexpand = btn()?.className;
+
+    return { step1, step2, step3HasBtn, step4Remount, step5Collapse, step6Reexpand };
+  }, bundle);
+
+  expect(result.step1).toBe('btn closed');
+  expect(result.step2).toBe('btn open');
+  expect(result.step3HasBtn).toBe(false);
+  expect(result.step4Remount).toBe('btn open');
+  expect(result.step5Collapse).toBe('btn closed');
+  expect(result.step6Reexpand).toBe('btn open');
+});
+
+test('reactive button in static controls survives parent collapse-expand via reconcile', async ({ page, bundle }) => {
+  // Exact pulse-web structure: child has [header, visibleChildren], header has reactive class,
+  // header contains static controls div which contains the reactive button. After
+  // collapse-expand of parent, clicking the button must update its class.
+  const result = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+
+    const term = signal('');
+    const searchState = computed(() => term.get() || null);
+
+    const openSignalA = signal(false);
+    const isExpandedA = computed(() => {
+      const state = searchState.get();
+      if (state !== null) { return false; }
+      return openSignalA.get();
+    });
+
+    // header has reactive class, contains controls (static) which contains reactive button
+    const matchSig = signal(false);
+    const buttonClass = isExpandedA.transform(open => open ? 'btn open' : 'btn closed');
+    const header = t.div({ class: computed(() => `header${matchSig.get() ? ' match' : ''}`) }, [
+      t.div({ class: 'controls' }, [
+        t.span('static-icon'),
+        t.span('static-info'),
+        t.button({
+          'data-testid': 'btn-a',
+          class: buttonClass,
+          onclick: () => openSignalA.set(v => !v),
+        }, t.span('chevron')),
+      ]),
+    ]);
+
+    // hierarchy-item: [header, visibleChildren]
+    const visibleChildren = computed(() => isExpandedA.get() ? [t.div('a-child-row')] : []);
+    const itemA = t.div({ class: 'hierarchy-item', dataKey: 'a' }, [header, visibleChildren]);
+
+    // Outer parent toggles visibility of itemA via reconcile (mirrors a parent collapsing)
+    const parentOpen = signal(true);
+    const list = t.div(parentOpen.transform(open => open ? [itemA] : []));
+    document.body.append(list.toElement());
+    await Promise.resolve();
+
+    const btn = () => document.body.querySelector('[data-testid="btn-a"]');
+
+    const step1 = btn()?.className;
+
+    // Click the button directly (simulates user clicking chevron)
+    btn().click();
+    await Promise.resolve();
+    const step2Clicked = btn()?.className;
+
+    // Collapse parent — itemA removed from DOM
+    parentOpen.set(false);
+    await Promise.resolve();
+
+    // Re-expand parent — itemA re-mounted via reconcile
+    parentOpen.set(true);
+    await Promise.resolve();
+    const step3Remount = btn()?.className;
+
+    // CRITICAL: click the button after re-mount. Should update class.
+    btn().click();
+    await Promise.resolve();
+    const step4ClickAfterRemount = btn()?.className;
+
+    btn().click();
+    await Promise.resolve();
+    const step5ClickAgain = btn()?.className;
+
+    return { step1, step2Clicked, step3Remount, step4ClickAfterRemount, step5ClickAgain };
+  }, bundle);
+
+  expect(result.step1).toBe('btn closed');
+  expect(result.step2Clicked).toBe('btn open');
+  expect(result.step3Remount).toBe('btn open');
+  expect(result.step4ClickAfterRemount).toBe('btn closed');
+  expect(result.step5ClickAgain).toBe('btn open');
+});

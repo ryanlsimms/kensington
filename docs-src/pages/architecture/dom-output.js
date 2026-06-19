@@ -17,13 +17,17 @@ export function architectureDomOutput() {
     ]),
     mermaid(`flowchart TD
   S(["toElement()"]) --> A{"domElement cached?"}
-  A -- yes --> A1{"parentNode != null?"}
+  A -- yes --> A1{"isConnected?"}
   A1 -- yes --> R1["showInvalid + return cached"]
-  A1 -- no --> A2{"persist or no stale descendant?"}
+  A1 -- no --> A2{"persist?"}
   A2 -- yes --> R2["return cached"]
-  A2 -- no --> A3["clear cache, fall through"]
+  A2 -- no --> A3{"hasStaleDescendantBindings?"}
+  A3 -- yes --> A4["clear cache, fall through"]
+  A3 -- no --> A5{"parentNode != null?"}
+  A5 -- yes --> R3["showInvalid + return cached"]
+  A5 -- no --> R4["return cached"]
   A -- no --> B["validateContent"]
-  A3 --> B
+  A4 --> B
   B --> C["createElement(NS)"]
   C --> D["createLifecycle(element, persist)"]
   D --> E["For each attribute"]
@@ -53,34 +57,48 @@ export function architectureDomOutput() {
       t.p([
         'If ',
         t.code('#domElement'),
-        ' is set, the cache check has three branches:',
+        ' is set, the cache check has four branches:',
       ]),
       t.ul([
         t.li([
-          t.strong('Still in the DOM ('),
-          t.code('parentNode !== null'),
+          t.strong('Already in the DOM ('),
+          t.code('isConnected'),
           t.strong(').'),
           ' Returning the cached element would silently move the node. ',
           t.code('showInvalid'),
           ' reports it, then the cached element is returned anyway.',
         ]),
         t.li([
-          t.strong('Detached, but the subtree\'s bindings are still live.'),
-          ' Reuse the cached element. This covers static subtrees, never-mounted instances, and elements pre-built before their parent mounts.',
+          t.strong('Persist mode.'),
+          ' Effects are paused, not stopped. Return the cached element unconditionally.',
         ]),
         t.li([
-          t.strong('Detached and a descendant\'s bindings were stopped on removal.'),
-          ' Reusing would return a tree with dead effects. Drop the cache and fall through to a fresh build.',
+          t.strong('Disconnected and has stale descendant bindings.'),
+          ' A descendant\'s effects were stopped on removal. Reusing would return a subtree with dead effects. Drop the cache and fall through to a fresh build.',
+        ]),
+        t.li([
+          t.strong('Disconnected, no stale bindings.'),
+          ' Covers never-mounted elements, static subtrees, elements pre-built before their parent mounts, non-reactive removed elements, and elements in a detached in-memory tree. Return the cached element. For the in-memory tree case (',
+          t.code('parentNode !== null'),
+          ' but ',
+          t.code('!isConnected'),
+          '), ',
+          t.code('showInvalid'),
+          ' also reports it since the node will be moved.',
         ]),
       ]),
       code('javascript', `if (this.#domElement) {
-  if (this.#domElement.parentNode !== null) {
+  if (this.#domElement.isConnected) {
     showInvalid('toElement() called on a tag instance already in the DOM ...', ...);
     return this.#domElement;
   }
-  if (!persist && this.#hasStaleDescendantBindings()) {
+  if (persist) { return this.#domElement; }
+  if (this.#hasStaleDescendantBindings()) {
     this.#domElement = null;
   } else {
+    if (this.#domElement.parentNode !== null) {
+      showInvalid('toElement() called on a tag instance already in the DOM ...', ...);
+    }
     return this.#domElement;
   }
 }`),

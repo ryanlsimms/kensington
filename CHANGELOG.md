@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Fixed
+- `toElement()` now uses `isConnected` to detect real-DOM presence. Previously, an element in a detached in-memory tree (parentNode set but not connected) with stopped descendant effects could be returned as stale. Elements with no stale bindings are still reused; elements with stopped descendant effects are discarded and rebuilt.
+
 ## [2.0.0-signals.18] - 2026-06-19
 
 ### Fixed
