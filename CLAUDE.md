@@ -40,18 +40,15 @@ To run a single test: Node's built-in runner doesn't support filtering by name v
 ## Releasing
 
 ```bash
-# Stable release (from master — 0.x line)
+# Stable release (from master. 1.x line)
 scripts/release.sh patch
 scripts/release.sh minor
-scripts/release.sh major
-
-# 1.0 release (from next branch)
 scripts/release.sh major
 ```
 
 `release.sh` requires a clean working tree. If `CHANGELOG.md` has an `## [Unreleased]` section, it is stamped with the new version and date. It bumps the version, stamps the changelog, commits, tags, pushes, and creates a GitHub release.
 
-**Branches**: `master` is the 0.x stable line. `next` is the 1.0 line. Cherry-pick fixes from `master` → `next` as needed.
+**Branches**: `master` is the 1.x stable line. `signals` is the 2.0 line, published under the `signals` npm dist-tag. The 0.x line is frozen. Tag `v0.15.4` is its final release.
 
 ## Architecture
 
