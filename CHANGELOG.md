@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Fixed
+- IIFE bundles (e.g. `esbuild --format=iife`, rollup IIFE output, or any `<script>`-tag deployment) no longer crash on module load. The stack-frame filter previously assumed `import.meta.url` was present, which IIFE output erases. It now reads defensively and falls back to a marker that simply matches nothing.
+
+### Performance
+- `attributesArrayFromObject` no longer allocates a `WeakSet` for every call. The cycle-detection set is built lazily on the first nested-object attribute. Most attribute objects contain only primitives, so the allocation is skipped entirely.
+- Content normalization (`collectContent`) avoids a double-allocation for the common case of a flat content array. Previously every call passed through `[].concat(items)`, allocating a fresh boxed array even when the input was already flat.
+
 ## [1.0.0-rc.2] - 2026-06-10
 
 ### Fixed

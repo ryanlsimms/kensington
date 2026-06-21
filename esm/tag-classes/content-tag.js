@@ -39,22 +39,30 @@ function isPropWritable(element, propName) {
   return false;
 }
 
-function collectContent(items, seen = new Set()) {
-  const out = [];
-  for (const c of [].concat(items)) {
-    if ([undefined, null, '', false, true].includes(c)) {
-      continue; // false/true arise from conditional content patterns: someCondition && t.span(...)
-    }
+function collectInto(items, out, seen) {
+  for (let i = 0; i < items.length; i++) {
+    const c = items[i];
+    // false/true arise from conditional content patterns. someCondition && t.span(...)
+    if (c === undefined || c === null || c === '' || c === false || c === true) { continue; }
     if (Array.isArray(c)) {
-      if (seen.has(c)) {
-        continue;
-      }
+      // Cycle detection. A content array appearing twice is always circular, not a legitimate
+      // reuse. Lazily allocate the Set since nested arrays in content are uncommon.
+      if (seen === undefined) { seen = new Set(); }
+      if (seen.has(c)) { continue; }
       seen.add(c);
-      out.push(...collectContent(c, seen));
-      // no seen.delete: a content array appearing twice is always circular, not a legitimate reuse
+      collectInto(c, out, seen);
       continue;
     }
     out.push(c);
+  }
+}
+
+function collectContent(items, seen) {
+  const out = [];
+  if (Array.isArray(items)) {
+    collectInto(items, out, seen);
+  } else if (items !== undefined && items !== null && items !== '' && items !== false && items !== true) {
+    out.push(items);
   }
   return out;
 }

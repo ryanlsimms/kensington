@@ -3,7 +3,12 @@ import { styleObjectToCss } from './style-utils.js';
 import { getAttrName } from './text-utils.js';
 
 export default function attributesArrayFromObject(obj, options = {}) {
-  const { attrsSet = new Map(), encode, prefix = '', seen = new WeakSet() } = options; // seen default is a fresh WeakSet per top-level call. Recursive calls pass the existing one to share cycle state
+  const { encode, prefix = '' } = options;
+  const attrsSet = options.attrsSet ?? new Map();
+  // `seen` is only needed when an attribute value is a nested plain object (the data:/aria:
+  // namespace expansion path). Most attributes are primitives, so defer the WeakSet
+  // allocation until we actually encounter a recursable value.
+  let seen = options.seen;
   const result = [];
 
   for (const attr of Object.keys(obj)) {
@@ -19,7 +24,8 @@ export default function attributesArrayFromObject(obj, options = {}) {
     } catch {
       continue;
     }
-    if ([false, null, undefined].includes(val) || (typeof val === 'number' && !isFinite(val))) { // NaN/Infinity treated as absent, same as false/null
+    if (val === false || val === null || val === undefined
+      || (typeof val === 'number' && !isFinite(val))) { // NaN/Infinity treated as absent, same as false/null
       continue;
     }
     const attrName = getAttrName(attr, prefix, attrsSet);
@@ -51,6 +57,7 @@ export default function attributesArrayFromObject(obj, options = {}) {
       continue; // plain objects are not valid class values. No toString fallback
     }
     if (val !== null && typeof val === 'object') {
+      if (seen === undefined) { seen = new WeakSet(); }
       if (seen.has(val)) {
         continue;
       }

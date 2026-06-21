@@ -673,6 +673,23 @@ describe('argument validation', () => {
     arr.push(arr);
     assert.doesNotThrow(() => t.div(arr).toString());
   });
+  it('mutually referencing content arrays do not stack overflow', () => {
+    // Exercises the cycle-detection path in collectContent. The seen Set is now allocated
+    // lazily on the first nested array, so this verifies it materialises when needed.
+    const a = ['a'];
+    const b = ['b', a];
+    a.push(b);
+    assert.doesNotThrow(() => t.div(a).toString());
+  });
+  it('attribute objects with deeply nested data namespaces still flatten correctly', () => {
+    // Exercises the lazy WeakSet in attributesArrayFromObject. The Set is now allocated
+    // only on the first recursable attribute value, so this confirms it's still allocated
+    // when the recursive path actually runs.
+    assert.strictEqual(
+      t.div({ data: { bs: { toggle: 'collapse', target: '#x' } } }).toString(),
+      '<div data-bs-toggle="collapse" data-bs-target="#x"></div>',
+    );
+  });
 });
 
 // ─── constructor validation ────────────────────────────────────────────────
