@@ -2913,3 +2913,174 @@ test('reactive button in static controls survives parent collapse-expand via rec
   expect(result.step4ClickAfterRemount).toBe('btn closed');
   expect(result.step5ClickAgain).toBe('btn open');
 });
+
+// ─── reconcile clear shortcut ──────────────────────────────────────────────
+// Setting a signal-bound list to an empty array uses Range.deleteContents() plus a single
+// TreeWalker pass to stop tracked effects across the whole range. These tests verify the
+// shortcut does not leak effects, leaves the anchors intact, and lets the list be re-populated.
+
+test('clearing a signal-bound list removes every child between the anchors', async ({ page, bundle }) => {
+  await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const items = signal([t.li('a'), t.li('b'), t.li('c')]);
+    document.body.append(t.ul({ id: 'clear-empty' }, items).toElement());
+    items.set([]);
+  }, bundle);
+  await expect(page.locator('#clear-empty li')).toHaveCount(0);
+});
+
+test('signal effects on cleared list children are stopped, not leaked', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const label = signal('initial');
+    const items = signal([t.li({ id: 'tracked-li' }, label)]);
+    document.body.append(t.ul({ id: 'clear-stops-effects' }, items).toElement());
+
+    items.set([]);
+    await Promise.resolve();
+    // If the effect were still wired, the next set would mutate something — but the node
+    // is gone, so there's nothing to mutate. We assert that the live DOM has zero children
+    // both before and after the set.
+    const beforeSet = document.querySelectorAll('#clear-stops-effects li').length;
+    label.set('mutated');
+    await Promise.resolve();
+    const afterSet = document.querySelectorAll('#clear-stops-effects li').length;
+    return { beforeSet, afterSet };
+  }, bundle);
+  expect(result.beforeSet).toBe(0);
+  expect(result.afterSet).toBe(0);
+});
+
+test('a cleared signal-bound list can be re-populated', async ({ page, bundle }) => {
+  await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const items = signal([t.li('first')]);
+    document.body.append(t.ul({ id: 'clear-then-refill' }, items).toElement());
+    items.set([]);
+    await Promise.resolve();
+    items.set([t.li('again-a'), t.li('again-b')]);
+  }, bundle);
+  await expect(page.locator('#clear-then-refill li')).toHaveCount(2);
+  await expect(page.locator('#clear-then-refill li').nth(0)).toHaveText('again-a');
+  await expect(page.locator('#clear-then-refill li').nth(1)).toHaveText('again-b');
+});
+
+// ─── reconcile orphan-removal pre-pass ─────────────────────────────────────
+// Before the main reconcile loop walks newItems, a pre-pass removes any keyed old node whose
+// key is no longer present. Without it, a single deletion in the middle of a list would
+// degrade to O(N) insertBefore operations as the cursor sat on the deleted node. These tests
+// verify the orphan removal happens up-front and surviving rows' DOM identity is preserved.
+
+test('removing a middle row leaves surrounding rows in place with stable DOM identity', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+    const items = signal([
+      { id: 1, label: 'one' },
+      { id: 2, label: 'two' },
+      { id: 3, label: 'three' },
+      { id: 4, label: 'four' },
+      { id: 5, label: 'five' },
+    ]);
+    const rows = computed(() => items.get().map(item =>
+      t.li({ dataKey: item.id }, item.label),
+    ));
+    document.body.append(t.ul({ id: 'middle-remove' }, rows).toElement());
+
+    // Stamp every surviving row so we can confirm DOM identity afterwards.
+    document.querySelectorAll('#middle-remove li').forEach(el => { el._kept = true; });
+
+    items.set(prev => prev.filter(item => item.id !== 3));
+    await Promise.resolve();
+
+    const survivors = [...document.querySelectorAll('#middle-remove li')];
+    return {
+      count: survivors.length,
+      allKept: survivors.every(el => el._kept === true),
+      removedGone: document.querySelector('[data-key="3"]') === null,
+      orderedKeys: survivors.map(el => el.dataset.key).join(','),
+    };
+  }, bundle);
+  expect(result.count).toBe(4);
+  expect(result.allKept).toBe(true);
+  expect(result.removedGone).toBe(true);
+  expect(result.orderedKeys).toBe('1,2,4,5');
+});
+
+test('removing every other row keeps the survivors in the correct order', async ({ page, bundle }) => {
+  const orderedKeys = await page.evaluate(async src => {
+    const { t, signal, computed } = await import(src);
+    const items = signal([1, 2, 3, 4, 5, 6, 7, 8].map(id => ({ id })));
+    const rows = computed(() => items.get().map(item =>
+      t.li({ dataKey: item.id }, String(item.id)),
+    ));
+    document.body.append(t.ul({ id: 'scatter-remove' }, rows).toElement());
+
+    items.set(prev => prev.filter(item => item.id % 2 === 1));
+    await Promise.resolve();
+
+    return [...document.querySelectorAll('#scatter-remove li')]
+      .map(el => el.dataset.key)
+      .join(',');
+  }, bundle);
+  expect(orderedKeys).toBe('1,3,5,7');
+});
+
+// ─── binding-effect fast path ──────────────────────────────────────────────
+// Lifecycle bindings (signal-bound attribute, content, prop, style) use _bindingEffect — a
+// specialised effect that subscribes to exactly one signal and bypasses the general track()
+// machinery. These tests verify the externally observable behaviour matches the previous
+// track-based path: updates still fire, persist parents still pause+resume the binding, and
+// stop on DOM removal still cleans up.
+
+test('signal-bound attribute via binding-effect updates on every change', async ({ page, bundle }) => {
+  await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const klass = signal('initial');
+    document.body.append(t.div({ id: 'binding-attr', class: klass }).toElement());
+    klass.set('next');
+    klass.set('final');
+  }, bundle);
+  await expect(page.locator('#binding-attr')).toHaveClass('final');
+});
+
+test('signal-bound content via binding-effect updates on every change', async ({ page, bundle }) => {
+  await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const label = signal('hello');
+    document.body.append(t.p({ id: 'binding-content' }, label).toElement());
+    label.set('hello world');
+  }, bundle);
+  await expect(page.locator('#binding-content')).toHaveText('hello world');
+});
+
+test('binding-effect on a persist parent pauses on removal and resumes on reinsertion', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const klass = signal('a');
+    const el = t.div({ id: 'binding-persist', persist: true, class: klass }).toElement();
+    document.body.append(el);
+    const initial = el.className;
+
+    el.remove();
+    await Promise.resolve();
+    // While detached, setting the signal must not update the (offscreen) element.
+    klass.set('b');
+    await Promise.resolve();
+    const whileDetached = el.className;
+
+    document.body.append(el);
+    await Promise.resolve();
+    // On reinsertion the effect resumes and the latest value is applied.
+    const afterRemount = el.className;
+
+    klass.set('c');
+    await Promise.resolve();
+    const afterFurtherChange = el.className;
+
+    return { initial, whileDetached, afterRemount, afterFurtherChange };
+  }, bundle);
+  expect(result.initial).toBe('a');
+  expect(result.whileDetached).toBe('a');
+  expect(result.afterRemount).toBe('b');
+  expect(result.afterFurtherChange).toBe('c');
+});

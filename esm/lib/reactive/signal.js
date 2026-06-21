@@ -227,7 +227,7 @@ export default class Signal {
 
   constructor(initial) {
     this.#value = initial;
-    notifySignalCreate(this, initial, v => { this.set(v); });
+    notifySignalCreate(this, initial);
     if (!suppressReactiveCheck) {
       if (inComputedFn) {
         throttledWarn(
@@ -276,26 +276,7 @@ export default class Signal {
           'Consume the value inline (call .get() on it, or pass it directly to a tag) instead of passing the instance out.',
         );
       }
-      const sub = currentEffect;
-      sub._cleanups.push(() => {
-        this.#subscribers.delete(sub);
-        notifySignalEffectUnsubscription(this, sub._devId, this.#subscribers.size);
-        if (this.#subscribers.size === 0) {
-          const sleep = sleepFns.get(this);
-          if (sleep === undefined) {
-            notifySignalZeroSubscribers(this);
-          } else if (inFlush) {
-            pendingSleep.add(this);
-            queueMicrotask(() => {
-              if (!pendingSleep.has(this)) { return; }
-              pendingSleep.delete(this);
-              sleep();
-            });
-          } else {
-            sleep();
-          }
-        }
-      });
+      currentEffect._cleanups.push(this);
     } else if (currentEffect === null) {
       wakeForRead(this);
     }
@@ -333,6 +314,10 @@ export default class Signal {
     }
     this.#value = next;
     notifySignalSet(this, next, this.#subscribers.size);
+    // Snapshot via spread is required: a computed subscriber's update() unsubscribes itself
+    // from this signal at the start of its track() (clearing previous subscriptions) and
+    // re-subscribes when its fn re-reads us, and Set iteration revisits entries that were
+    // deleted and re-added during the same walk. Without the snapshot, that pattern loops.
     for (const fn of [...this.#subscribers]) {
       if (fn._isEffect) {
         scheduleRun(fn);
@@ -360,11 +345,61 @@ export default class Signal {
   toString() {
     return String(this.get());
   }
+
+  // Internal: subscribe `run` to this signal without entering the currentEffect tracking
+  // dance. Used by _bindingEffect, which never enters track() and so needs a direct hook.
+  _bindingSubscribe(run) {
+    if (this.#subscribers.size === 0) { this.#wakeIfSleeping(); }
+    this.#subscribers.add(run);
+    notifySignalEffectSubscription(this, run._devId, this.#subscribers.size);
+  }
+
+  // Internal: called from track() (effect/computed re-run) and from createEffect's
+  // pause()/stop(), as well as from _bindingEffect's pause/stop. The `run` argument is the
+  // effect/computed run function that originally subscribed; it identifies which subscriber
+  // to remove from this signal's set.
+  _unsubscribeFromRun(run) {
+    this.#subscribers.delete(run);
+    notifySignalEffectUnsubscription(this, run._devId, this.#subscribers.size);
+    if (this.#subscribers.size === 0) { this.#sleepOrNotify(); }
+  }
+
+  // When a computed loses its last subscriber it should release its sources. We may need
+  // to defer the sleep call: while a flush is in progress, a follow-up subscriber inside
+  // the same flush should be able to cancel the sleep before it runs, so we queue it as a
+  // microtask and a re-subscribe in `get()` removes the pending entry before this fires.
+  #sleepOrNotify() {
+    const sleep = sleepFns.get(this);
+    if (sleep === undefined) {
+      notifySignalZeroSubscribers(this);
+      return;
+    }
+    if (!inFlush) { sleep(); return; }
+    pendingSleep.add(this);
+    queueMicrotask(() => {
+      if (!pendingSleep.delete(this)) { return; }
+      sleep();
+    });
+  }
+
+  // First subscriber resumes a sleeping computed (or cancels a deferred sleep). Plain
+  // signals have no wake function; the call is a no-op for them.
+  #wakeIfSleeping() {
+    if (pendingSleep.delete(this)) { return; }
+    const wake = wakeFns.get(this);
+    if (wake !== undefined) { wake(); }
+  }
 }
 
+// _bindingUnsubscribe is identical to _unsubscribeFromRun: a binding effect that's been
+// paused or stopped needs the same teardown as any other run leaving the subscriber set.
+// Aliased on the prototype so the binding path has a clear name without a duplicate body.
+Signal.prototype._bindingUnsubscribe = Signal.prototype._unsubscribeFromRun;
+
 function track(run, fn) {
-  for (const cleanup of run._cleanups) {
-    cleanup();
+  const cleanups = run._cleanups;
+  for (let i = 0; i < cleanups.length; i++) {
+    cleanups[i]._unsubscribeFromRun(run);
   }
   run._cleanups = [];
   run._reads = new Set();
@@ -408,8 +443,9 @@ function createEffect(fn, isInternal = false) {
     pause() {
       paused = true;
       pending.delete(run);
-      for (const cleanup of run._cleanups) {
-        cleanup();
+      const cleanups = run._cleanups;
+      for (let i = 0; i < cleanups.length; i++) {
+        cleanups[i]._unsubscribeFromRun(run);
       }
       run._cleanups = [];
       notifyEffectPause(_devId);
@@ -457,6 +493,62 @@ export function effect(fn) {
 // render cycle, so their lifetime is tied to the DOM and not a true external escape.
 export function _internalEffect(fn) {
   return createEffect(fn, true);
+}
+
+// Internal: lightweight effect that subscribes to exactly one signal and calls fn(value)
+// whenever that signal changes. Bypasses track() entirely. No _cleanups array, no
+// per-rerun unsubscribe/resubscribe round-trip, no currentEffect dance. Lifecycle bindings
+// (signal-bound attribute, signal-bound content, signal-bound prop) read exactly one
+// signal, so this fast path collapses ~20k subscribe+resubscribe pairs to plain calls in
+// benchmarks that fire many signal updates.
+export function _bindingEffect(sig, fn) {
+  if (ssrDepth > 0) {
+    return { pause() {}, resume() {}, stop() {} };
+  }
+  let paused = false;
+  let destroyed = false;
+  const _devId = notifyEffectCreate(fn);
+  function run() {
+    if (paused) { return; }
+    notifyEffectRun(_devId);
+    fn(sig.value);
+  }
+  run._isEffect = true;
+  run._isInternal = true;
+  run._devId = _devId;
+  // _cleanups stays empty: _bindingEffect doesn't go through track(), so there are no
+  // tracked subscriptions to tear down. The field exists for shape consistency with
+  // effects that DO use track() (some lifecycle code iterates run._cleanups generically).
+  run._cleanups = [];
+  function unsubscribe() {
+    if (paused) { return; }
+    paused = true;
+    pending.delete(run);
+    sig._bindingUnsubscribe(run);
+  }
+  sig._bindingSubscribe(run);
+  run();
+  return {
+    _devId,
+    pause() {
+      if (paused) { return; }
+      unsubscribe();
+      notifyEffectPause(_devId);
+    },
+    resume() {
+      if (destroyed || !paused) { return; }
+      paused = false;
+      sig._bindingSubscribe(run);
+      notifyEffectResume(_devId);
+      run();
+    },
+    stop() {
+      if (destroyed) { return; }
+      unsubscribe();
+      destroyed = true;
+      notifyEffectStop(_devId);
+    },
+  };
 }
 
 /**
@@ -651,8 +743,9 @@ export function computed(fn, key) {
     // context) so serializing a value that contains sleeping computed signals does not emit
     // spurious computed:stop events and trigger unnecessary devtools re-renders.
     if (!suppressWakeNotify) { notifySignalStop(s); }
-    for (const cleanup of update._cleanups) {
-      cleanup();
+    const cleanups = update._cleanups;
+    for (let i = 0; i < cleanups.length; i++) {
+      cleanups[i]._unsubscribeFromRun(update);
     }
     update._cleanups = [];
   });
@@ -670,8 +763,9 @@ export function computed(fn, key) {
     pendingSleep.delete(s);
     sleepFns.delete(s);
     wakeFns.delete(s);
-    for (const cleanup of update._cleanups) {
-      cleanup();
+    const cleanups = update._cleanups;
+    for (let i = 0; i < cleanups.length; i++) {
+      cleanups[i]._unsubscribeFromRun(update);
     }
     update._cleanups = [];
     // Stop any keyed signals that this computed owned, so their subscribers are cleared

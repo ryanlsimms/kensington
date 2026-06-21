@@ -28,8 +28,8 @@ export function architectureSignals() {
       code('javascript', `get() {
   if (currentEffect !== null && !this.#subscribers.has(currentEffect)) {
     this.#subscribers.add(currentEffect);
-    const sub = currentEffect;
-    sub._cleanups.push(() => this.#subscribers.delete(sub));
+    currentEffect._reads.add(this);
+    currentEffect._cleanups.push(this);          // push the Signal, not a per-sub closure
   }
   return this.#value;
 }`),
@@ -47,11 +47,13 @@ export function architectureSignals() {
           ' check prevents duplicates.',
         ]),
         t.li([
-          'The cleanup function is pushed to the effect\'s ',
+          'The Signal itself is pushed to the effect\'s ',
           t.code('_cleanups'),
-          ' array, which the ',
-          t.code('track'),
-          ' helper drains and resets on each re-run.',
+          ' array. On re-run or stop, ',
+          t.code('track()'),
+          ' walks the array and calls ',
+          t.code('sig._unsubscribeFromRun(run)'),
+          ' on each entry. Pushing the Signal instead of a per-subscription closure removes one closure allocation per signal read, which adds up to many thousands per render of a typical list.',
         ]),
       ]),
       callout('note', '.value and .toJSON() never subscribe',

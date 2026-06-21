@@ -48,22 +48,30 @@ function isPropWritable(element, propName) {
   return false;
 }
 
-function collectContent(items, seen = new Set()) {
-  const out = [];
-  for (const c of [].concat(items)) {
-    if ([undefined, null, '', false, true].includes(c)) {
-      continue; // false/true arise from conditional content patterns. someCondition && t.span(...)
-    }
+function collectInto(items, out, seen) {
+  for (let i = 0; i < items.length; i++) {
+    const c = items[i];
+    // false/true arise from conditional content patterns. someCondition && t.span(...)
+    if (c === undefined || c === null || c === '' || c === false || c === true) { continue; }
     if (Array.isArray(c)) {
-      if (seen.has(c)) {
-        continue;
-      }
+      // Cycle detection. A content array appearing twice is always circular, not a legitimate
+      // reuse. Lazily allocate the Set since nested arrays in content are uncommon.
+      if (seen === undefined) { seen = new Set(); }
+      if (seen.has(c)) { continue; }
       seen.add(c);
-      out.push(...collectContent(c, seen));
-      // no seen.delete. A content array appearing twice is always circular, not a legitimate reuse
+      collectInto(c, out, seen);
       continue;
     }
     out.push(c);
+  }
+}
+
+function collectContent(items, seen) {
+  const out = [];
+  if (Array.isArray(items)) {
+    collectInto(items, out, seen);
+  } else if (items !== undefined && items !== null && items !== '' && items !== false && items !== true) {
+    out.push(items);
   }
   return out;
 }
@@ -75,21 +83,29 @@ export default class ContentTag {
 
   constructor(options) {
     this.tagName = options.tagName;
-    this.attributes = options.attributes;
-    this.prop = options.attributes?.prop ?? null;
-    const rawStyle = options.attributes?.style ?? null;
-    let hasSignalStyleProp = false;
-    const isPlainStyleObj = rawStyle !== null && typeof rawStyle === 'object'
-      && !isKensingtonSignal(rawStyle) && !Array.isArray(rawStyle);
-    if (isPlainStyleObj) {
-      for (const k of Object.keys(rawStyle)) {
-        let v;
-        try { v = rawStyle[k]; } catch { continue; }
-        if (isKensingtonSignal(v)) { hasSignalStyleProp = true; break; }
+    const attrs = options.attributes;
+    this.attributes = attrs;
+    // Most tags pass attributes that don't include any of the meta keys, so derive them
+    // all from a single property access rather than three independent `attrs?.x` reads.
+    if (attrs === null || attrs === undefined) {
+      this.prop = null;
+      this.styleProps = null;
+      this.persist = false;
+    } else {
+      this.prop = attrs.prop ?? null;
+      this.persist = attrs.persist ?? false;
+      const rawStyle = attrs.style ?? null;
+      let hasSignalStyleProp = false;
+      if (rawStyle !== null && typeof rawStyle === 'object'
+        && !isKensingtonSignal(rawStyle) && !Array.isArray(rawStyle)) {
+        for (const k of Object.keys(rawStyle)) {
+          let v;
+          try { v = rawStyle[k]; } catch { continue; }
+          if (isKensingtonSignal(v)) { hasSignalStyleProp = true; break; }
+        }
       }
+      this.styleProps = hasSignalStyleProp ? rawStyle : null;
     }
-    this.styleProps = hasSignalStyleProp ? rawStyle : null;
-    this.persist = options.attributes?.persist ?? false;
     this.additionalGlobalAttributes = options.additionalGlobalAttributes ?? {};
     this.allowedAttributeMap = options.allowedAttributeMap ?? new Map(); // empty Map fallback. All non-namespace attrs fail has(), so custom tags with no spec reject everything except namespaces
     this.contentIsLiteral = options.contentIsLiteral;
@@ -123,10 +139,17 @@ export default class ContentTag {
   validateAttributeByType(type, value) { return validateAttributeByType(type, value); }
 
   validateContent() {
-    const valid = this.content.filter(c => isValidContentItem(c, this.contentIsLiteral));
-    if (valid.length === this.content.length) { return; }
-    showInvalid(`Invalid content passed to element \`${this.tagName}\``, this.validationLevel, this.logger);
-    this.content = valid;
+    // The common case is "everything valid"; scan once and only allocate a filtered array
+    // when there's actually something to drop. For lists of thousands of tags this avoids
+    // a per-render .filter() allocation that the simpler implementation would do.
+    const items = this.content;
+    for (let i = 0; i < items.length; i++) {
+      if (!isValidContentItem(items[i], this.contentIsLiteral)) {
+        showInvalid(`Invalid content passed to element \`${this.tagName}\``, this.validationLevel, this.logger);
+        this.content = items.filter(c => isValidContentItem(c, this.contentIsLiteral));
+        return;
+      }
+    }
   }
 
   contentIsShort() { return contentIsShort(this); }
@@ -152,7 +175,7 @@ export default class ContentTag {
     const persist = this.persist || _inheritPersist;
     if (this.#domElement) {
       if (this.#domElement.isConnected) {
-        showInvalid(`toElement() called on a tag instance already in the DOM — the same node will be moved. Call the tag as a function to create a new independent node.`, this.validationLevel, this.logger);
+        showInvalid(`toElement() called on a tag instance already in the DOM. The same node will be moved. Call the tag as a function to create a new independent node.`, this.validationLevel, this.logger);
         return this.#domElement;
       }
       if (persist) {
@@ -162,7 +185,7 @@ export default class ContentTag {
         this.#domElement = null;
       } else {
         if (this.#domElement.parentNode !== null) {
-          showInvalid(`toElement() called on a tag instance already in the DOM — the same node will be moved. Call the tag as a function to create a new independent node.`, this.validationLevel, this.logger);
+          showInvalid(`toElement() called on a tag instance already in the DOM. The same node will be moved. Call the tag as a function to create a new independent node.`, this.validationLevel, this.logger);
         }
         return this.#domElement;
       }
@@ -175,17 +198,25 @@ export default class ContentTag {
       ? document.createElementNS(this.namespace, this.tagName)
       : document.createElement(this.tagName);
 
-    const lifecycle = createLifecycle({ element, persist });
+    // Lifecycle is built lazily on first signal binding (or finalize, if persist or a
+    // connect/disconnect callback forces it). Most tags in a typical tree are static and
+    // never need one, so this avoids the WeakRef + helper closures + return object that
+    // createLifecycle allocates.
+    let lifecycle = null;
+    const ensureLifecycle = () => (lifecycle ??= createLifecycle({ element, persist }));
     let hasSignalContent = false;
     let listeners = null;
+    function trackListener(name, handler) {
+      element.addEventListener(name, handler);
+      if (listeners === null) { listeners = new Map(); }
+      listeners.set(name, handler);
+    }
 
     for (const [attrName, attrValue] of this.attributeArray()) {
       if (/^on[a-z]/.test(attrName) && typeof attrValue === 'function') {
-        element.addEventListener(attrName.slice(2), attrValue);
-        if (listeners === null) { listeners = new Map(); }
-        listeners.set(attrName.slice(2), attrValue);
+        trackListener(attrName.slice(2), attrValue);
       } else if (isKensingtonSignal(attrValue)) {
-        lifecycle.signalEffect(attrValue, (el, val) => {
+        ensureLifecycle().signalEffect(attrValue, (el, val) => {
           if (val === false || val === null || val === undefined) {
             el.removeAttribute(attrName);
           } else if (val === true) {
@@ -203,9 +234,7 @@ export default class ContentTag {
     if (events !== null && typeof events === 'object' && !Array.isArray(events)) {
       for (const [eventName, handler] of Object.entries(events)) {
         if (typeof handler === 'function') {
-          element.addEventListener(eventName, handler);
-          if (listeners === null) { listeners = new Map(); }
-          listeners.set(eventName, handler);
+          trackListener(eventName, handler);
         }
       }
     }
@@ -219,7 +248,7 @@ export default class ContentTag {
           continue;
         }
         if (isKensingtonSignal(propValue)) {
-          lifecycle.signalEffect(propValue, (el, val) => { el[propName] = val; }, `prop:${propName}`);
+          ensureLifecycle().signalEffect(propValue, (el, val) => { el[propName] = val; }, `prop:${propName}`);
         } else {
           element[propName] = propValue;
           statics[propName] = propValue;
@@ -237,7 +266,7 @@ export default class ContentTag {
           continue; // static values are already set via the initial style attribute
         }
         const cssProp = camelToKebab(propName);
-        lifecycle.signalEffect(propValue, (el, val) => {
+        ensureLifecycle().signalEffect(propValue, (el, val) => {
           if (val === null || val === undefined || val === false || val === '') {
             el.style.removeProperty(cssProp);
           } else {
@@ -247,9 +276,13 @@ export default class ContentTag {
       }
     }
 
+    // Children only need the inherited-persist options when this tag is itself in a persist
+    // branch. In the common case (no persist anywhere), passing undefined hits toElement()'s
+    // default and avoids allocating a fresh options object per child.
+    const childOpts = persist ? { _inheritPersist: true } : undefined;
     for (let node of this.content) { // let, not const. node is reassigned to preserveSpaces(node) below
       if (isKensingtonTag(node)) {
-        element.append(node.toElement(node._isKensingtonContentTag ? { _inheritPersist: persist } : undefined));
+        element.append(node.toElement(node._isKensingtonContentTag ? childOpts : undefined));
         continue;
       }
       if (isKensingtonSignal(node)) {
@@ -257,7 +290,7 @@ export default class ContentTag {
         const startAnchor = document.createComment('');
         const endAnchor = document.createComment('');
         element.append(startAnchor, endAnchor);
-        lifecycle.signalEffect(node, (el, val) => {
+        ensureLifecycle().signalEffect(node, (el, val) => {
           reconcile(el, startAnchor, endAnchor, Array.isArray(val) ? val : [val]);
         }, '(content)');
         continue;
@@ -268,12 +301,21 @@ export default class ContentTag {
       element.append(document.createTextNode(String(node))); // String() handles Symbols. + or template literals would throw
     }
 
-    lifecycle.finalize({
-      connectCallbacks: this.#connectedCallbacks,
-      disconnectCallbacks: this.#disconnectedCallbacks,
-      onCleared: () => { if (this.#domElement === element) { this.#domElement = null; } },
-      onReconnect: () => { this.#domElement = element; },
-    });
+    // Finalize only when there's something to register. A null lifecycle here means no
+    // signal binding fired, so unless the user added connect/disconnect callbacks (or this
+    // is a persist branch that needs the resume hooks) we can skip the call entirely.
+    const needsFinalize = lifecycle !== null
+      || persist
+      || this.#connectedCallbacks.length > 0
+      || this.#disconnectedCallbacks.length > 0;
+    if (needsFinalize) {
+      ensureLifecycle().finalize({
+        connectCallbacks: this.#connectedCallbacks,
+        disconnectCallbacks: this.#disconnectedCallbacks,
+        onCleared: () => { if (this.#domElement === element) { this.#domElement = null; } },
+        onReconnect: () => { this.#domElement = element; },
+      });
+    }
 
     if (listeners !== null) { recordListeners(element, listeners); }
 

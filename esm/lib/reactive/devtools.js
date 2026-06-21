@@ -4,7 +4,7 @@ let nextIsBinding = false;
 let nextBindingLabel = '';
 
 const signalIds = new WeakMap();
-// Signals created via computed() — used to restore isComputed: true when a sleeping computed wakes.
+// Signals created via computed(). Used to restore isComputed: true when a sleeping computed wakes.
 const computedSigs = new WeakSet();
 // Tracks IDs of computed signals for event payloads where only the ID is available (GC callbacks).
 const computedIds = new Set();
@@ -14,7 +14,7 @@ let idCounter = 0;
 const pendingZeroSubscribers = new Set();
 
 // Automatically remove devtools entries for signals that are garbage-collected without
-// an explicit .stop() call — covers embedded signals (e.g. task.done) that become
+// an explicit .stop() call. Covers embedded signals (e.g. task.done) that become
 // unreachable when the containing data structure is updated.
 const signalGcRegistry = new FinalizationRegistry(id => {
   if (!hook) { return; }
@@ -69,7 +69,7 @@ export function enableDevtools() {
   }
 }
 
-export function notifySignalCreate(sig, value, setter) {
+export function notifySignalCreate(sig, value) {
   if (!enabled) { return; }
   const id = ++idCounter;
   signalIds.set(sig, id);
@@ -80,7 +80,10 @@ export function notifySignalCreate(sig, value, setter) {
     setCount: 0,
     effectIds: new Set(),
     isComputed: false,
-    setter: setter ?? null,
+    // Setter for the devtools panel's "edit value" affordance. Built here (not in the
+    // Signal constructor) so signal() doesn't allocate this closure on every call when
+    // devtools is disabled. The early `if (!enabled)` return above skips this path.
+    setter: v => { sig.set(v); },
   });
   signalGcRegistry.register(sig, id);
   hook._emit('update', { type: 'signal:create', id, isComputed: false });
@@ -147,7 +150,7 @@ export function notifySignalEffectSubscription(sig, effectId, subscriberCount) {
   if (id === undefined) { return; }
   const meta = hook.signals.get(id);
   if (meta === undefined) { return; }
-  // Always cancel pending removal — computed intermediate subscribers (effectId undefined)
+  // Always cancel pending removal. Computed intermediate subscribers (effectId undefined)
   // must still keep the source signal alive in devtools.
   pendingZeroSubscribers.delete(id);
   meta.subscriberCount = subscriberCount;
@@ -202,6 +205,7 @@ export function notifyEffectElement(effectId, element) {
 }
 
 export function markNextEffectAsBinding(label) {
+  if (!enabled) { return; }
   nextIsBinding = true;
   nextBindingLabel = label ?? '';
 }

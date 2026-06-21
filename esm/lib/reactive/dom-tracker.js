@@ -3,31 +3,34 @@ import { notifyDomTrack, notifyDomUntrack } from './devtools.js';
 // Single per-element record. Any subset of { stop, connect, persist } may be present.
 // An entry survives stop or connect cleanup if its other half is still in use (persist=true).
 // Entries are held in a WeakMap so an element created with toElement() but never inserted
-// (and then dropped by the caller) does not stay pinned by this module. The parallel
-// trackedRefs Set holds WeakRefs for the iteration in visit(); the FinalizationRegistry
-// prunes WeakRefs whose elements have been collected so size-based short-circuits stay
-// approximately correct.
+// (and then dropped by the caller) does not stay pinned by this module.
 const entries = new WeakMap();
-const trackedRefs = new Set();
-const trackedCleanup = new FinalizationRegistry(ref => trackedRefs.delete(ref));
 const contentTracked = new WeakSet();
+// `hasAnyTracked` gates the MutationObserver callback's per-record work. It's a one-shot
+// latch: once anything has ever been tracked, the observer always runs. We don't try to
+// decrement it on cleanup because the only saving would be when an app temporarily reaches
+// zero tracked elements, which is rare in practice; in exchange we skip a
+// FinalizationRegistry.register call per tracked element (measurable in benchmarks that
+// create tens of thousands of reactive elements).
+let hasAnyTracked = false;
 let observer = null;
+// Bitmask for TreeWalker: elements (NodeFilter.SHOW_ELEMENT = 0x1) + comments
+// (NodeFilter.SHOW_COMMENT = 0x80). LiteralTag and CommentTag track their anchor comments.
+// Text nodes are never tracked, so skip them.
+const SHOW_ELEMENT_AND_COMMENT = 129;
 
 function getOrCreate(element) {
   let entry = entries.get(element);
   if (entry === undefined) {
-    const ref = new WeakRef(element);
-    entry = { ref };
+    entry = {};
     entries.set(element, entry);
-    trackedRefs.add(ref);
-    trackedCleanup.register(element, ref);
+    hasAnyTracked = true;
     notifyDomTrack();
   }
   return entry;
 }
 
 function deleteEntry(element, entry) {
-  trackedRefs.delete(entry.ref);
   entries.delete(element);
   notifyDomUntrack(entry.bindingDevIds);
 }
@@ -43,40 +46,51 @@ function clearStop(entry, element) {
   }
 }
 
+// Stops the effect registered on `element` if there is one. Shared by every code path
+// that drops tracked elements out of the DOM (single removal, range removal, MO observer).
+function stopOne(element, entry) {
+  if (entry.stop === undefined) { return; }
+  const stop = entry.stop;
+  clearStop(entry, element);
+  stop();
+}
+
+// Walks the subtree rooted at `node` (including `node` itself) and invokes `fn(el, entry)`
+// for every tracked element or comment found. When `node` itself is tracked, descendant
+// non-element nodes are skipped so that the comment-anchor entries owned by LiteralTag and
+// CommentTag are not collateral damage of a persist parent's pause-on-removal cycle.
 function visit(node, fn) {
   const own = entries.get(node);
-  if (own !== undefined) {
-    fn(node, own);
-    // Don't return — also process tracked child elements so that effects registered on
-    // child elements (e.g. checked=signal on an <input> inside a <li persist=true>) are
-    // paused or stopped together with the parent.
-  }
+  if (own !== undefined) { fn(node, own); }
   if (node.nodeType !== 1) { return; }
-  for (const ref of [...trackedRefs]) {
-    const el = ref.deref();
-    if (el === undefined) {
-      trackedRefs.delete(ref);
-      continue;
-    }
-    if (el === node) { continue; }
-    // When the parent has its own entry, skip non-element nodes. This prevents
-    // comment-anchor entries registered by LiteralTag from being permanently stopped
-    // during a persist parent's pause-on-removal cycle.
-    if (own !== undefined && el.nodeType !== 1) { continue; }
-    if (node.contains(el)) {
-      const entry = entries.get(el);
-      if (entry !== undefined) { fn(el, entry); }
-    }
+  const skipComments = own !== undefined;
+  const walker = document.createTreeWalker(node, SHOW_ELEMENT_AND_COMMENT);
+  for (let el = walker.nextNode(); el !== null; el = walker.nextNode()) {
+    if (skipComments && el.nodeType !== 1) { continue; }
+    const entry = entries.get(el);
+    if (entry !== undefined) { fn(el, entry); }
   }
 }
 
 export function stopRemoved(node) {
-  visit(node, (el, entry) => {
-    if (entry.stop === undefined) { return; }
-    const stop = entry.stop;
-    clearStop(entry, el);
-    stop();
-  });
+  visit(node, stopOne);
+}
+
+// Stop tracked effects across an entire sibling range in a single TreeWalker pass. The
+// reconciler's clear path uses this instead of calling stopRemoved() per child: building
+// one walker is cheaper than 1000 walkers, and the walk itself is over the same elements
+// either way. The range is half-open. firstNode is included, endAnchor is excluded.
+export function stopRangeBetween(firstNode, endAnchor) {
+  if (firstNode === null || firstNode === endAnchor) { return; }
+  if (!hasAnyTracked) { return; }
+  const parent = firstNode.parentNode;
+  if (parent === null) { return; }
+  const walker = document.createTreeWalker(parent, SHOW_ELEMENT_AND_COMMENT);
+  walker.currentNode = firstNode;
+  for (let node = firstNode; node !== null && node !== endAnchor; node = walker.nextNode()) {
+    const entry = entries.get(node);
+    if (entry !== undefined) { stopOne(node, entry); }
+  }
 }
 
 function fireConnected(node) {
@@ -88,7 +102,7 @@ function fireConnected(node) {
 function buildObserver() {
   if (observer !== null) { return; }
   observer = new MutationObserver(records => {
-    if (trackedRefs.size === 0) { return; }
+    if (!hasAnyTracked) { return; }
     for (const record of records) {
       for (const node of record.removedNodes) {
         if (!node.isConnected) { stopRemoved(node); }
@@ -136,8 +150,5 @@ export function isContentTracked(element) {
 
 export function stopTracked(element) {
   const entry = entries.get(element);
-  if (entry === undefined || entry.stop === undefined) { return; }
-  const stop = entry.stop;
-  clearStop(entry, element);
-  stop();
+  if (entry !== undefined) { stopOne(element, entry); }
 }

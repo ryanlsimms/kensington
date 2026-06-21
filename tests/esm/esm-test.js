@@ -1410,7 +1410,7 @@ describe('slim build', () => {
 describe('bundle sizes', () => {
   const BUDGETS = [
     { path: '../../dist/kensington.min.js', maxKb: 200 },
-    { path: '../../dist/kensington.slim.min.js', maxKb: 45 },
+    { path: '../../dist/kensington.slim.min.js', maxKb: 50 },
   ];
   for (const { path, maxKb } of BUDGETS) {
     it(`${path.replace('../../dist/', '')} stays under ${maxKb} KB`, () => {

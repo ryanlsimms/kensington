@@ -82,7 +82,7 @@ export function architectureReconcile() {
         t.code('valueEqual'),
         ' compares plain objects and arrays structurally, recurses into ContentTag instances (identified by ',
         t.code('_isKensingtonContentTag'),
-        ' — matching on tagName + attributes + content across any module copy), and falls back to reference equality for everything else (functions, signals, LiteralTag, CommentTag, DOM nodes, Date, class instances).',
+        ' which matches on tagName + attributes + content across any module copy), and falls back to reference equality for everything else (functions, signals, LiteralTag, CommentTag, DOM nodes, Date, class instances).',
       ]),
       callout('key', 'Why value equality, not reference equality',
         t.p([
@@ -206,11 +206,85 @@ if (!isContentTracked(existing)) {
       ),
     ]),
 
+    t.section({ id: 'reconcile-clear' }, [
+      t.h3('Clear shortcut'),
+      t.p([
+        'Before the main loop, an empty ',
+        t.code('newItems'),
+        ' takes a dedicated fast path. A single ',
+        t.code('stopRangeBetween(firstChild, endAnchor)'),
+        ' walks every tracked descendant in one TreeWalker pass and stops its effects. Then ',
+        t.code('Range.deleteContents()'),
+        ' removes the DOM in one operation:',
+      ]),
+      code('javascript', `if (items.length === 0 && startAnchor.nextSibling !== endAnchor) {
+  stopRangeBetween(startAnchor.nextSibling, endAnchor);
+  const range = document.createRange();
+  range.setStartAfter(startAnchor);
+  range.setEndBefore(endAnchor);
+  range.deleteContents();
+  return;
+}`),
+      callout('key', 'Why a special clear path',
+        t.p([
+          'Calling ',
+          t.code('.remove()'),
+          ' on each of 1000 children produces 1000 individual DOM mutations, each going through its own MutationObserver record and (without batching) provoking up to one layout per pass. A single Range deletion and one TreeWalker for the effect teardown collapses the work into one DOM operation and one walk.',
+        ]),
+      ),
+    ]),
+
+    t.section({ id: 'reconcile-orphan-prepass' }, [
+      t.h3('Orphan-removal pre-pass'),
+      t.p([
+        'Before walking ',
+        t.code('newItems'),
+        ', the reconciler first collects the keys that are still present and removes any old keyed node whose key has been dropped:',
+      ]),
+      code('javascript', `if (oldNodes.size > 0) {
+  const newKeys = new Set();
+  for (let idx = 0; idx < items.length; idx++) {
+    if (!isRenderableItem(items[idx])) { continue; }
+    const k = itemKey(items[idx]);
+    if (k !== null) { newKeys.add(k); }
+  }
+  for (const [key, oldNode] of oldNodes) {
+    if (!newKeys.has(key)) {
+      oldNodes.delete(key);
+      oldNode.remove();
+      stopRemoved(oldNode);
+    }
+  }
+}`),
+      callout('key', 'Why a pre-pass instead of trailing cleanup',
+        t.p([
+          'Without it, a deletion in the middle of a 1000-row list degrades to O(N) ',
+          t.code('insertBefore'),
+          ' operations: the cursor sits on the deleted node (which is still in the DOM), every subsequent kept row sees ',
+          t.code('cursor !== targetNode'),
+          ' and inserts before the cursor. The pre-pass removes orphans first, so the main loop\'s cursor only ever encounters nodes that line up with the new positions.',
+        ]),
+      ),
+    ]),
+
     t.section({ id: 'reconcile-loop' }, [
-      t.h3('Insertion, reuse, leftover cleanup'),
-      t.p('The main reconcile loop walks newItems in order:'),
+      t.h3('The main loop: insertion, reuse, advance'),
+      t.p('After the clear and orphan-removal pre-passes, the main loop walks newItems in order:'),
       t.ol({ class: 'numbered' }, [
-        t.li([t.code('null'), ', ', t.code('undefined'), ', and ', t.code('false'), ' items are skipped.']),
+        t.li([
+          t.code('null'),
+          ', ',
+          t.code('undefined'),
+          ', ',
+          t.code('false'),
+          ', ',
+          t.code('true'),
+          ', and ',
+          t.code('\'\''),
+          ' items are skipped via ',
+          t.code('isRenderableItem'),
+          '.',
+        ]),
         t.li([
           'If the item has a key and matches an existing keyed node, branch on the snapshot: ',
           'fast-path reuse if value-equal, replace + state copy if a Signal reference changed, ',
@@ -225,12 +299,14 @@ if (!isContentTracked(existing)) {
           ' to slide it into place.',
         ]),
         t.li([
-          'After the loop, every node between cursor and endAnchor is leftover. Remove them and call ',
+          'After the loop, any nodes still between cursor and endAnchor (unkeyed leftovers) are removed with ',
           t.code('stopRemoved'),
-          ' synchronously to stop their signal effects.',
+          ' fired synchronously to stop their signal effects.',
         ]),
         t.li([
-          'Every entry remaining in the oldNodes map is a keyed node whose key was not in newItems. Remove and stop them too.',
+          'A final pass clears any keyed entries still in the oldNodes map. The pre-pass usually drains this, but the loop handles cases where the orphan-removal heuristic missed something (for example, items that resolved to ',
+          t.code('null'),
+          ' under a key that does match).',
         ]),
       ]),
     ]),

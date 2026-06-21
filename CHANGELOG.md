@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Performance
+- Large list operations are dramatically faster across the board. The dom-tracker now walks only the subtree of removed or added nodes via `TreeWalker`, instead of iterating every tracked element in the document on every mutation. This single change is responsible for most of the wins below.
+- Removing a row from the middle of a long list is now O(1) DOM moves instead of O(N). A pre-pass identifies orphaned keys before the main reconcile loop, so the cursor never sits on a node that is about to disappear forcing every subsequent kept row to insert before it.
+- Clearing a list is now one `Range.deleteContents()` operation instead of one `.remove()` per row, with a single `TreeWalker` pass to stop the affected effects.
+- Per-row reactive overhead is significantly lower. Lifecycle infrastructure (`createLifecycle`) is allocated lazily on first signal binding, so fully static tags pay nothing for it. The stop chain dispatches once per removal rather than allocating a pause-or-stop closure per effect. Signal subscriptions no longer allocate a per-subscription cleanup closure. DOM-binding effects (signal-bound attributes, content, props, and styles) take a fast path that skips the general `track()` machinery since they read exactly one signal by design.
+- Snapshot comparison in the reconciler avoids a recursion-internal prototype check on every ContentTag node by inlining the attribute and content walk inside the ContentTag branch of `valueEqual`.
+
+### Fixed
+- IIFE bundles (e.g. `esbuild --format=iife`, rollup IIFE output, or any `<script>`-tag deployment) no longer crash on module load. The stack-frame filter previously assumed `import.meta.url` was present, which IIFE output erases; it now reads defensively and falls back to a marker that simply matches nothing.
+
 ## [2.0.0-signals.20] - 2026-06-19
 
 ### Fixed

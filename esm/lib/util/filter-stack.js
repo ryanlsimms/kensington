@@ -1,6 +1,7 @@
-const _selfUrl = import.meta.url;
+const _selfUrl = (typeof import.meta !== 'undefined' && import.meta.url) || '';
 // Node.js source: filter by the esm/ directory (two levels up from esm/lib/util/).
 // Browser bundle: all internal frames share the bundle URL, so filter by that directly.
+// IIFE bundles erase import.meta entirely. Fall back to an empty marker that simply matches nothing.
 const KENSINGTON_SRC = _selfUrl.startsWith('file:')
   ? new URL('../../', _selfUrl).pathname
   : _selfUrl;

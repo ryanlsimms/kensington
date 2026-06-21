@@ -1,4 +1,4 @@
-import { isContentTracked, isTracked, stopRemoved, stopTracked } from './dom-tracker.js';
+import { isContentTracked, isTracked, stopRangeBetween, stopRemoved, stopTracked } from './dom-tracker.js';
 import { transferListeners } from './element-listeners.js';
 import { captureState, restoreState } from './preserve-state.js';
 import { isKensingtonSignal } from './signal.js';
@@ -26,7 +26,7 @@ function itemKey(item) {
 
 // Structural equality. Plain objects and arrays compare by their keys/elements. ContentTag
 // instances (including VoidTag and HtmlWithDoctypeTag, which extend it) compare by
-// tagName + attributes + content. Functions compare by reference — two arrow functions
+// tagName + attributes + content. Functions compare by reference. Two arrow functions
 // closing over the same variables are still distinct references, so a re-render with a new
 // inline handler correctly falls through to syncNode, which calls transferListeners to swap
 // the old handler for the new one. Other class instances with private state (Signal,
@@ -37,13 +37,31 @@ function valueEqual(a, b) {
   if (a === null || b === null) { return false; }
   if (typeof a !== typeof b) { return false; }
   if (typeof a !== 'object') { return false; }
-  // ContentTag and its subclasses.
+  // ContentTag and its subclasses. attributes is always a plain object or null and content
+  // is always an array (collectContent normalises in the constructor), so the comparison
+  // can be inlined without re-checking those invariants on every recursion.
   if (a._isKensingtonContentTag && b._isKensingtonContentTag) {
     if (a.tagName !== b.tagName) { return false; }
-    if (!valueEqual(a.attributes, b.attributes)) { return false; }
-    if (a.content.length !== b.content.length) { return false; }
-    for (let i = 0; i < a.content.length; i++) {
-      if (!valueEqual(a.content[i], b.content[i])) { return false; }
+    const aa = a.attributes, ba = b.attributes;
+    if (aa !== ba) {
+      if (aa === null || ba === null) { return false; }
+      // Attributes are user-passed plain objects (kensington never assigns prototypes to
+      // them), so for...in enumerates own keys only. Skip Object.keys allocation.
+      const ka = Object.keys(aa);
+      const aLen = ka.length;
+      if (aLen !== Object.keys(ba).length) { return false; }
+      for (let i = 0; i < aLen; i++) {
+        const k = ka[i];
+        if (!valueEqual(aa[k], ba[k])) { return false; }
+      }
+    }
+    const ac = a.content, bc = b.content;
+    if (ac !== bc) {
+      const len = ac.length;
+      if (len !== bc.length) { return false; }
+      for (let i = 0; i < len; i++) {
+        if (!valueEqual(ac[i], bc[i])) { return false; }
+      }
     }
     return true;
   }
@@ -172,14 +190,14 @@ function syncNode(existing, fresh) {
     }
     oldAttrNames.delete(attr);
   }
-  // Skip attribute removal for tracked elements — signal-driven attributes are
+  // Skip attribute removal for tracked elements. Signal-driven attributes are
   // managed by deferred effects and won't appear on the fresh element yet.
   if (!isTracked(existing)) {
     for (const attr of oldAttrNames) {
       existing.removeAttribute(attr);
     }
   }
-  // Skip child patching for content-tracked elements — their children include
+  // Skip child patching for content-tracked elements. Their children include
   // signal anchor comment nodes whose references are held in effect closures.
   // Replacing those anchors would break the existing element's content effects.
   if (!isContentTracked(existing)) {
@@ -213,14 +231,33 @@ function syncNode(existing, fresh) {
   return existing;
 }
 
-function* flatItems(items) {
-  for (const item of items) {
-    if (Array.isArray(item)) {
-      yield* flatItems(item);
-    } else {
-      yield item;
+// Items in the array may themselves be arrays (a transform callback that returns
+// `[t.li(), [t.li(), t.li()]]` for instance). The common case is a flat array, so detect
+// it once and avoid a generator allocation entirely. The rare nested case flattens into a
+// temporary buffer.
+function flattenInto(items, out) {
+  for (let i = 0; i < items.length; i++) {
+    const v = items[i];
+    if (Array.isArray(v)) { flattenInto(v, out); }
+    else { out.push(v); }
+  }
+}
+
+function flattenIfNeeded(items) {
+  for (let i = 0; i < items.length; i++) {
+    if (Array.isArray(items[i])) {
+      const out = [];
+      flattenInto(items, out);
+      return out;
     }
   }
+  return items;
+}
+
+// false/true/'' are common conditional-content patterns (`cond && t.span()`) that resolve to
+// nothing; null/undefined likewise. Treat them all as "skip" in the reconcile pass.
+function isRenderableItem(item) {
+  return item !== null && item !== undefined && item !== false && item !== true && item !== '';
 }
 
 export function reconcile(parent, startAnchor, endAnchor, newItems) {
@@ -234,13 +271,56 @@ export function reconcile(parent, startAnchor, endAnchor, newItems) {
     node = node.nextSibling;
   }
 
+  const items = flattenIfNeeded(newItems);
+
+  // Clear fast path: when the new list is empty, the per-node .remove() loop costs ~10x
+  // more than a single Range.deleteContents() because every removal goes through its own
+  // DOM mutation and MutationObserver record. Stop the per-node effects synchronously,
+  // then drop the whole range in one DOM op.
+  if (items.length === 0 && startAnchor.nextSibling !== endAnchor) {
+    // One TreeWalker pass over the whole range stops every tracked effect in the subtree;
+    // building a fresh walker per child is the dominant overhead at 1000+ rows.
+    stopRangeBetween(startAnchor.nextSibling, endAnchor);
+    const range = document.createRange();
+    range.setStartAfter(startAnchor);
+    range.setEndBefore(endAnchor);
+    range.deleteContents();
+    return;
+  }
+
+  // Pre-pass: remove old nodes whose keys are no longer present in newItems. Without this,
+  // a deletion in the middle of the list leaves the orphaned node in the cursor path. Every
+  // subsequent kept row then triggers an insertBefore to skip past it, turning an O(1)
+  // deletion into O(N) DOM operations. The pre-pass keeps the main loop's cursor advancing
+  // over nodes that all line up with their new positions (typically the swap-only or
+  // insert-only paths).
+  if (oldNodes.size > 0) {
+    const newKeys = new Set();
+    for (let idx = 0; idx < items.length; idx++) {
+      if (!isRenderableItem(items[idx])) { continue; }
+      const k = itemKey(items[idx]);
+      if (k !== null) { newKeys.add(k); }
+    }
+    for (const [key, oldNode] of oldNodes) {
+      if (!newKeys.has(key)) {
+        oldNodes.delete(key);
+        oldNode.remove();
+        stopRemoved(oldNode);
+      }
+    }
+  }
+
   let cursor = startAnchor.nextSibling;
-  for (const item of flatItems(newItems)) {
-    if (item === null || item === undefined || item === false || item === true || item === '') { continue; }
+  for (let idx = 0; idx < items.length; idx++) {
+    const item = items[idx];
+    if (!isRenderableItem(item)) { continue; }
     const key = itemKey(item);
+    const old = key === null ? undefined : oldNodes.get(key);
     let targetNode;
-    if (key !== null && oldNodes.has(key)) {
-      const old = oldNodes.get(key);
+    if (old === undefined) {
+      targetNode = itemToNode(item);
+      recordSnapshot(targetNode, item);
+    } else {
       oldNodes.delete(key);
       const prevSnapshot = snapshots.get(old);
       if (snapshotMatches(prevSnapshot, item)) {
@@ -266,9 +346,6 @@ export function reconcile(parent, startAnchor, endAnchor, newItems) {
         targetNode = syncNode(old, itemToNode(item));
         recordSnapshot(targetNode, item);
       }
-    } else {
-      targetNode = itemToNode(item);
-      recordSnapshot(targetNode, item);
     }
 
     if (cursor === targetNode) {
