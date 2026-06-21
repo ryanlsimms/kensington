@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [1.0.0] - 2026-06-21
 
 ### Fixed
 - IIFE bundles (e.g. `esbuild --format=iife`, rollup IIFE output, or any `<script>`-tag deployment) no longer crash on module load. The stack-frame filter previously assumed `import.meta.url` was present, which IIFE output erases. It now reads defensively and falls back to a marker that simply matches nothing.
