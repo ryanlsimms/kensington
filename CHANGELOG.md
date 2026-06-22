@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- `class: ['static-name', someSignal]` now updates the live DOM class when the signal changes. Previously a signal inside a class array was silently dropped during attribute serialization. Affects any pattern that mixes static class names with reactive class names in one array, including the `styled(tag, styles)` recipe whose generated class is combined with the caller's `class` attribute.
+
 ### Added
 - `Signal.prototype.toElement()` and `Signal.prototype.mount(target)`. A signal whose value is renderable can now be rendered directly without a wrapping tag. `toElement()` returns a `DocumentFragment` containing two comment-node anchors with reactive content between them; `mount(target)` appends that fragment into a target element. Adoption into a real parent after construction is supported. The effect stops automatically when the start anchor (or any ancestor) is removed from the DOM, via `dom-tracker`. Each change clears the prior siblings and renders the new value fresh; keyed reconciliation is intentionally not applied at this level (use `t.div([signal.mapWithKey(...)])` for that). The change means a component function annotated `(): ContentTag` can return `signal.transform(v => v ? tagA : tagB)` directly, with no wrapping `t.div([signal])` required.
 - SVG attribute types `<list-of-coordinates>` and `<list-of-numbers>` now widen to `number | string`, matching the existing `<coordinate>` and `<number>` mappings. Fixes the asymmetry where `t.text({ x: 20 })` failed type-check while `t.rect({ x: 20 })` typechecked. The runtime always accepted numbers; only the types were stricter.

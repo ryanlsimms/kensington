@@ -3015,3 +3015,25 @@ test('signal.toElement() supports adoption into a new parent after construction'
   await expect(page.locator('#sig-adopt-host #sig-adopt-b')).toHaveText('after');
   await expect(page.locator('#sig-adopt-a')).toHaveCount(0);
 });
+
+// ─── class array with signal members ──────────────────────────────────────
+
+test('class array with a signal element updates the live DOM class attribute', async ({ page, bundle }) => {
+  await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const mod = signal('off');
+    document.body.append(t.div({ id: 'cls-mix', class: ['btn', mod] }).toElement());
+    mod.set('on');
+  }, bundle);
+  await expect(page.locator('#cls-mix')).toHaveAttribute('class', 'btn on');
+});
+
+test('class array with a signal toggling between two modifier values updates live', async ({ page, bundle }) => {
+  await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const mod = signal('primary');
+    document.body.append(t.button({ id: 'cls-toggle', class: ['k-base', mod] }).toElement());
+    mod.set('danger');
+  }, bundle);
+  await expect(page.locator('#cls-toggle')).toHaveAttribute('class', 'k-base danger');
+});

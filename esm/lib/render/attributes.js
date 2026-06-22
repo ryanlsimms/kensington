@@ -1,4 +1,4 @@
-import { isKensingtonSignal } from '../reactive/signal.js';
+import { _internalComputed, isKensingtonSignal } from '../reactive/signal.js';
 import he from '../util/he.js';
 import { styleObjectToCss } from '../util/style-utils.js';
 import { getAttrName } from '../util/text-utils.js';
@@ -11,6 +11,33 @@ function resolveStyleSignals(obj) {
     resolved[k] = isKensingtonSignal(v) ? v.get() : v;
   }
   return resolved;
+}
+
+// Builds a derived computed signal whose value is the joined class string at any moment.
+// Each member of `parts` may be a static string, a number, or a Signal returning a string,
+// string-array, or falsy. Empty / falsy entries are skipped. The returned signal feeds
+// the normal signal-attribute pipeline, so toString reads it once and toElement subscribes
+// to it like any other reactive class.
+function deriveClassList(parts) {
+  return _internalComputed(() => {
+    const out = [];
+    for (const p of parts) {
+      const val = isKensingtonSignal(p) ? p.get() : p;
+      if (val === null || val === undefined || val === false || val === '') {
+        continue;
+      }
+      if (Array.isArray(val)) {
+        for (const inner of val) {
+          if (inner !== null && inner !== undefined && inner !== false && inner !== '') {
+            out.push(String(inner));
+          }
+        }
+      } else {
+        out.push(String(val));
+      }
+    }
+    return out.join(' ');
+  });
 }
 
 export function attributesArrayFromObject(obj, options = {}) {
@@ -72,11 +99,20 @@ export function attributesArrayFromObject(obj, options = {}) {
       continue;
     }
     if (attr === 'class' && Array.isArray(val)) {
-      const classes = val
-        .filter(v => (typeof v === 'string' && v !== '') || (typeof v === 'number' && isFinite(v)))
-        .join(' ');
-      if (classes) {
-        result.push([attrName, classes]);
+      const hasSignal = val.some(v => isKensingtonSignal(v));
+      if (hasSignal) {
+        // Mixed-content class array: at least one element is a signal. Wrap into a single
+        // derived computed that joins the current values on every read. Both the toString
+        // path (attributesStringFromObject) and the toElement path (signalEffect in
+        // content-tag) handle a signal value uniformly from here.
+        result.push([attrName, deriveClassList(val)]);
+      } else {
+        const classes = val
+          .filter(v => (typeof v === 'string' && v !== '') || (typeof v === 'number' && isFinite(v)))
+          .join(' ');
+        if (classes) {
+          result.push([attrName, classes]);
+        }
       }
       continue;
     }

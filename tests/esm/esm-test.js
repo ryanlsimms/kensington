@@ -331,6 +331,23 @@ describe('attributes', () => {
   it('class array filters out non-string/non-number values', () => {
     assert.strictEqual(t.div({ class: ['btn', {}, null, undefined] }).toString(), '<div class="btn"></div>');
   });
+  it('class array with a signal element resolves the signal in toString', () => {
+    const mod = signal('active');
+    assert.strictEqual(t.div({ class: ['btn', mod] }).toString(), '<div class="btn active"></div>');
+  });
+  it('class array with multiple signals resolves all signals', () => {
+    const a = signal('a');
+    const b = signal('b');
+    assert.strictEqual(t.div({ class: [a, 'static', b] }).toString(), '<div class="a static b"></div>');
+  });
+  it('class array signal returning falsy is skipped', () => {
+    const mod = signal('');
+    assert.strictEqual(t.div({ class: ['btn', mod] }).toString(), '<div class="btn"></div>');
+  });
+  it('class array signal returning an array is flattened', () => {
+    const mod = signal(['x', 'y']);
+    assert.strictEqual(t.div({ class: ['btn', mod] }).toString(), '<div class="btn x y"></div>');
+  });
   it('class as plain object is omitted', () => {
     assert.strictEqual(t.div({ class: { active: true } }).toString(), '<div></div>');
   });
