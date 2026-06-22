@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [2.0.0-signals.21] - 2026-06-22
 
 ### Fixed
 - `class: ['static-name', someSignal]` now updates the live DOM class when the signal changes. Previously a signal inside a class array was silently dropped during attribute serialization. Affects any pattern that mixes static class names with reactive class names in one array, including the `styled(tag, styles)` recipe whose generated class is combined with the caller's `class` attribute.
