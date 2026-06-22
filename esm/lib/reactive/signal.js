@@ -16,6 +16,7 @@ import {
 } from './devtools.js';
 import { getCurrentHydrationScope } from './hydration-scope.js';
 import { mapWithKey } from './map-with-key.js';
+import { renderSignalAsTag } from './signal-render.js';
 import { isSSRMode } from './ssr.js';
 import { throttledError, throttledWarn } from './warnings.js';
 
@@ -548,9 +549,10 @@ export function computed(fn, key) {
     // then create an inner computed that calls fnWrapper.fn() and re-runs when the version
     // increments. Temporarily clear all reactive context so the recursive computed() call
     // below does not trigger warnings and does not enter the keyed path.
+    const prevSuppress1 = suppressReactiveCheck;
     suppressReactiveCheck = true;
     const versionSig = new Signal(0);
-    suppressReactiveCheck = false;
+    suppressReactiveCheck = prevSuppress1;
     const fnWrapper = { fn };
     const prevInComputedFn = inComputedFn;
     const prevCurrentComputed = currentComputed;
@@ -619,9 +621,10 @@ export function computed(fn, key) {
       );
     }
   }
+  const prevSuppress = suppressReactiveCheck;
   suppressReactiveCheck = true;
   const s = new Signal(undefined);
-  suppressReactiveCheck = false;
+  suppressReactiveCheck = prevSuppress;
   notifySignalMarkComputed(s);
   // Tracks the last successfully computed value so notifySignalWake can restore it.
   // Without this, a wake where s.set(result) is a no-op (Object.is match) would leave
@@ -899,6 +902,22 @@ export function _isInReactiveContext() {
 }
 
 Signal.prototype.mapWithKey = mapWithKey;
+
+// A signal whose value is renderable can be rendered directly. toElement() returns a
+// DocumentFragment with two comment-node anchors surrounding the rendered content.
+// reconcile reads the live parent on each update; adoption into a real parent after
+// construction is supported. The effect stops when the start anchor (or any ancestor)
+// leaves the DOM, via dom-tracker.
+Signal.prototype.toElement = function toElement() {
+  return renderSignalAsTag(this);
+};
+
+Signal.prototype.mount = function mount(target) {
+  if (!target || typeof target.appendChild !== 'function') {
+    throw new Error('Signal.mount(target) requires a DOM element');
+  }
+  target.appendChild(this.toElement());
+};
 
 Signal.prototype._isKensingtonSignal = true;
 

@@ -105,6 +105,24 @@ export interface ReadonlySignal<T> {
    * rendered DOM.
    */
   mapWithKey<Item, U>(this: ReadonlySignal<readonly Item[]>, keyFnOrProp: ((item: Item) => SignalKey) | keyof Item, mapFn: (item: Item) => U): ReadonlySignal<U[]>;
+  /**
+   * Renders the current value into a DOM node and reactively swaps it when the signal changes.
+   * Returns a `DocumentFragment` containing two comment-node anchors with the rendered content
+   * between them. Adoption into a real parent (via `append`/`insertBefore`) is supported.
+   * The effect stops when the start anchor (or any ancestor) is removed from the DOM.
+   * Browser only. Throws in non-browser environments.
+   */
+  toElement(): Node;
+  /**
+   * Appends `signal.toElement()` to the given target element. Equivalent to
+   * `target.appendChild(signal.toElement())`.
+   */
+  mount(target: Element): void;
+  /**
+   * Returns the current value coerced to a string. Inside a reactive context this subscribes,
+   * so template-literal coercion of a signal tracks dependencies. Useful for SSR.
+   */
+  toString(): string;
 }
 
 /**
@@ -120,6 +138,9 @@ export class Signal<T> implements ReadonlySignal<T> {
   stop(): void;
   transform<U>(fn: (value: T) => U, key?: SignalKey): ReadonlySignal<U>;
   mapWithKey<Item, U>(this: Signal<Item[]>, keyFnOrProp: ((item: Item) => SignalKey) | keyof Item, mapFn: (item: Item) => U): ReadonlySignal<U[]>;
+  toElement(): Node;
+  mount(target: Element): void;
+  toString(): string;
 }
 
 export type Reactive<T> = T | ReadonlySignal<T>;

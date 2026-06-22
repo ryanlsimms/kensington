@@ -2912,3 +2912,106 @@ test('row rebuild preserves focus and input value', async ({ page, bundle }) => 
   // And the new decoration is now in the DOM.
   await expect(page.locator('#rebuild-state .decoration')).toHaveCount(2);
 });
+
+// ─── signal.toElement() / signal.mount() ──────────────────────────────────
+
+test('signal.toElement() renders the current tag value as a DOM node', async ({ page, bundle }) => {
+  await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const view = signal(t.div({ id: 'sig-elem-a' }, 'first'));
+    document.body.append(view.toElement());
+  }, bundle);
+  await expect(page.locator('#sig-elem-a')).toHaveText('first');
+});
+
+test('signal.toElement() swaps the rendered DOM node when the signal changes', async ({ page, bundle }) => {
+  await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const view = signal(t.div({ id: 'sig-swap-a' }, 'one'));
+    document.body.append(view.toElement());
+    view.set(t.div({ id: 'sig-swap-b' }, 'two'));
+  }, bundle);
+  await expect(page.locator('#sig-swap-b')).toHaveText('two');
+  await expect(page.locator('#sig-swap-a')).toHaveCount(0);
+});
+
+test('signal.toElement() handles a transform that returns different tag shapes', async ({ page, bundle }) => {
+  await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const isOpen = signal(false);
+    const view = isOpen.transform(o =>
+      o ? t.section({ id: 'sig-open' }, 'open') : t.div({ id: 'sig-closed' }, 'closed'),
+    );
+    document.body.append(view.toElement());
+    isOpen.set(true);
+  }, bundle);
+  await expect(page.locator('#sig-open')).toHaveText('open');
+  await expect(page.locator('#sig-closed')).toHaveCount(0);
+});
+
+test('signal.toElement() renders string values as text', async ({ page, bundle }) => {
+  await page.evaluate(async src => {
+    const { signal } = await import(src);
+    const text = signal('hello');
+    const host = document.createElement('div');
+    host.id = 'sig-text-host';
+    host.append(text.toElement());
+    document.body.append(host);
+    text.set('world');
+  }, bundle);
+  await expect(page.locator('#sig-text-host')).toHaveText('world');
+});
+
+test('signal.mount(target) appends the reactive node to target', async ({ page, bundle }) => {
+  await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const view = signal(t.span({ id: 'sig-mount-a' }, 'mounted'));
+    const host = document.createElement('div');
+    host.id = 'sig-mount-host';
+    document.body.append(host);
+    view.mount(host);
+  }, bundle);
+  await expect(page.locator('#sig-mount-host #sig-mount-a')).toHaveText('mounted');
+});
+
+test('signal.toElement() effect stops when the rendered subtree is removed from the DOM', async ({ page, bundle }) => {
+  const stoppedAfterRemoval = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const view = signal(t.div({ id: 'sig-stop-host' }, 'initial'));
+
+    let renders = 0;
+    const tracked = view.transform(v => { renders++; return v; });
+
+    const host = document.createElement('div');
+    host.id = 'sig-stop-wrap';
+    document.body.append(host);
+    host.append(tracked.toElement());
+    const baselineRenders = renders;
+
+    host.remove();
+    await new Promise(r => { setTimeout(r, 0); });
+
+    view.set(t.div('after-removal'));
+    await new Promise(r => { setTimeout(r, 0); });
+
+    return renders === baselineRenders;
+  }, bundle);
+  expect(stoppedAfterRemoval).toBe(true);
+});
+
+test('signal.toElement() supports adoption into a new parent after construction', async ({ page, bundle }) => {
+  await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const view = signal(t.span({ id: 'sig-adopt-a' }, 'before'));
+    const node = view.toElement();
+
+    const host = document.createElement('div');
+    host.id = 'sig-adopt-host';
+    document.body.append(host);
+    host.append(node);
+
+    view.set(t.span({ id: 'sig-adopt-b' }, 'after'));
+  }, bundle);
+  await expect(page.locator('#sig-adopt-host #sig-adopt-b')).toHaveText('after');
+  await expect(page.locator('#sig-adopt-a')).toHaveCount(0);
+});

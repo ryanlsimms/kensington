@@ -1124,6 +1124,18 @@ describe('other', () => {
   it('inlineComment().toElement() throws with helpful message in non-browser environment', () => {
     assert.throws(() => t.inlineComment('test').toElement(), { message: 'toElement only supported in browser' });
   });
+  it('signal().toElement() throws with helpful message in non-browser environment', () => {
+    assert.throws(() => signal('value').toElement(), { message: 'toElement only supported in browser' });
+  });
+  it('signal().mount(null) throws when target is not an element', () => {
+    assert.throws(() => signal('value').mount(null), { message: /requires a DOM element/ });
+  });
+  it('signal stringifies to the value when the value is a tag', () => {
+    // Signals are valid as standalone tags. They produce HTML via the value's own toString()
+    // in the template-literal coercion path. This is what SSR depends on for the new path.
+    const s = signal(t.div({ id: 'x' }, 'hi'));
+    assert.strictEqual(`${s}`, '<div id="x">hi</div>');
+  });
   it('warn validation level calls logger with message and stack', () => {
     const errorMessage = 'invalid attribute `id="123-abc"` given for element `div`';
     let received;
