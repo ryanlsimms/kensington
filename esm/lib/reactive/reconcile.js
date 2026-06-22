@@ -1,161 +1,21 @@
-import { isContentTracked, isTracked, stopRangeBetween, stopRemoved, stopTracked } from './dom-tracker.js';
-import { transferListeners } from './element-listeners.js';
+import { stopRangeBetween, stopRemoved } from './dom-tracker.js';
+import { KENSINGTON_KEY } from './map-with-key.js';
 import { captureState, restoreState } from './preserve-state.js';
-import { isKensingtonSignal } from './signal.js';
 
-// Snapshot of a tag's (attributes, content) after the render that produced the keyed DOM
-// node. The next reconcile pass compares the new tag against this snapshot by value, not by
-// reference, so the naive `arr.map(item => t.li({ class: item.cls }, item.label))` pattern
-// hits the fast path when the data is unchanged. The WeakMap key is the DOM node, so entries
-// clear automatically on garbage collection.
-const snapshots = new WeakMap();
-
-// Static (non-Signal) prop values assigned during toElement(). syncNode reads these to
-// replay prop assignments onto the reused existing node when a keyed item re-renders.
-const staticProps = new WeakMap();
-
-export function recordStaticProps(element, props) {
-  staticProps.set(element, props);
-}
+// Reconciliation key per DOM node. Populated when reconcile inserts a new node for a keyed
+// item. Read on the next render via WeakMap. Keys live in JS land so the rendered DOM stays
+// clean of internal bookkeeping.
+const nodeKeys = new WeakMap();
 
 function itemKey(item) {
-  const attrs = item?.attributes;
-  const key = attrs?.dataKey ?? attrs?.['data-key'] ?? attrs?.data?.key;
-  return key === undefined ? null : String(key);
-}
-
-// Structural equality. Plain objects and arrays compare by their keys/elements. ContentTag
-// instances (including VoidTag and HtmlWithDoctypeTag, which extend it) compare by
-// tagName + attributes + content. Functions compare by reference. Two arrow functions
-// closing over the same variables are still distinct references, so a re-render with a new
-// inline handler correctly falls through to syncNode, which calls transferListeners to swap
-// the old handler for the new one. Other class instances with private state (Signal,
-// LiteralTag, CommentTag, DOM nodes, Maps, Sets, ...) fall back to reference equality.
-// Recursion is bounded by tree size and short-circuits on the first mismatch.
-function valueEqual(a, b) {
-  if (a === b) { return true; }
-  if (a === null || b === null) { return false; }
-  if (typeof a !== typeof b) { return false; }
-  if (typeof a !== 'object') { return false; }
-  // ContentTag and its subclasses. attributes is always a plain object or null and content
-  // is always an array (collectContent normalises in the constructor), so the comparison
-  // can be inlined without re-checking those invariants on every recursion.
-  if (a._isKensingtonContentTag && b._isKensingtonContentTag) {
-    if (a.tagName !== b.tagName) { return false; }
-    const aa = a.attributes, ba = b.attributes;
-    if (aa !== ba) {
-      if (aa === null || ba === null) { return false; }
-      // Attributes are user-passed plain objects (kensington never assigns prototypes to
-      // them), so for...in enumerates own keys only. Skip Object.keys allocation.
-      const ka = Object.keys(aa);
-      const aLen = ka.length;
-      if (aLen !== Object.keys(ba).length) { return false; }
-      for (let i = 0; i < aLen; i++) {
-        const k = ka[i];
-        if (!valueEqual(aa[k], ba[k])) { return false; }
-      }
-    }
-    const ac = a.content, bc = b.content;
-    if (ac !== bc) {
-      const len = ac.length;
-      if (len !== bc.length) { return false; }
-      for (let i = 0; i < len; i++) {
-        if (!valueEqual(ac[i], bc[i])) { return false; }
-      }
-    }
-    return true;
-  }
-  // Arrays.
-  if (Array.isArray(a)) {
-    if (!Array.isArray(b) || a.length !== b.length) { return false; }
-    for (let i = 0; i < a.length; i++) {
-      if (!valueEqual(a[i], b[i])) { return false; }
-    }
-    return true;
-  }
-  if (Array.isArray(b)) { return false; }
-  // Reference-only for class instances (anything not a plain or null-proto object).
-  const protoA = Object.getPrototypeOf(a);
-  const protoB = Object.getPrototypeOf(b);
-  if (protoA !== Object.prototype && protoA !== null) { return false; }
-  if (protoB !== Object.prototype && protoB !== null) { return false; }
-  // Plain object.
-  const ka = Object.keys(a);
-  if (ka.length !== Object.keys(b).length) { return false; }
-  for (const k of ka) {
-    if (!valueEqual(a[k], b[k])) { return false; }
-  }
-  return true;
-}
-
-function snapshotMatches(prev, item) {
-  if (prev === undefined) { return false; }
-  return valueEqual(prev.attributes, item.attributes)
-    && valueEqual(prev.content, item.content);
-}
-
-// Walks the previous snapshot and the new item in parallel. Returns true if any pair of
-// values are both Signal instances but reference different signals. Used to distinguish
-// "static value changed" (patch in place, preserves DOM identity) from "signal identity
-// changed" (must rebuild the node so the fresh signal's effect drives the live element).
-function signalRefMismatch(a, b) {
-  if (a === b) { return false; }
-  if (isKensingtonSignal(a) && isKensingtonSignal(b)) { return true; }
-  if (a._isKensingtonContentTag && b._isKensingtonContentTag) {
-    if (a.attributes !== undefined && b.attributes !== undefined) {
-      for (const k of Object.keys(a.attributes)) {
-        if (signalRefMismatch(a.attributes[k], b.attributes[k])) { return true; }
-      }
-    }
-    if (Array.isArray(a.content) && Array.isArray(b.content)) {
-      const cLen = Math.min(a.content.length, b.content.length);
-      for (let i = 0; i < cLen; i++) {
-        if (signalRefMismatch(a.content[i], b.content[i])) { return true; }
-      }
-    }
-    return false;
-  }
-  if (Array.isArray(a) && Array.isArray(b)) {
-    const len = Math.min(a.length, b.length);
-    for (let i = 0; i < len; i++) {
-      if (signalRefMismatch(a[i], b[i])) { return true; }
-    }
-    return false;
-  }
-  if (a !== null && b !== null && typeof a === 'object' && typeof b === 'object') {
-    const protoA = Object.getPrototypeOf(a);
-    const protoB = Object.getPrototypeOf(b);
-    if (
-      (protoA === Object.prototype || protoA === null)
-      && (protoB === Object.prototype || protoB === null)
-    ) {
-      for (const k of Object.keys(a)) {
-        if (signalRefMismatch(a[k], b[k])) { return true; }
-      }
-    }
-  }
-  return false;
-}
-
-function snapshotHasSignalRefMismatch(prev, item) {
-  if (prev === undefined) { return false; }
-  if (prev.attributes !== undefined && item.attributes !== undefined) {
-    for (const k of Object.keys(prev.attributes)) {
-      if (signalRefMismatch(prev.attributes[k], item.attributes[k])) { return true; }
-    }
-  }
-  if (Array.isArray(prev.content) && Array.isArray(item.content)) {
-    const len = Math.min(prev.content.length, item.content.length);
-    for (let i = 0; i < len; i++) {
-      if (signalRefMismatch(prev.content[i], item.content[i])) { return true; }
-    }
-  }
-  return false;
-}
-
-function recordSnapshot(node, item) {
-  if (item?.attributes === undefined) { return; }
-  snapshots.set(node, { attributes: item.attributes, content: item.content });
+  if (item === null || typeof item !== 'object') { return null; }
+  const key = item[KENSINGTON_KEY];
+  if (key !== undefined) { return key; }
+  // Stable tag instances passed directly (without mapWithKey) get the tag itself as an
+  // implicit key. The reconciler can then recognize the same tag across renders without
+  // requiring the user to thread an explicit key through.
+  if (item._isKensingtonTag === true) { return item; }
+  return null;
 }
 
 function itemToNode(item) {
@@ -168,73 +28,33 @@ function itemToNode(item) {
   return document.createTextNode(String(item));
 }
 
-function syncNode(existing, fresh) {
-  if (existing === fresh) { return existing; }
-  if (existing.nodeType !== fresh.nodeType || existing.nodeName !== fresh.nodeName) {
-    return fresh;
-  }
-  if (existing.nodeType === 3) {
-    if (existing.nodeValue !== fresh.nodeValue) {
-      existing.nodeValue = fresh.nodeValue;
-    }
-    return existing;
-  }
-  if (existing.nodeType !== 1) {
-    return fresh;
-  }
-  const oldAttrNames = new Set(existing.getAttributeNames());
-  for (const attr of fresh.getAttributeNames()) {
-    const val = fresh.getAttribute(attr);
-    if (existing.getAttribute(attr) !== val) {
-      existing.setAttribute(attr, val);
-    }
-    oldAttrNames.delete(attr);
-  }
-  // Skip attribute removal for tracked elements. Signal-driven attributes are
-  // managed by deferred effects and won't appear on the fresh element yet.
-  if (!isTracked(existing)) {
-    for (const attr of oldAttrNames) {
-      existing.removeAttribute(attr);
-    }
-  }
-  // Skip child patching for content-tracked elements. Their children include
-  // signal anchor comment nodes whose references are held in effect closures.
-  // Replacing those anchors would break the existing element's content effects.
-  if (!isContentTracked(existing)) {
-    const oldChildren = [...existing.childNodes];
-    const newChildren = [...fresh.childNodes];
-    const count = Math.max(oldChildren.length, newChildren.length);
-    for (let i = 0; i < count; i++) {
-      if (i >= newChildren.length) {
-        oldChildren[i].remove();
-      } else if (i >= oldChildren.length) {
-        existing.appendChild(newChildren[i]);
-      } else {
-        const synced = syncNode(oldChildren[i], newChildren[i]);
-        if (synced !== oldChildren[i]) {
-          existing.replaceChild(synced, oldChildren[i]);
-        }
-      }
-    }
-  }
-  const props = staticProps.get(fresh);
-  if (props) {
-    for (const [name, val] of Object.entries(props)) {
-      if (existing[name] !== val) {
-        existing[name] = val;
-      }
-    }
-    staticProps.set(existing, props);
-  }
-  transferListeners(existing, fresh);
-  stopTracked(fresh);
-  return existing;
+// True when the tag for a matched key is a fresh instance whose own DOM doesn't back the
+// live node. That happens when mapWithKey's per-key computed re-ran because mapFn touched a
+// signal that changed. The reconciler treats it as a rebuild.
+function tagNeedsRebuild(item, node) {
+  if (item === null || typeof item !== 'object') { return false; }
+  if (item._isKensingtonTag !== true) { return false; }
+  if (typeof item.getDomElement !== 'function') { return false; }
+  const cached = item.getDomElement();
+  return cached !== node && cached !== item; // cached === item shows up for tags that don't render to a single node
 }
 
-// Items in the array may themselves be arrays (a transform callback that returns
-// `[t.li(), [t.li(), t.li()]]` for instance). The common case is a flat array, so detect
-// it once and avoid a generator allocation entirely. The rare nested case flattens into a
-// temporary buffer.
+// Build the new DOM for `item`, capture user-visible state from `oldNode`, swap in place,
+// restore state. Returns the fresh DOM node. dom-tracker stops the old node's effects when
+// the removal mutation fires.
+function rebuildNode(parent, oldNode, item, key) {
+  const fresh = item.toElement();
+  if (key !== undefined && key !== null) { nodeKeys.set(fresh, key); }
+  const state = captureState(oldNode);
+  parent.insertBefore(fresh, oldNode);
+  oldNode.remove();
+  stopRemoved(oldNode);
+  restoreState(fresh, state);
+  return fresh;
+}
+
+// Items may themselves be arrays. The common case is a flat array, so detect once and avoid
+// a generator allocation. The rare nested case flattens into a temporary buffer.
 function flattenInto(items, out) {
   for (let i = 0; i < items.length; i++) {
     const v = items[i];
@@ -255,31 +75,40 @@ function flattenIfNeeded(items) {
 }
 
 // false/true/'' are common conditional-content patterns (`cond && t.span()`) that resolve to
-// nothing; null/undefined likewise. Treat them all as "skip" in the reconcile pass.
+// nothing. null/undefined likewise. Treat them all as "skip".
 function isRenderableItem(item) {
   return item !== null && item !== undefined && item !== false && item !== true && item !== '';
 }
 
-export function reconcile(parent, startAnchor, endAnchor, newItems) {
-  const oldNodes = new Map();
-  let node = startAnchor.nextSibling;
-  while (node !== endAnchor) {
-    const key = node.dataset?.key;
-    if (key !== undefined) {
-      oldNodes.set(key, node);
+// Strip non-renderable items so the bidirectional pass can index by position. The hot path
+// (everything renderable) returns the input array directly with no allocation.
+function filterRenderable(items) {
+  for (let i = 0; i < items.length; i++) {
+    if (!isRenderableItem(items[i])) {
+      const out = [];
+      for (let j = 0; j < items.length; j++) {
+        if (isRenderableItem(items[j])) { out.push(items[j]); }
+      }
+      return out;
     }
-    node = node.nextSibling;
   }
+  return items;
+}
 
-  const items = flattenIfNeeded(newItems);
+// Reconciliation against signal-content. Items produced by `signal.mapWithKey` carry their
+// reconciliation key on a Kensington-internal property, which is stamped onto the live DOM
+// node via the nodeKeys WeakMap. The rendered DOM is left clean of bookkeeping.
+//
+// Algorithm. Vue 2 / Inferno style bidirectional reconciliation. Four cheap cases handle the
+// common shapes with at most one DOM mutation each. Anything that falls through hits the
+// keymap path at the bottom. Hot paths (no change, swap, contiguous insert, contiguous
+// remove, head-to-tail move) finish without building the keymap.
+export function reconcile(parent, startAnchor, endAnchor, newItems) {
+  const items = filterRenderable(flattenIfNeeded(newItems));
 
-  // Clear fast path: when the new list is empty, the per-node .remove() loop costs ~10x
-  // more than a single Range.deleteContents() because every removal goes through its own
-  // DOM mutation and MutationObserver record. Stop the per-node effects synchronously,
-  // then drop the whole range in one DOM op.
+  // Clear fast path. One TreeWalker plus Range.deleteContents beats a per-row remove loop
+  // because each individual removal goes through its own DOM mutation and observer record.
   if (items.length === 0 && startAnchor.nextSibling !== endAnchor) {
-    // One TreeWalker pass over the whole range stops every tracked effect in the subtree;
-    // building a fresh walker per child is the dominant overhead at 1000+ rows.
     stopRangeBetween(startAnchor.nextSibling, endAnchor);
     const range = document.createRange();
     range.setStartAfter(startAnchor);
@@ -288,83 +117,129 @@ export function reconcile(parent, startAnchor, endAnchor, newItems) {
     return;
   }
 
-  // Pre-pass: remove old nodes whose keys are no longer present in newItems. Without this,
-  // a deletion in the middle of the list leaves the orphaned node in the cursor path. Every
-  // subsequent kept row then triggers an insertBefore to skip past it, turning an O(1)
-  // deletion into O(N) DOM operations. The pre-pass keeps the main loop's cursor advancing
-  // over nodes that all line up with their new positions (typically the swap-only or
-  // insert-only paths).
-  if (oldNodes.size > 0) {
-    const newKeys = new Set();
-    for (let idx = 0; idx < items.length; idx++) {
-      if (!isRenderableItem(items[idx])) { continue; }
-      const k = itemKey(items[idx]);
-      if (k !== null) { newKeys.add(k); }
-    }
-    for (const [key, oldNode] of oldNodes) {
-      if (!newKeys.has(key)) {
-        oldNodes.delete(key);
-        oldNode.remove();
-        stopRemoved(oldNode);
+  // Snapshot the current children. Array index access is faster than Map.get on the slow
+  // path and lets the bidirectional pass advance and retreat from both ends in O(1).
+  const oldChildren = [];
+  for (let node = startAnchor.nextSibling; node !== endAnchor; node = node.nextSibling) {
+    oldChildren.push(node);
+  }
+
+  let oldStart = 0;
+  let oldEnd = oldChildren.length - 1;
+  let newStart = 0;
+  let newEnd = items.length - 1;
+
+  while (oldStart <= oldEnd && newStart <= newEnd) {
+    const oldStartNode = oldChildren[oldStart];
+    const oldEndNode = oldChildren[oldEnd];
+    const oldStartKey = nodeKeys.get(oldStartNode);
+    const oldEndKey = nodeKeys.get(oldEndNode);
+    const newStartKey = itemKey(items[newStart]);
+    const newEndKey = itemKey(items[newEnd]);
+
+    if (oldStartKey === newStartKey && oldStartKey !== undefined) {
+      // Prefix match. Rebuild only when the new tag is a fresh instance for the key.
+      if (tagNeedsRebuild(items[newStart], oldStartNode)) {
+        oldChildren[oldStart] = rebuildNode(parent, oldStartNode, items[newStart], oldStartKey);
       }
+      oldStart++;
+      newStart++;
+    } else if (oldEndKey === newEndKey && oldEndKey !== undefined) {
+      // Suffix match.
+      if (tagNeedsRebuild(items[newEnd], oldEndNode)) {
+        oldChildren[oldEnd] = rebuildNode(parent, oldEndNode, items[newEnd], oldEndKey);
+      }
+      oldEnd--;
+      newEnd--;
+    } else if (oldStartKey === newEndKey && oldStartKey !== undefined) {
+      // Head moved to tail.
+      let node = oldStartNode;
+      if (tagNeedsRebuild(items[newEnd], oldStartNode)) {
+        node = rebuildNode(parent, oldStartNode, items[newEnd], oldStartKey);
+        oldChildren[oldStart] = node;
+      }
+      parent.insertBefore(node, oldEndNode.nextSibling);
+      oldStart++;
+      newEnd--;
+    } else if (oldEndKey === newStartKey && oldEndKey !== undefined) {
+      // Tail moved to head. The js-framework-benchmark swap test lives here.
+      let node = oldEndNode;
+      if (tagNeedsRebuild(items[newStart], oldEndNode)) {
+        node = rebuildNode(parent, oldEndNode, items[newStart], oldEndKey);
+        oldChildren[oldEnd] = node;
+      }
+      parent.insertBefore(node, oldStartNode);
+      oldEnd--;
+      newStart++;
+    } else {
+      break; // Fall through to the keymap path.
     }
   }
 
-  let cursor = startAnchor.nextSibling;
-  for (let idx = 0; idx < items.length; idx++) {
-    const item = items[idx];
-    if (!isRenderableItem(item)) { continue; }
+  // The fence for any remaining inserts. The suffix nodes (oldChildren[oldEnd+1...]) were
+  // either left in place by suffix matches or moved into position by the head-to-tail
+  // branch above. Either way the first one is the right "insert before this" reference.
+  const trailingFence = oldEnd + 1 < oldChildren.length ? oldChildren[oldEnd + 1] : endAnchor;
+
+  if (oldStart > oldEnd) {
+    // Pure inserts. Append every remaining new item before the trailing fence.
+    while (newStart <= newEnd) {
+      const item = items[newStart++];
+      const node = itemToNode(item);
+      const key = itemKey(item);
+      if (key !== null) { nodeKeys.set(node, key); }
+      parent.insertBefore(node, trailingFence);
+    }
+    return;
+  }
+
+  if (newStart > newEnd) {
+    // Pure removals. Drop every remaining old child.
+    while (oldStart <= oldEnd) {
+      const node = oldChildren[oldStart++];
+      node.remove();
+      stopRemoved(node);
+    }
+    return;
+  }
+
+  // Mixed middle. Build a keymap from the remaining old range and walk the new range from
+  // right to left so the insert-before reference is always the previous iteration's node.
+  // Real-world workloads (sorts, filters, single edits) finish above.
+  const keymap = new Map();
+  for (let i = oldStart; i <= oldEnd; i++) {
+    const node = oldChildren[i];
+    const key = nodeKeys.get(node);
+    if (key !== undefined) { keymap.set(key, i); }
+  }
+
+  let insertRef = trailingFence;
+  for (let i = newEnd; i >= newStart; i--) {
+    const item = items[i];
     const key = itemKey(item);
-    const old = key === null ? undefined : oldNodes.get(key);
-    let targetNode;
-    if (old === undefined) {
-      targetNode = itemToNode(item);
-      recordSnapshot(targetNode, item);
+    const oldIndex = key === null ? undefined : keymap.get(key);
+    let node;
+    if (oldIndex === undefined) {
+      node = itemToNode(item);
+      if (key !== null) { nodeKeys.set(node, key); }
     } else {
-      oldNodes.delete(key);
-      const prevSnapshot = snapshots.get(old);
-      if (snapshotMatches(prevSnapshot, item)) {
-        // Attributes and content structurally equal the previous render. The DOM under this
-        // key cannot have changed shape, so skip the toElement() build and the syncNode diff.
-        targetNode = old;
-      } else if (snapshotHasSignalRefMismatch(prevSnapshot, item)) {
-        // A Signal instance changed reference between renders (typically an unkeyed signal()
-        // created inside a computed). Patching the old node in place would leave its effects
-        // bound to the stale signal, so we build a fresh node and swap. User-visible DOM
-        // state (focus, scroll, input value, selection, details/dialog open) is copied
-        // across so the interaction feels continuous.
-        const fresh = itemToNode(item);
-        const state = captureState(old);
-        parent.insertBefore(fresh, cursor);
-        old.remove();
-        stopRemoved(old);
-        restoreState(fresh, state);
-        recordSnapshot(fresh, item);
-        cursor = fresh.nextSibling;
-        continue;
-      } else {
-        targetNode = syncNode(old, itemToNode(item));
-        recordSnapshot(targetNode, item);
+      node = oldChildren[oldIndex];
+      oldChildren[oldIndex] = null;
+      keymap.delete(key);
+      if (tagNeedsRebuild(item, node)) {
+        node = rebuildNode(parent, node, item, key);
       }
     }
+    parent.insertBefore(node, insertRef);
+    insertRef = node;
+  }
 
-    if (cursor === targetNode) {
-      cursor = cursor.nextSibling;
-    } else {
-      parent.insertBefore(targetNode, cursor);
+  // Remove any old middle nodes that no new item claimed.
+  for (let i = oldStart; i <= oldEnd; i++) {
+    const node = oldChildren[i];
+    if (node !== null) {
+      node.remove();
+      stopRemoved(node);
     }
-  }
-
-  let leftover = cursor;
-  while (leftover !== endAnchor) {
-    const next = leftover.nextSibling;
-    leftover.remove();
-    stopRemoved(leftover);
-    leftover = next;
-  }
-
-  for (const old of oldNodes.values()) {
-    old.remove();
-    stopRemoved(old);
   }
 }

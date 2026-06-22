@@ -33,8 +33,14 @@ export function architectureReference() {
           '. No other file decides between pause() and stop(). dom-tracker knows about persist only to decide whether to preserve the connect/persist entry fields after stop-cleanup.',
         ]),
         t.li([
-          t.strong('The reconcile guards must never be bypassed.'),
-          ' isTracked prevents attribute-strip on signal-managed elements. isContentTracked prevents child-patch on elements holding signal-content anchors. stopTracked is called synchronously after every .remove() in the reconciler so effects stop before the MutationObserver fires.',
+          t.strong('The reconciler never patches existing nodes in place.'),
+          ' A matched key resolves to either the same cached tag (DOM reused as-is) or a fresh tag (a full rebuild via ',
+          t.code('rebuildNode'),
+          ' plus ',
+          loc('esm/lib/reactive/preserve-state.js'),
+          '). Reactive updates flow through ',
+          t.code('_bindingEffect'),
+          ' subscriptions on the cached tag, not through per-render attribute diffs.',
         ]),
         t.li([
           t.strong('Effects batch via microtasks; computed updates are synchronous.'),
@@ -54,7 +60,17 @@ export function architectureReference() {
         ]),
         t.li([
           t.strong('_internalEffect is for library-internal use only.'),
-          ' It skips the effect-in-effect and effect-in-computed guard checks. Only lifecycle.js should call it.',
+          ' It skips the effect-in-effect and effect-in-computed guard checks and flags the run as a DOM binding. Callers are ',
+          loc('esm/lib/reactive/lifecycle.js'),
+          ' (via ',
+          t.code('_bindingEffect'),
+          '), ',
+          loc('esm/tag-classes/literal-tag.js'),
+          ', ',
+          loc('esm/tag-classes/comment-tag.js'),
+          ', and ',
+          loc('esm/lib/reactive/map-with-key.js'),
+          '.',
         ]),
       ]),
     ]),
@@ -98,14 +114,14 @@ export function architectureReference() {
           ]),
           t.tr([
             t.td('Signal-array DOM patching'),
-            t.td([loc('esm/lib/reactive/reconcile.js'), '. Particularly syncNode and the guards']),
+            t.td([loc('esm/lib/reactive/reconcile.js'), '. The bidirectional pass and tagNeedsRebuild']),
           ]),
           t.tr([
             t.td('SSR or hydration behavior'),
             t.td([
               loc('esm/lib/render/hydration.js'),
-              ' + the ssrDepth counter in ',
-              loc('esm/lib/reactive/signal.js'),
+              ' + the SSR mode counter in ',
+              loc('esm/lib/reactive/ssr.js'),
             ]),
           ]),
           t.tr([
@@ -114,7 +130,7 @@ export function architectureReference() {
           ]),
           t.tr([
             t.td('Generated Kensington class behavior'),
-            t.td([loc('generate/build-kensington.js'), '. The template that emits esm/kensington.js']),
+            t.td([loc('generate/build-javascript.js'), '. The template that emits esm/kensington.js']),
           ]),
         ]),
       ]),

@@ -20,24 +20,30 @@ export function architectureHydration() {
       t.code('effect()'),
       ' and ',
       t.code('computed()'),
-      ' consult the ',
-      t.code('ssrDepth'),
-      ' counter at ',
-      loc('esm/lib/reactive/signal.js'),
-      '.',
+      ' consult ',
+      t.code('isSSRMode()'),
+      ' from ',
+      loc('esm/lib/reactive/ssr.js'),
+      '. The SSR mode counter, ',
+      t.code('_enterSSRMode'),
+      ', ',
+      t.code('_exitSSRMode'),
+      ', and ',
+      t.code('isSSRMode'),
+      ' all live in that module.',
     ]),
 
     t.section({ id: 'hydration-bypass' }, [
       t.h3('The SSR bypass'),
-      code('javascript', `export function effect(fn) {
-  if (ssrDepth > 0) {
+      code('javascript', `function createEffect(fn, isInternal = false) {
+  if (isSSRMode()) {
     return { pause() {}, resume() {}, stop() {} };  // no-op stub
   }
   // ... normal path ...
 }
 
 export function computed(fn) {
-  if (ssrDepth > 0) {
+  if (isSSRMode()) {
     const s = new Signal(fn());     // value snapshot, no subscriptions
     derivedSignals.add(s);
     return s;
@@ -47,7 +53,13 @@ export function computed(fn) {
       t.p([
         'Inside an SSR call, ',
         t.code('effect()'),
-        ' returns a no-op stub and ',
+        ' returns a no-op stub (the ',
+        t.code('isSSRMode()'),
+        ' check lives in ',
+        t.code('createEffect'),
+        ', which ',
+        t.code('effect()'),
+        ' calls) and ',
         t.code('computed()'),
         ' returns a frozen-value Signal. No subscriptions are created in either case. ',
         t.code('tag.toString()'),
@@ -74,14 +86,14 @@ export function computed(fn) {
         t.code('renderForHydration(fn, state, name)'),
         ' in ',
         loc('esm/lib/render/hydration.js'),
-        ' wraps a component for isomorphic rendering. On the server, it increments ',
-        t.code('ssrDepth'),
+        ' wraps a component for isomorphic rendering. On the server, it calls ',
+        t.code('_enterSSRMode()'),
         ', invokes ',
         t.code('fn(state)'),
         ' to produce a tag instance, calls ',
         t.code('toString()'),
-        ', embeds the resulting HTML alongside a JSON state block, and decrements ',
-        t.code('ssrDepth'),
+        ', embeds the resulting HTML alongside a JSON state block, and calls ',
+        t.code('_exitSSRMode()'),
         ' in finally. The caller is responsible for inserting the resulting HTML into the page.',
       ]),
       t.p([

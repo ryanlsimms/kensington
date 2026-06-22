@@ -306,14 +306,12 @@ e.stop();    // permanently destroy; resume() becomes a no-op after this
 ```javascript
 const items = signal([{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }]);
 
-const rows = items.transform(list =>
-  list.map(item => t.tr({ dataKey: item.id }, t.td(item.name)))
-);
+const rows = items.mapWithKey('id', item => t.tr(t.td(item.name)));
 
 t.tbody(rows);
 ```
 
-Add `dataKey` whenever items may reorder, be added, or removed. Reused nodes are diffed recursively; signal effects on discarded nodes are stopped automatically. Keyed nodes whose attributes and content are structurally unchanged from the previous render are reused as-is without a diff pass, so the naive `arr.map(item => t.tr({ dataKey: item.id }, item.name))` pattern is efficient without memoization. Functions compare by reference: a fresh inline arrow function causes the snapshot to fall through to `syncNode`, which transfers event listeners from the old node to the new one so the latest handler is always installed. `Signal`, `LiteralTag`, and other class instances compare by reference. Store signals on the item object for stable per-row reactivity.
+`signal.mapWithKey(keyOrProp, mapFn)` returns a `ReadonlySignal<Tag[]>`. The first argument is either a property name string (the common case) or a function that extracts the key. The mapFn runs once per key the first time it is seen. The resulting tag is cached and reused on every subsequent render where the same key reappears, so the user never pays to rebuild thousands of unchanged tag subtrees only to discard them after a reconciler diff. Keys live on the tag instance via a Kensington-internal property and are read by the reconciler via a `WeakMap`. They do not appear in the rendered DOM.
 
 For drag-and-drop sortable lists where DOM nodes are moved via `insertBefore`, add `persist: true` to each item tag so signal effects survive the move. See **Cleanup** below.
 
@@ -325,7 +323,7 @@ When you create a `signal()`, `computed()`, or `.transform()` inside a `computed
 const items  = signal([{ id: 'a', name: 'Apple', cat: 'fruit' }, { id: 'b', name: 'Bagel', cat: 'bread' }]);
 const filter = signal('fruit');
 
-const list = computed(() => items.get().map(item => {
+const list = items.mapWithKey('id', item => {
   // Keyed signal. Per-item local interactive state.
   const highlight = signal(false, item.id);
   // Keyed computed. Derived value that reads multiple signals.
@@ -336,12 +334,11 @@ const list = computed(() => items.get().map(item => {
   // Keyed transform. Single-source derivation, chained off the filter signal.
   const matches = filter.transform(f => f === item.cat ? 'in-filter' : 'out', item.id);
   return t.li({
-    dataKey: item.id,
     class: cls,
     data: { state: matches },
     onclick: () => highlight.set(v => !v),
   }, item.name);
-}));
+});
 
 t.ul(list);
 ```
@@ -361,22 +358,22 @@ The library emits a runtime warning (and the `no-out-of-scope-reactive-reference
 
 **Duplicates.** Two calls with the same key in the same outer run share a single instance between two items and log a `throttledError` to console. Use the item identity to ensure uniqueness.
 
-**DOM identity.** For best DOM identity preservation, bind keyed signals directly to attributes or via `.transform(fn, item.id)` rather than through a fresh unkeyed `.transform()` each render. An unkeyed `.transform()` creates a new derived signal per outer run, which the reconciler treats as a signal-reference mismatch and rebuilds the node. State still persists via the keyed source signal, but a direct attribute binding or a keyed transform lets the node stay in place:
+**DOM identity.** Bind keyed signals directly to attributes or via `.transform(fn, item.id)` rather than through a fresh unkeyed `.transform()` each render. An unkeyed `.transform()` inside a re-running outer computed creates a new derived signal per run and the old one sleeps as an orphan. A direct attribute binding or a keyed transform reuses the same instance and stays attached to the same live element:
 
 ```javascript
 // Editing state toggled via a data attribute. CSS swaps the visible element.
-const list = computed(() => items.get().map(item => {
+const list = items.mapWithKey('id', item => {
   const editing = signal('view', item.id);
-  return t.li({ dataKey: item.id, data: { editing } }, [
+  return t.li({ data: { editing } }, [
     t.span({ class: 'task-text', ondblclick: () => editing.set('edit') }, item.text),
     t.input({ class: 'task-edit-input', prop: { value: item.text } }),
   ]);
-}));
+});
 // CSS: .task-item[data-editing="view"] .task-edit-input { display: none; }
 //      .task-item[data-editing="edit"] .task-text       { display: none; }
 ```
 
-**Unkeyed fallback.** `signal()`, `computed()`, and `.transform()` inside a `computed` without a key still work. The reconciler detects the changed instance reference and replaces the DOM node so the fresh instance can drive it. Focus, scroll, input value, and selection are preserved across the swap; local state resets to the initial value. The library logs a `console.warn` for each form (with form-specific wording) suggesting the keyed alternative.
+**Unkeyed fallback.** `signal()`, `computed()`, and `.transform()` inside a `computed` without a key still work, but the inner instance is re-created on every outer re-run. Local state resets to the initial value, and the previous instance becomes a sleeping orphan in the devtools Signals tab. The library logs a `console.warn` for each form (with form-specific wording) suggesting the keyed alternative.
 
 ### Cleanup
 
@@ -387,8 +384,8 @@ const list = computed(() => items.get().map(item => {
 `.toElement()` stops reactive effects automatically when the element is removed from the DOM. For elements that will be moved or temporarily removed and re-inserted, add `persist: true` to the tag options. Effects pause on removal and resume on re-insertion, across any number of cycles. The main use case is items in a drag-and-drop sortable list, where the reconciler reorders nodes via `insertBefore`:
 
 ```javascript
-// signal effects on this item (class, checked, etc.) survive drag-reorder moves
-const item = t.li({ 'data-key': task.id, persist: true }, content);
+// signal effects on this item (class, checked, etc.) survive drag-reorder moves.
+const item = t.li({ persist: true }, content);
 ```
 
 `persist: true` is silently ignored in `.toString()` and has no effect server-side.
@@ -667,7 +664,7 @@ computed(() => {
   if (!selectedId.get() || !visible.some(i => i.id === selectedId.get())) {
     queueMicrotask(() => selectedId.set(visible[0]?.id ?? null));
   }
-  return visible.map(item => t.li({ dataKey: item.id }, item.name));
+  return visible.map(item => t.li(item.name));
 });
 
 // Correct. Dedicated effect, .value avoids subscribing to selectedId
@@ -683,25 +680,33 @@ effect(() => {
 
 `setTimeout` is a macrotask. It fires after the browser renders, so the UI shows a frame of incorrect state before correcting itself. It also signals that the dependency graph is not quite right. Restructure with `.value` or a separate `effect` instead.
 
-### Do not create computed signals inside a computed or transform callback
+### Do not create computed signals inside a computed or transform callback without a key
 
-When a `transform` or `computed` callback re-runs, any `transform()` or `computed()` call inside it creates a new derived signal on every re-render. The reconciler detects the reference change at the same attribute or content position and rebuilds the DOM node so the new derived signal can drive the live element. DOM state (focus, scroll, input value, selection) is preserved across the rebuild, but the work is wasteful, and the old derived signal becomes an orphan that sleeps and accumulates in the devtools Signals tab on every list update.
+When a `transform` or `computed` callback re-runs, an unkeyed `computed()` or `transform()` call inside it creates a new derived signal on every re-render. The reconciler detects the reference change at the same attribute or content position and rebuilds the DOM node so the new derived signal can drive the live element. DOM state (focus, scroll, input value, selection) is preserved across the rebuild, but the work is wasteful, and the old derived signal becomes an orphan that sleeps and accumulates in the devtools Signals tab on every list update.
 
-Unlike `signal()`, there is no keyed form for `computed()` or `transform()`. The fix is to attach derived signals to the item object when it is created so the same reference is reused on every render.
+Both `computed(fn, key)` and `signal.transform(fn, key)` accept a stable key as a second argument, used the same way as keyed `signal(initial, key)`. Inside an outer `computed` (including `mapWithKey`'s per-key `mapFn`), the same inner instance is returned across re-runs. Two paths fix the issue. Pass a key so the inner is reused. Or precompute the derived signal once when the item is created and reuse it directly.
 
 ```javascript
-// Wrong. done.transform() creates a new computed on every list re-render.
-// Snapshot fails for all existing items (old signal !== new signal), so the
-// reconciler rebuilds the DOM node each time and produces sleeping orphan computeds.
+// Wrong. done.transform() runs unkeyed on every list re-render inside a plain map.
+// Each item creates a fresh inner computed that immediately sleeps, accumulating
+// orphans in the devtools Signals tab on every list update.
 const rows = tasks.transform(list =>
   list.map(({ id, text, done }) => {
     const itemClass = done.transform(d => d ? 'task-item done' : 'task-item');
-    return t.li({ dataKey: id, class: itemClass }, text);
+    return t.li({ class: itemClass }, text);
   })
 );
 
-// Correct. Create itemClass once when the task is created and store it on the object.
-// The snapshot sees the same signal reference every render and hits the fast-path.
+// Correct (option 1). Pass a stable key to .transform() inside mapWithKey's mapFn so
+// the inner transform is reused across outer re-runs. Same shape as signal(initial, key).
+const rows = tasks.mapWithKey('id', ({ id, text, done }) => {
+  const itemClass = done.transform(d => d ? 'task-item done' : 'task-item', id);
+  return t.li({ class: itemClass }, text);
+});
+
+// Correct (option 2). Create itemClass once when the task is created and store it on
+// the object. mapWithKey reuses the cached tag instance per id, so the same signal
+// reference drives the same live element across every re-render.
 function makeTask(text) {
   const done = signal(false);
   return {
@@ -712,9 +717,7 @@ function makeTask(text) {
   };
 }
 
-const rows = tasks.transform(list =>
-  list.map(({ id, text, itemClass }) => t.li({ dataKey: id, class: itemClass }, text))
-);
+const rows = tasks.mapWithKey('id', ({ text, itemClass }) => t.li({ class: itemClass }, text));
 ```
 
 ### Mutating an array or object passed to `.set()` doesn't trigger updates
@@ -1768,14 +1771,12 @@ function removeTodo(id) {
   todos.set(list => list.filter(item => item.id !== id));
 }
 
-const rows = todos.transform(list =>
-  list.map(item =>
-    t.li({ dataKey: item.id }, [
-      t.span({ style: { textDecoration: item.done ? 'line-through' : 'none' } }, item.text),
-      t.button({ type: 'button', onclick: () => toggleTodo(item.id) }, 'Done'),
-      t.button({ type: 'button', onclick: () => removeTodo(item.id) }, 'Remove'),
-    ])
-  )
+const rows = todos.mapWithKey('id', item =>
+  t.li([
+    t.span({ style: { textDecoration: item.done ? 'line-through' : 'none' } }, item.text),
+    t.button({ type: 'button', onclick: () => toggleTodo(item.id) }, 'Done'),
+    t.button({ type: 'button', onclick: () => removeTodo(item.id) }, 'Remove'),
+  ])
 );
 
 const input = t.input({ type: 'text', placeholder: 'New item...' });

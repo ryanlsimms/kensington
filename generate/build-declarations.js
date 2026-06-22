@@ -153,6 +153,16 @@ export interface ReadonlySignal<T> {
   readonly value: T;
   stop(): void;
   transform<U>(fn: (value: T) => U, key?: SignalKey): ReadonlySignal<U>;
+  /**
+   * Keyed list mapper for signals that hold arrays. The first argument is either a function
+   * that extracts the key from an item or a property-name string. \`mapFn(item)\` builds the
+   * tag the first time that key appears. On every re-render the cached tag is reused, so the
+   * mapper does not pay to rebuild thousands of unchanged subtrees only to discard them
+   * after the reconciler matches them. The key is stored on the tag instance via a
+   * Kensington-internal property and read by the reconciler. It does not appear in the
+   * rendered DOM.
+   */
+  mapWithKey<Item, U>(this: ReadonlySignal<readonly Item[]>, keyFnOrProp: ((item: Item) => SignalKey) | keyof Item, mapFn: (item: Item) => U): ReadonlySignal<U[]>;
 }
 
 /**
@@ -167,6 +177,7 @@ export class Signal<T> implements ReadonlySignal<T> {
   set(valueOrFn: T | ((current: T) => T)): void;
   stop(): void;
   transform<U>(fn: (value: T) => U, key?: SignalKey): ReadonlySignal<U>;
+  mapWithKey<Item, U>(this: Signal<Item[]>, keyFnOrProp: ((item: Item) => SignalKey) | keyof Item, mapFn: (item: Item) => U): ReadonlySignal<U[]>;
 }
 
 export type Reactive<T> = T | ReadonlySignal<T>;
@@ -385,11 +396,11 @@ export const t: InstanceType<typeof Kensington>;
  * document.body.append(t.div(count).toElement());
  * count.set(n => n + 1);
  * @example
- * // Keyed signal inside a computed. Same instance per key across re-runs.
- * const list = computed(() => items.get().map(item => {
+ * // Keyed signal inside mapWithKey. Same instance per key across re-runs.
+ * const list = items.mapWithKey('id', item => {
  *   const highlight = signal(false, item.id);
- *   return t.li({ dataKey: item.id, class: highlight }, item.label);
- * }));
+ *   return t.li({ class: highlight }, item.label);
+ * });
  */
 export function signal<T>(initial: T, key?: SignalKey): Signal<T>;
 

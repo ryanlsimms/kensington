@@ -177,8 +177,8 @@ export function architectureSignals() {
         t.code('createEffect(fn)'),
         ' is the shared implementation:',
       ]),
-      code('javascript', `function createEffect(fn) {
-  if (ssrDepth > 0) {
+      code('javascript', `function createEffect(fn, isInternal = false) {
+  if (isSSRMode()) {
     return { pause() {}, resume() {}, stop() {} };
   }
   let paused = false;
@@ -189,6 +189,7 @@ export function architectureSignals() {
   }
   run._cleanups = [];
   run._isEffect = true;
+  run._isInternal = isInternal;
   run();
   return {
     pause() {
@@ -245,9 +246,63 @@ export function architectureSignals() {
       ]),
       t.p([
         t.code('_internalEffect(fn)'),
-        ' is identical to the internal ',
+        ' is identical to ',
+        t.code('effect(fn)'),
+        ' but passes ',
+        t.code('isInternal = true'),
+        ' to ',
         t.code('createEffect'),
-        ' path but skips the effect-in-effect and effect-in-computed warning checks. The lifecycle module uses it because it legitimately creates effects inside running effects during reconcile, and those effects are correctly managed by dom-tracker.',
+        ', which sets ',
+        t.code('run._isInternal = true'),
+        ' on the effect\'s run function. That flag suppresses the ',
+        t.code('out-of-scope-reactive-reference'),
+        ' warning when the effect subscribes to a keyed primitive, because DOM-binding effects are tied to the DOM and not a genuine user-land capture. Devtools categorises these effects as DOM bindings via ',
+        t.code('markNextEffectAsBinding'),
+        '. Callers include ',
+        t.code('lifecycle.signalEffect'),
+        ' (via ',
+        t.code('_bindingEffect'),
+        '), ',
+        t.code('LiteralTag'),
+        ', ',
+        t.code('CommentTag'),
+        ', and ',
+        loc('esm/lib/reactive/map-with-key.js'),
+        ' (for the keep-alive subscriber that holds the per-key inner computed awake).',
+      ]),
+      t.h4('_bindingEffect'),
+      t.p([
+        t.code('_bindingEffect(sig, fn)'),
+        ' is a single-signal fast-path effect used by every lifecycle attribute, content, prop, and style binding. It bypasses ',
+        t.code('track()'),
+        ' entirely. No ',
+        t.code('_cleanups'),
+        ' iteration, no ',
+        t.code('_reads'),
+        ' ',
+        t.code('Set'),
+        ', no ',
+        t.code('currentEffect'),
+        ' dance. Subscribe and unsubscribe go through ',
+        t.code('sig._bindingSubscribe(run)'),
+        ' and ',
+        t.code('sig._bindingUnsubscribe(run)'),
+        '. The single signal it observes drives one DOM property, so collapsing the round-trip removes ~20k subscribe / resubscribe pairs in benchmarks that fire many updates.',
+      ]),
+      t.h4('_internalComputed'),
+      t.p([
+        t.code('_internalComputed(fn)'),
+        ' is the library-internal pair of ',
+        t.code('_internalEffect'),
+        '. It clears ',
+        t.code('inComputedFn'),
+        ' and ',
+        t.code('currentEffect'),
+        ' around the ',
+        t.code('computed(fn)'),
+        ' call so the computed-in-computed entry warning (intended for user mistakes) does not fire when the library is intentionally creating an inner computed. Used by ',
+        loc('esm/lib/reactive/map-with-key.js'),
+        ' for the per-key reactive path.',
       ]),
     ]),
 
@@ -261,8 +316,10 @@ export function architectureSignals() {
       ]),
       t.p([
         'Under ',
-        t.code('ssrDepth > 0'),
-        ', ',
+        t.code('isSSRMode()'),
+        ' (the counter lives in ',
+        loc('esm/lib/reactive/ssr.js'),
+        '), ',
         t.code('fn()'),
         ' runs once with no ',
         t.code('currentEffect'),
@@ -354,11 +411,15 @@ if (registry !== undefined) {
         ' returns the same instance for the same item id across renders. When an item leaves the list, its key is never accessed, so the signal is stopped and the entry removed in the same render cycle.',
       ]),
       t.p([
-        'Reuse of the same Signal reference keeps the reconciler\'s snapshot fast path effective: the new render\'s attribute object contains the same keyed-signal reference as the previous snapshot, so ',
-        t.code('valueEqual'),
-        ' returns true and the DOM node is reused as-is. Even when a sibling change (e.g. an added item) misses the fast path, ',
-        t.code('signalRefMismatch'),
-        ' returns false for the keyed-signal position, so the reconciler patches in place rather than replacing.',
+        'Reusing the same cached tag instance across renders keeps the reconciler in the cheap bidirectional path. ',
+        t.code('tagNeedsRebuild'),
+        ' returns false because the tag still backs its live DOM node, so prefix and suffix matches advance with no DOM mutation. A fresh tag for the same key (when ',
+        t.code('mapFn'),
+        ' touches a signal that changed) triggers ',
+        t.code('rebuildNode'),
+        ' plus ',
+        loc('esm/lib/reactive/preserve-state.js'),
+        ' for that one row. There is no snapshot fast path and no in-place attribute patching.',
       ]),
       t.p([
         'The registry uses a plain ',
@@ -437,8 +498,8 @@ return existing.inner;`),
       ]),
       t.p([
         'A ',
-        t.code('keyedComputedOwnerSignals'),
-        ' WeakMap records the owner outer computed for each keyed inner computed. ',
+        t.code('keyedScopeOwners'),
+        ' WeakMap records the owner outer computed for each keyed inner signal and computed. ',
         t.code('Signal.get()'),
         ' checks this map when adding a subscriber: if the subscriber is a user-land effect or computed that is not the owner, a throttled warning fires. DOM-binding effects created via ',
         t.code('_internalEffect()'),

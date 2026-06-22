@@ -6,15 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- `Signal.prototype.mapWithKey(keyOrProp, mapFn)`. Keyed list mapper for signals that hold arrays. The first argument is either a function `(item) => key` or a property-name string like `'id'`. Returns a `ReadonlySignal<Tag[]>`. Pass the result directly into tag content (`t.ul(rows)`). On first sight of a key, `mapFn` is run under a tracking probe. If it touches no reactive primitives, the resulting tag is cached and reused unchanged across renders. If `mapFn` reads a signal via `.get()` or creates a keyed `signal(initial, key)` / `computed(fn, key)`, the entry upgrades to a per-key inner computed that re-runs when its tracked signals change. The reconciler rebuilds only the affected rows in place, with focus, scroll, input value, checked/indeterminate, `<select>` value, and `<details>`/`<dialog>` open preserved.
+
+### Changed
+- BREAKING. Keyed list reconciliation has moved to `signal.mapWithKey`. The previous behaviour of treating a `data-key` HTML attribute as a reconciliation hint is gone. Keys now live on the tag instance via an internal property and are read by the reconciler from a `WeakMap` keyed on the live DOM node, so the rendered DOM is left clean of bookkeeping. Migrate keyed lists to `mapWithKey`.
+- BREAKING. The reconciler no longer recursively patches existing nodes. Each key resolves to either a cached tag instance (its DOM node is reused as-is) or, when `mapFn` re-emits, a fresh tag whose row is rebuilt in place via `preserve-state` so user-visible DOM state survives. Workloads that relied on in-place attribute patching of reused nodes should now route reactive attributes through signals on the cached tag.
+- Stable tag instances passed directly into signal content (without `mapWithKey`) now get the tag itself as an implicit reconciliation key. Re-rendering with the same tag instances preserves their DOM nodes across reorder and partial-list changes instead of building fresh nodes.
+
 ### Performance
-- Large list operations are dramatically faster across the board. The dom-tracker now walks only the subtree of removed or added nodes via `TreeWalker`, instead of iterating every tracked element in the document on every mutation. This single change is responsible for most of the wins below.
-- Removing a row from the middle of a long list is now O(1) DOM moves instead of O(N). A pre-pass identifies orphaned keys before the main reconcile loop, so the cursor never sits on a node that is about to disappear forcing every subsequent kept row to insert before it.
+- Large list operations are dramatically faster across the board. The dom-tracker now walks only the subtree of removed or added nodes via `TreeWalker`, instead of iterating every tracked element in the document on every mutation.
+- The reconciler now uses bidirectional matching. Each iteration checks prefix, suffix, head-to-tail, and tail-to-head before falling through to a keymap. Swapping two rows in a 1000-row list is now two DOM mutations instead of ~997. js-framework-benchmark's swap test improved from ~127 ms to ~20 ms.
 - Clearing a list is now one `Range.deleteContents()` operation instead of one `.remove()` per row, with a single `TreeWalker` pass to stop the affected effects.
 - Per-row reactive overhead is significantly lower. Lifecycle infrastructure (`createLifecycle`) is allocated lazily on first signal binding, so fully static tags pay nothing for it. The stop chain dispatches once per removal rather than allocating a pause-or-stop closure per effect. Signal subscriptions no longer allocate a per-subscription cleanup closure. DOM-binding effects (signal-bound attributes, content, props, and styles) take a fast path that skips the general `track()` machinery since they read exactly one signal by design.
-- Snapshot comparison in the reconciler avoids a recursion-internal prototype check on every ContentTag node by inlining the attribute and content walk inside the ContentTag branch of `valueEqual`.
 
 ### Fixed
-- IIFE bundles (e.g. `esbuild --format=iife`, rollup IIFE output, or any `<script>`-tag deployment) no longer crash on module load. The stack-frame filter previously assumed `import.meta.url` was present, which IIFE output erases; it now reads defensively and falls back to a marker that simply matches nothing.
+- IIFE bundles (e.g. `esbuild --format=iife`, rollup IIFE output, or any `<script>`-tag deployment) no longer crash on module load. The stack-frame filter previously assumed `import.meta.url` was present, which IIFE output erases. It now reads defensively and falls back to a marker that simply matches nothing.
+- Spurious `out-of-scope-reactive-reference` warning that fired on the first run of every keyed inner computed reading a sibling keyed signal (the canonical `signal(false, item.id)` + `computed(fn, item.id)` editable-rows pattern). The owner registration ran after `computed()` returned but the first update ran inside it. The owner is now registered from inside the inner's first-run closure so sibling reads in the same scope are recognised immediately.
 
 ## [2.0.0-signals.20] - 2026-06-19
 

@@ -57,11 +57,12 @@ const people = [
 
 const query = signal('');
 
-const rows = computed(() => {
+const filtered = computed(() => {
   const q = query.get().toLowerCase();
-  return people
-    .filter(p => !q || p.name.toLowerCase().includes(q) || p.role.toLowerCase().includes(q))
-    .map(p => t.tr([t.td(p.name), t.td(p.role)]));
+  if (!q) { return people; }
+  return people.filter(p =>
+    p.name.toLowerCase().includes(q) || p.role.toLowerCase().includes(q),
+  );
 });
 
 document.body.append(
@@ -73,7 +74,9 @@ document.body.append(
     }),
     t.table([
       t.thead(t.tr([t.th('Name'), t.th('Role')])),
-      t.tbody(rows),
+      t.tbody(filtered.mapWithKey('name', p =>
+        t.tr([t.td(p.name), t.td(p.role)]),
+      )),
     ]),
   ]).toElement()
 );`),
@@ -83,41 +86,23 @@ document.body.append(
       t.h3('Todo list'),
       t.p([
         'A signal holds the todo array. ',
-        t.code('.transform()'),
-        ' derives a signal of rendered list items. Adding ',
-        t.code('dataKey'),
-        ' to each item lets the reconciler match nodes by key on re-render, so only changed items are written to the DOM.',
+        t.code('signal.mapWithKey(\'id\', mapFn)'),
+        ' returns a signal of rendered list items. The mapFn runs once per id the first time the item is seen; the resulting tag is cached and reused on every subsequent render. Adding or removing items reorders the existing DOM nodes rather than rebuilding them.',
       ]),
       code('javascript', `import { t, signal } from 'kensington';
 
 let nextId = 1;
 const todos = signal([
-  { id: nextId++, text: 'Buy groceries', done: false },
+  { id: nextId++, text: 'Buy groceries', done: signal(false) },
 ]);
 
 function addTodo(text) {
-  todos.set(list => [...list, { id: nextId++, text, done: false }]);
-}
-
-function toggleTodo(id) {
-  todos.set(list =>
-    list.map(item => item.id === id ? { ...item, done: !item.done } : item)
-  );
+  todos.set(list => [...list, { id: nextId++, text, done: signal(false) }]);
 }
 
 function removeTodo(id) {
   todos.set(list => list.filter(item => item.id !== id));
 }
-
-const rows = todos.transform(list =>
-  list.map(item =>
-    t.li({ dataKey: item.id }, [
-      t.span({ style: { textDecoration: item.done ? 'line-through' : 'none' } }, item.text),
-      t.button({ type: 'button', onclick: () => toggleTodo(item.id) }, 'Done'),
-      t.button({ type: 'button', onclick: () => removeTodo(item.id) }, 'Remove'),
-    ])
-  )
-);
 
 const input = t.input({ type: 'text', placeholder: 'New item...' });
 
@@ -133,7 +118,15 @@ document.body.append(
         },
       }, 'Add'),
     ]),
-    t.ul(rows),
+    t.ul(todos.mapWithKey('id', item =>
+      t.li([
+        t.span({
+          style: { textDecoration: item.done.transform(d => d ? 'line-through' : 'none') },
+        }, item.text),
+        t.button({ type: 'button', onclick: () => item.done.set(d => !d) }, 'Done'),
+        t.button({ type: 'button', onclick: () => removeTodo(item.id) }, 'Remove'),
+      ])
+    )),
   ]).toElement()
 );`),
     ]),
@@ -168,8 +161,8 @@ function rename(id, label) {
   items.set(list => list.map(it => it.id === id ? { ...it, label } : it));
 }
 
-const rows = computed(() => items.get().map(item => {
-  // Keyed signal: same instance across re-runs for the same item.id.
+document.body.append(t.ul(items.mapWithKey('id', item => {
+  // Keyed signal scoped to mapWithKey's internal computed. Same instance per id.
   const editing = signal(false, item.id);
 
   const input = t.input({
@@ -179,14 +172,10 @@ const rows = computed(() => items.get().map(item => {
   });
   const label = t.span({ onclick: () => editing.set(true) }, item.label);
 
-  // Keyed computed: stable instance, re-runs when 'editing' toggles. The fn closure
-  // is refreshed on each outer re-run so 'input' and 'label' track the current item.
-  return t.li({ dataKey: item.id }, [
+  return t.li([
     computed(() => editing.get() ? input : label, item.id),
   ]);
-}));
-
-document.body.append(t.ul(rows).toElement());`),
+})).toElement());`),
       t.p([
         'Click a row to edit, blur to save. Adding or removing items elsewhere in the list does not collapse a row that is currently being edited, because each row\'s ',
         t.code('editing'),
@@ -317,9 +306,7 @@ document.body.append(
     }),
     t.p(status),
     t.p(previousTerm.transform(p => p ? \`Previous search: "\${p}"\` : '')),
-    t.ul(results.transform(items =>
-      items.map((item, i) => t.li({ dataKey: i }, item.title))
-    )),
+    t.ul(results.mapWithKey('id', item => t.li(item.title))),
   ]).toElement()
 );`),
     ]),
@@ -327,9 +314,17 @@ document.body.append(
     t.section({ id: 'sortable-table' }, [
       t.h3('Sortable table'),
       t.p([
-        'Two signals, sort column and sort direction, drive both the data rows and the column headers. Each header creates its own ',
+        'Two signals, sort column and sort direction, drive both the data rows and the column headers. A ',
         t.code('computed'),
-        ' that tracks only the signals it actually reads: the active header tracks both, inactive headers track only ',
+        ' produces the sorted list and ',
+        t.code('signal.mapWithKey'),
+        ' renders one ',
+        t.code('<tr>'),
+        ' per person. The mapper runs once per name; on every sort the same ',
+        t.code('<tr>'),
+        ' instances are reordered rather than rebuilt. Each header has its own ',
+        t.code('computed'),
+        ' that tracks only the signals it actually reads. The active header tracks both, inactive headers track only ',
         t.code('sortCol'),
         '. Stale subscriptions are cleaned up automatically between runs.',
       ]),
@@ -345,22 +340,31 @@ const people = [
 const sortCol = signal('name');
 const sortAsc = signal(true);
 
-const rows = computed(() => {
+function compare(a, b, col) {
+  const av = a[col];
+  const bv = b[col];
+  if (typeof av === 'number' && typeof bv === 'number') {
+    return av - bv;
+  }
+  return String(av).localeCompare(String(bv));
+}
+
+// A computed sorted list. mapWithKey runs the row builder once per person and
+// reuses the same <tr> instances on every sort. Sorting reorders existing DOM
+// nodes rather than rebuilding them.
+const sorted = computed(() => {
   const col = sortCol.get();
   const asc = sortAsc.get();
-  return [...people]
-    .sort((a, b) => {
-      const cmp = String(a[col]).localeCompare(String(b[col]));
-      return asc ? cmp : -cmp;
-    })
-    .map(p => t.tr([t.td(p.name), t.td(String(p.age)), t.td(p.role)]));
+  return [...people].sort((a, b) => asc ? compare(a, b, col) : -compare(a, b, col));
 });
 
 function sortHeader(col, label) {
-  const heading = computed(() => {
-    const labelWithArrow = \`\${label} \${sortAsc.get() ? '↑' : '↓'}\`;
-    return sortCol.get() === col ? labelWithArrow : label;
-  });
+  // Active column subscribes to both sortCol and sortAsc. Inactive columns subscribe
+  // only to sortCol, because sortAsc.get() is never reached. Stale subscriptions are
+  // cleaned up automatically between runs.
+  const heading = computed(() => sortCol.get() === col
+    ? \`\${label} \${sortAsc.get() ? '↑' : '↓'}\`
+    : label);
   return t.th({
     style: { cursor: 'pointer' },
     onclick: () => {
@@ -381,7 +385,9 @@ document.body.append(
       sortHeader('age', 'Age'),
       sortHeader('role', 'Role'),
     ])),
-    t.tbody(rows),
+    t.tbody(sorted.mapWithKey('name', p =>
+      t.tr([t.td(p.name), t.td(String(p.age)), t.td(p.role)]),
+    )),
   ]).toElement()
 );`),
     ]),

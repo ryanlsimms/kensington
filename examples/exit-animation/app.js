@@ -8,7 +8,7 @@ const items = signal([
 ]);
 
 function item({ id, name }) {
-  const tag = t.li({ dataKey: id, class: 'item' }, [
+  const tag = t.li({ class: 'item' }, [
     t.span({ class: 'item-name' }, name),
     t.button({
       type: 'button',
@@ -33,7 +33,7 @@ const app = t.div([
   t.p({ class: 'description' }, [
     'Kensington has no pre-removal hook. Exit animations work by delaying the signal update until the CSS animation completes.',
   ]),
-  t.ul({ class: 'list' }, items.transform(list => list.map(item))),
+  t.ul({ class: 'list' }, items.mapWithKey('id', item)),
   t.div({ class: 'add-row' }, [
     newItemInput,
     t.button({

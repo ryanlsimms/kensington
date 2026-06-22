@@ -64,12 +64,11 @@ t.th({ ariaSort: sortAsc.transform(v => v ? 'ascending' : 'descending') });`),
       ]),
       code('javascript', `const filter = signal('fruit');
 
-const list = computed(() => items.get().map(item =>
+const list = items.mapWithKey('id', item =>
   t.li({
-    dataKey: item.id,
     class: filter.transform(f => f === item.category ? 'match' : '', item.id),
   }, item.name),
-));`),
+);`),
     ]),
   ];
 }

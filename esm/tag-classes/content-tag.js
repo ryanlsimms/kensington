@@ -1,7 +1,6 @@
 import { markContentTracked } from '../lib/reactive/dom-tracker.js';
-import { recordListeners } from '../lib/reactive/element-listeners.js';
 import { createLifecycle } from '../lib/reactive/lifecycle.js';
-import { reconcile, recordStaticProps } from '../lib/reactive/reconcile.js';
+import { reconcile } from '../lib/reactive/reconcile.js';
 import { isKensingtonSignal } from '../lib/reactive/signal.js';
 import {
   attributeArray,
@@ -205,16 +204,10 @@ export default class ContentTag {
     let lifecycle = null;
     const ensureLifecycle = () => (lifecycle ??= createLifecycle({ element, persist }));
     let hasSignalContent = false;
-    let listeners = null;
-    function trackListener(name, handler) {
-      element.addEventListener(name, handler);
-      if (listeners === null) { listeners = new Map(); }
-      listeners.set(name, handler);
-    }
 
     for (const [attrName, attrValue] of this.attributeArray()) {
       if (/^on[a-z]/.test(attrName) && typeof attrValue === 'function') {
-        trackListener(attrName.slice(2), attrValue);
+        element.addEventListener(attrName.slice(2), attrValue);
       } else if (isKensingtonSignal(attrValue)) {
         ensureLifecycle().signalEffect(attrValue, (el, val) => {
           if (val === false || val === null || val === undefined) {
@@ -234,14 +227,12 @@ export default class ContentTag {
     if (events !== null && typeof events === 'object' && !Array.isArray(events)) {
       for (const [eventName, handler] of Object.entries(events)) {
         if (typeof handler === 'function') {
-          trackListener(eventName, handler);
+          element.addEventListener(eventName, handler);
         }
       }
     }
 
     if (this.prop) {
-      const statics = {};
-      let hasStatics = false;
       for (const [propName, propValue] of Object.entries(this.prop)) {
         if (propName in element && !isPropWritable(element, propName)) {
           showInvalid(`prop key \`${propName}\` is read-only on <${this.tagName}>`, this.validationLevel, this.logger);
@@ -251,12 +242,7 @@ export default class ContentTag {
           ensureLifecycle().signalEffect(propValue, (el, val) => { el[propName] = val; }, `prop:${propName}`);
         } else {
           element[propName] = propValue;
-          statics[propName] = propValue;
-          hasStatics = true;
         }
-      }
-      if (hasStatics) {
-        recordStaticProps(element, statics);
       }
     }
 
@@ -316,8 +302,6 @@ export default class ContentTag {
         onReconnect: () => { this.#domElement = element; },
       });
     }
-
-    if (listeners !== null) { recordListeners(element, listeners); }
 
     if (hasSignalContent) {
       markContentTracked(element);

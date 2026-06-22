@@ -161,7 +161,7 @@ document.body.append(
     t.h2('Cart'),
     t.ul(state.transform(s =>
       s.items.map(item =>
-        t.li({ dataKey: item.id }, [
+        t.li([
           item.name,
           ' ',
           t.button({ type: 'button', onclick: () => dispatch({ type: 'remove', id: item.id }) }, 'Remove'),
@@ -452,7 +452,7 @@ const Button = styled(t.button, {
   ':focus-visible': { outline: '2px solid hsl(220 80% 70%)' },
 });
 
-// Caller passes ordinary props: attributes, on-handlers, dataKey, signal content.
+// Caller passes ordinary props: attributes, on-handlers, signal content.
 const count = signal(0);
 Button({ type: 'button', onclick: () => count.set(n => n + 1) }, [
   count.transform(n => \`Clicked \${n} times\`),

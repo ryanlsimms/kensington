@@ -21,14 +21,14 @@ function commitRename(id, currentText, newText) {
 
 function taskItem({ id, text, done, itemClass }) {
   // done is a Signal<boolean>. `itemClass` is a stable `computed` derived once when the
-  // task is created. Reusing the same signal reference lets the reconciler snapshot
-  // fast-path skip toElement() for unchanged items on every list re-render.
+  // task is created. mapWithKey caches the tag returned here per item id, so the same
+  // signal references drive the same live element across renders without rebuilds.
   //
-  // `editing` is a keyed signal scoped to the outer transform's computed. The second
+  // `editing` is a keyed signal scoped to mapWithKey's internal computed. The second
   // argument (the task id) tells signal() to return the same instance across re-runs
   // for the same key, so each row keeps its own view/edit mode across reorders and
   // additions. When the row is removed from the list, the keyed signal is stopped and
-  // dropped automatically — no manual cleanup.
+  // dropped automatically. No manual cleanup.
   const editing = signal('view', id);
 
   function enterEditMode(evt) {
@@ -50,8 +50,9 @@ function taskItem({ id, text, done, itemClass }) {
 
   // Nested data-* objects flatten to hyphen-separated attribute names.
   // { data: { key: id, editing } } renders as data-key="..." data-editing="view"|"edit".
-  // CSS toggles between the static text span and the inline edit input on that attribute,
-  // so the swap is a single reactive attribute write with no DOM rebuild.
+  // CSS toggles between the static text span and the inline edit input on data-editing,
+  // so the swap is a single reactive attribute write with no DOM rebuild. data-key is
+  // read by the sortable-list custom element to identify drop targets.
   return t.li({ data: { key: id, editing }, class: itemClass }, [
     t.label({ class: 'task-label' }, [
       t.input({
@@ -101,7 +102,7 @@ export function taskList() {
     return all;
   });
 
-  const listItems = filtered.transform(items => items.map(taskItem));
+  const listItems = filtered.mapWithKey('id', taskItem);
   const hasItems = filtered.transform(items => items.length > 0);
   const emptyMsg = filter.transform(f => ({
     active: 'No active tasks. Add one above!',

@@ -20,202 +20,81 @@ export function architectureReconcile() {
       t.code('reconcile'),
       ' at ',
       loc('esm/lib/reactive/reconcile.js'),
-      '. The function patches the DOM in place rather than tearing it down and rebuilding. It handles both single-value and array-valued signals. Non-arrays are wrapped as ',
+      '. The function reorders, inserts, removes, and rebuilds DOM nodes between a pair of comment anchors set up at element construction. Non-arrays are wrapped as ',
       t.code('[val]'),
       ' before passing in, so the algorithm only handles the array case.',
     ]),
     t.p([
-      'Reconciliation runs between a pair of comment anchors set up at element construction. The anchors give the function stable boundaries: ',
-      t.code('startAnchor.nextSibling'),
-      ' is the first child to consider, ',
-      t.code('endAnchor'),
-      ' is the sentinel.',
+      'The algorithm is Vue 2 / Inferno style bidirectional reconciliation. Four cheap cases handle the common shapes (no change, prefix match, suffix match, swap, head-to-tail move) with at most one DOM mutation each. Anything that falls through hits a keymap walk from right to left for the mixed middle.',
     ]),
+    callout('note', "What's gone",
+      t.p([
+        'The previous design used a single forward cursor, a snapshot ',
+        t.code('WeakMap'),
+        ' fast path that compared attribute and content shapes via ',
+        t.code('valueEqual'),
+        ', a ',
+        t.code('signalRefMismatch'),
+        ' replacement path, a ',
+        t.code('syncNode'),
+        ' helper that patched matched nodes in place, and an orphan-removal pre-pass over a ',
+        t.code('Map'),
+        ' of old keys. All of that has been removed. Live updates flow through ',
+        t.code('_bindingEffect'),
+        ' subscriptions on cached tag instances, never through per-render attribute diffs.',
+      ]),
+    ),
 
     t.section({ id: 'reconcile-keyed' }, [
-      t.h3('Keyed matching'),
+      t.h3('Keys and node lookup'),
       t.p([
-        'Each item can have a ',
-        t.code('data-key'),
-        ' attribute. Keyed items match against existing children with the same key, not the same positional index. This enables efficient reordering:',
+        'Keys live on the tag instance, not on the rendered element. ',
+        t.code('signal.mapWithKey(keyOrProp, mapFn)'),
+        ' stamps each tag returned from ',
+        t.code('mapFn'),
+        ' with a Kensington-internal property (',
+        t.code('KENSINGTON_KEY'),
+        ' equals ',
+        t.code("'_kensingtonKey'"),
+        '). The reconciler reads that property via ',
+        t.code('itemKey(item)'),
+        ' and pairs each key with its live DOM node through the ',
+        t.code('nodeKeys'),
+        ' ',
+        t.code('WeakMap'),
+        ', populated when a fresh node is inserted. The rendered HTML stays free of internal bookkeeping attributes.',
       ]),
-      code('javascript', `export function reconcile(parent, startAnchor, endAnchor, newItems) {
-  const oldNodes = new Map();
-  let node = startAnchor.nextSibling;
-  while (node !== endAnchor) {
-    const key = node.dataset?.key;
-    if (key !== undefined) { oldNodes.set(key, node); }
-    node = node.nextSibling;
-  }
-  // ...
-}`),
-      t.p('Without a key, items are matched positionally and recreated if the shape differs.'),
-    ]),
-
-    t.section({ id: 'reconcile-snapshot' }, [
-      t.h3('Snapshot fast path'),
-      t.p([
-        'Once a keyed match is found, the reconciler checks a structural snapshot of the previous render. A WeakMap keyed by DOM node holds the last (attributes, content) pair that produced it. If the new tag\'s attributes and content are value-equal to the snapshot, the entire ',
-        t.code('itemToNode(item)'),
-        ' and ',
-        t.code('syncNode'),
-        ' chain is skipped. The existing DOM node is reused unchanged.',
-      ]),
-      code('javascript', `if (snapshotMatches(snapshots.get(old), item)) {
-  targetNode = old;   // skip itemToNode() and syncNode(); reuse existing
-} else if (snapshotHasSignalRefMismatch(snapshots.get(old), item)) {
-  // Replace path. A Signal at the same position is a different reference.
-  // The old node's effects are still wired to the stale signal, so patching
-  // in place would leave the DOM disconnected from the new signal. Build a
-  // fresh node, copy user-visible state across, and swap.
-  const fresh = itemToNode(item);
-  const state = captureState(old);
-  parent.insertBefore(fresh, cursor);
-  old.remove();
-  stopRemoved(old);
-  restoreState(fresh, state);
-} else {
-  targetNode = syncNode(old, itemToNode(item));
-  recordSnapshot(targetNode, item);
+      code('javascript', `function itemKey(item) {
+  if (item === null || typeof item !== 'object') { return null; }
+  const key = item[KENSINGTON_KEY];
+  if (key !== undefined) { return key; }
+  // Stable tag instances passed directly (without mapWithKey) get the tag itself
+  // as an implicit key. The reconciler can then recognize the same tag across
+  // renders without requiring the user to thread an explicit key through.
+  if (item._isKensingtonTag === true) { return item; }
+  return null;
 }`),
       t.p([
-        t.code('valueEqual'),
-        ' compares plain objects and arrays structurally, recurses into ContentTag instances (identified by ',
-        t.code('_isKensingtonContentTag'),
-        ' which matches on tagName + attributes + content across any module copy), and falls back to reference equality for everything else (functions, signals, LiteralTag, CommentTag, DOM nodes, Date, class instances).',
+        'Stable tag instances passed directly (not via ',
+        t.code('mapWithKey'),
+        ') get the tag instance itself as an implicit key, so reusing the same ',
+        t.code('t.div(...)'),
+        ' reference across renders is enough to keep its DOM node. Items that are neither a stamped tag nor a Kensington tag (plain strings, numbers, plain objects) are unkeyed and always build a fresh DOM node.',
       ]),
-      callout('key', 'Why value equality, not reference equality',
-        t.p([
-          'The natural pattern ',
-          t.code('arr.map(item => t.li({ class: item.cls }, item.label))'),
-          ' allocates a fresh attribute object literal on every render. Reference equality on those literals would always miss. Value equality detects the structurally identical literal and skips the rebuild without requiring the developer to memoize.',
-        ]),
-      ),
-      t.p([
-        'A stable signal reference hits the fast path via reference equality. A fresh closure or fresh LiteralTag on each render does not. The snapshot is recorded only on the non-fast-path branch, so an item that keeps hitting the fast path retains its original snapshot indefinitely.',
-      ]),
-    ]),
-
-    t.section({ id: 'reconcile-sync' }, [
-      t.h3('syncNode'),
-      t.p([
-        t.code('syncNode(existing, fresh)'),
-        ' handles a matched pair. If the node types differ, the fresh node replaces the existing one. If they\'re both text nodes, only ',
-        t.code('nodeValue'),
-        ' is patched. If they\'re both elements, it applies fresh attributes and recursively syncs child pairs.',
-      ]),
-      t.h4('The guards'),
-      callout('key', 'Why guards are needed',
-        t.p([
-          'The fresh node passed to syncNode is the result of calling ',
-          t.code('itemToNode(item)'),
-          ', which calls ',
-          t.code('item.toElement()'),
-          '. That fresh node is fully wired with its own signal effects pointing at the fresh element. Patching attributes or children naively would corrupt the live element\'s effects.',
-        ]),
-      ),
-      code('javascript', `// Attribute guard
-if (!isTracked(existing)) {
-  for (const attr of oldAttrNames) {
-    existing.removeAttribute(attr);
-  }
-}
-// Content guard
-if (!isContentTracked(existing)) {
-  // positional sync of child nodes
-}`),
-      t.ul([
-        t.li([
-          t.strong('isTracked(existing).'),
-          ' If true, the existing element has signal-managed attributes. Don\'t remove attributes that weren\'t on the fresh node. The signal effects haven\'t yet applied their initial values to the fresh element when reconcile inspects it.',
-        ]),
-        t.li([
-          t.strong('isContentTracked(existing).'),
-          ' If true, the existing element holds signal-content comment anchors. Don\'t patch its children at all. Replacing the anchors would break the live content effects whose closures still reference them.',
-        ]),
-      ]),
-      t.p([
-        'After patching, ',
-        t.code('stopTracked(fresh)'),
-        ' tears down the discarded fresh node\'s effects. This is called synchronously (not waiting for the MutationObserver) to close the window where a just-removed node could still respond to signal changes.',
-      ]),
-    ]),
-
-    t.section({ id: 'reconcile-signal-mismatch' }, [
-      t.h3('Signal-reference mismatch: replace + preserve state'),
-      t.p([
-        'When a Signal at the same position is a different reference between renders, patching in place would leave the live element\'s effects bound to the stale signal. ',
-        t.code('signalRefMismatch'),
-        ' walks the snapshot in parallel with the new item, returning true at the first paired position where both sides are Signal instances but the references differ. Static value changes, function-reference changes, and ContentTag content changes do not trigger this branch.',
-      ]),
-      callout('key', 'When this fires',
-        t.p([
-          'The dominant case is ',
-          t.code('signal()'),
-          ' called inside a ',
-          t.code('computed'),
-          ' callback without a key. Each re-run allocates a fresh Signal, so the snapshot\'s reference is stale on the next render. The recommended fix is to pass a key (',
-          t.code('signal(initial, key)'),
-          ') so the same instance is reused across runs. The replace path makes the unkeyed case work correctly at a performance cost.',
-        ]),
-      ),
-      t.p([
-        'The replace branch builds a fresh DOM element via ',
-        t.code('item.toElement()'),
-        ' (so the new signal\'s effect is wired to it), captures user-visible state from the old node via ',
-        loc('esm/lib/reactive/preserve-state.js'),
-        ', swaps the nodes with ',
-        t.code('parent.insertBefore(fresh, cursor); old.remove()'),
-        ', restores state to fresh, and advances the cursor past it. ',
-        t.code('stopRemoved(old)'),
-        ' fires synchronously so the old node\'s effects (subscribed to the orphaned signal) stop immediately rather than waiting for the next MutationObserver microtask.',
-      ]),
-      t.h4('What state is preserved'),
-      t.ul([
-        t.li([t.code('document.activeElement'), ' focus, plus selection range for text inputs.']),
-        t.li([t.code('scrollTop'), ' and ', t.code('scrollLeft'), ' on every scrollable descendant.']),
-        t.li([
-          t.code('value'),
-          ', ',
-          t.code('checked'),
-          ', ',
-          t.code('indeterminate'),
-          ' on ',
-          t.code('<input>'),
-          ' and ',
-          t.code('<textarea>'),
-          '.',
-        ]),
-        t.li([t.code('value'), ' on ', t.code('<select>'), ' (selectedIndex follows).']),
-        t.li([t.code('open'), ' on ', t.code('<details>'), ' and ', t.code('<dialog>'), '.']),
-      ]),
-      t.h4('What is lost on replacement'),
-      t.ul([
-        t.li('IME composition session in progress.'),
-        t.li('CSS transitions and animations currently running.'),
-        t.li('Pointer capture and active drag operations.'),
-        t.li([t.code('<canvas>'), ' bitmap contents (drawn imperatively).']),
-        t.li([t.code('<iframe>'), ' document state.']),
-        t.li('Web component instance state. connectedCallback re-runs.'),
-        t.li('Third-party event listeners attached outside Kensington.'),
-      ]),
-      callout('note', 'Positional state mapping',
-        t.p([
-          'State on descendants is identified by child-index path from the root. This assumes the new subtree has the same shape as the old (the dominant case when only signal references differ). If the structure shifted, paths that no longer resolve are silently dropped, so the failure mode is "state lost," not "state misapplied."',
-        ]),
-      ),
     ]),
 
     t.section({ id: 'reconcile-clear' }, [
-      t.h3('Clear shortcut'),
+      t.h3('Clear fast path'),
       t.p([
         'Before the main loop, an empty ',
         t.code('newItems'),
         ' takes a dedicated fast path. A single ',
         t.code('stopRangeBetween(firstChild, endAnchor)'),
-        ' walks every tracked descendant in one TreeWalker pass and stops its effects. Then ',
+        ' walks every tracked descendant in one ',
+        t.code('TreeWalker'),
+        ' pass and stops its effects. Then ',
         t.code('Range.deleteContents()'),
-        ' removes the DOM in one operation:',
+        ' removes the DOM in one operation.',
       ]),
       code('javascript', `if (items.length === 0 && startAnchor.nextSibling !== endAnchor) {
   stopRangeBetween(startAnchor.nextSibling, endAnchor);
@@ -229,86 +108,207 @@ if (!isContentTracked(existing)) {
         t.p([
           'Calling ',
           t.code('.remove()'),
-          ' on each of 1000 children produces 1000 individual DOM mutations, each going through its own MutationObserver record and (without batching) provoking up to one layout per pass. A single Range deletion and one TreeWalker for the effect teardown collapses the work into one DOM operation and one walk.',
+          ' on each of 1000 children produces 1000 individual DOM mutations, each going through its own MutationObserver record. A single Range deletion and one TreeWalker for the effect teardown collapses the work into one DOM operation and one walk.',
         ]),
       ),
     ]),
 
-    t.section({ id: 'reconcile-orphan-prepass' }, [
-      t.h3('Orphan-removal pre-pass'),
+    t.section({ id: 'reconcile-bidirectional' }, [
+      t.h3('Bidirectional matching'),
       t.p([
-        'Before walking ',
-        t.code('newItems'),
-        ', the reconciler first collects the keys that are still present and removes any old keyed node whose key has been dropped:',
+        'After the clear shortcut, the reconciler snapshots the current children into an ',
+        t.code('oldChildren'),
+        ' array and runs four pointer indices: ',
+        t.code('oldStart'),
+        ', ',
+        t.code('oldEnd'),
+        ', ',
+        t.code('newStart'),
+        ', and ',
+        t.code('newEnd'),
+        '. On every iteration of the outer loop, it tries four cheap matches in order and falls through to the keymap path only if none apply.',
       ]),
-      code('javascript', `if (oldNodes.size > 0) {
-  const newKeys = new Set();
-  for (let idx = 0; idx < items.length; idx++) {
-    if (!isRenderableItem(items[idx])) { continue; }
-    const k = itemKey(items[idx]);
-    if (k !== null) { newKeys.add(k); }
-  }
-  for (const [key, oldNode] of oldNodes) {
-    if (!newKeys.has(key)) {
-      oldNodes.delete(key);
-      oldNode.remove();
-      stopRemoved(oldNode);
-    }
+      code('javascript', `while (oldStart <= oldEnd && newStart <= newEnd) {
+  const oldStartNode = oldChildren[oldStart];
+  const oldEndNode = oldChildren[oldEnd];
+  const oldStartKey = nodeKeys.get(oldStartNode);
+  const oldEndKey = nodeKeys.get(oldEndNode);
+  const newStartKey = itemKey(items[newStart]);
+  const newEndKey = itemKey(items[newEnd]);
+
+  if (oldStartKey === newStartKey && oldStartKey !== undefined) {
+    // Prefix match. No DOM op (or one rebuild if the tag is stale).
+    oldStart++; newStart++;
+  } else if (oldEndKey === newEndKey && oldEndKey !== undefined) {
+    // Suffix match. No DOM op.
+    oldEnd--; newEnd--;
+  } else if (oldStartKey === newEndKey && oldStartKey !== undefined) {
+    // Head moved to tail. One insertBefore.
+    parent.insertBefore(node, oldEndNode.nextSibling);
+    oldStart++; newEnd--;
+  } else if (oldEndKey === newStartKey && oldEndKey !== undefined) {
+    // Tail moved to head. One insertBefore. The js-framework-benchmark swap test lives here.
+    parent.insertBefore(node, oldStartNode);
+    oldEnd--; newStart++;
+  } else {
+    break; // Fall through to the keymap path.
   }
 }`),
-      callout('key', 'Why a pre-pass instead of trailing cleanup',
-        t.p([
-          'Without it, a deletion in the middle of a 1000-row list degrades to O(N) ',
-          t.code('insertBefore'),
-          ' operations: the cursor sits on the deleted node (which is still in the DOM), every subsequent kept row sees ',
-          t.code('cursor !== targetNode'),
-          ' and inserts before the cursor. The pre-pass removes orphans first, so the main loop\'s cursor only ever encounters nodes that line up with the new positions.',
-        ]),
-      ),
-    ]),
-
-    t.section({ id: 'reconcile-loop' }, [
-      t.h3('The main loop: insertion, reuse, advance'),
-      t.p('After the clear and orphan-removal pre-passes, the main loop walks newItems in order:'),
       t.ol({ class: 'numbered' }, [
         t.li([
-          t.code('null'),
+          t.strong('Prefix match.'),
+          ' Old and new agree at the head. Advance both ',
+          t.code('Start'),
+          ' indices. No DOM mutation.',
+        ]),
+        t.li([
+          t.strong('Suffix match.'),
+          ' Old and new agree at the tail. Retreat both ',
+          t.code('End'),
+          ' indices. No DOM mutation.',
+        ]),
+        t.li([
+          t.strong('Head to tail.'),
+          ' The head of the old list now lives at the tail of the new list. One ',
+          t.code('insertBefore'),
+          ' moves it. ',
+          t.code('oldStart++'),
           ', ',
-          t.code('undefined'),
-          ', ',
-          t.code('false'),
-          ', ',
-          t.code('true'),
-          ', and ',
-          t.code('\'\''),
-          ' items are skipped via ',
-          t.code('isRenderableItem'),
+          t.code('newEnd--'),
           '.',
         ]),
         t.li([
-          'If the item has a key and matches an existing keyed node, branch on the snapshot: ',
-          'fast-path reuse if value-equal, replace + state copy if a Signal reference changed, ',
-          'otherwise syncNode patches in place.',
-        ]),
-        t.li('If no match (or no key), build a new node via itemToNode.'),
-        t.li([
-          'If ',
-          t.code('cursor === targetNode'),
-          ', advance. The node is already in position. Otherwise call ',
-          t.code('parent.insertBefore(targetNode, cursor)'),
-          ' to slide it into place.',
-        ]),
-        t.li([
-          'After the loop, any nodes still between cursor and endAnchor (unkeyed leftovers) are removed with ',
-          t.code('stopRemoved'),
-          ' fired synchronously to stop their signal effects.',
-        ]),
-        t.li([
-          'A final pass clears any keyed entries still in the oldNodes map. The pre-pass usually drains this, but the loop handles cases where the orphan-removal heuristic missed something (for example, items that resolved to ',
-          t.code('null'),
-          ' under a key that does match).',
+          t.strong('Tail to head.'),
+          ' The tail of the old list now lives at the head of the new list. One ',
+          t.code('insertBefore'),
+          ' moves it. ',
+          t.code('oldEnd--'),
+          ', ',
+          t.code('newStart++'),
+          '. This is the path the js-framework-benchmark swap row test exercises.',
         ]),
       ]),
+      callout('key', 'The swap-1000 case',
+        t.p([
+          'Swap rows 1 and 998 in a 1000-row list. The prefix match advances through rows 0 to 0. Row 1 doesn\'t match at the head, the tail (row 999) doesn\'t match either, but the head-to-tail and tail-to-head pointers do: the old row 1 lives at new position 998, and the old row 998 lives at new position 1. Two ',
+          t.code('insertBefore'),
+          ' calls move them. The remaining 997 rows in the middle and 1 row at each end are all prefix/suffix matches with no DOM mutation. Total cost is two DOM operations instead of the ~997 that a single-cursor algorithm would issue.',
+        ]),
+      ),
+    ]),
+
+    t.section({ id: 'reconcile-rebuild' }, [
+      t.h3('Rebuild on stale tag'),
+      t.p([
+        'A keyed match resolves to either the same cached tag (DOM reused as-is) or a fresh tag instance for that key. The fresh case happens when ',
+        t.code('mapWithKey'),
+        '\'s per-key inner computed re-ran because ',
+        t.code('mapFn'),
+        ' touched a signal that changed. ',
+        t.code('tagNeedsRebuild(item, node)'),
+        ' detects it by asking the tag for the DOM it currently backs.',
+      ]),
+      code('javascript', `function tagNeedsRebuild(item, node) {
+  if (item === null || typeof item !== 'object') { return false; }
+  if (item._isKensingtonTag !== true) { return false; }
+  if (typeof item.getDomElement !== 'function') { return false; }
+  const cached = item.getDomElement();
+  return cached !== node && cached !== item;
+}`),
+      t.p([
+        'When the tag is stale, ',
+        t.code('rebuildNode'),
+        ' captures user-visible state from the old node via ',
+        loc('esm/lib/reactive/preserve-state.js'),
+        ' (',
+        t.code('captureState'),
+        '), builds the fresh DOM via ',
+        t.code('item.toElement()'),
+        ', inserts the fresh node before the old, removes the old node (which triggers ',
+        t.code('dom-tracker'),
+        ' to stop the old effects), and restores state onto the fresh subtree.',
+      ]),
+      t.p([
+        'Focus and selection, ',
+        t.code('scrollTop'),
+        ' and ',
+        t.code('scrollLeft'),
+        ', ',
+        t.code('input.value'),
+        ', ',
+        t.code('checked'),
+        ', ',
+        t.code('indeterminate'),
+        ', ',
+        t.code('<select>'),
+        ' value, and ',
+        t.code('<details>'),
+        ' / ',
+        t.code('<dialog>'),
+        ' open all survive the swap. This path is dormant for static ',
+        t.code('mapFn'),
+        ' implementations (the common case). ',
+        t.code('mapWithKey'),
+        ' probes ',
+        t.code('mapFn'),
+        ' on first sight of a key, and if it touched nothing reactive the cached tag is a plain entry that never needs rebuild.',
+      ]),
+    ]),
+
+    t.section({ id: 'reconcile-loop' }, [
+      t.h3('Main loop and slow path'),
+      t.p([
+        'When the bidirectional loop ends, three tails remain to handle. The trailing fence (the first ',
+        t.code('oldChildren'),
+        ' node after ',
+        t.code('oldEnd'),
+        ', or ',
+        t.code('endAnchor'),
+        ' if none survived) is the ',
+        t.code('insertBefore'),
+        ' reference for new inserts.',
+      ]),
+      t.ol({ class: 'numbered' }, [
+        t.li([
+          t.strong('Pure insert tail. '),
+          'If ',
+          t.code('oldStart > oldEnd'),
+          ', every remaining new item is appended before the trailing fence with one ',
+          t.code('insertBefore'),
+          ' each. Used when a list grows.',
+        ]),
+        t.li([
+          t.strong('Pure remove tail. '),
+          'If ',
+          t.code('newStart > newEnd'),
+          ', every remaining old child is removed with ',
+          t.code('.remove()'),
+          ' plus ',
+          t.code('stopRemoved'),
+          ' to stop its tracked effects. Used when a list shrinks.',
+        ]),
+        t.li([
+          t.strong('Mixed middle. '),
+          'Otherwise, build a keymap over the remaining ',
+          t.code('oldChildren'),
+          ' range and walk the new range from right to left, so the ',
+          t.code('insertBefore'),
+          ' reference is always the previous iteration\'s node. Matched keys reuse their old DOM (or rebuild via ',
+          t.code('rebuildNode'),
+          ' if the tag is stale), unmatched keys build fresh DOM via ',
+          t.code('itemToNode'),
+          '. Old nodes that no new item claimed are removed at the end of the loop.',
+        ]),
+      ]),
+      callout('key', 'No in-place patching',
+        t.p([
+          'A matched key resolves to either the same cached tag (DOM reused as-is) or a freshly built node from ',
+          t.code('rebuildNode'),
+          '. The reconciler never patches existing nodes in place. Reactive attributes, content, props, and styles travel through ',
+          t.code('_bindingEffect'),
+          ' subscriptions on the cached tag, so live updates happen via those bindings rather than via per-render diffs.',
+        ]),
+      ),
     ]),
   ]);
 }

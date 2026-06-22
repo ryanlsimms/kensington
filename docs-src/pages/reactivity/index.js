@@ -26,6 +26,7 @@ export function reactivitySidebar() {
       ]),
       t.li(t.a({ href: '#signals-content' }, 'Content')),
       t.li(t.a({ href: '#signals-attributes' }, 'Attributes')),
+      t.li(t.a({ href: '#signals-style-props' }, 'Style properties')),
       t.li(t.a({ href: '#signals-dom-props' }, 'DOM properties')),
       t.li(t.a({ href: '#signals-literal' }, '.literal() & comments')),
       t.li(t.a({ href: '#signals-existing-elements' }, 'Existing elements')),
@@ -64,7 +65,7 @@ export function reactivitySidebar() {
           t.li(t.a({ href: '#bp-use-signal' }, 'Use signals for reactive values')),
           t.li(t.a({ href: '#bp-reactive-in-callback' }, 'Reactive values in callbacks')),
           t.li(t.a({ href: '#bp-named-handler' }, 'Named event handlers')),
-          t.li(t.a({ href: '#bp-data-key' }, 'Keyed lists')),
+          t.li(t.a({ href: '#bp-keyed-lists' }, 'Keyed lists')),
         ]),
       ]),
       t.li([

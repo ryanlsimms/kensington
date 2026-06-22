@@ -182,15 +182,12 @@ const items = signal([
 
 function row(item) {
   return t.li(
-    {
-      dataKey: item.id,
-      class: item.done.transform(d => d ? 'done' : 'open'),
-    },
+    { class: item.done.transform(d => d ? 'done' : 'open') },
     item.label,
   );
 }
 
-const list = t.ul(items.transform(arr => arr.map(row))).toElement();
+const list = t.ul(items.mapWithKey('id', row)).toElement();
 
 // Update one row. The parent \`items\` signal does not fire. Only the affected element's
 // class attribute is rewritten. Adding or removing a row still uses items.set() with a

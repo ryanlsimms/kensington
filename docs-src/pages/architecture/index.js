@@ -49,6 +49,7 @@ export function architectureSidebar() {
         t.a({ href: '#render' }, [stageDot(3), 'DOM Output']),
         t.ul([
           t.li(t.a({ href: '#render-cache' }, 'Cache check')),
+          t.li(t.a({ href: '#render-element' }, 'Element creation')),
           t.li(t.a({ href: '#render-attributes' }, 'Attribute wiring')),
           t.li(t.a({ href: '#render-events' }, 'Event handlers')),
           t.li(t.a({ href: '#render-props' }, 'Prop wiring')),
@@ -64,6 +65,7 @@ export function architectureSidebar() {
           t.li(t.a({ href: '#signal-effect' }, 'effect()')),
           t.li(t.a({ href: '#signal-computed' }, 'computed()')),
           t.li(t.a({ href: '#signal-keyed' }, 'Keyed signals')),
+          t.li(t.a({ href: '#computed-keyed' }, 'Keyed computeds')),
         ]),
       ]),
       t.li([
@@ -79,12 +81,21 @@ export function architectureSidebar() {
       t.li([
         t.a({ href: '#reconcile' }, 'Reconciliation'),
         t.ul([
-          t.li(t.a({ href: '#reconcile-snapshot' }, 'Snapshot fast path')),
-          t.li(t.a({ href: '#reconcile-sync' }, 'syncNode')),
-          t.li(t.a({ href: '#reconcile-signal-mismatch' }, 'Signal-ref mismatch')),
+          t.li(t.a({ href: '#reconcile-keyed' }, 'Keys and node lookup')),
+          t.li(t.a({ href: '#reconcile-clear' }, 'Clear fast path')),
+          t.li(t.a({ href: '#reconcile-bidirectional' }, 'Bidirectional matching')),
+          t.li(t.a({ href: '#reconcile-rebuild' }, 'Rebuild path')),
+          t.li(t.a({ href: '#reconcile-loop' }, 'Main loop and slow path')),
         ]),
       ]),
-      t.li(t.a({ href: '#hydration' }, 'SSR and Hydration')),
+      t.li([
+        t.a({ href: '#hydration' }, 'SSR and Hydration'),
+        t.ul([
+          t.li(t.a({ href: '#hydration-bypass' }, 'SSR bypass')),
+          t.li(t.a({ href: '#hydration-rfw' }, 'renderForHydration()')),
+          t.li(t.a({ href: '#hydration-register' }, 'registerComponents()')),
+        ]),
+      ]),
       t.li([
         t.a({ href: '#hmr' }, 'HMR'),
         t.ul([

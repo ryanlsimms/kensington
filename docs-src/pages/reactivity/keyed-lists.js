@@ -6,46 +6,97 @@ export function reactivityKeyedLists() {
   return t.section({ id: 'signals-keyed-lists' }, [
     t.h2('Keyed lists'),
     t.p([
-      'When a signal holds an array, add ',
-      t.code('dataKey'),
-      ' to items. The reconciler matches nodes by ',
-      t.code('data-key'),
-      ' and reuses DOM elements on reorder, addition, and removal. Reused nodes are diffed recursively: only changed attributes and text are written to the DOM. Signal-managed attributes on reused nodes are preserved, and orphaned effects on discarded nodes are stopped immediately.',
+      'When a signal holds an array, the most direct way to render it is to ',
+      t.code('.transform'),
+      ' the signal and use a plain ',
+      t.code('array.map'),
+      '. This works. The library will pick up every change and the UI stays in sync.',
     ]),
     code('javascript', `const items = signal([
   { id: 1, name: 'Apple' },
   { id: 2, name: 'Banana' },
 ]);
 
-const rows = computed(() =>
-  items.get().map(item => t.li({ dataKey: item.id }, item.name)),
-);
+// Plain map. Correct, but every render builds fresh tag instances and the reconciler
+// builds fresh DOM for each one. Adding a row rebuilds every existing <li>.
+t.ul(items.transform(arr => arr.map(item => t.li(item.name)))).toElement();`),
+    t.p([
+      'The catch is performance. ',
+      t.code('arr.map(item => t.li(...))'),
+      ' produces a fresh tag for every item on every re-render. The reconciler has no way to know that the new ',
+      t.code('<li>'),
+      ' at position 0 represents the same Apple as the previous one, so it builds a fresh DOM node. For a 10-row list this is invisible. For 1000 rows with frequent updates the cost adds up. Focus, scroll, and input value also reset because the DOM nodes are new each time.',
+    ]),
+    t.p([
+      t.code('signal.mapWithKey(keyOrProp, mapFn)'),
+      ' is the optimized form. It runs ',
+      t.code('mapFn'),
+      ' once per key the first time the key is seen and caches the resulting tag. Subsequent renders return the same tag instance, so the reconciler matches it to the existing DOM node and reuses it. Reordering, adding, and removing items reorder existing nodes rather than rebuilding them.',
+    ]),
+    code('javascript', `const items = signal([
+  { id: 1, name: 'Apple' },
+  { id: 2, name: 'Banana' },
+]);
+
+// Property-name string shortcut. Equivalent to passing item => item.id.
+const rows = items.mapWithKey('id', item => t.li(item.name));
 
 t.ul(rows).toElement();`),
+    t.p('Two argument forms for the first argument:'),
+    t.ul([
+      t.li([
+        t.strong('Function form. '),
+        t.code('item => key'),
+        '. Use when the key isn\'t a single property on the item, or when you need to compose it (',
+        t.code('item => item.group + \'-\' + item.id'),
+        ').',
+      ]),
+      t.li([
+        t.strong('Property-name string. '),
+        t.code('\'id\''),
+        '. Common case. Equivalent to ',
+        t.code('item => item.id'),
+        '.',
+      ]),
+    ]),
+    t.p([
+      t.code('mapWithKey'),
+      ' returns a ',
+      t.code('ReadonlySignal<Tag[]>'),
+      '. Pass it directly into tag content. Calling ',
+      t.code('mapWithKey'),
+      ' inside a ',
+      t.code('computed'),
+      ' or ',
+      t.code('effect'),
+      ' callback logs a warning because the per-key cache would reset on every outer re-run. Call it at the same scope where you call ',
+      t.code('signal()'),
+      '.',
+    ]),
+    t.p([
+      'Duplicate keys in the same render fire a ',
+      t.code('console.error'),
+      ' and the first item wins. The duplicate is silently skipped, so each unique key always corresponds to exactly one cached tag.',
+    ]),
     t.p(exLink('?page=examples#sortable-table', 'Sortable table example')),
 
-    t.h3({ id: 'signals-keyed-local-state' }, 'Reactive primitives created inside a computed need a key'),
+    t.h3({ id: 'signals-keyed-local-state' }, 'Per-item local state and derived values'),
     t.p([
-      'The same rule applies anywhere a ',
+      'Inside ',
+      t.code('mapWithKey'),
+      '\'s mapFn, the same keying rules that apply inside any ',
+      t.code('computed'),
+      ' callback apply here. Pass the item id as the key to ',
       t.code('signal()'),
       ', ',
       t.code('computed()'),
       ', or ',
       t.code('.transform()'),
-      ' is created inside another ',
-      t.code('computed'),
-      ' callback. List mappings are the most common case, but the rule covers any nested creation. Pass a stable key as the second argument. The registry reuses the same primitive instance across outer re-runs and stops it automatically when the key isn\'t accessed.',
-    ]),
-    t.p([
-      'In a keyed list, the natural choice is the item id, so ',
-      t.code('dataKey'),
-      ' and the keyed-primitive key are the same value. The reconciler reuses the DOM node by ',
-      t.code('data-key'),
-      '; the reactive registry reuses the primitive by the same id. DOM identity and reactive state identity stay aligned with one item identity.',
+      ' so each per-item instance is scoped to mapWithKey\'s internal computed and stopped automatically when the item leaves the list.',
     ]),
     code('javascript', `const filter = signal('fruit');
 
-const list = computed(() => items.get().map(item => {
+const list = items.mapWithKey('id', item => {
   // signal(initial, key). Per-item local interactive state.
   const highlight = signal(false, item.id);
   // computed(fn, key). Derived value that reads multiple signals.
@@ -56,39 +107,31 @@ const list = computed(() => items.get().map(item => {
   // signal.transform(fn, key). Single-source derivation chained off filter.
   const stateLabel = filter.transform(f => f === item.category ? 'in' : 'out', item.id);
   return t.li({
-    dataKey: item.id,
     class: cls,
     data: { state: stateLabel },
     onclick: () => highlight.set(v => !v),
   }, item.name);
-}));
+});
 
 t.ul(list).toElement();`),
     t.p([
-      'All three forms share the same lifecycle: the same key returns the same instance across outer re-runs, the instance is stopped automatically when its key leaves the list, and the whole registry is torn down when the owning computed is stopped. For ',
-      t.code('computed(fn, key)'),
-      ' and ',
-      t.code('signal.transform(fn, key)'),
-      ' the fn closure is replaced on every outer re-run, so captured variables stay fresh while the instance identity stays stable. Duplicate keys inside a single outer run log an error.',
-    ]),
-    t.p([
-      'See the ',
+      'Because mapFn only runs the first time a key is seen, these per-item primitives are created once and live for the life of the row. Removing the item drops it from mapWithKey\'s cache, the keyed registry sweeps its primitives, and they are stopped automatically. See the ',
       exLink('?page=examples#editable-rows', 'editable rows example'),
       ' for a realistic use of these patterns together.',
     ]),
+
     t.h4({ id: 'signals-keyed-no-escape' }, 'Don\'t reference a keyed instance from outside its scope'),
     t.p([
-      'The owning ',
-      t.code('computed'),
-      ' can stop a keyed instance whenever its key isn\'t accessed during a re-run (e.g. during a loading or filter state). After that point, external subscribers held in user-land code silently stop receiving updates. The rule is straightforward. Use the instance freely inside the owning callback (read it with ',
+      'mapWithKey\'s internal computed can stop a keyed primitive whenever its key isn\'t accessed during a re-run (e.g. when the item leaves the list). After that point, external subscribers held in user-land code silently stop receiving updates. Use the instance freely inside the mapFn (read it with ',
       t.code('.get()'),
-      ', transform it, pass it as tag content or an attribute value, etc.), but don\'t let the instance reference itself escape. The unsafe patterns are assigning it to a module-level variable, returning it bare from the callback, or passing it to a function that retains it.',
+      ', transform it, pass it as tag content or an attribute value, etc.), but don\'t let the instance reference itself escape. The unsafe patterns are assigning it to a module-level variable, returning it bare from the mapFn, or passing it to a function that retains it.',
     ]),
     t.p([
       'The library emits a runtime warning, and the ',
       t.code('no-out-of-scope-reactive-reference'),
       ' ESLint rule catches it statically, when a keyed instance is referenced from outside its owner.',
     ]),
+
     t.h4({ id: 'signals-keyed-unkeyed' }, 'Without a key'),
     t.p([
       t.code('signal()'),
@@ -96,7 +139,7 @@ t.ul(list).toElement();`),
       t.code('computed()'),
       ', and ',
       t.code('.transform()'),
-      ' inside a computed without a key still work. The reconciler detects the changed instance reference and replaces the DOM node so the fresh instance drives it. Focus, scroll, input value, and selection are preserved across the swap. Local state resets to the initial value. The library logs a ',
+      ' inside a computed without a key still work, but the inner instance is re-created on every outer re-run. Local state resets to the initial value, and the previous instance becomes a sleeping orphan in the devtools Signals tab. The library logs a ',
       t.code('console.warn'),
       ' for each form, steering you toward the keyed alternative.',
     ]),

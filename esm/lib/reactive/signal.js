@@ -1,4 +1,3 @@
-import filterStack from '../util/filter-stack.js';
 import {
   notifyEffectCreate,
   notifyEffectPause,
@@ -15,69 +14,12 @@ import {
   notifySignalWake,
   notifySignalZeroSubscribers,
 } from './devtools.js';
+import { getCurrentHydrationScope } from './hydration-scope.js';
+import { mapWithKey } from './map-with-key.js';
+import { isSSRMode } from './ssr.js';
+import { throttledError, throttledWarn } from './warnings.js';
 
 let currentEffect = null;
-// Tracks whether we are inside a renderForHydration call. On the server we only need a static
-// HTML snapshot, so effects must not run. They would set up subscriptions with no DOM to update
-// and no cleanup path, leaking memory. Counter rather than boolean so nested calls are safe.
-let ssrDepth = 0;
-
-// Called by renderForHydration before invoking the component function.
-export function _enterSSRMode() {
-  ssrDepth++;
-}
-
-// Called in the finally block after the component function returns.
-export function _exitSSRMode() {
-  ssrDepth--;
-}
-
-export function isSSRMode() {
-  return ssrDepth > 0;
-}
-
-// Hydration scope stack for HMR. When a component is hydrated (or hot-swapped) on the client,
-// the renderer pushes a scope keyed by the mount instance id. Inside the scope, signal(initial, key)
-// and computed(fn, key) look up a per-scope registry instead of creating a fresh instance.
-// Across a hot-swap, the same scope id means the new module's signal/computed calls reuse the
-// existing instances, so user-visible values persist. Unlike keyedRegistries inside a computed,
-// hydration scopes do not sweep unaccessed keys per run. They are disposed only when the mount
-// is removed via _disposeHydrationScope.
-const hydrationScopes = new Map();
-const hydrationScopeStack = [];
-let currentHydrationScope = null;
-
-export function _enterHydrationScope(scopeId) {
-  let scope = hydrationScopes.get(scopeId);
-  if (scope === undefined) {
-    scope = { signals: new Map(), computeds: new Map() };
-    hydrationScopes.set(scopeId, scope);
-  }
-  hydrationScopeStack.push(currentHydrationScope);
-  currentHydrationScope = scope;
-}
-
-export function _exitHydrationScope() {
-  currentHydrationScope = hydrationScopeStack.length > 0 ? hydrationScopeStack.pop() : null;
-}
-
-export function _inHydrationScope() {
-  return currentHydrationScope !== null;
-}
-
-export function _disposeHydrationScope(scopeId) {
-  const scope = hydrationScopes.get(scopeId);
-  if (scope === undefined) {
-    return;
-  }
-  for (const sig of scope.signals.values()) {
-    sig.stop();
-  }
-  for (const sig of scope.computeds.values()) {
-    sig.stop();
-  }
-  hydrationScopes.delete(scopeId);
-}
 const pending = new Set();
 const runCounts = new Map();
 const MAX_EFFECT_LOOPS = 100;
@@ -89,42 +31,24 @@ let inComputedFn = false;
 let suppressReactiveCheck = false;
 let suppressWakeNotify = false;
 let inFlush = false;
+// Set true while mapWithKey runs mapFn under a probe to detect whether it reads or creates
+// reactive primitives. A keyed signal/computed creation during the probe forces an upgrade
+// to the reactive path (mapFn re-runs under a full per-key inner computed) so the keyed
+// primitive lives in a stable per-row scope.
+let inMapWithKeyProbe = false;
+let mapWithKeyProbeNeedsReactive = false;
 const stopFns = new WeakMap();
 // sleep/wake hooks for auto-disposing computed signals when subscriber count hits zero.
 const sleepFns = new WeakMap();
 const wakeFns = new WeakMap();
 // Computed signals whose sleep has been deferred until after the current flush. If the
 // subscriber comes back before the microtask fires (the common case when a DOM-binding
-// effect re-runs), the entry is removed and sleep is cancelled. No sleep/wake round-trip.
+// effect re-runs), the entry is removed and sleep is canceled. No sleep/wake round-trip.
 const pendingSleep = new Set();
 // Tracks signals created by computed()/transform() so .set() can be blocked on them.
 const derivedSignals = new WeakSet();
 // Counter rather than boolean so nested computed calls don't prematurely re-enable the guard.
 let derivedWriteDepth = 0;
-const warnLastSeen = new Map();
-const WARN_THROTTLE_MS = 1000;
-
-function throttledError(key, msg) {
-  const now = Date.now();
-  if (now - (warnLastSeen.get(key) ?? 0) >= WARN_THROTTLE_MS) {
-    warnLastSeen.set(key, now);
-    const error = filterStack(new Error(msg));
-    console.error(error.stack ?? msg);
-  }
-}
-
-function throttledWarn(key, msg) {
-  const now = Date.now();
-  if (now - (warnLastSeen.get(key) ?? 0) >= WARN_THROTTLE_MS) {
-    warnLastSeen.set(key, now);
-    const error = filterStack(new Error(msg));
-    console.warn(error.stack ?? msg);
-  }
-}
-
-export function _resetWarningThrottle() {
-  warnLastSeen.clear();
-}
 
 // Tracks the innermost computed currently running, so signal(initial, key) can scope
 // keyed signal lookups to that computed instance. Saved/restored as a stack across nested
@@ -263,9 +187,14 @@ export default class Signal {
       currentEffect._reads.add(this);
       notifySignalEffectSubscription(this, currentEffect._devId, this.#subscribers.size);
       const ownerSig = keyedScopeOwners.get(this);
+      // Sibling keyed primitives (created inside the same owner scope) read each other safely.
+      // Their lifetime is tied to the same owner, so a drop affects both together. The warning
+      // is for genuinely out-of-scope references held outside the owner's sweep.
+      const subscriberOwner = currentComputed === null ? undefined : keyedScopeOwners.get(currentComputed);
       if (
         ownerSig !== undefined
         && currentComputed !== ownerSig
+        && subscriberOwner !== ownerSig
         && !currentEffect._isInternal
       ) {
         throttledWarn(
@@ -416,11 +345,16 @@ function track(run, fn) {
  * Runs `fn` immediately and re-runs it whenever any signal read via `.get()` inside changes.
  * Returns `{ pause(), resume(), stop() }`. `pause()` unsubscribes temporarily; `resume()` restarts.
  * `stop()` permanently destroys the effect. Calling `resume()` after `stop()` is a no-op.
- * @param {function(): void} fn
+ * @param {function(): void} fn The effect body. Signal reads inside it become dependencies.
+ * @param {boolean} [isInternal=false] When true, marks the effect's run as `_isInternal` so
+ *   `Signal.get()` skips the `out-of-scope-reactive-reference` warning for subscriptions made
+ *   inside it, and devtools categorises it as a DOM binding. Used by `_internalEffect` and
+ *   `_bindingEffect` for library-managed effects whose lifetime is tied to the DOM, not to
+ *   user-land scope.
  * @returns {{ pause: function(): void, resume: function(): void, stop: function(): void }}
  */
 function createEffect(fn, isInternal = false) {
-  if (ssrDepth > 0) {
+  if (isSSRMode()) {
     return { pause() {}, resume() {}, stop() {} };
   }
   let paused = false;
@@ -502,7 +436,7 @@ export function _internalEffect(fn) {
 // signal, so this fast path collapses ~20k subscribe+resubscribe pairs to plain calls in
 // benchmarks that fire many signal updates.
 export function _bindingEffect(sig, fn) {
-  if (ssrDepth > 0) {
+  if (isSSRMode()) {
     return { pause() {}, resume() {}, stop() {} };
   }
   let paused = false;
@@ -573,6 +507,9 @@ export function _bindingEffect(sig, fn) {
  * ));
  */
 export function computed(fn, key) {
+  if (inMapWithKeyProbe && key !== undefined) {
+    mapWithKeyProbeNeedsReactive = true;
+  }
   // Keyed path: inside an outer computed with a stable key → reuse the same inner computed
   // across outer re-runs, updating the fn closure each time so captured variables stay fresh.
   if (key !== undefined && currentComputed !== null) {
@@ -623,7 +560,17 @@ export function computed(fn, key) {
     currentEffect = null;
     let inner;
     try {
-      inner = computed(() => { versionSig.get(); return fnWrapper.fn(); });
+      // Register the inner's owner inside the first call to fnWrapper.fn() so signal reads
+      // during the first update can see that this inner is a sibling of the keyed source
+      // (same owner). Without this, the very first run leaks an `out-of-scope-reactive-reference`
+      // warning before the outer `keyedScopeOwners.set(inner, owner)` below has fired.
+      inner = computed(() => {
+        if (currentComputed !== null && !keyedScopeOwners.has(currentComputed)) {
+          keyedScopeOwners.set(currentComputed, owner);
+        }
+        versionSig.get();
+        return fnWrapper.fn();
+      });
     } finally {
       inComputedFn = prevInComputedFn;
       currentComputed = prevCurrentComputed;
@@ -640,35 +587,37 @@ export function computed(fn, key) {
   // computed's update function in that source's subscriber set, leaking once per request.
   // currentEffect is null here, so reading sources via .get() inside fn() will not
   // register a subscription either.
-  if (ssrDepth > 0) {
+  if (isSSRMode()) {
     const s = new Signal(fn());
     derivedSignals.add(s);
     notifySignalMarkComputed(s);
     return s;
   }
-  if (inComputedFn) {
-    if (computedCallSite === 'transform') {
-      throttledWarn(
-        'transform-in-computed',
-        'kensington: .transform() called inside a computed or transform callback without a key. ' +
-        'The DOM node will be replaced when outer state changes. ' +
-        'For best performance and to persist inner state, pass a stable key as the second argument: signal.transform(fn, key).',
-      );
-    } else {
-      throttledWarn(
-        'computed-in-computed',
-        'kensington: computed() called inside a computed or transform callback without a key. ' +
-        'The DOM node will be replaced when outer state changes. ' +
-        'For best performance and to persist inner computed state, pass a stable key as the second argument: computed(fn, key).',
+  if (!suppressReactiveCheck) {
+    if (inComputedFn) {
+      if (computedCallSite === 'transform') {
+        throttledWarn(
+          'transform-in-computed',
+          'kensington: .transform() called inside a computed or transform callback without a key. ' +
+          'The DOM node will be replaced when outer state changes. ' +
+          'For best performance and to persist inner state, pass a stable key as the second argument: signal.transform(fn, key).',
+        );
+      } else {
+        throttledWarn(
+          'computed-in-computed',
+          'kensington: computed() called inside a computed or transform callback without a key. ' +
+          'The DOM node will be replaced when outer state changes. ' +
+          'For best performance and to persist inner computed state, pass a stable key as the second argument: computed(fn, key).',
+        );
+      }
+    } else if (currentEffect !== null) {
+      throttledError(
+        'computed-in-effect',
+        'kensington: computed() called inside an effect callback. ' +
+        'A new computed is created on every effect re-run and the previous one is never stopped. ' +
+        'Create computeds outside the effect or call .transform() on a signal that outlives the effect.',
       );
     }
-  } else if (currentEffect !== null) {
-    throttledError(
-      'computed-in-effect',
-      'kensington: computed() called inside an effect callback. ' +
-      'A new computed is created on every effect re-run and the previous one is never stopped. ' +
-      'Create computeds outside the effect or call .transform() on a signal that outlives the effect.',
-    );
   }
   suppressReactiveCheck = true;
   const s = new Signal(undefined);
@@ -806,15 +755,19 @@ export function computed(fn, key) {
  * // Module-level signal. Same instance for the lifetime of the page.
  * const count = signal(0);
  * @example
- * // Keyed signal inside a computed. Same instance per key across re-runs.
- * const list = computed(() => items.get().map(item => {
+ * // Keyed signal inside mapWithKey. Same instance per key across re-runs.
+ * const list = items.mapWithKey('id', item => {
  *   const highlight = signal(false, item.id);
- *   return t.li({ dataKey: item.id, class: highlight }, item.label);
- * }));
+ *   return t.li({ class: highlight }, item.label);
+ * });
  */
 export function signal(initial, key) {
-  if (key !== undefined && currentComputed === null && currentHydrationScope !== null) {
-    const scope = currentHydrationScope;
+  if (inMapWithKeyProbe && key !== undefined) {
+    mapWithKeyProbeNeedsReactive = true;
+  }
+  const hydrationScope = getCurrentHydrationScope();
+  if (key !== undefined && currentComputed === null && hydrationScope !== null) {
+    const scope = hydrationScope;
     const existing = scope.signals.get(key);
     if (existing !== undefined) {
       return existing;
@@ -876,6 +829,77 @@ Signal.prototype.transform = function transform(fn, key) {
     computedCallSite = prev;
   }
 };
+
+// Helpers used by map-with-key.js. The probe state lives here because signal() and
+// computed() need to inspect it on entry (mapWithKey's probe detects keyed signal/computed
+// creation by having them flip mapWithKeyProbeNeedsReactive). Centralizing the swap here
+// keeps map-with-key.js free of direct references to the module's mutable context.
+export function _runMapWithKeyProbe(fn) {
+  function probe() {}
+  probe._cleanups = [];
+  probe._reads = new Set();
+
+  const prevCurrentEffect = currentEffect;
+  const prevCurrentComputed = currentComputed;
+  const prevInComputedFn = inComputedFn;
+  const prevInProbe = inMapWithKeyProbe;
+  const prevProbeReactive = mapWithKeyProbeNeedsReactive;
+  const prevSuppress = suppressReactiveCheck;
+  currentEffect = probe;
+  currentComputed = null;
+  inComputedFn = false;
+  inMapWithKeyProbe = true;
+  mapWithKeyProbeNeedsReactive = false;
+  // The probe is a fake tracking context. Any warning that fires from inside mapFn during
+  // the probe will fire again from the real per-key inner if the upgrade happens. Silence
+  // them here so the probe is a pure detection pass.
+  suppressReactiveCheck = true;
+
+  let result;
+  try {
+    result = fn();
+  } finally {
+    currentEffect = prevCurrentEffect;
+    currentComputed = prevCurrentComputed;
+    inComputedFn = prevInComputedFn;
+    inMapWithKeyProbe = prevInProbe;
+    suppressReactiveCheck = prevSuppress;
+  }
+  const needsReactive = probe._cleanups.length > 0 || mapWithKeyProbeNeedsReactive;
+  mapWithKeyProbeNeedsReactive = prevProbeReactive;
+
+  if (needsReactive) {
+    // Tear down the probe's subscriptions so the signals don't hold a dangling subscriber.
+    for (let j = 0; j < probe._cleanups.length; j++) {
+      probe._cleanups[j]._unsubscribeFromRun(probe);
+    }
+  }
+  return { result, needsReactive };
+}
+
+// Library-internal computed creator. Pairs with `_internalEffect`. Clears the outer reactive
+// context around the `computed()` call so the "computed-in-computed without key" entry warning
+// (meant for user mistakes) does not fire when the library itself is intentionally creating
+// an inner computed (e.g. mapWithKey's per-key reactive path).
+export function _internalComputed(fn) {
+  const prevInComputedFn = inComputedFn;
+  const prevCurrentEffect = currentEffect;
+  inComputedFn = false;
+  currentEffect = null;
+  try {
+    return computed(fn);
+  } finally {
+    inComputedFn = prevInComputedFn;
+    currentEffect = prevCurrentEffect;
+  }
+}
+
+export function _isInReactiveContext() {
+  return inComputedFn || currentEffect !== null;
+}
+
+Signal.prototype.mapWithKey = mapWithKey;
+
 Signal.prototype._isKensingtonSignal = true;
 
 export function isKensingtonSignal(v) {

@@ -59,7 +59,10 @@ const app = t.div([
         s.items.length === 0
           ? [t.li({ class: 'empty' }, 'Empty.')]
           : s.items.map(item =>
-            t.li({ dataKey: item.id, class: 'cart-item' }, [
+            // Unkeyed. Each dispatch mints a fresh immutable item object, so we
+            // intentionally rebuild rows on every state change rather than caching
+            // tag instances per id (which would freeze item.qty inside the closure).
+            t.li({ class: 'cart-item' }, [
               t.span({ class: 'cart-item-name' }, item.name),
               t.span({ class: 'cart-item-qty' }, `×${item.qty}`),
               t.button({ type: 'button', onclick: () => dispatch({ type: 'remove', id: item.id }) }, '−'),

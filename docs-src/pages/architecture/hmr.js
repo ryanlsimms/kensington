@@ -79,7 +79,7 @@ export default {
           'Allocates a fresh mount id and enters a hydration scope (',
           t.code('_enterHydrationScope(mountId)'),
           ' in ',
-          loc('esm/lib/reactive/signal.js'),
+          loc('esm/lib/reactive/hydration-scope.js'),
           '). Keyed calls like ',
           t.code('signal(initial, key)'),
           ' and ',

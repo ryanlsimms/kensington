@@ -8,8 +8,8 @@ import {
   _disposeHydrationScope,
   _enterHydrationScope,
   _exitHydrationScope,
-  _resetWarningThrottle,
-} from '../../esm/lib/reactive/signal.js';
+} from '../../esm/lib/reactive/hydration-scope.js';
+import { _resetWarningThrottle } from '../../esm/lib/reactive/warnings.js';
 import { attributesArrayFromObject } from '../../esm/lib/render/attributes.js';
 
 // ─── content tag ───────────────────────────────────────────────────────────
@@ -1681,6 +1681,203 @@ describe('signal.transform', () => {
     const s = signal(1);
     const t2 = s.transform(v => v * 2);
     assert.throws(() => t2.set(99), /Cannot call .set\(\) on a computed or derived signal/);
+  });
+});
+
+// ─── signal.mapWithKey ─────────────────────────────────────────────────────
+
+describe('signal.mapWithKey', () => {
+  it('returns a signal whose value is the array of mapped tags', () => {
+    const rows = signal([{ id: 1, label: 'one' }, { id: 2, label: 'two' }]);
+    const tags = rows.mapWithKey(r => r.id, r => t.li(r.label));
+    const result = tags.get();
+    assert.strictEqual(result.length, 2);
+    assert.strictEqual(result[0].toString(), '<li>one</li>');
+    assert.strictEqual(result[1].toString(), '<li>two</li>');
+  });
+  it('accepts a property name string as a shortcut for `item => item[prop]`', () => {
+    const rows = signal([{ id: 'a', label: 'one' }, { id: 'b', label: 'two' }]);
+    const tags = rows.mapWithKey('id', r => t.li(r.label)).get();
+    assert.strictEqual(tags[0]._kensingtonKey, 'a');
+    assert.strictEqual(tags[1]._kensingtonKey, 'b');
+  });
+  it('stamps the reconciliation key onto each returned tag', () => {
+    const rows = signal([{ id: 'a' }, { id: 'b' }]);
+    const tags = rows.mapWithKey(r => r.id, r => t.li(r.id)).get();
+    assert.strictEqual(tags[0]._kensingtonKey, 'a');
+    assert.strictEqual(tags[1]._kensingtonKey, 'b');
+  });
+  it('reuses the same tag instance across renders when the key is unchanged', () => {
+    const rows = signal([{ id: 1, label: 'one' }]);
+    const tags = rows.mapWithKey(r => r.id, r => t.li(r.label));
+    const first = tags.get()[0];
+    rows.set([{ id: 1, label: 'one' }, { id: 2, label: 'two' }]);
+    const second = tags.get();
+    assert.strictEqual(second[0], first); // same JS object
+  });
+  it('evicts cache entries whose keys are not present in the next render', () => {
+    const callCount = { n: 0 };
+    const rows = signal([{ id: 1 }]);
+    const tags = rows.mapWithKey(r => r.id, r => { callCount.n++; return t.li(String(r.id)); });
+    tags.get(); // initial build
+    assert.strictEqual(callCount.n, 1);
+    rows.set([{ id: 2 }]);
+    tags.get(); // id 1 evicted, id 2 built fresh
+    assert.strictEqual(callCount.n, 2);
+    rows.set([{ id: 1 }]);
+    tags.get(); // id 1 is back; mapFn runs again because the eviction was permanent
+    assert.strictEqual(callCount.n, 3);
+  });
+  it('does not call mapFn for unchanged keys on re-render', () => {
+    let calls = 0;
+    const rows = signal([{ id: 1 }, { id: 2 }]);
+    const tags = rows.mapWithKey(r => r.id, r => { calls++; return t.li(String(r.id)); });
+    tags.get();
+    assert.strictEqual(calls, 2);
+    rows.set([{ id: 2 }, { id: 1 }]); // reordered, same keys
+    tags.get();
+    assert.strictEqual(calls, 2); // no new calls
+  });
+  it('treats two items with the same key as a single entry (warns)', () => {
+    _resetWarningThrottle();
+    const errors = [];
+    const origError = console.error;
+    console.error = msg => errors.push(msg);
+    try {
+      const rows = signal([{ id: 1, label: 'a' }, { id: 1, label: 'b' }]);
+      const tags = rows.mapWithKey(r => r.id, r => t.li(r.label)).get();
+      assert.strictEqual(tags.filter(Boolean).length, 1);
+      assert.match(errors.join('\n'), /duplicate-key|same key/i);
+    } finally {
+      console.error = origError;
+    }
+  });
+  it('throws when the first argument is neither a function nor a string', () => {
+    const rows = signal([1, 2]);
+    assert.throws(() => rows.mapWithKey(42, () => null), /function or a property name/);
+    assert.throws(() => rows.mapWithKey(null, () => null), /function or a property name/);
+  });
+  it('throws when mapFn is not a function', () => {
+    const rows = signal([1, 2]);
+    assert.throws(() => rows.mapWithKey(() => 1, 'not a fn'), /second argument must be a function/);
+  });
+  it('re-runs mapFn for a key when a signal it read changes', async () => {
+    const flag = signal('A');
+    const rows = signal([{ id: 1 }, { id: 2 }]);
+    let calls = 0;
+    const tags = rows.mapWithKey('id', item => { calls++; return t.li(`${item.id}-${flag.get()}`); });
+    const first = tags.get();
+    // mapFn runs twice on first sight for reactive rows: once in the probe, once in the
+    // real per-key inner computed. Two rows × two calls = 4.
+    assert.strictEqual(calls, 4);
+    assert.strictEqual(first[0].toString(), '<li>1-A</li>');
+
+    flag.set('B');
+    await Promise.resolve();
+    const second = tags.get();
+    assert.strictEqual(calls, 6); // each row's inner re-ran once
+    assert.notStrictEqual(second[0], first[0]); // fresh tag for key 1
+    assert.strictEqual(second[0].toString(), '<li>1-B</li>');
+  });
+  it('static mapFn (no signal reads) runs exactly once per key, no extra calls', () => {
+    const rows = signal([{ id: 1 }, { id: 2 }]);
+    let calls = 0;
+    const tags = rows.mapWithKey('id', item => { calls++; return t.li(String(item.id)); });
+    tags.get();
+    // No signals were read inside mapFn, so the probe is the only run. One call per row.
+    assert.strictEqual(calls, 2);
+    rows.set([{ id: 2 }, { id: 1 }]); // reordered
+    tags.get();
+    assert.strictEqual(calls, 2); // cache hit for both
+    rows.set([{ id: 1 }, { id: 2 }, { id: 3 }]); // add id 3
+    tags.get();
+    assert.strictEqual(calls, 3); // only id 3 ran mapFn
+  });
+  it('only the rows whose mapFn read the changed signal rebuild', async () => {
+    const colorA = signal('red');
+    const colorB = signal('blue');
+    const rows = signal([{ id: 'a', sig: colorA }, { id: 'b', sig: colorB }]);
+    let calls = 0;
+    const tags = rows.mapWithKey('id', item => { calls++; return t.li(item.sig.get()); });
+    const first = tags.get();
+    const firstCalls = calls;
+    assert.strictEqual(first[0].toString(), '<li>red</li>');
+    assert.strictEqual(first[1].toString(), '<li>blue</li>');
+
+    colorA.set('green');
+    await Promise.resolve();
+    const second = tags.get();
+    // Only the row that subscribed to colorA re-ran.
+    assert.strictEqual(calls - firstCalls, 1);
+    assert.notStrictEqual(second[0], first[0]);
+    assert.strictEqual(second[1], first[1]); // unchanged tag instance for the other row
+    assert.strictEqual(second[0].toString(), '<li>green</li>');
+  });
+  it('keyed signal inside mapFn forces the reactive path and lives in a stable per-row scope', () => {
+    const rows = signal([{ id: 1 }, { id: 2 }]);
+    let mapCalls = 0;
+    const localRefs = [];
+    const tags = rows.mapWithKey('id', item => {
+      mapCalls++;
+      const local = signal(0, item.id);
+      localRefs.push(local);
+      return t.li(`${item.id}:${local.get()}`);
+    });
+    tags.get();
+    // Probe + inner: 4 calls total for 2 rows. mapFn ran twice on first sight per row.
+    assert.strictEqual(mapCalls, 4);
+    // Mutating the inner's keyed signal triggers a re-run of the inner (mapFn re-runs).
+    // localRefs[1] was created during the probe (unkeyed). localRefs[3] was created during
+    // the inner's run (keyed). The latter is what the live tag is bound to.
+    const innerLocal = localRefs[3];
+    innerLocal.set(5);
+    tags.get();
+    assert.strictEqual(mapCalls, 5); // only one row re-ran
+    // Cache hit on next render does not call mapFn again.
+    rows.set([{ id: 1 }, { id: 2 }, { id: 3 }]);
+    tags.get();
+    // Only id 3 runs mapFn (probe + inner).
+    assert.strictEqual(mapCalls, 7);
+  });
+  it('removing a key stops its inner and keep-alive (no resource leak)', () => {
+    const flag = signal('A');
+    const rows = signal([{ id: 1 }, { id: 2 }]);
+    const tags = rows.mapWithKey('id', item => t.li(`${item.id}-${flag.get()}`));
+    tags.get();
+    rows.set([{ id: 1 }]); // drop id 2
+    tags.get();
+    // After flag changes, only the still-present row should rebuild. The dropped row's
+    // inner has been stopped, so its mapFn would never run again even hypothetically.
+    let observedCalls = 0;
+    const observer = signal(0);
+    const tracked = rows.mapWithKey('id', item => { observedCalls++; return t.li(`${item.id}-${observer.get()}`); });
+    tracked.get();
+    rows.set([]); // sweep
+    tracked.get();
+    observer.set(1); // no remaining rows; firing this should not trigger any mapFn re-runs
+    assert.strictEqual(observedCalls, 2); // initial probe + initial inner for id 1; id 2 swept before observer changed
+  });
+  it('mapFn that conditionally reads a signal upgrades when the signal is read on first sight', async () => {
+    const debug = signal(false);
+    const showInfo = signal('hi');
+    const rows = signal([{ id: 1 }]);
+    let calls = 0;
+    const tags = rows.mapWithKey('id', item => {
+      calls++;
+      // showInfo is read unconditionally, so upgrade fires.
+      return t.li(`${item.id}: ${showInfo.get()}${debug.value ? ' (debug)' : ''}`);
+    });
+    tags.get();
+    assert.strictEqual(calls, 2); // probe + inner
+    showInfo.set('hello');
+    await Promise.resolve();
+    tags.get();
+    assert.strictEqual(calls, 3); // one rebuild
+    // debug was read via .value (untracked), so flipping it does not trigger a rebuild.
+    debug.set(true);
+    await Promise.resolve();
+    tags.get();
+    assert.strictEqual(calls, 3);
   });
 });
 

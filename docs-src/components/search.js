@@ -32,23 +32,25 @@ export function searchDocs() {
     });
   }
 
+  const resultRows = matches.mapWithKey(
+    entry => `${entry.page}-${entry.id}`,
+    entry => t.button({
+      class: 'search-result',
+      type: 'button',
+      onclick: () => navigateToResult(entry),
+    }, [
+      t.span({ class: 'search-result-label' }, entry.label),
+      t.span({ class: 'search-result-page' }, pageLabels[entry.page]),
+    ]),
+  );
+
   const resultsContent = computed(() => {
     const list = matches.get();
     if (!list.length) {
       if (!query.get().trim()) { return []; }
       return [t.div({ class: 'search-no-results' }, 'No results')];
     }
-    return list.map(entry =>
-      t.button({
-        dataKey: `${entry.page}-${entry.id}`,
-        class: 'search-result',
-        type: 'button',
-        onclick: () => navigateToResult(entry),
-      }, [
-        t.span({ class: 'search-result-label' }, entry.label),
-        t.span({ class: 'search-result-page' }, pageLabels[entry.page]),
-      ]),
-    );
+    return resultRows.get();
   });
 
   const searchResults = t.div({

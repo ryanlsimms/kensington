@@ -32,8 +32,10 @@ export function apiSidebar() {
         t.a({ href: '#api-signals' }, 'Signals'),
         t.ul([
           t.li(t.a({ href: '#api-signal' }, 'signal()')),
+          t.li(t.a({ href: '#signal-methods' }, 'Signal methods')),
           t.li(t.a({ href: '#api-computed' }, 'computed()')),
           t.li(t.a({ href: '#api-keyed-forms' }, 'Keyed forms')),
+          t.li(t.a({ href: '#api-map-with-key' }, 'signal.mapWithKey')),
           t.li(t.a({ href: '#api-effect' }, 'effect()')),
           t.li(t.a({ href: '#prop-key' }, 'prop key')),
           t.li(t.a({ href: '#render-for-hydration' }, 'renderForHydration()')),

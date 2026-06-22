@@ -164,7 +164,7 @@ label.stop(); // unsubscribes from tracked signals, value freezes`),
     ]),
     code('javascript', `const filter = signal('fruit');
 
-const list = computed(() => items.get().map(item => {
+const list = items.mapWithKey('id', item => {
   // signal(initial, key). Per-item local state
   const highlight = signal(false, item.id);
   // computed(fn, key). Derived value reading multiple signals
@@ -174,8 +174,8 @@ const list = computed(() => items.get().map(item => {
   ].filter(Boolean).join(' '), item.id);
   // signal.transform(fn, key). Single-source derivation chained off filter
   const tag = filter.transform(f => f === item.category ? 'in' : 'out', item.id);
-  return t.li({ dataKey: item.id, class: cls, data: { tag } }, item.name);
-}));`),
+  return t.li({ class: cls, data: { tag } }, item.name);
+});`),
     t.p([
       'For ',
       t.code('computed(fn, key)'),
@@ -221,6 +221,46 @@ const list = computed(() => items.get().map(item => {
       ' for each form steering you toward the keyed alternative. Outside any ',
       t.code('computed'),
       ' callback, the key argument is ignored.',
+    ]),
+
+    t.h3({ id: 'api-map-with-key' }, 'signal.mapWithKey'),
+    code('typescript', `signal.mapWithKey<Item, U>(
+  keyOrProp: ((item: Item) => SignalKey) | keyof Item,
+  mapFn: (item: Item) => U,
+): ReadonlySignal<U[]>`),
+    t.p([
+      'Keyed list mapper. The first argument is either a function that extracts the key from an item or a property-name string like ',
+      t.code('\'id\''),
+      '. The mapFn runs once per key the first time that key is seen and the resulting tag is cached. On every subsequent render where the same key reappears, the cached tag (and therefore its already-built DOM node) is reused.',
+    ]),
+    code('javascript', `const items = signal([{ id: 1, name: 'Apple' }, { id: 2, name: 'Banana' }]);
+
+// Function form
+const rows = items.mapWithKey(item => item.id, item => t.li(item.name));
+
+// Property-name string shortcut
+const rows2 = items.mapWithKey('id', item => t.li(item.name));
+
+t.ul(rows).toElement();`),
+    t.p([
+      'The key is stamped onto the tag instance via an internal property (',
+      t.code('_kensingtonKey'),
+      ') and read by the reconciler from a ',
+      t.code('WeakMap'),
+      ' keyed on the live DOM node. The rendered HTML stays free of internal bookkeeping.',
+    ]),
+    t.p([
+      'Calling ',
+      t.code('mapWithKey'),
+      ' inside a ',
+      t.code('computed'),
+      ' or ',
+      t.code('effect'),
+      ' callback logs a warning because the per-key cache would reset on every outer re-run. Call it at the same scope where you call ',
+      t.code('signal()'),
+      '. Duplicate keys in the same render fire a ',
+      t.code('console.error'),
+      ' and the first item wins. The duplicate is silently skipped.',
     ]),
 
     t.h3({ id: 'api-effect' }, 'effect'),

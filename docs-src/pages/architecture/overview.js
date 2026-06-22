@@ -29,7 +29,7 @@ export function architectureOverview() {
         t.li('Designing an integration that needs to understand cleanup semantics'),
         t.li([
           'Curious how a small library supports signals, SSR, hydration, ',
-          'and reconciliation in roughly 1 200 lines of hand-written source',
+          'and reconciliation spread across roughly ten focused modules',
         ]),
       ]),
       t.p([
@@ -108,9 +108,9 @@ export function architectureOverview() {
           t.tr([
             t.td(term('Reconciler')),
             t.td([
-              'Patches DOM in place when a signal value is an array. Matches nodes by ',
-              t.code('data-key'),
-              ', diffs recursively, guards for signal-managed elements.',
+              'Reorders and inserts DOM when a signal value is an array. Matches nodes by an internal key set on the tag instance by ',
+              t.code('signal.mapWithKey'),
+              ', so the user-visible DOM stays free of bookkeeping attributes.',
             ]),
             t.td(loc('esm/lib/reactive/reconcile.js')),
           ]),

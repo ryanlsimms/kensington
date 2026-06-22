@@ -27,7 +27,13 @@ export function basicsSidebar() {
       ]),
       t.li(t.a({ href: '#dom' }, 'Browser DOM')),
       t.li(t.a({ href: '#signals' }, 'Reactive Data')),
-      t.li(t.a({ href: '#typescript' }, 'TypeScript')),
+      t.li([
+        t.a({ href: '#typescript' }, 'TypeScript'),
+        t.ul([
+          t.li(t.a({ href: '#ts-attribute-types' }, 'Attribute types')),
+          t.li(t.a({ href: '#ts-content-model' }, 'Content model')),
+        ]),
+      ]),
     ]),
     t.h2({ class: 'sidebar-title' }, 'Tooling'),
     t.ul([

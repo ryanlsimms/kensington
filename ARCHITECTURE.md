@@ -20,7 +20,7 @@ esm/                          ESM source (the authoritative one — cjs/ and dis
       signal.js               Signal class, signal(), computed(), effect(). Microtask batching, SSR mode counter. Reactive loop guards: per-effect run counter (sync) and flush counter (async). Warns on same-run read/write and .set() inside computed
       lifecycle.js            Per-element effect/callback orchestrator. Owns the persist mechanism end-to-end
       dom-tracker.js          Shared MutationObserver. Stops effects on removal, fires connect callbacks on insertion
-      reconcile.js            Array reconciler. Keyed by data-key. Recursive node patching with tracker-aware guards. Calls stopRemoved synchronously on removed nodes so effects stop before the MutationObserver fires
+      reconcile.js            Array reconciler. Keyed by an internal `_kensingtonKey` property stamped on tags by `signal.mapWithKey`. Reuses cached tag instances per key. Calls stopRemoved synchronously on removed nodes so effects stop before the MutationObserver fires
     render/                   Turning tag instances into output (HTML strings or DOM elements)
       validate.js             Attribute name and value checks. Uses showInvalid for the on/warn/error contract
       serialize.js            toString() pipeline. Short-content fast path, indentation, literal handling, encoding

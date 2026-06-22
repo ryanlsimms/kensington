@@ -388,7 +388,7 @@ t.div({ hxBoost: 'true' });  // now valid`),
       code('javascript', `// Without persist: true, the reconciler's insertBefore moves during drag-reorder
 // trigger dom-tracker to permanently stop the item's signal effects (class, checked, etc.).
 // With persist: true, effects pause on removal and resume when the node is re-inserted.
-const item = t.li({ dataKey: task.id, class: statusClass, persist: true }, [
+const item = t.li({ class: statusClass, persist: true }, [
   t.input({ type: 'checkbox', checked: task.done }),
   t.span(task.text),
 ]);`),

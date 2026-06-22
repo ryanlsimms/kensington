@@ -39,7 +39,7 @@ submitting.set(true); // button becomes disabled`),
       t.code('transform()'),
       ' callback re-runs every time its dependencies change. A bare ',
       t.code('signal()'),
-      ' call inside the callback creates a brand-new instance on each re-run, which means the DOM node is replaced on every outer update so the new signal\'s effect can drive the live element. Local interactive state resets to its initial value across the replacement, but focus, scroll position, input values, and selection are preserved.',
+      ' call inside the callback creates a brand-new instance on each re-run. Local interactive state resets to its initial value and the previous instance becomes a sleeping orphan in the devtools Signals tab.',
     ]),
     t.p([
       'Pass a stable ',
@@ -48,24 +48,26 @@ submitting.set(true); // button becomes disabled`),
       t.code('signal()'),
       ' to scope the signal to the surrounding ',
       t.code('computed'),
-      '. The same key returns the same instance across re-runs, so local state persists and the DOM node stays in place. Use the item identity (typically its id) as the key.',
+      '. The same key returns the same instance across re-runs, so local state persists. Use the item identity (typically its id) as the key. The same applies inside ',
+      t.code('mapWithKey'),
+      '\'s mapFn since it wraps an internal computed.',
     ]),
-    code('javascript', `// Works, but the DOM node is replaced on every outer re-render and local
-// state resets. The library logs a console.warn pointing to the keyed form.
-const list = computed(() => items.get().map(item => {
+    code('javascript', `// Works, but local state resets on every outer re-render. The library logs a
+// console.warn pointing to the keyed form.
+const list = items.mapWithKey('id', item => {
   const highlight = signal(false);
-  return t.li({ dataKey: item.id, class: highlight.transform(v => v ? 'on' : '') }, [
+  return t.li({ class: highlight.transform(v => v ? 'on' : '') }, [
     t.button({ onclick: () => highlight.set(true) }, item.label),
   ]);
-}));`),
-    code('javascript', `// Best: keyed signal. Same instance across re-runs, state persists, DOM node
-// is reused, and the signal is stopped automatically when the item leaves the list.
-const list = computed(() => items.get().map(item => {
+});`),
+    code('javascript', `// Best: keyed signal. Same instance across re-runs, state persists, and the
+// signal is stopped automatically when the item leaves the list.
+const list = items.mapWithKey('id', item => {
   const highlight = signal(false, item.id);
-  return t.li({ dataKey: item.id, class: highlight.transform(v => v ? 'on' : '') }, [
+  return t.li({ class: highlight.transform(v => v ? 'on' : '') }, [
     t.button({ onclick: () => highlight.set(true) }, item.label),
   ]);
-}));`),
+});`),
     t.p([
       'For derived values that depend only on data already on the item, lifting the signal onto the item object is also a good choice. It avoids the key bookkeeping and makes the per-item state explicit in the data model.',
     ]),
@@ -78,9 +80,7 @@ function makeItem(id, label) {
 
 const items = signal([makeItem(1, 'Buy milk'), makeItem(2, 'Walk dog')]);
 
-const rows = items.transform(list =>
-  list.map(item => t.li({ dataKey: item.id, class: item.cls }, item.label))
-);`),
+const rows = items.mapWithKey('id', item => t.li({ class: item.cls }, item.label));`),
     callout('note', 'Duplicate keys',
       t.p([
         'Two ',
@@ -93,45 +93,35 @@ const rows = items.transform(list =>
 
     t.h3({ id: 'bp-named-handler' }, 'Use a named function for event handlers that read mutable state'),
     t.p([
-      'Inline arrow functions in a ',
-      t.code('.map()'),
-      ' create a new reference on every render. The reconciler sees that the function changed, touches the DOM node to swap in the new handler, and rebuilds a snapshot. That is fine, but it means every re-render does extra work for each list item.',
+      'When you use ',
+      t.code('mapWithKey'),
+      ', the mapFn runs once per key and the tag is cached. Event handlers attached inside the mapFn therefore close over whatever variables existed at first render. A named function defined outside the mapFn that reads module-level state at call time always sees the current value.',
     ]),
-    t.p([
-      'A named function defined outside the callback has a stable reference. The reconciler sees nothing changed and skips the node entirely. Because the function reads its closed-over variables at call time rather than capturing them, it always sees the current value.',
-    ]),
-    code('javascript', `// Inline arrow: new reference each render. Works correctly but the reconciler
-// touches every node to swap in the updated handler.
+    code('javascript', `// Inline arrow: closes over 'mode' at first render. Cached, never updates.
 let mode = 'view';
-const rows = items.transform(list =>
-  list.map(item =>
-    t.li({ dataKey: item.id, onclick: () => handleClick(item.id, mode) }, item.label)
-  )
+const rows = items.mapWithKey('id', item =>
+  t.li({ onclick: () => handleClick(item.id, mode) }, item.label)
 );`),
-    code('javascript', `// Named function: stable reference. The reconciler skips unchanged nodes.
-// mode is read at click time so it always reflects the current value.
+    code('javascript', `// Named function: reads mode at click time, so it always reflects the
+// current value even though the tag itself is cached by mapWithKey.
 let mode = 'view';
 function handleClick(e) { doSomething(e.currentTarget.dataset.id, mode); }
 
-const rows = items.transform(list =>
-  list.map(item =>
-    t.li({ dataKey: item.id, onclick: handleClick }, item.label)
-  )
+const rows = items.mapWithKey('id', item =>
+  t.li({ data: { id: item.id }, onclick: handleClick }, item.label)
 );
 
 mode = 'edit'; // all items see 'edit' when clicked, no re-render needed`),
 
-    t.h3({ id: 'bp-data-key' }, 'Add data-key to list items that may change'),
+    t.h3({ id: 'bp-keyed-lists' }, 'Use mapWithKey for lists that may change'),
     t.p([
-      'Without a key, every re-render tears down all existing list nodes and builds fresh ones. With a key, the reconciler matches old nodes to new items by ID, reuses any node whose content is unchanged, and only touches the nodes that actually changed.',
+      'Without a key, every re-render builds fresh DOM nodes for every item. With ',
+      t.code('mapWithKey'),
+      ', the mapFn runs once per id and the tag is cached. Reorders, additions, and removals reuse existing DOM nodes; only new items pay for tag construction.',
     ]),
-    code('javascript', `// Problem: all nodes are replaced on every update, even when most items are unchanged.
-const rows = items.transform(list =>
-  list.map(item => t.li(item.label))
-);`),
-    code('javascript', `// Fixed: nodes are reused. Only added or removed items touch the DOM.
-const rows = items.transform(list =>
-  list.map(item => t.li({ dataKey: item.id }, item.label))
-);`),
+    code('javascript', `// Problem: every item rebuilds on every update.
+const rows = items.transform(list => list.map(item => t.li(item.label)));`),
+    code('javascript', `// Fixed: nodes are reused. Only added items pay for construction.
+const rows = items.mapWithKey('id', item => t.li(item.label));`),
   ]);
 }

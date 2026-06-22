@@ -1,4 +1,5 @@
-import { isKensingtonSignal, isSSRMode } from '../reactive/signal.js';
+import { isKensingtonSignal } from '../reactive/signal.js';
+import { isSSRMode } from '../reactive/ssr.js';
 import he from '../util/he.js';
 import indent from '../util/indent.js';
 import showInvalid from '../util/show-invalid.js';

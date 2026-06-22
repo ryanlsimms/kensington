@@ -1,14 +1,12 @@
 import LiteralTag from '../../tag-classes/literal-tag.js';
-import { captureState, restoreState } from '../reactive/preserve-state.js';
 import {
   _disposeHydrationScope,
   _enterHydrationScope,
-  _enterSSRMode,
   _exitHydrationScope,
-  _exitSSRMode,
   _inHydrationScope,
-  isSSRMode,
-} from '../reactive/signal.js';
+} from '../reactive/hydration-scope.js';
+import { captureState, restoreState } from '../reactive/preserve-state.js';
+import { _enterSSRMode, _exitSSRMode, isSSRMode } from '../reactive/ssr.js';
 
 // Tracks every live hydrated component instance so hmrReplaceComponent can find them and
 // swap them in place when the source module is hot-reloaded. Keyed by component name.

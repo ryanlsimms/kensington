@@ -393,6 +393,53 @@ _s.value = 99;
 // @ts-expect-error - cannot construct Signal directly
 new Signal(5);
 
+// ─── mapWithKey ─────────────────────────────────────────────────────────────
+
+interface Row { id: number; name: string }
+const _rows = signal<Row[]>([{ id: 1, name: 'a' }, { id: 2, name: 'b' }]);
+
+// Function form. Item is inferred. mapFn return type drives the resulting array element type.
+const _liByFn: ReadonlySignal<LiTag[]> = _rows.mapWithKey(r => r.id, r => t.li(r.name));
+
+// Property-name string form (`keyof Item`). Restricted to keys of the item.
+const _liByProp: ReadonlySignal<LiTag[]> = _rows.mapWithKey('id', r => t.li(r.name));
+const _liByName: ReadonlySignal<LiTag[]> = _rows.mapWithKey('name', r => t.li(r.name));
+
+// @ts-expect-error - property name must be a key of Item
+_rows.mapWithKey('missing', r => t.li(r.name));
+
+// @ts-expect-error - first argument must be a function or a string
+_rows.mapWithKey(42, r => t.li(r.name));
+
+// @ts-expect-error - second argument must be a function
+_rows.mapWithKey('id', 'not a function');
+
+// Function form: the key extractor return type must satisfy SignalKey (string | number | symbol | object)
+_rows.mapWithKey(r => r.id, r => t.li(r.name));            // number key  — ok
+_rows.mapWithKey(r => r.name, r => t.li(r.name));          // string key  — ok
+_rows.mapWithKey(r => Symbol(r.name), r => t.li(r.name));  // symbol key  — ok
+_rows.mapWithKey(r => r, r => t.li(r.name));               // object key  — ok
+
+// mapFn return type flows through into the ReadonlySignal element type.
+const _tdRows: ReadonlySignal<TdTag[]> = _rows.mapWithKey('id', r => t.td(r.name));
+const _trRows: ReadonlySignal<TrTag[]> = _rows.mapWithKey('id', r => t.tr(t.td(r.name)));
+
+// The returned signal is a ReadonlySignal. .set() is not allowed.
+// @ts-expect-error — mapWithKey result is read-only
+_liByFn.set([]);
+
+// The result is valid content for any tag that accepts content (it's a ReadonlySignal).
+const _ulFromMap: UlTag = t.ul(_rows.mapWithKey('id', r => t.li(r.name)));
+
+// Available on ReadonlySignal as well as Signal.
+const _readOnlyRows: ReadonlySignal<Row[]> = _rows;
+const _liFromReadonly: ReadonlySignal<LiTag[]> = _readOnlyRows.mapWithKey('id', r => t.li(r.name));
+
+// mapWithKey on a non-array signal is rejected (this: ReadonlySignal<readonly Item[]>).
+const _numSig = signal(42);
+// @ts-expect-error - mapWithKey requires an array signal
+_numSig.mapWithKey('id', () => t.li(''));
+
 // ─── prop key ───────────────────────────────────────────────────────────────
 
 // prop accepts writable DOM properties for the element's interface

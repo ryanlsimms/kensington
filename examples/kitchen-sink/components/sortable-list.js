@@ -1,3 +1,5 @@
+// This custom element queries `[data-key]` to identify drag targets and drop sites.
+// The task-list rows set the attribute explicitly for this purpose.
 class SortableList extends HTMLElement {
   #dragKey = null;
   #observer = null;
