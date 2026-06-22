@@ -2,9 +2,10 @@
 **/node_modules/
 /cjs/
 /dist/
-/local-notes.txt
 /memory/
 /test-results/
 /examples/kitchen-sink/node_modules/
 /docs-src/index.html
 /docs/
+/agents-md-refinement-log.md
+/local-notes/

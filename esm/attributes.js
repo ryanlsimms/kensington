@@ -3410,14 +3410,14 @@ export const textAttributes = {
   'onwheel': [String, Function],
   'requiredExtensions': String,
   'role': String,
-  'rotate': String,
+  'rotate': [Number, String],
   'style': String,
   'systemLanguage': String,
   'tabindex': Number,
   'textLength': String,
-  'x': String,
+  'x': [Number, String],
   'xml:space': ['default', 'preserve'],
-  'y': String,
+  'y': [Number, String],
 };
 export const textareaAttributes = {
   'autocomplete': String,

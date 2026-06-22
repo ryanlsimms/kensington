@@ -146,7 +146,15 @@ export default function parseData(htmlData, svgData, mathData, { cssPropertyType
     if (values[0] === '<number>') {
       return ['Number', numberTsType];
     }
-    if (['<length>', '<coordinate>', '<integer>', '<long>', '<length-percentage>'].includes(values[0])) {
+    if ([
+      '<length>',
+      '<coordinate>',
+      '<integer>',
+      '<long>',
+      '<length-percentage>',
+      '<list-of-coordinates>',
+      '<list-of-numbers>',
+    ].includes(values[0])) {
       return ['[Number, String]', 'number | string'];
     }
     if (

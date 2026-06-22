@@ -3867,14 +3867,14 @@ type TextAttributes = {
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'rotate'?: Reactive<string>;
+  'rotate'?: Reactive<number | string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'textLength'?: Reactive<string>;
-  'x'?: Reactive<string>;
+  'x'?: Reactive<number | string>;
   'xml:space'?: Reactive<"default" | "preserve">;
-  'y'?: Reactive<string>;
+  'y'?: Reactive<number | string>;
   prop?: PropFor<'text'> | null; persist?: boolean;
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 

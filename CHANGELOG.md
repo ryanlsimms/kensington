@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- SVG attribute types `<list-of-coordinates>` and `<list-of-numbers>` now widen to `number | string`, matching the existing `<coordinate>` and `<number>` mappings. Fixes the asymmetry where `t.text({ x: 20 })` failed type-check while `t.rect({ x: 20 })` typechecked. The runtime always accepted numbers; only the types were stricter.
 - `Signal.prototype.mapWithKey(keyOrProp, mapFn)`. Keyed list mapper for signals that hold arrays. The first argument is either a function `(item) => key` or a property-name string like `'id'`. Returns a `ReadonlySignal<Tag[]>`. Pass the result directly into tag content (`t.ul(rows)`). On first sight of a key, `mapFn` is run under a tracking probe. If it touches no reactive primitives, the resulting tag is cached and reused unchanged across renders. If `mapFn` reads a signal via `.get()` or creates a keyed `signal(initial, key)` / `computed(fn, key)`, the entry upgrades to a per-key inner computed that re-runs when its tracked signals change. The reconciler rebuilds only the affected rows in place, with focus, scroll, input value, checked/indeterminate, `<select>` value, and `<details>`/`<dialog>` open preserved.
 
 ### Changed

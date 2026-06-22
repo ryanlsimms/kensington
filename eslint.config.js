@@ -24,6 +24,7 @@ export default [
       'dist/**',
       '**/dist/**',
       '**/node_modules/**',
+      'local-notes/**',
     ],
   },
   {
