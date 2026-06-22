@@ -232,20 +232,6 @@ export default class ContentTag {
       }
     }
 
-    if (this.prop) {
-      for (const [propName, propValue] of Object.entries(this.prop)) {
-        if (propName in element && !isPropWritable(element, propName)) {
-          showInvalid(`prop key \`${propName}\` is read-only on <${this.tagName}>`, this.validationLevel, this.logger);
-          continue;
-        }
-        if (isKensingtonSignal(propValue)) {
-          ensureLifecycle().signalEffect(propValue, (el, val) => { el[propName] = val; }, `prop:${propName}`);
-        } else {
-          element[propName] = propValue;
-        }
-      }
-    }
-
     if (this.styleProps) {
       for (const [propName, propValue] of Object.entries(this.styleProps)) {
         if (!isKensingtonSignal(propValue)) {
@@ -285,6 +271,24 @@ export default class ContentTag {
         node = preserveSpaces(node);
       }
       element.append(document.createTextNode(String(node))); // String() handles Symbols. + or template literals would throw
+    }
+
+    // `prop` is applied AFTER children. Several DOM properties depend on the live child set
+    // (e.g. <select>.value needs its <option> children present, <textarea>.value can be
+    // overridden by the text node child if applied first). Setting prop after content avoids
+    // these race-on-mount issues without changing the API.
+    if (this.prop) {
+      for (const [propName, propValue] of Object.entries(this.prop)) {
+        if (propName in element && !isPropWritable(element, propName)) {
+          showInvalid(`prop key \`${propName}\` is read-only on <${this.tagName}>`, this.validationLevel, this.logger);
+          continue;
+        }
+        if (isKensingtonSignal(propValue)) {
+          ensureLifecycle().signalEffect(propValue, (el, val) => { el[propName] = val; }, `prop:${propName}`);
+        } else {
+          element[propName] = propValue;
+        }
+      }
     }
 
     // Finalize only when there's something to register. A null lifecycle here means no

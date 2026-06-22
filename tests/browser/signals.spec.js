@@ -991,6 +991,88 @@ test('signal prop updates DOM property live', async ({ page, bundle }) => {
   expect(result).toBe('second');
 });
 
+test('prop value on <textarea> wins over the initial text-node child', async ({ page, bundle }) => {
+  // The text-node child sets the textarea's defaultValue (and initial value). Setting
+  // `prop: { value: 'live' }` must override that after children are appended, so the live
+  // value is 'live', not 'initial text'.
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const ta = t.textarea({ id: 'ta-prop-order', prop: { value: 'live' } }, 'initial text').toElement();
+    document.body.append(ta);
+    return { value: ta.value, defaultValue: ta.defaultValue };
+  }, bundle);
+  expect(result.value).toBe('live');
+  // The text node still set defaultValue (a separate property), so a reset would restore it.
+  expect(result.defaultValue).toBe('initial text');
+});
+
+test('nested tree: every element ends up with its own prop set after the tree is mounted', async ({ page, bundle }) => {
+  // Three-level tree, each level has its own prop. After mounting, every element should
+  // hold its own correct value. Verifies the recursion order (deepest prop runs first)
+  // doesn't leak between levels.
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const tree = t.fieldset({ id: 'nest-outer', prop: { disabled: true } }, [
+      t.div({ id: 'nest-mid', prop: { hidden: false } }, [
+        t.input({ id: 'nest-inner', prop: { value: 'innerVal', readOnly: true } }),
+      ]),
+    ]).toElement();
+    document.body.append(tree);
+    return {
+      outerDisabled: document.getElementById('nest-outer').disabled,
+      midHidden: document.getElementById('nest-mid').hidden,
+      innerValue: document.getElementById('nest-inner').value,
+      innerReadOnly: document.getElementById('nest-inner').readOnly,
+    };
+  }, bundle);
+  expect(result.outerDisabled).toBe(true);
+  expect(result.midHidden).toBe(false);
+  expect(result.innerValue).toBe('innerVal');
+  expect(result.innerReadOnly).toBe(true);
+});
+
+test('child addConnectedCallback sees parent prop already applied', async ({ page, bundle }) => {
+  // When a child's connect callback fires, the whole tree has been built (prop applied at
+  // every level) AND inserted into the DOM. Reading `parentElement.disabled` from inside
+  // a child's connected callback must see the parent's prop, not the default.
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    let observed;
+    const child = t.input({ id: 'cb-child' });
+    child.addConnectedCallback(el => { observed = el.parentElement.disabled; });
+    document.body.append(t.fieldset({ id: 'cb-parent', prop: { disabled: true } }, child).toElement());
+    await new Promise(r => { setTimeout(r, 30); });
+    return { observed, parentDisabled: document.getElementById('cb-parent').disabled };
+  }, bundle);
+  expect(result.parentDisabled).toBe(true);
+  expect(result.observed).toBe(true);
+});
+
+test('prop value on <select> picks the matching option (prop runs after children)', async ({ page, bundle }) => {
+  // Regression: setting `select.value = 'medium'` only works once the matching <option>
+  // exists as a child. If prop runs before children, the select stays at its first-option
+  // default (here "small"). content-tag.js#toElement applies `prop` after children for
+  // exactly this reason.
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const fontSize = signal('medium');
+    const sel = t.select({ id: 'select-prop-static', prop: { value: fontSize } }, [
+      t.option({ value: 'small' }, 'Small'),
+      t.option({ value: 'medium' }, 'Medium'),
+      t.option({ value: 'large' }, 'Large'),
+    ]).toElement();
+    document.body.append(sel);
+    await Promise.resolve();
+    const initial = sel.value;
+    fontSize.set('large');
+    await Promise.resolve();
+    const afterSet = sel.value;
+    return { initial, afterSet };
+  }, bundle);
+  expect(result.initial).toBe('medium');
+  expect(result.afterSet).toBe('large');
+});
+
 test('signal prop effect stops when element is removed from DOM', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
     const { t, signal } = await import(src);
@@ -2795,6 +2877,114 @@ test('removing every other row keeps the survivors in the correct order', async 
   expect(orderedKeys).toBe('1,3,5,7');
 });
 
+// ─── reconcile bidirectional branches in isolation ────────────────────────
+// The reconciler's four cheap branches (prefix match, suffix match, head-to-tail, tail-to-head)
+// each need to be exercised in isolation. Stamped sentinels on the live nodes prove the
+// branch reused the existing DOM rather than rebuilding.
+
+test('reconcile head-to-tail: first item moves to end with one DOM mutation', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const items = signal([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }]);
+    document.body.append(t.ul({ id: 'h2t' }, items.mapWithKey('id', item => t.li(String(item.id)))).toElement());
+    const lis = Array.from(document.querySelectorAll('#h2t li'));
+    lis.forEach((el, i) => { el._stamp = String.fromCharCode(65 + i); });
+    items.set([{ id: 2 }, { id: 3 }, { id: 4 }, { id: 1 }]);
+    await Promise.resolve();
+    const after = Array.from(document.querySelectorAll('#h2t li'));
+    return { texts: after.map(el => el.textContent), stamps: after.map(el => el._stamp) };
+  }, bundle);
+  expect(result.texts).toEqual(['2', '3', '4', '1']);
+  // Sentinels prove the original nodes were reordered, not replaced.
+  expect(result.stamps).toEqual(['B', 'C', 'D', 'A']);
+});
+
+test('reconcile tail-to-head: last item moves to start (swap-1000 case)', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const items = signal([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }]);
+    document.body.append(t.ul({ id: 't2h' }, items.mapWithKey('id', item => t.li(String(item.id)))).toElement());
+    const lis = Array.from(document.querySelectorAll('#t2h li'));
+    lis.forEach((el, i) => { el._stamp = String.fromCharCode(65 + i); });
+    items.set([{ id: 4 }, { id: 1 }, { id: 2 }, { id: 3 }]);
+    await Promise.resolve();
+    const after = Array.from(document.querySelectorAll('#t2h li'));
+    return { texts: after.map(el => el.textContent), stamps: after.map(el => el._stamp) };
+  }, bundle);
+  expect(result.texts).toEqual(['4', '1', '2', '3']);
+  expect(result.stamps).toEqual(['D', 'A', 'B', 'C']);
+});
+
+test('reconcile swap of two adjacent items reuses both DOM nodes', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const items = signal([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }]);
+    document.body.append(t.ul({ id: 'adj-swap' }, items.mapWithKey('id', item => t.li(String(item.id)))).toElement());
+    const lis = Array.from(document.querySelectorAll('#adj-swap li'));
+    lis.forEach((el, i) => { el._stamp = String.fromCharCode(65 + i); });
+    // swap positions 1 and 2 (B and C in stamps; ids 2 and 3)
+    items.set([{ id: 1 }, { id: 3 }, { id: 2 }, { id: 4 }]);
+    await Promise.resolve();
+    const after = Array.from(document.querySelectorAll('#adj-swap li'));
+    return { texts: after.map(el => el.textContent), stamps: after.map(el => el._stamp) };
+  }, bundle);
+  expect(result.texts).toEqual(['1', '3', '2', '4']);
+  expect(result.stamps).toEqual(['A', 'C', 'B', 'D']);
+});
+
+test('reconcile swap of distant items (1 and N-2 in a 10-item list)', async ({ page, bundle }) => {
+  // The js-framework-benchmark "swap1k" case in miniature. Positions 1 and 8 are exchanged;
+  // every other position is left alone. The bidirectional pass should reach a steady state
+  // with two cheap-branch hits and the rest as prefix/suffix matches.
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const items = signal(Array.from({ length: 10 }, (_, i) => ({ id: i + 1 })));
+    const list = t.ul({ id: 'distant-swap' }, items.mapWithKey('id', item => t.li(String(item.id))));
+    document.body.append(list.toElement());
+    const lis = Array.from(document.querySelectorAll('#distant-swap li'));
+    lis.forEach((el, i) => { el._stamp = i; });
+    const next = items.get().slice();
+    const a = next[1]; next[1] = next[8]; next[8] = a;
+    items.set(next);
+    await Promise.resolve();
+    const after = Array.from(document.querySelectorAll('#distant-swap li'));
+    return { texts: after.map(el => el.textContent), stamps: after.map(el => el._stamp) };
+  }, bundle);
+  expect(result.texts).toEqual(['1', '9', '3', '4', '5', '6', '7', '8', '2', '10']);
+  expect(result.stamps).toEqual([0, 8, 2, 3, 4, 5, 6, 7, 1, 9]);
+});
+
+// ─── dom-tracker: same-batch remove-and-reinsert ──────────────────────────
+// dom-tracker's MutationObserver guards stopRemoved with `if (!node.isConnected)`. If a
+// node is removed and reinserted in the same microtask batch, the observer fires for the
+// removal AFTER the reinsertion (because mutation records are queued and the callback runs
+// once after the synchronous batch). At that point, node.isConnected is true, so effects
+// must not be stopped.
+
+test('node removed and reinserted in the same task keeps its signal bindings live', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const klass = signal('a');
+    const el = t.div({ id: 'remove-reinsert', class: klass }).toElement();
+    document.body.append(el);
+    await Promise.resolve();
+    const initial = el.className;
+    const parent = document.body;
+    // Synchronously remove and re-insert. The MutationObserver fires AFTER both ops.
+    parent.removeChild(el);
+    parent.appendChild(el);
+    // Wait for any pending mutation observer callback.
+    await new Promise(r => { setTimeout(r, 30); });
+    klass.set('b');
+    await Promise.resolve();
+    return { initial, afterRemoveReinsertAndSet: el.className, stillConnected: el.isConnected };
+  }, bundle);
+  expect(result.initial).toBe('a');
+  // If the observer had stopped the binding, the set would not propagate.
+  expect(result.afterRemoveReinsertAndSet).toBe('b');
+  expect(result.stillConnected).toBe(true);
+});
+
 // ─── binding-effect fast path ──────────────────────────────────────────────
 // Lifecycle bindings (signal-bound attribute, content, prop, style) use _bindingEffect — a
 // specialised effect that subscribes to exactly one signal and bypasses the general track()
@@ -2884,6 +3074,105 @@ test('signal read inside mapFn triggers a row rebuild when the signal changes', 
   expect(result.before).toBe(0);
   expect(result.after).toBe(2);
   expect(result.texts).toEqual(['a (3)', 'b (7)']);
+});
+
+test('row rebuild preserves the full preserve-state capture set', async ({ page, bundle }) => {
+  // Exercise every kind of user-visible state preserve-state.js captures across a single
+  // mapWithKey reactive re-emit: input value, checkbox checked + indeterminate, select
+  // value, textarea value, details.open, dialog.open, and scrollTop on a scrollable div.
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const decorate = signal(false);
+    const items = signal([{ id: 'rich' }]);
+    const rows = items.mapWithKey('id', item => t.li({ id: `row-${item.id}` }, [
+      t.input({ id: 'rich-input' }),
+      t.input({ id: 'rich-checkbox', type: 'checkbox' }),
+      t.select({ id: 'rich-select' }, [
+        t.option({ value: 'a' }, 'A'),
+        t.option({ value: 'b' }, 'B'),
+        t.option({ value: 'c' }, 'C'),
+      ]),
+      t.textarea({ id: 'rich-textarea' }),
+      t.details({ id: 'rich-details' }, [t.summary('toggle'), t.p('content')]),
+      t.dialog({ id: 'rich-dialog' }, 'dialog content'),
+      t.div({ id: 'rich-scroller', style: { height: '40px', overflow: 'auto' } }, [
+        t.div({ style: { height: '500px' } }, 'tall content'),
+      ]),
+      decorate.get() && t.span({ class: 'decoration' }, '*'),
+    ]));
+    document.body.append(t.ul({ id: 'rebuild-rich' }, rows).toElement());
+
+    // Set up rich state.
+    const inp = document.getElementById('rich-input');
+    inp.value = 'typed';
+    const cb = document.getElementById('rich-checkbox');
+    cb.checked = true;
+    cb.indeterminate = true;
+    document.getElementById('rich-select').value = 'c';
+    document.getElementById('rich-textarea').value = 'multiline\ntext';
+    document.getElementById('rich-details').open = true;
+    document.getElementById('rich-dialog').show();
+    const scroller = document.getElementById('rich-scroller');
+    scroller.scrollTop = 120;
+
+    decorate.set(true);
+    await Promise.resolve();
+
+    return {
+      inputValue: document.getElementById('rich-input').value,
+      checkboxChecked: document.getElementById('rich-checkbox').checked,
+      checkboxIndeterminate: document.getElementById('rich-checkbox').indeterminate,
+      selectValue: document.getElementById('rich-select').value,
+      textareaValue: document.getElementById('rich-textarea').value,
+      detailsOpen: document.getElementById('rich-details').open,
+      dialogOpen: document.getElementById('rich-dialog').open,
+      scrollTop: document.getElementById('rich-scroller').scrollTop,
+      decorationCount: document.querySelectorAll('#rebuild-rich .decoration').length,
+    };
+  }, bundle);
+  expect(result.inputValue).toBe('typed');
+  expect(result.checkboxChecked).toBe(true);
+  expect(result.checkboxIndeterminate).toBe(true);
+  expect(result.selectValue).toBe('c');
+  expect(result.textareaValue).toBe('multiline\ntext');
+  expect(result.detailsOpen).toBe(true);
+  expect(result.dialogOpen).toBe(true);
+  expect(result.scrollTop).toBe(120);
+  expect(result.decorationCount).toBe(1);
+});
+
+test('restoreState drops state gracefully when the new tree shape mismatches', async ({ page, bundle }) => {
+  // If a rebuild produces a tree whose shape differs from what captureState recorded
+  // (e.g. the focused descendant no longer exists at the same child-index path), the
+  // missing state is silently dropped, the rebuild still completes, and the new node is
+  // attached. No throws.
+  const errors = [];
+  page.on('pageerror', e => errors.push(String(e)));
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    // The decorate flag DROPS the inner input on the second render. The focused element's
+    // child-index path on the captured root no longer resolves to a valid input. State is
+    // dropped silently.
+    const decorate = signal(false);
+    const items = signal([{ id: 'shape' }]);
+    const rows = items.mapWithKey('id', item => t.li({ id: `row-${item.id}` }, [
+      decorate.get()
+        ? t.p({ id: 'shape-text' }, 'no input')
+        : t.input({ id: 'shape-input' }),
+    ]));
+    document.body.append(t.ul(rows).toElement());
+    document.getElementById('shape-input').focus();
+    document.getElementById('shape-input').value = 'lost';
+    decorate.set(true);
+    await Promise.resolve();
+    return {
+      hasInput: Boolean(document.getElementById('shape-input')),
+      hasText: Boolean(document.getElementById('shape-text')),
+    };
+  }, bundle);
+  expect(result.hasInput).toBe(false);
+  expect(result.hasText).toBe(true);
+  expect(errors).toEqual([]);
 });
 
 test('row rebuild preserves focus and input value', async ({ page, bundle }) => {

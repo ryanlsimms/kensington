@@ -285,6 +285,69 @@ t.input({ value: count.get() })      // frozen attribute set at construction tim
       ),
     ]),
 
+    t.section({ id: 'render-signal-standalone' }, [
+      t.h3('Signal as a standalone tag'),
+      t.p([
+        'A ',
+        t.code('Signal'),
+        ' can also be rendered without a wrapping element, by calling ',
+        t.code('signal.toElement()'),
+        ' or ',
+        t.code('signal.mount(target)'),
+        ' directly. The mechanism lives in ',
+        loc('esm/lib/reactive/signal-render.js'),
+        '.',
+      ]),
+      code('javascript', `// in esm/lib/reactive/signal-render.js
+export function renderSignalAsTag(signal) {
+  const startAnchor = document.createComment('');
+  const endAnchor = document.createComment('');
+  const frag = document.createDocumentFragment();
+  frag.append(startAnchor, endAnchor);
+  // ... WeakRef setup ...
+  const eff = _internalEffect(() => {
+    clearBetween(start, end);
+    const value = signal.get();
+    const items = Array.isArray(value) ? value : [value];
+    for (const item of items) start.parentNode.insertBefore(renderItem(item), end);
+  });
+  trackForStop(startAnchor, () => eff.stop());
+  return frag;
+}`),
+      t.p([
+        'Deliberately simple. Unlike signal-as-content (a child of a real tag), this path does NOT route through ',
+        t.code('reconcile'),
+        '. Each change clears all sibling nodes between the anchors and renders the new value fresh. Keyed-list matching, preserve-state restoration, and bidirectional diffing are unnecessary for a standalone signal whose value is typically a single tag (the "swap between two views" pattern). Keeping ',
+        t.code('reconcile'),
+        ' and ',
+        t.code('preserve-state'),
+        ' out of the slim build\'s hot path is the reason. If you need keyed reconciliation around a signal, wrap it in a tag:',
+      ]),
+      code('javascript', `t.div([signal.mapWithKey('id', renderRow)])`),
+      callout('key', 'The fragment adopts cleanly into a real parent',
+        t.p([
+          'The anchors live in the fragment until ',
+          t.code('append()'),
+          ' or ',
+          t.code('insertBefore()'),
+          ' moves them into a real parent. The render closure reads ',
+          t.code('startAnchor.parentNode'),
+          ' on every update, so adoption is transparent. Multiple swaps after adoption work the same as before.',
+        ]),
+      ),
+      t.p([
+        'This is what makes ',
+        t.code('signal.transform(v => v ? tagA : tagB)'),
+        ' usable as a function return value. The returned ',
+        t.code('ReadonlySignal<ContentTag>'),
+        ' is itself a renderable thing. No wrapping ',
+        t.code('t.div([signal])'),
+        ' is required just to satisfy the ',
+        t.code('ContentTag'),
+        ' return type at the call site.',
+      ]),
+    ]),
+
     t.section({ id: 'render-finalize' }, [
       t.h3('Lifecycle finalize'),
       t.p('After all wiring, the lifecycle is finalized:'),

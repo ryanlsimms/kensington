@@ -2,6 +2,56 @@
 
 HTML/SVG/MathML library for JavaScript and TypeScript. Tags are method calls on a `Kensington` instance, returning tag objects that serialize to formatted HTML strings (`.toString()`) or live DOM nodes (`.toElement()`).
 
+## Contents
+
+Core. Read these first.
+
+- [Imports](#imports)
+- [Recommended packages](#recommended-packages) — `kensington-eslint-plugin`, `kensington-express`
+- [One instance per project](#one-instance-per-project)
+- [The basics](#the-basics)
+- [Critical: call .toString() explicitly](#critical-call-tostring-explicitly)
+- [Options](#options) (incl. [DOM properties with `prop`](#dom-properties-with-prop))
+- [Content rules](#content-rules)
+- [Raw HTML](#raw-html), [inlineComment()](#inlinecomment), [Full documents](#full-documents), [Pre-formatted content](#pre-formatted-content)
+- [Constructor options](#constructor-options)
+- [Custom elements](#custom-elements), [TypeScript namespace augmentation](#typescript-namespace-augmentation)
+- [Validation and error policy](#validation-and-error-policy)
+- [Common mistakes to avoid](#common-mistakes-to-avoid)
+- [Key types](#key-types)
+
+Reactive data. Read when working with `signal`, `computed`, `effect`, or live DOM.
+
+- [Reactive data overview](#reactive-data)
+- [Signal API](#signal-api)
+- [As content and option values](#as-content-and-option-values)
+- [DOM properties with `prop`](#dom-properties-with-prop-1)
+- [effect](#effect)
+- [Keyed lists](#keyed-lists), [Updating a row after it's been cached](#updating-a-row-after-its-been-cached)
+- [Reactive primitives inside a computed need a key](#reactive-primitives-inside-a-computed-need-a-key)
+- [Cleanup](#cleanup)
+- [addConnectedCallback / addDisconnectedCallback](#addconnectedcallback--adddisconnectedcallback)
+- [isBrowser](#isbrowser), [DevTools](#devtools), [Loading state](#loading-state)
+- [Hydration](#hydration)
+- [HMR (`kensington/vite`)](#hmr-kensingtonvite)
+- [Reactive pitfalls](#reactive-pitfalls)
+
+Tooling.
+
+- [HTML to Kensington CLI](#html-to-kensington-cli)
+
+Recipes and worked examples.
+
+- [Recipes](#recipes) — `styled`, `portal`, `createContext`, `useReducer`, `useLocalStorage`, `useDebounce`, `useFetch`, `useId`
+- Layout. [Shared header and footer](#layout-with-shared-header-and-footer), [Tailwind CSS](#tailwind-css)
+- Servers. [Express](#express-server-with-multiple-routes) (+ [render helper](#express-render-helper-middleware)), [Hono](#hono-server), [Fastify](#fastify), [Elysia (Bun)](#elysia-bun), [Deno](#deno), [Node.js built-in HTTP](#nodejs-built-in-http)
+- Common patterns. [Form with validation errors](#form-with-validation-errors), [Data-driven component](#data-driven-component), [Pagination](#pagination), [Returning fragments](#returning-fragments), [Caching and reuse](#caching-and-reuse), [Inline styles and dynamic classes](#inline-styles-and-dynamic-classes), [Embedding server data in the page](#embedding-server-data-in-the-page), [Browser DOM usage](#browser-dom-usage), [SVG](#svg), [MathML](#mathml)
+- Integrations. [Alpine.js](#alpinejs), [htmx live search](#htmx-live-search), [Hydration. Form with server-side validation](#hydration-form-with-server-side-validation)
+- TypeScript. [Reactive prop types](#typescript-reactive-prop-types), [Returning a signal from a component](#returning-a-signal-from-a-component-function), [Typed components](#typescript-typed-components), [Design system with custom elements, htmx, and module augmentation](#typescript-design-system-with-custom-elements-htmx-and-module-augmentation)
+- Reactive data worked examples. [Counter](#reactive-data-counter), [Live filter](#reactive-data-live-filter), [Keyed todo list](#reactive-data-keyed-todo-list), [Form with live validation](#reactive-data-form-with-live-validation), [Hydrated like button](#reactive-data-hydrated-like-button), [Sortable table](#reactive-data-sortable-table), [Making static HTML elements reactive](#reactive-data-making-static-html-elements-reactive), [Accordion with per-element signals](#reactive-data-accordion-with-per-element-signals), [Context](#reactive-data-context)
+
+Full runnable example apps live in the `examples/` directory of the GitHub repo (https://github.com/ryanlsimms/kensington/tree/master/examples). Browseable docs at https://kensingtonjs.com.
+
 ## Imports
 
 ```javascript
@@ -14,6 +64,77 @@ import { formAttributes } from 'kensington/attributes';  // attribute objects fo
 import type { ContentTag, VoidTag, LiteralTag, CommentTag, Content, ContentMethod } from 'kensington';
 import type { NameSpaceAttributes, GlobalAttributes, GlobalEvents, UniversalAttributes } from 'kensington';
 ```
+
+## Recommended packages
+
+Two companion packages cover common pain points. Install them upfront when starting a new project.
+
+### `kensington-eslint-plugin` (any project that uses signals)
+
+ESLint rules that catch reactive bugs at lint time rather than runtime. **Install it any time you use `signal()`/`computed()`/`effect()`.** Catches `.set()` inside a computed derivation, `.get()`-then-`.set()` self-loops, async writes inside effects, missing keys on `signal()` calls inside a computed, `_isInternal` boundary violations, and more.
+
+```bash
+npm install --save-dev kensington-eslint-plugin
+```
+
+```js
+// eslint.config.js
+import js from '@eslint/js';
+import kensington from 'kensington-eslint-plugin';
+
+export default [
+  js.configs.recommended,
+  kensington.configs.recommended,        // signal-correctness rules at error/warn level
+  // kensington.configs.style,           // optional, opt-in formatting rules
+];
+```
+
+### `kensington-express` (any Express app)
+
+Express middleware that attaches `res.renderView(pageRenderer, locals)` and applies a default layout to every response. Avoids hand-rolling `.toString()` calls and lets you swap layouts per route. **Use this in place of writing your own render middleware.**
+
+```bash
+npm install kensington-express
+```
+
+```js
+import express from 'express';
+import kensingtonView from 'kensington-express';
+import { layout } from './views/layout.js';
+import { homePage } from './views/home.js';
+
+const app = express();
+
+// Note. The argument is an OPTIONS OBJECT (`{ defaultLayout, htmlValidator, buildLocals }`),
+// not the layout function itself. Passing the layout directly silently skips it.
+app.use(kensingtonView({ defaultLayout: layout }));
+
+app.get('/', (req, res) => {
+  // Layout wraps the page; locals are merged in this order:
+  //   req.route, app.locals, res.locals, options.
+  res.renderView(homePage, { title: 'Home', items: [...] });
+});
+
+// Per-route layout override:
+//   res.renderView(adminPage, { layout: adminLayout, title: 'Admin' });
+// Skip the layout for a route:
+//   res.renderView(rawPage, { layout: null });
+```
+
+The layout has the signature `layout(locals, page)` and calls `page(locals)` to render the content:
+
+```js
+// views/layout.js
+import { t } from 'kensington';
+export function layout(locals, page) {
+  return t.htmlWithDocType({ lang: 'en' }, [
+    t.head([t.title(locals.title)]),
+    t.body([page(locals)]),
+  ]);
+}
+```
+
+Optional `htmlValidator` runs after the response is sent, useful in dev for catching markup issues without blocking the client.
 
 ## One instance per project
 
@@ -59,7 +180,7 @@ The first argument to any tag method is a plain object. It accepts HTML attribut
 
 - camelCase keys convert to kebab-case: `{ dataBsToggle: 'collapse' }` → `data-bs-toggle="collapse"`
 - Nested objects flatten: `{ data: { id: '1' } }` → `data-id="1"`
-- Boolean: `{ checked: true }` → `checked`; `{ checked: false }` → attribute omitted
+- Boolean: `{ checked: true }` → `checked`; `{ checked: false }` → attribute omitted. This also applies to `data-*`: `{ data: { ready: true } }` renders as `data-ready=""` (bare attribute, no value), which means `el.dataset.ready === ''` on the live element. **Watch out**: `if (el.dataset.ready) { ... }` is falsy in JS because the empty string is falsy. For click-delegation patterns, use explicit string values like `{ data: { action: 'open-form' } }` and check `el.dataset.action === 'open-form'` rather than truthiness on a bare boolean data attribute.
 - `class` accepts a string or array: `{ class: ['a', 'b'] }` → `class="a b"`
 - `style` accepts an object: `{ style: { backgroundColor: 'red' } }` → `style="background-color: red"`. Keys can be camelCase or kebab-case. Static values of `null`, `undefined`, `false`, or `''` are silently omitted. Individual property values also accept signals. Only the changed property is written to the DOM on each update. `style: { color: colorSignal, fontSize: '1rem' }` sets `font-size` once at render time and updates only `color` reactively.
 - `data-*` and `aria-*` are always allowed without configuration
@@ -95,11 +216,29 @@ Arrays anywhere in content are flattened . `items.map(i => t.li(i))` works direc
 t.ul(items.map(item => t.li(item.name)));
 ```
 
+The two-argument form is **always** `(attributes, content)`. The first arg is never interpreted as plain text. To mix a label with a control, wrap them in a content array:
+
+```javascript
+// Wrong. The first arg must be an attributes object.
+t.label('Email', t.input({ type: 'email' }));    // throws "Invalid arguments"
+
+// Right. First arg is the attributes object (use {} when none), second is content.
+t.label([t.span('Email'), t.input({ type: 'email' })]);
+// or
+t.label({ class: 'field' }, [t.span('Email'), t.input({ type: 'email' })]);
+```
+
 ## Raw HTML
 
 ```javascript
 t.literal('<p>trusted raw html</p>');    // outputs raw HTML; blocks <script> tags
 t.unsafeLiteral('<script>...</script>'); // outputs raw HTML; no script-tag check
+
+// Both accept a Signal. When the signal changes, the rendered HTML is re-parsed
+// and the element is replaced live.
+const html = signal('<p>initial</p>');
+t.literal(html);                          // <p>initial</p>, updates on html.set(...)
+t.literal(computed(() => marked.parse(text.get()))); // common markdown-preview pattern
 ```
 
 ## inlineComment()
@@ -315,6 +454,42 @@ t.tbody(rows);
 
 For drag-and-drop sortable lists where DOM nodes are moved via `insertBefore`, add `persist: true` to each item tag so signal effects survive the move. See **Cleanup** below.
 
+### Updating a row after it's been cached
+
+`mapWithKey` caches the tag instance per key. If something outside the row mutates a ticket and you do `items.set(list => list.map(t => t.id === id ? { ...t, comments: [...t.comments, c] } : t))`, the new object reference flows through but `mapWithKey` returns the **cached tag** for that key, whose content was built from the original object. The UI does not update.
+
+The fix is to put mutable per-row data in per-row signals on the item object itself. The cached tag binds those signals reactively, so external updates land via `.set()` on the signal rather than via array-replacement.
+
+```javascript
+// Each item carries signals for the fields that change after the row is built.
+function wrapTicket(t) {
+  return {
+    id: t.id, title: t.title, body: t.body,
+    status: signal(t.status),
+    comments: signal(t.comments ?? []),
+  };
+}
+
+const items = signal(plainTickets.map(wrapTicket));
+
+// ticketCard reads ticket.status and ticket.comments reactively (they're signals).
+const rows = items.mapWithKey('id', ticket => t.article({
+  class: ticket.status.transform(s => `card status-${s}`, `${ticket.id}-cls`),
+}, [
+  t.span(ticket.title),
+  t.ul(ticket.comments.mapWithKey('id', c => t.li(c.body))),
+]));
+
+// Mutating a row from outside: find it, mutate its signals.
+function applyServerUpdate(ticketId, patch) {
+  const row = items.value.find(t => t.id === ticketId);
+  if (row && 'status' in patch) row.status.set(patch.status);
+  if (row && 'newComment' in patch) row.comments.set([...row.comments.value, patch.newComment]);
+}
+```
+
+This is the canonical pattern for any list whose row contents change after mount — SSE pushes, WebSocket messages, polling intervals, animation timers. The `items` signal holds identity (the set of rows); per-row signals hold field-level reactivity.
+
 ### Reactive primitives inside a computed need a key
 
 When you create a `signal()`, `computed()`, or `.transform()` inside a `computed` callback, pass a stable `key` as the second argument. This applies uniformly to all three forms: the key scopes the instance to the surrounding `computed` so the same instance is reused across outer re-runs. Use the item identity (typically `item.id`).
@@ -327,12 +502,15 @@ const list = items.mapWithKey('id', item => {
   // Keyed signal. Per-item local interactive state.
   const highlight = signal(false, item.id);
   // Keyed computed. Derived value that reads multiple signals.
+  // Key combines the item id with a label so it does not collide with
+  // any other keyed computed or transform in this mapFn run.
   const cls = computed(() => [
     filter.get() === item.cat && 'match',
     highlight.get() && 'starred',
-  ].filter(Boolean).join(' '), item.id);
+  ].filter(Boolean).join(' '), `${item.id}-cls`);
   // Keyed transform. Single-source derivation, chained off the filter signal.
-  const matches = filter.transform(f => f === item.cat ? 'in-filter' : 'out', item.id);
+  // Different label so it does not collide with `cls`.
+  const matches = filter.transform(f => f === item.cat ? 'in-filter' : 'out', `${item.id}-matches`);
   return t.li({
     class: cls,
     data: { state: matches },
@@ -342,6 +520,8 @@ const list = items.mapWithKey('id', item => {
 
 t.ul(list);
 ```
+
+**Unique keys per keyed call.** Each `signal()`, `computed()`, or `.transform()` call inside the same outer run needs a key that is unique to that call. `signal()` lives in its own registry, so `signal(0, item.id)` doesn't collide with `computed(fn, item.id)`. But `computed()` and `.transform()` share a registry (transform calls computed internally), so two of them with the same key collide. Use `${item.id}-label` per keyed computed/transform, like the example above. A duplicate key logs a `console.error` and silently makes both calls return the same instance (the second call's fn overwrites the first), which produces wrong UI behavior.
 
 **Shared lifecycle.** The three forms use the same per-computed registry. Same key returns the same instance across re-runs. When an item leaves the list, its keyed instance is stopped automatically and removed from the registry on the next sweep. When the outer computed is permanently stopped, all its keyed instances are stopped too. When the outer sleeps (auto-dispose), the registry is preserved so a later wake reuses the same instances.
 
@@ -404,6 +584,31 @@ class MyWidget extends HTMLElement {
   disconnectedCallback() { this.#fx?.stop(); }
 }
 ```
+
+### addConnectedCallback / addDisconnectedCallback
+
+Tag instances have `addConnectedCallback(fn)` and `addDisconnectedCallback(fn)`. Use them to wire up side effects whose lifetime is tied to the live DOM element (timers, observers, third-party widgets, focus calls, etc).
+
+```javascript
+function statsPanel() {
+  const count = signal(0);
+  const panel = t.div([
+    t.h2('Stats'),
+    t.p(['Tick ', count, ' times']),
+  ]);
+  let id;
+  panel.addConnectedCallback(el => { id = setInterval(() => count.set(n => n + 1), 1000); });
+  panel.addDisconnectedCallback(() => { clearInterval(id); });
+  return panel;
+}
+```
+
+- `fn` for `addConnectedCallback` receives the live element. It runs every time the element is inserted into the DOM (initial mount plus every reconnect for `persist: true` parents).
+- `fn` for `addDisconnectedCallback` runs every time the element is removed.
+- Tag instances are reusable. The returned tag is the same instance across `.toElement()` calls, but each `.toElement()` produces (or reuses) a single DOM element and the connect/disconnect callbacks fire against that element.
+- For one-shot setup that doesn't need a teardown, you can still use `addConnectedCallback` alone (e.g. focus a newly mounted input via `el => el.focus()`).
+
+This is the canonical place for `setInterval`/`setTimeout`, `IntersectionObserver`, `ResizeObserver`, manual focus, or any imperative DOM API that needs symmetric setup/cleanup tied to element mount/unmount.
 
 ### isBrowser
 
@@ -720,6 +925,44 @@ function makeTask(text) {
 const rows = tasks.mapWithKey('id', ({ text, itemClass }) => t.li({ class: itemClass }, text));
 ```
 
+### Do not call `effect()` from inside a function that gets called from a `.map()`, `.transform()`, or `computed()` callback
+
+Each call to `effect()` creates a brand-new subscription. If the call site is a render-time function (e.g. a per-row component) that runs whenever a parent re-renders, every re-render adds another effect, and none of the previous ones are ever stopped. Memory grows, and `set()`s from the latest effect race with the stale ones for the same downstream signal. The kensington runtime catches this and throws `effect() called inside a computed or transform callback`, but the same shape also bites when the wrapping function is run inside a plain `Array.map` whose result feeds a `transform`.
+
+Symptoms. Console error from kensington runtime. Devtools Effects panel growing on every list-affecting `set()`. Subtle bugs where the "latest" value briefly flickers to a stale value before settling.
+
+The two fixes mirror the keyed-computed fixes above.
+
+```javascript
+// Wrong. Each setRow call creates a fresh effect on every list re-render.
+function setRow(set) {
+  const displayWeight = signal(set.weight);
+  effect(() => {                          // new subscription per render
+    displayWeight.set(toUnits(set.weight, units.get()));
+  });
+  return t.li(displayWeight);
+}
+
+const rows = sets.transform(items => items.map(setRow));
+```
+
+```javascript
+// Correct (option 1). Use a keyed computed inside mapWithKey so the derivation is
+// reused across re-renders. No effect needed at all when the derivation is pure.
+const rows = sets.mapWithKey('id', set =>
+  t.li(computed(() => toUnits(set.weight, units.get()), `${set.id}-display`))
+);
+
+// Correct (option 2). Capture the value at construction time when reactive
+// dependence on the outer signal isn't actually required. The display value
+// freezes to the unit selected when the row was rendered.
+function setRow(set) {
+  const captured = units.value;
+  const displayWeight = toUnits(set.weight, captured);
+  return t.li(displayWeight);
+}
+```
+
 ### Mutating an array or object passed to `.set()` doesn't trigger updates
 
 `signal.set()` skips the notification if `Object.is(prev, next)` is true. Pushing into an array (or assigning into an object) and then calling `.set()` with the same reference passes the identity check and silently does nothing. Subscribers stay on the old value visually because no run is scheduled. Always replace the reference.
@@ -764,6 +1007,407 @@ If ESLint or Prettier is installed in the working directory, the converter reads
 ---
 
 ## Examples
+
+Full runnable example apps live in the `examples/` directory of the GitHub repo (https://github.com/ryanlsimms/kensington/tree/master/examples). Browseable docs at https://kensingtonjs.com.
+
+### Recipes
+
+Small helpers built on top of `signal` and `effect`. Each is a few lines; copy into your project as needed.
+
+#### styled. CSS-in-JS components with pseudo-selectors, media queries, and composition
+
+Kensington tags accept inline `style` objects. What inline styles cannot do is pseudo-selectors (`:hover`, `:focus-visible`), at-rules (`@media`), or reuse across components. `styled(tag, styles)` fills the gap. It takes a tag closure and a style object (camelCase keys plus nested keys for pseudo-selectors and at-rules), injects a class into a shared stylesheet, and returns a new tag closure.
+
+```javascript
+// styled.js
+let _id = 0;
+let _style;
+const sheet = () => (_style ??= document.head.appendChild(document.createElement('style')));
+const kebab = s => s.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`);
+
+function toCss(selector, styles) {
+  const decls = [];
+  let nested = '';
+  for (const [k, v] of Object.entries(styles)) {
+    if (v && typeof v === 'object') {
+      nested += k.startsWith('@')
+        ? `${k} { ${toCss(selector, v)} } `
+        : `${toCss(selector + k, v)} `;
+    } else if (v !== null && v !== undefined && v !== false) {
+      decls.push(`${kebab(k)}:${v}`);
+    }
+  }
+  return (decls.length ? `${selector} { ${decls.join(';')} } ` : '') + nested;
+}
+
+function isAttrs(x) {
+  return x !== null
+    && typeof x === 'object'
+    && !Array.isArray(x)
+    && !x._isKensingtonTag
+    && !x._isKensingtonSignal;
+}
+
+export function styled(tag, styles) {
+  const className = `k-${++_id}`;
+  sheet().textContent += toCss(`.${className}`, styles);
+  return (...args) => {
+    const hasAttrs = args.length > 0 && isAttrs(args[0]);
+    const attrs = hasAttrs ? args[0] : {};
+    const rest = hasAttrs ? args.slice(1) : args;
+    const merged = { ...attrs, class: [className, attrs.class].filter(Boolean) };
+    return tag(merged, ...rest);
+  };
+}
+```
+
+Usage. The returned tag is a plain kensington tag closure. It takes the same arguments any tag does.
+
+```javascript
+import { signal, t } from 'kensington';
+import { styled } from './styled.js';
+
+const Card = styled(t.section, {
+  background: 'white',
+  borderRadius: '0.5rem',
+  padding: '1rem',
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+});
+
+const Button = styled(t.button, {
+  background: 'hsl(220 10% 90%)',
+  color: 'hsl(220 10% 20%)',
+  border: 0,
+  padding: '0.5rem 1rem',
+  borderRadius: '4px',
+  cursor: 'pointer',
+  ':hover':         { background: 'hsl(220 10% 85%)' },
+  ':focus-visible': { outline: '2px solid hsl(220 80% 70%)' },
+});
+
+const count = signal(0);
+Button({ type: 'button', onclick: () => count.set(n => n + 1) }, [
+  count.transform(n => `Clicked ${n} times`),
+]);
+```
+
+Composition. Passing a styled tag as the first argument to `styled` layers both classes. The new tag carries the base's generated class AND its own, and later-defined styles win by source order. Compose to any depth.
+
+```javascript
+// Base. Common geometry, no opinion on color.
+const Button = styled(t.button, {
+  border: '1px solid transparent',
+  borderRadius: '4px',
+  padding: '0.5rem 0.75rem',
+  fontSize: '0.875rem',
+  cursor: 'pointer',
+});
+
+// One level. Tone variants extend the base.
+const PrimaryButton = styled(Button, {
+  background: 'hsl(220 80% 50%)',
+  color: 'white',
+  fontWeight: 600,
+  border: 0,
+  ':hover': { background: 'hsl(220 80% 40%)' },
+});
+
+const DangerButton = styled(Button, {
+  background: 'transparent',
+  border: '1px solid hsl(0 70% 50%)',
+  color: 'hsl(0 70% 50%)',
+  ':hover': { background: 'hsl(0 70% 95%)' },
+});
+
+// Two levels. CtaButton extends PrimaryButton with larger sizing.
+const CtaButton = styled(PrimaryButton, {
+  fontSize: '1rem',
+  padding: '0.75rem 1.5rem',
+  borderRadius: '8px',
+  marginTop: '0.75rem',
+});
+
+Card([
+  t.h2('Confirm'),
+  CtaButton({ type: 'button' }, 'Save and continue'),
+  DangerButton({ type: 'button' }, 'Delete'),
+]);
+```
+
+Each composed tag carries every ancestor class. The CSS cascade resolves overrides by class-rule order in the stylesheet, which mirrors the order `styled(...)` calls run at module load. Define the base before the descendant.
+
+Pattern. A shared primitives module. For any app with more than a handful of styled components, factor common surfaces, buttons, text, and inputs into one `ui.ts` file and extend from there. This is the kensington equivalent of a design system. The CSS deduplication is real (one declaration per base, zero per usage site), and source-level intent becomes scannable.
+
+```javascript
+// ui.js. The single source of styled primitives. Imported by every view and widget.
+import { t } from 'kensington';
+import { styled } from './styled.js';
+
+// surfaces
+export const surface = styled(t.div, {
+  background: 'var(--color-surface)',
+  border: '1px solid var(--color-border)',
+  borderRadius: '8px',
+});
+export const card = styled(surface, { padding: '0.75rem 1rem', marginBottom: '0.75rem' });
+export const heroSurface = styled(t.section, {
+  background: 'var(--color-surface)',
+  border: '1px solid var(--color-border)',
+  borderRadius: '14px',
+  padding: '1.5rem',
+  marginBottom: '1rem',
+});
+
+// buttons
+export const buttonBase = styled(t.button, {
+  border: '1px solid transparent',
+  borderRadius: '4px',
+  padding: '0.5rem 0.75rem',
+  fontSize: '0.875rem',
+  cursor: 'pointer',
+});
+export const primaryBtn = styled(buttonBase, {
+  background: 'var(--color-accent)',
+  color: '#000',
+  fontWeight: 600,
+  border: 0,
+});
+export const ghostBtn = styled(buttonBase, {
+  background: 'transparent',
+  border: '1px solid var(--color-border)',
+  color: 'var(--color-text)',
+  ':hover': { borderColor: 'var(--color-accent)' },
+});
+export const dangerBtn = styled(buttonBase, {
+  background: 'transparent',
+  border: '1px solid var(--color-danger)',
+  color: 'var(--color-danger)',
+});
+
+// text
+export const muted = styled(t.span, {
+  color: 'var(--color-text-muted)',
+  fontSize: '0.875rem',
+});
+
+// inputs
+export const formInput = styled(t.input, {
+  background: 'var(--color-surface-2)',
+  border: '1px solid var(--color-border)',
+  borderRadius: '4px',
+  padding: '0.5rem 0.75rem',
+  color: 'var(--color-text)',
+  ':focus': { outline: 'none', borderColor: 'var(--color-accent)' },
+});
+```
+
+Then in views and widgets, extend the primitives with per-screen sizing or one-off tweaks. Avoid redeclaring the surface or button geometry.
+
+```javascript
+// settings-view.js
+import { card, muted, primaryBtn, formInput } from './ui.js';
+import { styled } from './styled.js';
+
+// per-view extension: a wider input. Not a redeclaration of the base.
+const fullWidthInput = styled(formInput, { width: '100%' });
+
+const small = styled(muted, { fontSize: '0.75rem' });
+```
+
+Rules of thumb.
+
+- A new color, padding, border, or radius that appears in more than one component is a primitive. Move it to `ui.js`.
+- A per-component tweak (one-off size, one-off margin) extends a primitive at the call site. It does not redeclare the base.
+- Compose by extension, not by spreading style objects. `styled(Base, overrides)` produces one CSS class per layer. Object spread (`styled(t.div, { ...baseStyles, ... })`) duplicates declarations in the stylesheet.
+- Name primitives by *role* (surface, card, primaryBtn) not by *appearance* (whiteBox, bigBlueButton). Roles survive a redesign; appearance names rot.
+
+Variant props. Declare modifier classes inside the styles object and let the caller pick one via `class`. Combine with a signal-valued `class` for reactive variants.
+
+```javascript
+const Alert = styled(t.div, {
+  padding: '0.75rem 1rem',
+  borderRadius: '4px',
+  borderLeft: '4px solid',
+  '.info':  { background: 'hsl(220 80% 95%)', borderLeftColor: 'hsl(220 80% 50%)' },
+  '.warn':  { background: 'hsl(40 90% 95%)',  borderLeftColor: 'hsl(40 90% 50%)'  },
+  '.error': { background: 'hsl(0 80% 95%)',   borderLeftColor: 'hsl(0 80% 50%)'   },
+});
+
+const level = signal('info');
+Alert({ class: level }, level.transform(l => `Status: ${l}`));
+```
+
+Flipping `level.set('warn')` swaps the modifier class on the live element. The static base styles live in the generated class once.
+
+#### portal. Render a subtree into a DOM node outside the parent
+
+Kensington has no portal API because `.toElement()` already returns a real DOM node. Append it wherever you want. Wrap the call in an `effect` to tie mount/unmount to a signal.
+
+```javascript
+// portal.js
+export function portal(target, fn) {
+  const node = fn().toElement();
+  target.append(node);
+  return () => node.remove();
+}
+```
+
+```javascript
+import { signal, effect, t } from 'kensington';
+import { portal } from './portal.js';
+
+const modalRoot = document.createElement('div');
+document.body.append(modalRoot);
+
+const isOpen = signal(false);
+
+let remove = null;
+effect(() => {
+  if (isOpen.get()) {
+    remove = portal(modalRoot, () =>
+      t.div({ class: 'overlay' }, [
+        t.div({ class: 'modal' }, [
+          t.h2('Confirm'),
+          t.button({ type: 'button', onclick: () => isOpen.set(false) }, 'Close'),
+        ]),
+      ]),
+    );
+  } else {
+    remove?.();
+    remove = null;
+  }
+});
+```
+
+#### createContext. Provider/consumer pattern with a signal stack
+
+React's `createContext` / `useContext` translates to a signal stack. Consumers call `context.get()` during synchronous construction to capture the nearest provider's signal; the signal reference stays reactive after construction.
+
+```javascript
+// create-context.js
+import { signal } from 'kensington';
+
+export function createContext(defaultValue) {
+  const _stack = [signal(defaultValue)];
+  return {
+    get() { return _stack.at(-1); },
+    provide(value, fn) {
+      const ctx = signal(value);
+      _stack.push(ctx);
+      try { return fn(ctx); } finally { _stack.pop(); }
+    },
+    set(val) { return this.get().set(val); },
+  };
+}
+```
+
+```javascript
+const ThemeContext = createContext('light');
+
+function themeCard(title) {
+  const theme = ThemeContext.get();
+  return t.div({ class: theme.transform(v => `card card--${v}`) }, [
+    t.strong(title), t.small(['theme: ', theme]),
+  ]);
+}
+
+const app = t.div([
+  ThemeContext.provide('dark', () => t.section([themeCard('Always dark')])),
+  themeCard('Default'),
+]);
+```
+
+#### useReducer. Action-dispatch wrapper around a signal
+
+Wrap `signal.set` with a reducer to centralize state transitions. Call sites only send action objects.
+
+```javascript
+// use-reducer.js
+import { signal } from 'kensington';
+
+export function useReducer(reducer, initialState) {
+  const state = signal(initialState);
+  const dispatch = action => state.set(s => reducer(s, action));
+  return { state, dispatch };
+}
+```
+
+#### useLocalStorage. A signal that mirrors a localStorage key
+
+Reads the initial value from `localStorage`, writes back on every change. The `effect` does the sync. Guard the initial read with `isBrowser` so server-rendered components do not throw.
+
+```javascript
+// use-local-storage.js
+import { signal, effect, isBrowser } from 'kensington';
+
+export function useLocalStorage(key, defaultValue) {
+  const stored = isBrowser ? localStorage.getItem(key) : null;
+  const s = signal(stored !== null ? JSON.parse(stored) : defaultValue);
+  effect(() => { localStorage.setItem(key, JSON.stringify(s.get())); });
+  return s;
+}
+```
+
+#### useDebounce. A derived signal that updates only after the source settles
+
+Each time the source changes, the pending timeout is cleared and restarted. The timeout id lives in the enclosing closure because `effect` does not support a cleanup return value.
+
+```javascript
+// use-debounce.js
+import { signal, effect } from 'kensington';
+
+export function useDebounce(source, delay) {
+  const debounced = signal(source.get());
+  let id;
+  effect(() => {
+    const value = source.get();
+    clearTimeout(id);
+    id = setTimeout(() => debounced.set(value), delay);
+  });
+  return debounced;
+}
+```
+
+#### useFetch. `{ data, loading, error }` signals for a URL signal
+
+When the URL changes, the in-flight request is aborted via `AbortController` before the new one starts.
+
+```javascript
+// use-fetch.js
+import { signal, effect } from 'kensington';
+
+export function useFetch(urlSignal) {
+  const data = signal(null);
+  const loading = signal(true);
+  const error = signal(null);
+  let controller;
+
+  effect(() => {
+    if (controller) controller.abort();
+    controller = new AbortController();
+    loading.set(true);
+    error.set(null);
+    fetch(urlSignal.get(), { signal: controller.signal })
+      .then(r => r.json())
+      .then(json => { data.set(json); loading.set(false); })
+      .catch(err => {
+        if (err.name !== 'AbortError') { error.set(err.message); loading.set(false); }
+      });
+  });
+
+  return { data, loading, error };
+}
+```
+
+#### useId. Stable unique IDs for pairing labels with inputs
+
+A module-level counter increments once per call. On the server it produces the same sequence on every request, so SSR-output IDs and client-hydration IDs match as long as components are called in the same order.
+
+```javascript
+// use-id.js
+let _id = 0;
+export function useId(prefix = 'k') { return `${prefix}-${++_id}`; }
+```
 
 ### Layout with shared header and footer
 
@@ -897,38 +1541,7 @@ app.listen(3000);
 
 ### Express. Render helper middleware
 
-Attach a `res.renderKensington` helper so routes never call `.toString()` directly:
-
-```javascript
-// middleware/render.js
-import { layout } from './layout.js';
-export function renderMiddleware(req, res, next) {
-  res.renderKensington = (pageFunc, ...args) => {
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.send(layout(pageFunc(...args)).toString());
-  };
-  next();
-}
-
-// server.js
-import express from 'express';
-import { t } from 'kensington';
-
-import { homePage, usersPage } from './pages.js';
-import { renderMiddleware } from './middleware/render.js';
-
-const app = express();
-app.use(renderMiddleware);
-
-app.get('/', (req, res) => {
-  res.renderKensington(homePage, { title: 'Home' });
-});
-
-app.get('/users', async (req, res) => {
-  const users = await db.getUsers();
-  res.renderKensington(usersPage, { title: 'Users', users });
-});
-```
+Prefer the [`kensington-express`](#kensington-express-any-express-app) package introduced at the top of this guide. It provides `res.renderView(pageRenderer, locals)` with default layout, per-route layout override, locals merging, and an optional `htmlValidator` for dev-time markup checks. Hand-rolling render middleware is unnecessary for most apps.
 
 ### Hono server
 
@@ -1490,6 +2103,59 @@ function createModal(title, bodyContent) {
 
 const modal = createModal('Confirm', t.p('Are you sure?'));
 document.body.append(modal);
+```
+
+### TypeScript. Reactive prop types
+
+When you write a component that accepts reactive content or attribute values, **type the parameter as `Reactive<T>`**, not `Signal<T>`. `Signal<T>` is the mutable form (has `.set`); `ReadonlySignal<T>` is what `computed`, `transform`, and `mapWithKey` return; `Reactive<T>` is the union (`T | Signal<T> | ReadonlySignal<T>`) and is what kensington's own attribute/content slots accept. Using `Signal<T>` rejects valid arguments at compile time.
+
+```typescript
+import type { Reactive, ContentTag } from 'kensington';
+
+// Right. Accepts a static value, a Signal, OR a ReadonlySignal (e.g. the result of mapWithKey).
+function listColumn(items: Reactive<ContentTag[]>): ContentTag {
+  return t.div({ class: 'column' }, items);
+}
+
+// Wrong. mapWithKey returns ReadonlySignal<ContentTag[]>, which doesn't satisfy Signal<...>.
+function listColumnTooStrict(items: Signal<ContentTag[]>): ContentTag { ... }   // tsc errors
+```
+
+`Signal<T>` is invariant in `T`, so `Signal<'a' | 'b'>` doesn't widen to `Signal<string>`. When a row's `columnId` is `Signal<ColumnId>`, the interface that holds it must say `Signal<ColumnId>` (or a `Reactive<ColumnId>`), not `Signal<string>`.
+
+### Returning a signal from a component function
+
+`signal.transform(...)`, `computed(...)`, and any signal-producing call return a `ReadonlySignal<T>`. At runtime a signal has `.toElement()`, `.mount(target)`, and `.toString()`, so it can be rendered directly with no wrapping element in the DOM. It is also valid as content of any tag (kensington swaps the rendered child reactively).
+
+```typescript
+const view = isOpen.transform(o => o ? t.div('Open') : t.div('Closed'));
+document.body.append(view.toElement());
+// Rendered DOM: <!---->  <div>Closed</div>  <!---->
+// On set(true): the inner <div> is swapped in place between the same two anchors.
+```
+
+At the type level, **do not annotate the function's return as `ContentTag`** when you intend to return a signal. `ReadonlySignal<T>` is not structurally a `ContentTag` (the two `toElement()` signatures differ: `ContentTag.toElement(): Element`, `Signal.toElement(): Node`). Annotate as `ReadonlySignal<unknown>` (or a more specific type) instead. The returned value still flows into any tag's content slot, gets mounted via `view.toElement()`, etc.
+
+```typescript
+import type { ReadonlySignal } from 'kensington';
+
+// Right. Return type matches what the function actually returns.
+function status(): ReadonlySignal<unknown> {
+  return isOpen.transform(o => o ? t.div('Open') : t.div('Closed'));
+}
+
+// Right. Used directly as content of a parent tag. No wrapper required at this site either.
+const page = t.div([status(), t.button({ onclick: () => isOpen.set(v => !v) }, 'Toggle')]);
+```
+
+For a component handle that wants to expose other methods alongside its rendered output, type the field as `ReadonlySignal<unknown>` or `Content`:
+
+```typescript
+export interface PickerHandle {
+  tag: ReadonlySignal<unknown>;   // rendered subtree; reactive
+  open(cb: (x: Item) => void): void;
+  close(): void;
+}
 ```
 
 ### TypeScript. Typed components

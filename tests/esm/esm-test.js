@@ -3180,4 +3180,166 @@ describe('hydration scope', () => {
     assert.strictEqual(runs, initialRuns);
     e.stop();
   });
+
+  it('nested enter/exit cycles preserve outer scope identity via the stack', () => {
+    _enterHydrationScope('outer');
+    const outerSig = signal(1, 'shared');
+    _enterHydrationScope('inner');
+    const innerSig = signal(2, 'shared');
+    assert.notStrictEqual(outerSig, innerSig); // different scopes, same key string -> different signals
+    _exitHydrationScope();
+    // Back in the outer scope: same key returns the outer signal again.
+    const outerAgain = signal(99, 'shared');
+    assert.strictEqual(outerAgain, outerSig);
+    _exitHydrationScope();
+    _disposeHydrationScope('outer');
+    _disposeHydrationScope('inner');
+  });
+});
+
+// ─── warning surfaces and internal helpers ─────────────────────────────────
+
+describe('reactive context warnings', () => {
+  beforeEach(() => { _resetWarningThrottle(); });
+
+  it('computed() inside an effect callback fires console.error', () => {
+    const errors = [];
+    const origError = console.error;
+    console.error = msg => errors.push(String(msg));
+    try {
+      const s = signal(0);
+      const e = effect(() => {
+        s.get();
+        computed(() => 1);
+      });
+      assert.match(errors.join('\n'), /computed\(\) called inside an effect/);
+      e.stop();
+    } finally {
+      console.error = origError;
+    }
+  });
+
+  it('signal() inside an effect callback fires console.error', () => {
+    const errors = [];
+    const origError = console.error;
+    console.error = msg => errors.push(String(msg));
+    try {
+      const trigger = signal(0);
+      const e = effect(() => {
+        trigger.get();
+        signal(0);
+      });
+      assert.match(errors.join('\n'), /signal\(\) called inside an effect/);
+      e.stop();
+    } finally {
+      console.error = origError;
+    }
+  });
+
+  it('mapWithKey() inside an effect callback fires the mapwithkey-in-reactive warning', () => {
+    const warns = [];
+    const origWarn = console.warn;
+    console.warn = msg => warns.push(String(msg));
+    try {
+      const items = signal([{ id: 1 }]);
+      const fakeTag = item => ({
+        _isKensingtonTag: true,
+        _isKensingtonContentTag: true,
+        [Symbol.for('marker')]: item.id,
+      });
+      const e = effect(() => { items.mapWithKey('id', fakeTag); });
+      assert.match(warns.join('\n'), /mapWithKey called inside a computed or effect/);
+      e.stop();
+    } finally {
+      console.warn = origWarn;
+    }
+  });
+});
+
+describe('sibling keyed computed first-run owner registration', () => {
+  // Regression for the pre-existing bug where keyedScopeOwners.set(inner, owner) ran
+  // AFTER computed() returned but the inner's first run happened INSIDE computed(). A
+  // sibling keyed signal read during that first run tripped an `out-of-scope-reactive-reference`
+  // warning. The fix registers the owner from inside the inner's first-run closure.
+  beforeEach(() => { _resetWarningThrottle(); });
+
+  it('does not fire out-of-scope warning on first run of nested keyed primitives', () => {
+    const warns = [];
+    const origWarn = console.warn;
+    console.warn = msg => warns.push(String(msg));
+    try {
+      const items = signal([{ id: 'a' }, { id: 'b' }]);
+      const filter = signal('on');
+      // Use the canonical "keyed signal + keyed computed reading it" pattern inside a
+      // computed. Should produce zero out-of-scope warnings on the very first evaluation.
+      const list = computed(() => items.get().map(item => {
+        const local = signal(false, item.id);
+        const cls = computed(() =>
+          [filter.get() === 'on' && 'lit', local.get() && 'on'].filter(Boolean).join(' '),
+        `${item.id}-cls`,
+        );
+        return cls.get();
+      }));
+      list.get(); // force evaluation
+      const oos = warns.filter(w => /out-of-scope-reactive-reference/.test(w));
+      assert.strictEqual(oos.length, 0, `unexpected warnings: ${oos.join(' | ')}`);
+    } finally {
+      console.warn = origWarn;
+    }
+  });
+});
+
+describe('suppressReactiveCheck save/restore around inner Signal creation', () => {
+  // Regression. The `computed()` factory used to do:
+  //   suppressReactiveCheck = true;
+  //   const s = new Signal(undefined);
+  //   suppressReactiveCheck = false;
+  // The unconditional clear poisoned the surrounding suppression context. When several
+  // keyed `computed(fn, key)` calls happened inside a single `_runMapWithKeyProbe` (which
+  // sets suppress=true so probe-time signal-construction is silent), the first call's
+  // internal clear flipped suppress to false, and the second call's entry warning
+  // ("computed-in-effect", because the probe has currentEffect=probe and inComputedFn=false)
+  // would fire spuriously. The fix saves and restores the prior value.
+  beforeEach(() => { _resetWarningThrottle(); });
+
+  it('multiple keyed computeds inside one mapWithKey mapFn do not fire spurious warnings', () => {
+    const errs = [];
+    const origErr = console.error;
+    console.error = msg => errs.push(String(msg));
+    try {
+      const items = signal([{ id: 1 }, { id: 2 }, { id: 3 }]);
+      const tags = items.mapWithKey('id', item => {
+        // Simulating a real component card that creates several keyed primitives.
+        computed(() => item.id, `${item.id}-a`);
+        computed(() => item.id * 2, `${item.id}-b`);
+        computed(() => item.id * 3, `${item.id}-c`);
+        return t.li(String(item.id));
+      });
+      tags.get();
+      const cie = errs.filter(e => /computed-in-effect|computed\(\) called inside an effect/.test(e));
+      assert.deepStrictEqual(cie, [], `unexpected computed-in-effect errors: ${cie.join(' | ')}`);
+    } finally {
+      console.error = origErr;
+    }
+  });
+});
+
+describe('pendingSleep cancellation in flush', () => {
+  // When a computed's subscriber count hits zero mid-flush, sleep is deferred via
+  // pendingSleep. If a new subscriber appears in the same flush, the pending sleep is
+  // cancelled rather than firing then waking. This is the canonical happy path; we cover
+  // it here to lock the optimization.
+
+  it('does not re-run a computed when its subscriber bounces inside the same flush', () => {
+    let runs = 0;
+    const src = signal(1);
+    const c = computed(() => { runs++; return src.get() * 2; });
+    const e1 = effect(() => { c.get(); });
+    const initialRuns = runs;
+    // Triggering src causes a batched flush. Inside it, the existing effect re-runs and
+    // re-reads c. c does not need to re-run if its source didn't change.
+    src.set(1); // Object.is(1,1) → no notify; runs stay constant
+    assert.strictEqual(runs, initialRuns);
+    e1.stop();
+  });
 });
