@@ -1,7 +1,7 @@
 import Kensington from './kensington.js';
 import Signal, { computed, effect, signal } from './lib/reactive/signal.js';
 
-export { Signal };
+export { Kensington, Signal };
 
 export default Kensington;
 

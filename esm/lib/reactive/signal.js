@@ -30,6 +30,12 @@ let flushCount = 0;
 let flushResetScheduled = false;
 let inComputedFn = false;
 let suppressReactiveCheck = false;
+// Set by _internalComputed before calling computed(fn) so the new computed's
+// update closure is marked internal. Library-internal wrappers (class-list
+// builder, attribute composition, mapWithKey's per-key inner) should not trip
+// user-facing warnings about out-of-scope reactive references when they read
+// keyed signals owned by user scopes.
+let nextComputedInternal = false;
 let suppressWakeNotify = false;
 let inFlush = false;
 // Set true while mapWithKey runs mapFn under a probe to detect whether it reads or creates
@@ -38,6 +44,11 @@ let inFlush = false;
 // primitive lives in a stable per-row scope.
 let inMapWithKeyProbe = false;
 let mapWithKeyProbeNeedsReactive = false;
+// Depth counter set true while a mapWithKey mapFn body is executing (either under the probe
+// or inside the real per-key inner computed). Recursive mapWithKey calls (a row component
+// that maps its own children) are safe because the inner mapFn only runs once per key, so
+// the mapwithkey-in-reactive warning is suppressed for this case.
+let mapWithKeyInnerDepth = 0;
 const stopFns = new WeakMap();
 // sleep/wake hooks for auto-disposing computed signals when subscriber count hits zero.
 const sleepFns = new WeakMap();
@@ -684,6 +695,10 @@ export function computed(fn, key) {
     });
   }
   update._cleanups = [];
+  if (nextComputedInternal) {
+    update._isInternal = true;
+    nextComputedInternal = false;
+  }
   update();
   // sleeping is false initially: the computed is active (subscribed to sources) even though
   // it has no subscribers yet. It becomes true only after losing its last subscriber, at
@@ -859,9 +874,11 @@ export function _runMapWithKeyProbe(fn) {
   suppressReactiveCheck = true;
 
   let result;
+  mapWithKeyInnerDepth++;
   try {
     result = fn();
   } finally {
+    mapWithKeyInnerDepth--;
     currentEffect = prevCurrentEffect;
     currentComputed = prevCurrentComputed;
     inComputedFn = prevInComputedFn;
@@ -889,17 +906,24 @@ export function _internalComputed(fn) {
   const prevCurrentEffect = currentEffect;
   inComputedFn = false;
   currentEffect = null;
+  nextComputedInternal = true;
   try {
     return computed(fn);
   } finally {
     inComputedFn = prevInComputedFn;
     currentEffect = prevCurrentEffect;
+    // computed(fn) consumed the flag; clear it on the throw path too.
+    nextComputedInternal = false;
   }
 }
 
 export function _isInReactiveContext() {
   return inComputedFn || currentEffect !== null;
 }
+
+export function _enterMapWithKeyInner() { mapWithKeyInnerDepth++; }
+export function _exitMapWithKeyInner() { mapWithKeyInnerDepth--; }
+export function _isInMapWithKeyInner() { return mapWithKeyInnerDepth > 0; }
 
 Signal.prototype.mapWithKey = mapWithKey;
 

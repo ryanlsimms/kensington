@@ -39,10 +39,10 @@ const EVENT_TYPES = {
 
 function attrType(name, type) {
   if (name === 'style') {
-    return 'Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)>'
-      + ' | ReactiveStyleProperties';
+    return 'Reactive<string | (csstype.Properties<string | number> '
+      + '& csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties';
   }
-  if (name === 'class') { return 'Reactive<string | string[]>'; }
+  if (name === 'class') { return 'Reactive<string | ClassValue[]>'; }
   if (name === 'hidden') { return 'Reactive<boolean | "until-found" | "hidden">'; }
   return `Reactive<${type}>`;
 }
@@ -106,6 +106,26 @@ export class ContentTag {
   toString(): string;
   toElement(): Element;
   mount(target: string | Element): void;
+  /**
+   * Returns the live DOM element produced by the most recent \`.toElement()\` call when that
+   * element is still connected to the document, or \`null\` otherwise. Useful for imperative
+   * operations like focus or scroll after a keyboard event, or for reconciler-aware code
+   * that needs to inspect the current node.
+   */
+  getDomElement(): Element | null;
+  /**
+   * Registers a callback invoked each time this element is inserted into the live DOM.
+   * The callback receives the element as both \`this\` and its first argument. Fires on the
+   * initial mount and on every reconnect for \`persist: true\` parents. Returns this
+   * instance for chaining.
+   */
+  addConnectedCallback(fn: (this: Element, el: Element) => void): this;
+  /**
+   * Registers a callback invoked each time this element is removed from the live DOM.
+   * The callback receives the element as both \`this\` and its first argument. Returns this
+   * instance for chaining.
+   */
+  addDisconnectedCallback(fn: (this: Element, el: Element) => void): this;
 }
 
 /**
@@ -131,6 +151,11 @@ export class LiteralTag {
 export class CommentTag {
   toString(): string;
   toElement(): Comment;
+  /**
+   * Returns the live comment node from the most recent \`.toElement()\` call when it is still
+   * connected to the document, or \`null\` otherwise.
+   */
+  getDomElement(): Comment | null;
 }
 
 ${brandedElements.map(el => `export class ${el.pascalTag}Tag extends ${el.returnTagType === 'Void' ? 'Void' : 'Content'}Tag { private readonly _k: '${el.tag}' }`).join('\n')}
@@ -203,9 +228,22 @@ export class Signal<T> implements ReadonlySignal<T> {
 
 export type Reactive<T> = T | ReadonlySignal<T>;
 
+/**
+ * Allowed element in a \`class\` attribute array. Strings and numbers stringify. \`false\`,
+ * \`null\`, \`undefined\`, and \`''\` are silently dropped so conditional patterns like
+ * \`isActive && 'active'\` work without casts. A signal element updates the class list live
+ * as its value changes.
+ */
+export type ClassValue = string | number | false | null | undefined | ReadonlySignal<string | number | false | null | undefined | string[]>;
+
+/** Index signature for CSS custom properties (\`--name\`) on style objects. */
+type CustomCSSProperties = { [key: \`--\${string}\`]: string | number };
+
 /** A style object where each CSS property may be a static value or a reactive signal. */
 type ReactiveStyleProperties = {
   [K in keyof (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)]?: Reactive<string | number>
+} & {
+  [key: \`--\${string}\`]: Reactive<string | number>;
 };
 
 type ElementInterface<Tag extends string> =
@@ -257,7 +295,7 @@ ${elements.map(e => `type ${e.attributesTypeName} = ${e.tagType === 'SvgContent'
 ${strictContainers.map(el => {
   const extras = ['LiteralTag', 'CommentTag', 'ReadonlySignal<any>', 'null', 'undefined', 'boolean'];
   const union = [...el.strictChildren.map(tag => childTypeRef(tag)), ...extras].join(' | ');
-  return `type ${el.pascalTag}Content = ${union} | (${union})[];`;
+  return `type ${el.pascalTag}ContentItem = ${union};\ntype ${el.pascalTag}Content = ${el.pascalTag}ContentItem | readonly ${el.pascalTag}Content[];`;
 }).join('\n')}
 
 /**
@@ -268,7 +306,8 @@ ${strictContainers.map(el => {
  * @example
  * t.ul([t.li('one'), t.li(2), t.li(t.span('three'))]);
  */
-export type Content = ContentTag | VoidTag | LiteralTag | CommentTag | ReadonlySignal<any> | string | number | boolean | null | undefined | (ContentTag | VoidTag | LiteralTag | CommentTag | ReadonlySignal<any> | string | number | boolean | null | undefined)[];
+export type ContentItem = ContentTag | VoidTag | LiteralTag | CommentTag | ReadonlySignal<any> | string | number | boolean | null | undefined;
+export type Content = ContentItem | readonly Content[];
 
 export type UniversalAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
@@ -284,13 +323,22 @@ export type UniversalAttributes = NameSpaceAttributes & GlobalAttributes & Globa
  * }
  */
 export interface ContentMethod<T = {}> {
-  (attributes: T & UniversalAttributes, content?: Content): ContentTag;
+  (attributes: T & UniversalAttributes & { prop?: PropFor<string> | null; persist?: boolean }, content?: Content): ContentTag;
   (content?: Content): ContentTag;
 }
 
 type PrimitiveConstructor = StringConstructor | NumberConstructor | BooleanConstructor | FunctionConstructor;
 type Primitive = string | number | boolean | Function;
-type AttributeValue = PrimitiveConstructor | Primitive | (PrimitiveConstructor | Primitive)[];
+type AttributeValue = PrimitiveConstructor | Primitive | readonly (PrimitiveConstructor | Primitive)[];
+type ResolveAttrValue<V> =
+  V extends StringConstructor ? string :
+  V extends NumberConstructor ? number :
+  V extends BooleanConstructor ? boolean :
+  V extends FunctionConstructor ? Function :
+  V extends readonly (infer U)[] ? ResolveAttrValue<U> :
+  V extends string | number | boolean ? V :
+  V extends Function ? V :
+  unknown;
 type CamelCase<S extends string> = S extends \`\${infer Head}-\${infer Rest}\` ? \`\${Head}\${Capitalize<CamelCase<Rest>>}\` : S;
 type KebabCase<S extends string> = S extends \`\${infer H}\${infer T}\` ? H extends Uppercase<H> ? H extends Lowercase<H> ? \`\${H}\${KebabCase<T>}\` : \`-\${Lowercase<H>}\${KebabCase<T>}\` : \`\${H}\${KebabCase<T>}\` : S;
 
@@ -319,7 +367,7 @@ type KebabCase<S extends string> = S extends \`\${infer H}\${infer T}\` ? H exte
  *   ),
  * ]).toString();
  */
-export default class Kensington {
+export class Kensington {
   constructor(options?: {
     /** Allow extra attributes on all elements, e.g. \`{ enterkeyhint: ['enter', 'done', 'go', 'next', 'previous', 'search', 'send'] }\`. */
     additionalGlobalAttributes?: Record<string, unknown>;
@@ -348,10 +396,10 @@ export default class Kensington {
    * const t = new MyEngine();
    * t.myCard({ 'card-type': 'primary' }, 'Content here').toString();
    */
-  createCustomTag<A extends Record<string, AttributeValue> = Record<never, AttributeValue>>(
+  createCustomTag<const A extends Record<string, AttributeValue> = Record<never, AttributeValue>>(
     tagName: string,
     allowedAttributes?: A
-  ): ContentMethod<{ [K in keyof A as K | CamelCase<K & string> | KebabCase<K & string>]?: unknown }>
+  ): ContentMethod<{ [K in keyof A as K | CamelCase<K & string> | KebabCase<K & string>]?: Reactive<ResolveAttrValue<A[K]>> }>
 
   /**
    * Embeds a raw HTML string verbatim into the output.
@@ -397,6 +445,8 @@ export default class Kensington {
     ];
   }).join('\n  ')}
 }
+
+export default Kensington;
 
 /**
  * Shared \`Kensington\` instance for use when no subclassing or custom configuration is needed.
@@ -458,7 +508,7 @@ export const isBrowser: boolean;
  * import { registerComponents } from 'kensington';
  * registerComponents({ counter, userCard });
  */
-export function registerComponents(components: Record<string, (state: Record<string, unknown>) => ContentTag | ContentTag[] | null>): void;
+export function registerComponents(components: Record<string, (state: any) => ContentTag | ContentTag[] | null>): void;
 
 /**
  * Renders a component to an HTML string and embeds the state as a JSON script block for
@@ -468,7 +518,7 @@ export function registerComponents(components: Record<string, (state: Record<str
  * // server
  * renderForHydration(counter, { count: 42 })
  */
-export function renderForHydration<S extends Record<string, unknown>>(
+export function renderForHydration<S>(
   fn: (state: S) => ContentTag | ContentTag[] | null,
   state: S,
   name?: string
@@ -487,7 +537,7 @@ export function renderForHydration<S extends Record<string, unknown>>(
  */
 export function hmrReplaceComponent(
   name: string,
-  newFn: (state: Record<string, unknown>) => ContentTag | ContentTag[] | null
+  newFn: (state: any) => ContentTag | ContentTag[] | null
 ): void;
 
 

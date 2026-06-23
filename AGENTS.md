@@ -4,51 +4,75 @@ HTML/SVG/MathML library for JavaScript and TypeScript. Tags are method calls on 
 
 ## Contents
 
-Core. Read these first.
+Three indexes follow. Skim **By task** for "I'm trying to do X." Skim **API reference** for "what is X." Skim **Warning index** for "what does this error message mean." All three point at the same section bodies further down.
 
-- [Imports](#imports)
-- [Recommended packages](#recommended-packages) — `kensington-eslint-plugin`, `kensington-express`
-- [One instance per project](#one-instance-per-project)
-- [The basics](#the-basics)
-- [Critical: call .toString() explicitly](#critical-call-tostring-explicitly)
-- [Options](#options) (incl. [DOM properties with `prop`](#dom-properties-with-prop))
-- [Content rules](#content-rules)
-- [Raw HTML](#raw-html), [inlineComment()](#inlinecomment), [Full documents](#full-documents), [Pre-formatted content](#pre-formatted-content)
-- [Constructor options](#constructor-options)
-- [Custom elements](#custom-elements), [TypeScript namespace augmentation](#typescript-namespace-augmentation)
-- [Validation and error policy](#validation-and-error-policy)
-- [Common mistakes to avoid](#common-mistakes-to-avoid)
-- [Key types](#key-types)
+### By task
 
-Reactive data. Read when working with `signal`, `computed`, `effect`, or live DOM.
+- **Render HTML, SVG, or MathML.** [Imports](#imports), [The basics](#the-basics), [Critical: call .toString() explicitly](#critical-call-tostring-explicitly), [Content rules](#content-rules), [Options](#options).
+- **Pass dynamic values to attributes or content.** [As content and option values](#as-content-and-option-values), [DOM properties with `prop`](#dom-properties-with-prop-1), [Inline styles and dynamic classes](#inline-styles-and-dynamic-classes).
+- **Render a list of items.** [Keyed lists](#keyed-lists), [Updating a row after it's been cached](#updating-a-row-after-its-been-cached), [Reactive primitives inside a computed need a key](#reactive-primitives-inside-a-computed-need-a-key), [Addressing per-row state from outside the row](#addressing-per-row-state-from-outside-the-row).
+- **Toggle between two subtrees based on a signal.** [Returning a signal from a component function](#returning-a-signal-from-a-component-function).
+- **Run side effects (timers, observers, fetches).** [effect](#effect), [addConnectedCallback / addDisconnectedCallback](#addconnectedcallback--adddisconnectedcallback), [isBrowser](#isbrowser), [Cleanup](#cleanup).
+- **Drag-to-reorder lists.** [Keyed lists](#keyed-lists) plus `persist: true` documented under [Cleanup](#cleanup).
+- **Server-render with hydration.** [Hydration](#hydration), [Embedding server data in the page](#embedding-server-data-in-the-page), [Hydration. Form with server-side validation](#hydration-form-with-server-side-validation).
+- **Hot-module reload during development.** [HMR (`kensington/vite`)](#hmr-kensingtonvite).
+- **Integrate a web-component library** (Web Awesome, Shoelace, Lit, Material Web, FAST, Spectrum). [Custom elements](#custom-elements), [Generating tag methods from a custom-elements manifest](#generating-tag-methods-from-a-custom-elements-manifest), [DOM properties with `prop`](#dom-properties-with-prop-1).
+- **Integrate htmx or Alpine.js.** [TypeScript namespace augmentation](#typescript-namespace-augmentation), [htmx live search](#htmx-live-search), [Alpine.js](#alpinejs).
+- **Style with Tailwind, inline styles, or `styled`.** [Tailwind CSS](#tailwind-css), [Inline styles and dynamic classes](#inline-styles-and-dynamic-classes), [Recipes](#recipes) (`styled`).
+- **Build with Express, Hono, Fastify, Elysia, Deno, or Node http.** [Express](#express-server-with-multiple-routes), [Hono](#hono-server) (Bun variant included), [Fastify](#fastify), [Elysia (Bun)](#elysia-bun), [Deno](#deno), [Node.js built-in HTTP](#nodejs-built-in-http).
+- **Convert existing HTML to Kensington.** [HTML to Kensington CLI](#html-to-kensington-cli).
+- **Diagnose a problem.** [Common mistakes to avoid](#common-mistakes-to-avoid), [Reactive pitfalls](#reactive-pitfalls), [Validation and error policy](#validation-and-error-policy), [Warning index](#warning-index) below.
 
-- [Reactive data overview](#reactive-data)
-- [Signal API](#signal-api)
-- [As content and option values](#as-content-and-option-values)
-- [DOM properties with `prop`](#dom-properties-with-prop-1)
-- [effect](#effect)
-- [Keyed lists](#keyed-lists), [Updating a row after it's been cached](#updating-a-row-after-its-been-cached)
-- [Reactive primitives inside a computed need a key](#reactive-primitives-inside-a-computed-need-a-key)
-- [Cleanup](#cleanup)
-- [addConnectedCallback / addDisconnectedCallback](#addconnectedcallback--adddisconnectedcallback)
-- [isBrowser](#isbrowser), [DevTools](#devtools), [Loading state](#loading-state)
-- [Hydration](#hydration)
-- [HMR (`kensington/vite`)](#hmr-kensingtonvite)
-- [Reactive pitfalls](#reactive-pitfalls)
+### API reference
 
-Tooling.
+Compact list. One anchor per line, grouped by area.
 
-- [HTML to Kensington CLI](#html-to-kensington-cli)
+**Setup.** [Imports](#imports). [Recommended packages](#recommended-packages) (`kensington-eslint-plugin`, `kensington-express`). [One instance per project](#one-instance-per-project). [Constructor options](#constructor-options).
 
-Recipes and worked examples.
+**Tags and attributes.** [The basics](#the-basics). [Critical: call .toString() explicitly](#critical-call-tostring-explicitly). [Options](#options) (incl. [DOM properties with `prop`](#dom-properties-with-prop)). [Content rules](#content-rules). [Raw HTML](#raw-html). [inlineComment()](#inlinecomment). [Full documents](#full-documents). [Pre-formatted content](#pre-formatted-content). [Custom elements](#custom-elements). [Generating tag methods from a custom-elements manifest](#generating-tag-methods-from-a-custom-elements-manifest). [TypeScript namespace augmentation](#typescript-namespace-augmentation). [Validation and error policy](#validation-and-error-policy).
 
-- [Recipes](#recipes) — `styled`, `portal`, `createContext`, `useReducer`, `useLocalStorage`, `useDebounce`, `useFetch`, `useId`
-- Layout. [Shared header and footer](#layout-with-shared-header-and-footer), [Tailwind CSS](#tailwind-css)
-- Servers. [Express](#express-server-with-multiple-routes) (+ [render helper](#express-render-helper-middleware)), [Hono](#hono-server), [Fastify](#fastify), [Elysia (Bun)](#elysia-bun), [Deno](#deno), [Node.js built-in HTTP](#nodejs-built-in-http)
-- Common patterns. [Form with validation errors](#form-with-validation-errors), [Data-driven component](#data-driven-component), [Pagination](#pagination), [Returning fragments](#returning-fragments), [Caching and reuse](#caching-and-reuse), [Inline styles and dynamic classes](#inline-styles-and-dynamic-classes), [Embedding server data in the page](#embedding-server-data-in-the-page), [Browser DOM usage](#browser-dom-usage), [SVG](#svg), [MathML](#mathml)
-- Integrations. [Alpine.js](#alpinejs), [htmx live search](#htmx-live-search), [Hydration. Form with server-side validation](#hydration-form-with-server-side-validation)
-- TypeScript. [Reactive prop types](#typescript-reactive-prop-types), [Returning a signal from a component](#returning-a-signal-from-a-component-function), [Typed components](#typescript-typed-components), [Design system with custom elements, htmx, and module augmentation](#typescript-design-system-with-custom-elements-htmx-and-module-augmentation)
-- Reactive data worked examples. [Counter](#reactive-data-counter), [Live filter](#reactive-data-live-filter), [Keyed todo list](#reactive-data-keyed-todo-list), [Form with live validation](#reactive-data-form-with-live-validation), [Hydrated like button](#reactive-data-hydrated-like-button), [Sortable table](#reactive-data-sortable-table), [Making static HTML elements reactive](#reactive-data-making-static-html-elements-reactive), [Accordion with per-element signals](#reactive-data-accordion-with-per-element-signals), [Context](#reactive-data-context)
+**Reactive data.** ⚠ **Before every `signal()`, `computed()`, or `.transform()` call, ask: does this need a key?** See [Reactive primitives inside a computed need a key](#reactive-primitives-inside-a-computed-need-a-key) for the two-question decision check. [Reactive data overview](#reactive-data). [Signal API](#signal-api). [As content and option values](#as-content-and-option-values). [DOM properties with `prop`](#dom-properties-with-prop-1). [effect](#effect). [Keyed lists](#keyed-lists). [Updating a row after it's been cached](#updating-a-row-after-its-been-cached). [Addressing per-row state from outside the row](#addressing-per-row-state-from-outside-the-row). [Cleanup](#cleanup). [addConnectedCallback / addDisconnectedCallback](#addconnectedcallback--adddisconnectedcallback). [isBrowser](#isbrowser). [DevTools](#devtools). [Loading state](#loading-state).
+
+**SSR and HMR.** [Hydration](#hydration). [HMR (`kensington/vite`)](#hmr-kensingtonvite).
+
+**Tooling.** [HTML to Kensington CLI](#html-to-kensington-cli).
+
+**Recipes — utilities.** [Recipes](#recipes) section (`styled`, `portal`, `createContext`, `useReducer`, `useLocalStorage`, `useDebounce`, `useFetch`, `useId`).
+
+**Recipes — layout and servers.** [Shared header and footer](#layout-with-shared-header-and-footer). [Tailwind CSS](#tailwind-css). [Express](#express-server-with-multiple-routes). [Express render helper](#express-render-helper-middleware). [Hono](#hono-server). [Fastify](#fastify). [Elysia (Bun)](#elysia-bun). [Deno](#deno). [Node.js built-in HTTP](#nodejs-built-in-http).
+
+**Recipes — common patterns.** [Form with validation errors](#form-with-validation-errors). [Data-driven component](#data-driven-component). [Pagination](#pagination). [Returning fragments](#returning-fragments). [Caching and reuse](#caching-and-reuse). [Inline styles and dynamic classes](#inline-styles-and-dynamic-classes). [Embedding server data in the page](#embedding-server-data-in-the-page). [Browser DOM usage](#browser-dom-usage). [SVG](#svg). [MathML](#mathml).
+
+**Recipes — integrations.** [Alpine.js](#alpinejs). [htmx live search](#htmx-live-search). [Hydration. Form with server-side validation](#hydration-form-with-server-side-validation).
+
+**Recipes — TypeScript.** [Reactive prop types](#typescript-reactive-prop-types). [Returning a signal from a component function](#returning-a-signal-from-a-component-function). [Typed components](#typescript-typed-components). [Design system with custom elements, htmx, and module augmentation](#typescript-design-system-with-custom-elements-htmx-and-module-augmentation).
+
+**Recipes — reactive data worked examples.** [Counter](#reactive-data-counter). [Live filter](#reactive-data-live-filter). [Keyed todo list](#reactive-data-keyed-todo-list). [Form with live validation](#reactive-data-form-with-live-validation). [Hydrated like button](#reactive-data-hydrated-like-button). [Sortable table](#reactive-data-sortable-table). [Making static HTML elements reactive](#reactive-data-making-static-html-elements-reactive). [Accordion with per-element signals](#reactive-data-accordion-with-per-element-signals). [Context](#reactive-data-context).
+
+**Reference.** [Common mistakes to avoid](#common-mistakes-to-avoid). [Reactive pitfalls](#reactive-pitfalls). [Key types](#key-types).
+
+### Warning index
+
+Each entry maps a runtime warning ID to the section that explains it.
+
+| ID | When it fires | See |
+|---|---|---|
+| `async-loop` | An effect's signal write triggers more flushes than the cycle limit allows | [Reactive pitfalls](#reactive-pitfalls) |
+| `sync-loop` | The same effect re-queues itself in a single flush | [Reactive pitfalls](#reactive-pitfalls) |
+| `set-in-effect` | A signal is read with `.get()` and written with `.set()` in the same effect run | [Do not read and write the same signal in the same effect or computed run](#do-not-read-and-write-the-same-signal-in-the-same-effect-or-computed-run) |
+| `set-in-computed` | `.set()` was called inside a computed body | [Do not call `.set()` inside a `computed` body](#do-not-call-set-inside-a-computed-body) |
+| `signal-in-computed` | `signal()` called inside a computed without a key | [Reactive primitives inside a computed need a key](#reactive-primitives-inside-a-computed-need-a-key) |
+| `signal-in-effect` | `signal()` called inside an effect (recreated each run) | [Reactive primitives inside a computed need a key](#reactive-primitives-inside-a-computed-need-a-key) |
+| `transform-in-computed` | `.transform()` called inside a computed without a key | [Reactive primitives inside a computed need a key](#reactive-primitives-inside-a-computed-need-a-key) |
+| `computed-in-computed` | `computed()` called inside a computed without a key | [Do not create computed signals inside a computed or transform callback without a key](#do-not-create-computed-signals-inside-a-computed-or-transform-callback-without-a-key) |
+| `computed-in-effect` | `computed()` called inside an effect (orphaned each run) | [Do not call `effect()` from inside a function that gets called from a `.map()`, `.transform()`, or `computed()` callback](#do-not-call-effect-from-inside-a-function-that-gets-called-from-a-map-transform-or-computed-callback) |
+| `effect-in-computed` | `effect()` called inside a computed (orphaned each run) | [Do not call `effect()` from inside a function that gets called from a `.map()`, `.transform()`, or `computed()` callback](#do-not-call-effect-from-inside-a-function-that-gets-called-from-a-map-transform-or-computed-callback) |
+| `effect-in-effect` | `effect()` called inside another effect | [Do not call `effect()` from inside a function that gets called from a `.map()`, `.transform()`, or `computed()` callback](#do-not-call-effect-from-inside-a-function-that-gets-called-from-a-map-transform-or-computed-callback) |
+| `duplicate-keyed-signal` | Two `signal(initial, key)` calls with the same key in one computed run | [Reactive primitives inside a computed need a key](#reactive-primitives-inside-a-computed-need-a-key) |
+| `duplicate-keyed-computed` | Two `computed(fn, key)` calls with the same key in one computed run | [Reactive primitives inside a computed need a key](#reactive-primitives-inside-a-computed-need-a-key) |
+| `out-of-scope-reactive-reference` | A keyed signal or computed is consumed from outside its owning scope | [Addressing per-row state from outside the row](#addressing-per-row-state-from-outside-the-row) |
+| `mapwithkey-in-reactive` | `mapWithKey` called inside an arbitrary computed or effect (not another `mapWithKey`'s mapFn) | [Keyed lists](#keyed-lists) |
+| `mapwithkey-duplicate-key` | Two items in a `mapWithKey` source share a key | [Keyed lists](#keyed-lists) |
 
 Full runnable example apps live in the `examples/` directory of the GitHub repo (https://github.com/ryanlsimms/kensington/tree/master/examples). Browseable docs at https://kensingtonjs.com.
 
@@ -57,13 +81,22 @@ Full runnable example apps live in the `examples/` directory of the GitHub repo 
 ```javascript
 import { t } from 'kensington';               // shared default instance. Use this in most cases
 import Kensington from 'kensington';           // class. Use when subclassing or custom config
+import { Kensington } from 'kensington';       // same class as above, also available as a named export
 import { formAttributes } from 'kensington/attributes';  // attribute objects for each element
 ```
 
 ```typescript
-import type { ContentTag, VoidTag, LiteralTag, CommentTag, Content, ContentMethod } from 'kensington';
-import type { NameSpaceAttributes, GlobalAttributes, GlobalEvents, UniversalAttributes } from 'kensington';
+// Tag classes and content unions.
+import type { ContentTag, VoidTag, LiteralTag, CommentTag, Content, ContentItem, ContentMethod } from 'kensington';
+
+// Attribute slot types.
+import type { NameSpaceAttributes, GlobalAttributes, GlobalEvents, UniversalAttributes, ClassValue } from 'kensington';
+
+// Signal types.
+import type { Signal, ReadonlySignal, Reactive, SignalKey } from 'kensington';
 ```
+
+Use `Reactive<T>` (the `T | Signal<T> | ReadonlySignal<T>` union) when typing component parameters that accept either a plain value or a signal. Use `ReadonlySignal<T>` for derived signals returned by `computed`, `transform`, or `mapWithKey`. Use `Signal<T>` only when the caller must be able to write via `.set()`.
 
 ## Recommended packages
 
@@ -296,6 +329,10 @@ const t = new Kensington({
 
 ## Custom elements
 
+Custom-element libraries (Web Awesome, Shoelace, Lit-based design systems, vanilla web components) integrate by subclassing `Kensington` and declaring a method per element via `createCustomTag`. The same method gives you a typed call site and a stable serializer.
+
+The minimal pattern.
+
 ```typescript
 import Kensington, { type ContentMethod } from 'kensington';
 
@@ -304,6 +341,175 @@ class MyEngine extends Kensington {
     this.createCustomTag('my-card', { 'card-type': ['primary', 'secondary'] });
 }
 ```
+
+The realistic pattern for a third-party library. Define a singleton engine, export it as the project's `k` instance, and use it everywhere instead of the default `t`.
+
+The example below uses a fictional `<my-input>` / `<my-button>` library so the shape is unambiguous. **The attribute names, event names, enum values, and CSS variables shown here are illustrative.** They are not lifted from any real library and should not be copied verbatim into a real project. For real libraries, see [Generating tag methods from a custom-elements manifest](#generating-tag-methods-from-a-custom-elements-manifest). The manifest is the source of truth for attribute names, types, slot names, and CSS parts. The library's own documentation is the source of truth for event names and enum values.
+
+```typescript
+// src/k.ts. The project's single Kensington instance.
+import Kensington, { type ContentMethod, type Reactive } from 'kensington';
+
+class EngineForMyLib extends Kensington {
+  myInput: ContentMethod<{
+    label?: Reactive<string>;
+    placeholder?: Reactive<string>;
+    size?: Reactive<'s' | 'm' | 'l'>;       // illustrative enum, consult the real library
+  }> = this.createCustomTag('my-input');
+
+  myButton: ContentMethod<{
+    variant?: Reactive<string>;             // type as string when the union is unknown or changes
+    disabled?: Reactive<boolean>;
+  }> = this.createCustomTag('my-button');
+
+  myIcon: ContentMethod<{
+    name: Reactive<string>;
+  }> = this.createCustomTag('my-icon');
+
+  myDialog: ContentMethod<{
+    open?: Reactive<boolean>;
+    label?: Reactive<string>;
+  }> = this.createCustomTag('my-dialog');
+}
+
+export const k = new EngineForMyLib();
+```
+
+Usage. Three things flow together. HTML attributes go in the first argument (typed). DOM properties go in `prop`. Events go in `on`. Light-DOM children go in the second argument.
+
+```typescript
+import { k } from './k';
+import { signal } from 'kensington';
+
+const name = signal('');
+const isReadOnly = signal(false);
+
+const input = k.myInput({
+  label: 'Node name',
+  size: 's',
+  prop: { value: name, disabled: isReadOnly },         // live DOM property binding
+  on: { input: e => name.set(e.target.value) },        // standard DOM event
+});
+
+const button = k.myButton({ variant: 'primary' }, [    // slot content as second argument
+  k.myIcon({ name: 'check', slot: 'prefix' }),         // slot="prefix" routes into the named slot
+  'Save',
+]);
+```
+
+How the pieces map to the DOM.
+
+- **Typed attributes (`label`, `size`, `variant`).** Render as HTML attributes via `setAttribute`. The custom element observes them and updates internally. Use this for static values and string-valued bindings.
+- **`prop`.** Assigns directly to the element's reactive property (`el.value = signalValue`). Required for non-string values (booleans, numbers, objects, signals carrying complex types), and the only way to write to properties that have no HTML-attribute equivalent. See **DOM properties with `prop`**.
+- **`on`.** Accepts any event name. Form components nearly always dispatch the standard DOM events (`input`, `change`, `focus`, `blur`) just like native form controls; bind those with `on: { input: handler }` and `on: { change: handler }`. Library-specific lifecycle events (component open/close hooks, validation hooks, etc.) are usually published under a library prefix. Look them up in the library's docs. Do not guess from the tag name. The handler receives the native event in both cases.
+- **Slot content.** Children pass through unchanged. Use the `slot="..."` attribute on a child to route it into a named slot.
+
+Custom-element libraries that ship as bundled UMD/ESM (with their dependencies pre-resolved) can be loaded from a CDN via a `<script type="module">` in the SSR head. Libraries published from npm with unresolved bare specifiers (Web Awesome 3.x is one example. its `dist/` contains `import "@shoelace-style/animations"` strings the browser cannot resolve) must be bundled into the client bundle alongside the app code so the bundler resolves the transitive deps. Side-effect imports in `client.ts` are enough.
+
+```typescript
+// src/client.ts. Bundled-library path.
+import '<my-library>/dist/loader.js';                  // resolves and inlines all sub-imports
+
+// Or, for libraries that lazy-load each component at runtime, import the
+// specific component modules to register them eagerly and bypass the lazy fetch:
+import '<my-library>/dist/components/input/input.js';
+import '<my-library>/dist/components/button/button.js';
+```
+
+SSR plus `prop`. The SSR HTML contains no `prop` values (only the regular attributes). On the client, `registerComponents` re-runs the component, `.toElement()` rebuilds the subtree, and the `prop` assignments land on the live, upgraded custom element. See **SSR plus hydration plus custom elements** under DOM properties with `prop`.
+
+A larger example combining custom elements with `htmx` attribute namespaces and module augmentation lives at **TypeScript. Design system with custom elements, htmx, and module augmentation**.
+
+### Generating tag methods from a custom-elements manifest
+
+Libraries with many components (Web Awesome, Shoelace, Material Web, FAST, Spectrum Web Components, and most Lit-based design systems) publish a `custom-elements.json` manifest in their npm package, conforming to the W3C Web Components Community Group's [Custom Elements Manifest schema](https://github.com/webcomponents/custom-elements-manifest). Walk the manifest at module load time and assign one `createCustomTag` call per element. Zero per-element boilerplate, no codegen step, library-agnostic.
+
+```typescript
+import Kensington, { type ContentMethod } from 'kensington';
+import manifest from '@awesome.me/webawesome/custom-elements.json';
+
+function camelCase(s: string) {
+  return s.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+}
+
+class K extends Kensington {
+  constructor() {
+    super();
+    for (const mod of manifest.modules ?? []) {
+      for (const decl of mod.declarations ?? []) {
+        if (decl.kind === 'class' && (decl as { tagName?: string }).tagName) {
+          const tag = (decl as { tagName: string }).tagName;
+          (this as Record<string, unknown>)[camelCase(tag)] = this.createCustomTag(tag);
+        }
+      }
+    }
+  }
+}
+
+export const k = new K();
+```
+
+`k.waInput(...)`, `k.waButton(...)`, `k.waIcon(...)`, and every other component in the manifest are all callable. Standard tag methods (`k.div`, `k.span`, etc.) come from the `Kensington` base class.
+
+Substituting libraries is one line. `import manifest from '@shoelace-style/shoelace/custom-elements.json';` for Shoelace. `import manifest from '@material/web/custom-elements.json';` for Material Web. The same `modules[].declarations[]` walk works for any conforming manifest.
+
+The exact path of `custom-elements.json` inside the package depends on the library. Many ship it at the package root, some under `dist/`. Web Awesome 3.x publishes it at `@awesome.me/webawesome/dist/custom-elements.json`. Check the library's `package.json` `exports` map or its filesystem layout if the root-level import fails to resolve.
+
+#### Adding types
+
+The dynamic assignment loses TypeScript visibility into the generated methods. Recover it by declaring the methods on the subclass itself with `declare` fields. The fields emit no runtime code; the manifest walker still populates them. Type only the components you actually call; the rest stay callable at runtime even without a declaration (use a permissive cast at the call site if needed).
+
+```typescript
+import Kensington, { type ContentMethod, type Reactive } from 'kensington';
+
+class K extends Kensington {
+  declare waInput:  ContentMethod<{
+    label?:       Reactive<string>;
+    placeholder?: Reactive<string>;
+    size?:        Reactive<'small' | 'medium' | 'large'>;
+  }>;
+  declare waButton: ContentMethod<{
+    variant?:  Reactive<'neutral' | 'brand' | 'success' | 'warning' | 'danger'>;
+    disabled?: Reactive<boolean>;
+  }>;
+  declare waIcon:   ContentMethod<{ name: Reactive<string>; library?: Reactive<string> }>;
+
+  constructor() {
+    super();
+    for (const mod of manifest.modules ?? []) {
+      for (const decl of mod.declarations ?? []) {
+        if (decl.kind === 'class' && (decl as { tagName?: string }).tagName) {
+          const tag = (decl as { tagName: string }).tagName;
+          (this as Record<string, unknown>)[camelCase(tag)] = this.createCustomTag(tag);
+        }
+      }
+    }
+  }
+}
+```
+
+The attribute literal types (`'small' | 'medium' | 'large'`, the variant union) come from the library's own documentation or its manifest's `attributes[].type.text`. The values in this snippet are illustrative; consult the library's docs or manifest for the actual unions. The Web Awesome `<wa-button>` variants, for example, are `'neutral' | 'brand' | 'success' | 'warning' | 'danger'`, not the generic `'default' | 'primary' | ...` that appears in many doc examples.
+
+Declaring on the subclass is preferred over module augmentation (`declare module 'kensington' { interface Kensington { ... } }`) because it scopes the methods to your engine class instead of widening every `Kensington` instance in the project. The shared default `t` instance, for example, does not get these methods, so its types stay accurate to its real surface. Both forms compile (the `Kensington` class is exported as both the default and a named export); choose subclass declaration unless you have a specific reason to widen the base class.
+
+#### When this pattern does not apply
+
+Older custom-element libraries that do not publish a manifest still work with the per-method `createCustomTag` pattern shown earlier in this section. The manifest is the leverage point; without it, list the tag names explicitly and loop over the same shape.
+
+```typescript
+const TAGS = ['my-input', 'my-button', 'my-icon'] as const;
+
+class K extends Kensington {
+  constructor() {
+    super();
+    for (const tag of TAGS) {
+      (this as Record<string, unknown>)[camelCase(tag)] = this.createCustomTag(tag);
+    }
+  }
+}
+```
+
+This recipe replaces the per-method boilerplate uniformly across libraries. The runtime assignment is a few lines; the type declarations are written once per project for the components actually used.
 
 ## TypeScript. Namespace augmentation
 
@@ -331,6 +537,8 @@ import { renderForHydration, registerComponents } from 'kensington';
 ```
 
 ### Signal API
+
+> **Before you write `signal()`, `computed()`, or `.transform()`, ask one question:** is this call going to run on the call stack of a `computed`, `transform`, `mapWithKey` `mapFn`, or any helper function called from one of those? If yes, **pass a key as the second argument**. The key scopes the instance to the surrounding reactive callback so it is reused across re-runs instead of recreated. Without a key the warning fires, DOM nodes get replaced when outer state changes, and per-row local state silently resets. See [Reactive primitives inside a computed need a key](#reactive-primitives-inside-a-computed-need-a-key) for the full rule, the wrong/right helper pair, and which keys collide. The most common failure mode is a row component like `function row(item) { const open = signal(false); ... }` invoked from a `mapWithKey` mapFn — the `signal()` looks top-level in the source but runs inside the per-key computed at execution time.
 
 ```javascript
 const n = signal(0);
@@ -426,6 +634,8 @@ const vid = t.video({ src: '/intro.mp4', prop: { muted: true, playbackRate: 1.5 
 
 `prop` is silently ignored in `.toString()`. Known writable properties on the element's DOM interface are typed in TypeScript. Expando properties (arbitrary string keys) are also accepted as `unknown`. Property existence and writability are validated at render time via `validationLevel`.
 
+**SSR plus hydration plus custom elements.** When a component using `prop` is rendered via `renderForHydration` and then hydrated on the client, the SSR HTML contains no `prop` values at all (only the regular attributes the tag declared). On the client, `registerComponents` re-runs the component, replaces the SSR DOM via `.toElement()`, and the `prop` bindings land on the live element. For custom elements (`<sl-input>`, `<wa-input>`, any Lit-based or vanilla web component), the autoloader script tag should appear in `<head>` so the element is already upgraded by the time the hydration script runs; the `prop` assignment then targets the upgraded element's reactive property (`el.value = signalValue`) rather than the attribute, and the custom element's own reactive system observes the change.
+
 ### effect
 
 Runs immediately; re-runs when any signal read inside changes. Multiple synchronous `.set()` calls batch into one re-run via microtask.
@@ -440,6 +650,42 @@ e.resume();  // restart: re-runs the callback and re-establishes all signal subs
 e.stop();    // permanently destroy; resume() becomes a no-op after this
 ```
 
+Common mistakes around `effect` (loops, leaked nested effects, signals created inside) are catalogued in [Reactive pitfalls](#reactive-pitfalls). For component-shaped effects whose lifetime should match a DOM element's, capture the handle and stop it from [addDisconnectedCallback](#addconnectedcallback--adddisconnectedcallback).
+
+**Don't `effect()` on your own writes.** If the only writer to a signal is your own event handler (an `oninput`, `onclick`, etc. that calls `.set()` on it), you do not need an `effect()` to react to the change. The handler already runs imperatively on the user action; piggyback the side effect (debounced save, validation, network call) onto the same handler call:
+
+```javascript
+// Wrong. The effect subscribes to a signal that only this handler writes to.
+// On a keyed signal, this subscriber lives outside the owning computed's scope
+// and trips the `out-of-scope-reactive-reference` warning.
+const value = signal('', `field-${id}`);
+const tag = t.input({
+  prop: { value },
+  on: { input: e => value.set(e.target.value) },
+});
+tag.addConnectedCallback(() => {
+  saveEffect = effect(() => {
+    const v = value.get();
+    debouncedSave(v);
+  });
+});
+
+// Right. The input handler is the only writer; trigger the side effect inline.
+// No second subscriber, no out-of-scope warning, simpler control flow.
+const value = signal('', `field-${id}`);
+const tag = t.input({
+  prop: { value },
+  on: {
+    input: e => {
+      value.set(e.target.value);
+      debouncedSave(e.target.value);
+    },
+  },
+});
+```
+
+`effect()` is for reacting to signal writes you do NOT control: another component setting a shared signal, async data arriving via `.set()` in a fetch callback, a parent mutating a child's state, etc. When the source of writes is the same handler that wants to fire the side effect, skip the effect.
+
 ### Keyed lists
 
 ```javascript
@@ -452,7 +698,29 @@ t.tbody(rows);
 
 `signal.mapWithKey(keyOrProp, mapFn)` returns a `ReadonlySignal<Tag[]>`. The first argument is either a property name string (the common case) or a function that extracts the key. The mapFn runs once per key the first time it is seen. The resulting tag is cached and reused on every subsequent render where the same key reappears, so the user never pays to rebuild thousands of unchanged tag subtrees only to discard them after a reconciler diff. Keys live on the tag instance via a Kensington-internal property and are read by the reconciler via a `WeakMap`. They do not appear in the rendered DOM.
 
+`mapWithKey` is a method on `Signal` and `ReadonlySignal`. It is not a method on plain arrays. If the source data is a plain array (e.g. lazily-loaded children), wrap it in a `signal()` first, then call `.mapWithKey()` on the wrapped signal.
+
+For recursive structures like trees, calling `mapWithKey` inside another `mapWithKey`'s `mapFn` is the canonical pattern. The outer `mapFn` runs once per key (cached), so the inner `mapWithKey` is constructed once per row and lives as long as the cached row tag. The `mapwithkey-in-reactive` warning is suppressed in this case. The warning still fires when `mapWithKey` is called inside an arbitrary `computed` or `effect` body that re-runs on every dependency change.
+
+A recursive component function called from inside its own `mapWithKey` body runs on the call stack of a per-key `computed`. Any `signal()`, `computed()`, or `.transform()` it creates therefore needs a key, even though the call sites look like top-level code in a plain helper. See [Reactive primitives inside a computed need a key](#reactive-primitives-inside-a-computed-need-a-key) for the wrong/right helper pair.
+
+In TypeScript, a recursive component function that returns a tag and is also called from inside its own `mapWithKey` body needs an explicit return-type annotation. Without one, `tsc` reports TS7023 ("implicitly has return type 'any' because it is referenced directly or indirectly in one of its return expressions"). Annotate the return as `ContentTag` (or the more specific tag class) and import the type from `kensington`.
+
+```typescript
+import { type ContentTag } from 'kensington';
+
+function nodeRow(node: TreeNode): ContentTag {
+  return k.div({ class: 'row' },
+    k.div({ class: 'children' },
+      node.children.mapWithKey('id', child => nodeRow(child)),
+    ),
+  );
+}
+```
+
 For drag-and-drop sortable lists where DOM nodes are moved via `insertBefore`, add `persist: true` to each item tag so signal effects survive the move. See **Cleanup** below.
+
+When the `mapFn` body creates per-row signals or computeds, those calls need a key. See [Reactive primitives inside a computed need a key](#reactive-primitives-inside-a-computed-need-a-key). To address per-row state from outside the row (for example, a search handler that expands ancestors of a hit), see [Addressing per-row state from outside the row](#addressing-per-row-state-from-outside-the-row).
 
 ### Updating a row after it's been cached
 
@@ -490,9 +758,76 @@ function applyServerUpdate(ticketId, patch) {
 
 This is the canonical pattern for any list whose row contents change after mount — SSE pushes, WebSocket messages, polling intervals, animation timers. The `items` signal holds identity (the set of rows); per-row signals hold field-level reactivity.
 
+#### Addressing per-row state from outside the row
+
+A second pattern covers the case where the row's item object is not necessarily available everywhere that wants to drive the row. The canonical example is a recursive tree where a search handler needs to set `expanded = true` on every ancestor of a hit, including ancestors whose parents have never been expanded so the items have never been fetched. The row's `signal(initial, key)` lives in the `mapWithKey` scope and is unreachable from the search handler.
+
+Lift the per-row state into a module-level `Map<id, RowState>` registry. Rows look up (or create) their state on first render. External code (search, drag handlers, hotkeys, broadcast subscribers) reaches the same state by id.
+
+```typescript
+type RowState = {
+  expanded: Signal<boolean>;
+  renaming: Signal<boolean>;
+  children: Signal<Node[]>;
+  childrenLoaded: Signal<boolean>;
+};
+
+const rowRegistry = new Map<string, RowState>();
+
+function getOrCreateRowState(id: string): RowState {
+  let s = rowRegistry.get(id);
+  if (s) {
+    return s;
+  }
+  s = {
+    expanded: signal(false),
+    renaming: signal(false),
+    children: signal([]),
+    childrenLoaded: signal(false),
+  };
+  rowRegistry.set(id, s);
+  return s;
+}
+
+function nodeRow(node: Node): ContentTag {
+  const { expanded, renaming, children } = getOrCreateRowState(node.id);
+  return k.div({ class: ['node-row', expanded.transform(v => v && 'expanded', 'expanded-cls')] }, [
+    /* chevron, name, children. All read from the row state */
+  ]);
+}
+
+// External handler. Walk ancestor ids and flip expanded.
+async function expandToReveal(ancestorIds: string[]) {
+  for (const id of ancestorIds) {
+    const s = getOrCreateRowState(id);
+    if (!s.childrenLoaded.value) {
+      const rows = await fetchChildren(id);
+      s.children.set(rows);
+      s.childrenLoaded.set(true);
+    }
+    s.expanded.set(true);
+  }
+}
+```
+
+The signals in the registry are not keyed (no second argument). They are owned by the module, not by a `mapWithKey` scope, so the `out-of-scope-reactive-reference` warning does not apply. The trade-off is that the registry is never garbage-collected automatically; remove entries when a node is permanently deleted. Use this pattern only when the registry-keyed lookups are needed from outside the rendering pipeline. For self-contained list rows whose state nobody outside reads or writes, keep using `signal(initial, key)` inside the `mapWithKey` `mapFn`.
+
 ### Reactive primitives inside a computed need a key
 
+**Decision check before writing any `signal()`, `computed()`, or `.transform()` call.** Two questions, in order. If the answer to (1) is no, skip (2). If yes to (1) AND yes to (2), pass a key.
+
+1. **Will this call run on the call stack of a `computed`, `transform`, `mapWithKey` `mapFn`, `effect`, or any helper invoked from one of those?** Read your own code top-down. If the function containing this call is itself called from one of those reactive callbacks (directly or transitively), the answer is yes. The lexical position in the source does not matter; only the actual call stack at runtime.
+2. **Is this a `signal()`, `computed()`, or `.transform()` (not just a `.get()` or `.set()`)?** Reads and writes never need a key. Only creation calls do.
+
+If both are yes, add a key as the second argument. The key needs to be unique within the surrounding reactive callback's run. Use the item identity (`item.id`) plus a local label for disambiguation (`${item.id}-cls`, `${item.id}-matches`).
+
+When in doubt, pass a key. Passing a key outside a reactive context is a no-op; missing a key inside one is a silent UX bug (per-row local state resets on every outer re-run).
+
 When you create a `signal()`, `computed()`, or `.transform()` inside a `computed` callback, pass a stable `key` as the second argument. This applies uniformly to all three forms: the key scopes the instance to the surrounding `computed` so the same instance is reused across outer re-runs. Use the item identity (typically `item.id`).
+
+**This rule is call-stack, not lexical.** What matters is whether the `signal()` or `computed()` call runs inside a reactive callback at execution time, not whether it sits inside one in the source text. If a helper function does the creation and that helper is called from inside a `computed`, `transform`, `effect`, or `mapWithKey` `mapFn` body, the signals it creates count as "inside" the reactive scope. The runtime walks the call stack, not the AST. Every component-style helper that calls `signal()`/`computed()`/`.transform()` and is invoked from a list-row `mapFn` falls in this bucket. Pass keys.
+
+The worked example below shows the lexical case (creation written directly inside the callback). The wrong/right helper pair after it shows the call-stack case, which is how most real code is structured.
 
 ```javascript
 const items  = signal([{ id: 'a', name: 'Apple', cat: 'fruit' }, { id: 'b', name: 'Bagel', cat: 'bread' }]);
@@ -520,6 +855,35 @@ const list = items.mapWithKey('id', item => {
 
 t.ul(list);
 ```
+
+**The helper-function trap.** Most real code factors each row into a component-style helper rather than writing the body inline. The rule still applies because the helper runs on the call stack of the `mapFn`. Here is the same example refactored into a helper, with the keys it needs to keep working.
+
+```javascript
+// Wrong. row() is a plain function, so the signal/computed/transform calls
+// look top-level, but row() is called from inside mapWithKey's mapFn, which
+// runs inside a per-key computed. Each one fires a runtime warning.
+function row(item) {
+  const highlight = signal(false);                                        // signal-in-computed
+  const cls       = computed(() => highlight.get() ? 'starred' : '');     // computed-in-computed
+  const matches   = filter.transform(f => f === item.cat ? 'in' : 'out'); // transform-in-computed
+  return t.li({ class: cls, data: { state: matches } }, item.name);
+}
+const list = items.mapWithKey('id', item => row(item));
+
+// Right. Same helper, with keys. Each key is unique inside the per-key computed
+// run for this row (the outer mapWithKey scope is already keyed by item.id,
+// so a short local label like 'highlight' is enough). Inner state survives
+// outer re-runs.
+function row(item) {
+  const highlight = signal(false, 'highlight');
+  const cls       = computed(() => highlight.get() ? 'starred' : '', 'cls');
+  const matches   = filter.transform(f => f === item.cat ? 'in' : 'out', 'matches');
+  return t.li({ class: cls, data: { state: matches } }, item.name);
+}
+const list = items.mapWithKey('id', item => row(item));
+```
+
+The same applies anywhere a helper that creates signals or computeds is called from inside a `computed`, `transform`, `effect`, or `mapFn` body. Inspector panes that build their body inside a `computed(() => ...)` and delegate to a `fileEditor(node)` helper. Tree-row components that delegate to a `chevron(props)` helper for an SVG `.transform()`. Any reactive callback that calls into a helper.
 
 **Unique keys per keyed call.** Each `signal()`, `computed()`, or `.transform()` call inside the same outer run needs a key that is unique to that call. `signal()` lives in its own registry, so `signal(0, item.id)` doesn't collide with `computed(fn, item.id)`. But `computed()` and `.transform()` share a registry (transform calls computed internally), so two of them with the same key collide. Use `${item.id}-label` per keyed computed/transform, like the example above. A duplicate key logs a `console.error` and silently makes both calls return the same instance (the second call's fn overwrites the first), which produces wrong UI behavior.
 
@@ -570,6 +934,22 @@ const item = t.li({ persist: true }, content);
 
 `persist: true` is silently ignored in `.toString()` and has no effect server-side.
 
+`tag.getDomElement()` returns the live element produced by the most recent `.toElement()` call when that element is currently in the document, or `null` otherwise. Two consequences worth knowing.
+
+- During a `persist: true` reconnect cycle, the cached element identity is stable. The same `Element` reference is returned across many removal-and-insertion cycles. During the gap between removal and reinsertion, `getDomElement()` returns `null`.
+- After the element has been permanently removed and the tag instance has been discarded (no further `.toElement()` call), `getDomElement()` returns `null` forever. Code that needs to react to mount and unmount events should use `addConnectedCallback` and `addDisconnectedCallback` rather than polling `getDomElement()`.
+
+```javascript
+const row = t.li({ persist: true }, content);
+const el = row.toElement();
+document.body.append(el);
+row.getDomElement() === el;          // true. Same element while connected.
+el.remove();
+row.getDomElement();                 // null. Element is disconnected.
+document.body.append(el);
+row.getDomElement() === el;          // true. Same element returned again.
+```
+
 For standalone `effect()` calls, stop manually:
 
 ```javascript
@@ -584,6 +964,37 @@ class MyWidget extends HTMLElement {
   disconnectedCallback() { this.#fx?.stop(); }
 }
 ```
+
+Inside a Kensington component that creates several `effect()` calls, capture each handle and stop them together from the root tag's disconnect callback. The connected callback is the canonical place to create the effects so they only run when the element is live. This pattern composes cleanly with `persist: true`, where the connect callback re-fires on every reconnection:
+
+```javascript
+function searchPanel({ initialQuery }) {
+  const query = signal(initialQuery);
+  const results = signal([]);
+  const root = t.div({ class: 'search-panel', persist: true }, [
+    t.input({ type: 'search', prop: { value: query }, oninput: e => query.set(e.target.value) }),
+    t.ul(results.mapWithKey('id', r => t.li(r.label))),
+  ]);
+
+  const effects = [];
+  root.addConnectedCallback(() => {
+    effects.push(effect(() => {
+      const q = query.get();
+      if (!q) { results.set([]); return; }
+      fetch(`/api/search?q=${encodeURIComponent(q)}`).then(r => r.json()).then(results.set);
+    }));
+    effects.push(effect(() => {
+      history.replaceState(null, '', query.get() ? `?q=${encodeURIComponent(query.get())}` : '/');
+    }));
+  });
+  root.addDisconnectedCallback(() => {
+    while (effects.length) { effects.pop().stop(); }
+  });
+  return root;
+}
+```
+
+Effects created inside `effect()` calls on `mapWithKey` rows are stopped automatically when their row leaves the DOM. The explicit start/stop pattern above is only needed for effects owned by the component itself rather than by the reconciler.
 
 ### addConnectedCallback / addDisconnectedCallback
 
@@ -607,8 +1018,9 @@ function statsPanel() {
 - `fn` for `addDisconnectedCallback` runs every time the element is removed.
 - Tag instances are reusable. The returned tag is the same instance across `.toElement()` calls, but each `.toElement()` produces (or reuses) a single DOM element and the connect/disconnect callbacks fire against that element.
 - For one-shot setup that doesn't need a teardown, you can still use `addConnectedCallback` alone (e.g. focus a newly mounted input via `el => el.focus()`).
+- The callback body is a plain function call, NOT inside a reactive scope. Creating `effect()` here is the right pattern when you need to react to a signal for as long as the element is mounted. Capture the stop function and call it from `addDisconnectedCallback`: `let stop; panel.addConnectedCallback(() => { stop = effect(() => { ... }); }); panel.addDisconnectedCallback(() => stop?.());`. The `kensington/no-ignored-effect-return` lint rule recognises this capture-and-stop pattern. Creating `signal()` or `computed()` here is also free of warnings since the callback is not a `computed` body.
 
-This is the canonical place for `setInterval`/`setTimeout`, `IntersectionObserver`, `ResizeObserver`, manual focus, or any imperative DOM API that needs symmetric setup/cleanup tied to element mount/unmount.
+This is the canonical place for `setInterval`/`setTimeout`, `IntersectionObserver`, `ResizeObserver`, manual focus, `effect()` whose lifetime should match the element's mount, or any imperative DOM API that needs symmetric setup/cleanup tied to element mount/unmount.
 
 ### isBrowser
 
@@ -619,6 +1031,8 @@ const stored = isBrowser ? localStorage.getItem('theme') : null;
 // Inside effect(). Always safe; effect is a no-op on the server
 effect(() => { localStorage.setItem('theme', dark.get() ? 'dark' : 'light'); });
 ```
+
+`isBrowser` is `false` in any Node-like runtime including Bun and Deno, and stays `false` inside `renderForHydration` calls made from those runtimes. It is `true` only inside an actual browser document.
 
 ### DevTools
 
@@ -702,6 +1116,40 @@ registerComponents({ commentCount });
 ```
 
 The key in `registerComponents` must match the name passed to `renderForHydration`. Pass an explicit third argument whenever the call site may be reached by the browser (component functions are renamed by minifiers) or when using anonymous functions or aliased imports: `renderForHydration(fn, state, 'myName')`. Server-side calls where the code is never minified can rely on `fn.name`, but the explicit form is always safe.
+
+The same component name can appear at any number of mount points in a single page. Call `renderForHydration` once per mount with whatever state each instance needs; the server emits a unique marker per call. `registerComponents` walks the page on the client, finds every marker for that name, and mounts each instance independently with its own hydration scope. Keyed signals and computeds (`signal(initial, key)`, `computed(fn, key)`) are scoped per mount, so two `searchBox` instances on the same page do not share state. If you have several differently-named components on the page (e.g. `inspector`, `treePane`, `themeToggle`), register them in a single call: `registerComponents({ inspector, treePane, themeToggle })`. One call is enough regardless of how many mounts each component has.
+
+Stateless mounts. When a component's state is entirely module-level (selection signals, theme signals, registries) and the component function takes no parameters, pass `{}` as the state argument: `renderForHydration(themeToggle, {}, 'themeToggle')`. The state argument is mandatory in the type signature but the empty object is valid; nothing inside the component needs to read it. Common for toolbars, theme toggles, and tree panes that get their data from module-level signals seeded by other code.
+
+```javascript
+// server.js. Many mounts of the same component name plus several distinct components.
+res.send(
+  t.body([
+    t.header(renderForHydration(themeToggle, { initial: req.cookies.theme ?? 'light' }, 'themeToggle')),
+    t.main([
+      renderForHydration(treePane, { rootNodes }, 'treePane'),
+      renderForHydration(inspector, { selected }, 'inspector'),
+    ]),
+    t.footer([
+      renderForHydration(searchBox, { id: 'top', placeholder: 'Find nodes' }, 'searchBox'),
+      renderForHydration(searchBox, { id: 'bottom', placeholder: 'Find again' }, 'searchBox'),
+    ]),
+  ]).toString()
+);
+```
+
+```javascript
+// client.js. One call covers every marker for every name on the page.
+import { registerComponents } from 'kensington';
+import { themeToggle } from './components/theme-toggle.js';
+import { treePane }    from './components/tree-pane.js';
+import { inspector }   from './components/inspector.js';
+import { searchBox }   from './components/search-box.js';
+
+registerComponents({ themeToggle, treePane, inspector, searchBox });
+```
+
+The two `searchBox` mounts above each get their own `{ id, placeholder }` state and their own keyed-signal registry. A `signal(0, 'cursor')` inside `searchBox` is two independent signals across the two mounts.
 
 #### Component authoring rules
 
@@ -1565,6 +2013,26 @@ function usersTable(users) {
 }
 ```
 
+The same Hono code runs unchanged on Bun. Replace `node server.js` with `bun --watch server.ts` (Bun runs TypeScript natively, no `tsx` or `esbuild` needed), and swap `better-sqlite3` for `bun:sqlite` if a database is involved:
+
+```typescript
+// server.ts. Hono on Bun.
+import { Hono } from 'hono';
+import { serveStatic } from 'hono/bun';
+import Database from 'bun:sqlite';
+import { t } from 'kensington';
+
+const db = new Database('data.db');
+const app = new Hono();
+
+app.use('/static/*', serveStatic({ root: './public' }));
+app.get('/', c => c.html(t.html(t.body(t.h1('Hello from Bun'))).toString()));
+
+export default app;  // Bun calls fetch() on the default export.
+```
+
+Start with `bun --watch server.ts`. No build step on the server side. The client bundle is produced by `Bun.build({ entrypoints: ['src/client.ts'], outdir: 'public' })` driven by a small `build.ts`.
+
 ### Fastify
 
 ```javascript
@@ -2132,6 +2600,21 @@ const view = isOpen.transform(o => o ? t.div('Open') : t.div('Closed'));
 document.body.append(view.toElement());
 // Rendered DOM: <!---->  <div>Closed</div>  <!---->
 // On set(true): the inner <div> is swapped in place between the same two anchors.
+```
+
+This is the canonical pattern for inline conditional subtree swap. The transform returns a different tag per value of the signal; the returned tag is rendered between two anchor comment nodes; subsequent value changes replace the inner tree. Use it for "name display vs rename input", "loading spinner vs loaded content", "expanded panel body vs collapsed", and similar one-of-N selections where each branch is its own subtree.
+
+Inside a `mapWithKey` `mapFn` (recursive trees, list rows), this pattern composes safely. The outer `mapWithKey` caches the row tag per key. The inner `transform` lives on that cached tag and runs only when its signal changes, regardless of how often the outer keyed registry is consulted. Pass a key to `transform` (the row id, plus a suffix if the row has more than one inline transform) so the inner derivation is reused across outer re-runs:
+
+```typescript
+const rows = items.mapWithKey('id', item => {
+  const renaming = signal(false, item.id);
+  const display = renaming.transform(
+    r => r ? t.input({ prop: { value: item.name } }) : t.span(item.name),
+    `${item.id}-display`,
+  );
+  return t.li([t.span(item.icon), display, t.button({ onclick: () => renaming.set(v => !v) }, 'edit')]);
+});
 ```
 
 At the type level, **do not annotate the function's return as `ContentTag`** when you intend to return a signal. `ReadonlySignal<T>` is not structurally a `ContentTag` (the two `toElement()` signatures differ: `ContentTag.toElement(): Element`, `Signal.toElement(): Node`). Annotate as `ReadonlySignal<unknown>` (or a more specific type) instead. The returned value still flows into any tag's content slot, gets mounted via `view.toElement()`, etc.

@@ -106,7 +106,8 @@ export default class ContentTag {
       this.styleProps = hasSignalStyleProp ? rawStyle : null;
     }
     this.additionalGlobalAttributes = options.additionalGlobalAttributes ?? {};
-    this.allowedAttributeMap = options.allowedAttributeMap ?? new Map(); // empty Map fallback. All non-namespace attrs fail has(), so custom tags with no spec reject everything except namespaces
+    this.allowedAttributeMap = options.allowedAttributeMap ?? new Map();
+    this.skipElementAttributeValidation = options.skipElementAttributeValidation ?? false;
     this.contentIsLiteral = options.contentIsLiteral;
     this.indentationLevel = options.indentationLevel ?? 2;
     this.namespaces = options.namespaces;

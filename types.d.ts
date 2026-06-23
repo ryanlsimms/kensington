@@ -8,6 +8,26 @@ export class ContentTag {
   toString(): string;
   toElement(): Element;
   mount(target: string | Element): void;
+  /**
+   * Returns the live DOM element produced by the most recent `.toElement()` call when that
+   * element is still connected to the document, or `null` otherwise. Useful for imperative
+   * operations like focus or scroll after a keyboard event, or for reconciler-aware code
+   * that needs to inspect the current node.
+   */
+  getDomElement(): Element | null;
+  /**
+   * Registers a callback invoked each time this element is inserted into the live DOM.
+   * The callback receives the element as both `this` and its first argument. Fires on the
+   * initial mount and on every reconnect for `persist: true` parents. Returns this
+   * instance for chaining.
+   */
+  addConnectedCallback(fn: (this: Element, el: Element) => void): this;
+  /**
+   * Registers a callback invoked each time this element is removed from the live DOM.
+   * The callback receives the element as both `this` and its first argument. Returns this
+   * instance for chaining.
+   */
+  addDisconnectedCallback(fn: (this: Element, el: Element) => void): this;
 }
 
 /**
@@ -33,6 +53,11 @@ export class LiteralTag {
 export class CommentTag {
   toString(): string;
   toElement(): Comment;
+  /**
+   * Returns the live comment node from the most recent `.toElement()` call when it is still
+   * connected to the document, or `null` otherwise.
+   */
+  getDomElement(): Comment | null;
 }
 
 export class BodyTag extends ContentTag { private readonly _k: 'body' }
@@ -145,9 +170,22 @@ export class Signal<T> implements ReadonlySignal<T> {
 
 export type Reactive<T> = T | ReadonlySignal<T>;
 
+/**
+ * Allowed element in a `class` attribute array. Strings and numbers stringify. `false`,
+ * `null`, `undefined`, and `''` are silently dropped so conditional patterns like
+ * `isActive && 'active'` work without casts. A signal element updates the class list live
+ * as its value changes.
+ */
+export type ClassValue = string | number | false | null | undefined | ReadonlySignal<string | number | false | null | undefined | string[]>;
+
+/** Index signature for CSS custom properties (`--name`) on style objects. */
+type CustomCSSProperties = { [key: `--${string}`]: string | number };
+
 /** A style object where each CSS property may be a static value or a reactive signal. */
 type ReactiveStyleProperties = {
   [K in keyof (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)]?: Reactive<string | number>
+} & {
+  [key: `--${string}`]: Reactive<string | number>;
 };
 
 type ElementInterface<Tag extends string> =
@@ -179,7 +217,7 @@ export type GlobalAttributes = {
   autocapitalize?: Reactive<"on" | "off" | "none" | "sentences" | "words" | "characters">;
   autocorrect?: Reactive<"on" | "off">;
   autofocus?: Reactive<boolean>;
-  class?: Reactive<string | string[]>;
+  class?: Reactive<string | ClassValue[]>;
   contenteditable?: Reactive<"true" | "false" | "plaintext-only">;
   dir?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   draggable?: Reactive<"true" | "false">;
@@ -202,7 +240,7 @@ export type GlobalAttributes = {
   role?: Reactive<string>;
   slot?: Reactive<string>;
   spellcheck?: Reactive<"true" | "false">;
-  style?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  style?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   tabindex?: Reactive<number | `${number}`>;
   title?: Reactive<string>;
   translate?: Reactive<"yes" | "no">;
@@ -419,7 +457,7 @@ type AnimateAttributes = {
   'begin'?: Reactive<string>;
   'by'?: Reactive<string>;
   'calcMode'?: Reactive<"discrete" | "linear" | "paced" | "spline">;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dur'?: Reactive<string>;
   'end'?: Reactive<string>;
   'fill'?: Reactive<"remove" | "freeze">;
@@ -498,7 +536,7 @@ type AnimateAttributes = {
   'repeatDur'?: Reactive<string>;
   'requiredExtensions'?: Reactive<string>;
   'restart'?: Reactive<"always" | "never" | "whenNotActive">;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'to'?: Reactive<string>;
@@ -514,7 +552,7 @@ type AnimateMotionAttributes = {
   'begin'?: Reactive<string>;
   'by'?: Reactive<string>;
   'calcMode'?: Reactive<"discrete" | "linear" | "paced" | "spline">;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dur'?: Reactive<string>;
   'end'?: Reactive<string>;
   'fill'?: Reactive<"remove" | "freeze">;
@@ -597,7 +635,7 @@ type AnimateMotionAttributes = {
   'requiredExtensions'?: Reactive<string>;
   'restart'?: Reactive<"always" | "never" | "whenNotActive">;
   'rotate'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'to'?: Reactive<string>;
@@ -614,7 +652,7 @@ type AnimateTransformAttributes = {
   'begin'?: Reactive<string>;
   'by'?: Reactive<string>;
   'calcMode'?: Reactive<"discrete" | "linear" | "paced" | "spline">;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dur'?: Reactive<string>;
   'end'?: Reactive<string>;
   'fill'?: Reactive<"remove" | "freeze">;
@@ -693,7 +731,7 @@ type AnimateTransformAttributes = {
   'repeatDur'?: Reactive<string>;
   'requiredExtensions'?: Reactive<string>;
   'restart'?: Reactive<"always" | "never" | "whenNotActive">;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'to'?: Reactive<string>;
@@ -705,7 +743,7 @@ type AnimateTransformAttributes = {
 
 type AnnotationAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   'displaystyle'?: Reactive<string>;
   'href'?: Reactive<string>;
@@ -715,14 +753,14 @@ type AnnotationAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'annotation'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
 
 type AnnotationXmlAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   'displaystyle'?: Reactive<string>;
   'href'?: Reactive<string>;
@@ -732,7 +770,7 @@ type AnnotationXmlAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'annotation-xml'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -835,7 +873,7 @@ type CaptionAttributes = { prop?: PropFor<'caption'> | null; persist?: boolean; 
 
 type CircleAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'cx'?: Reactive<number | string>;
   'cy'?: Reactive<number | string>;
   'id'?: Reactive<string>;
@@ -904,7 +942,7 @@ type CircleAttributes = {
   'r'?: Reactive<number | string>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -914,12 +952,12 @@ type CircleAttributes = {
 type CiteAttributes = { prop?: PropFor<'cite'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ClipPathAttributes = {
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'externalResourcesRequired'?: Reactive<"true" | "false">;
   'id'?: Reactive<string>;
   'requiredExtensions'?: Reactive<string>;
   'requiredFeatures'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'transform'?: Reactive<string>;
   'xml:base'?: Reactive<string>;
@@ -951,7 +989,7 @@ type DdAttributes = { prop?: PropFor<'dd'> | null; persist?: boolean; } & NameSp
 
 type DefsAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'id'?: Reactive<string>;
   'lang'?: Reactive<string>;
   'oncancel'?: Reactive<string | ((event: Event) => void)>;
@@ -1014,7 +1052,7 @@ type DefsAttributes = {
   'onvolumechange'?: Reactive<string | ((event: Event) => void)>;
   'onwaiting'?: Reactive<string | ((event: Event) => void)>;
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
   prop?: PropFor<'defs'> | null; persist?: boolean;
@@ -1028,7 +1066,7 @@ type DelAttributes = {
 
 type DescAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'id'?: Reactive<string>;
   'lang'?: Reactive<string>;
   'oncancel'?: Reactive<string | ((event: Event) => void)>;
@@ -1091,7 +1129,7 @@ type DescAttributes = {
   'onvolumechange'?: Reactive<string | ((event: Event) => void)>;
   'onwaiting'?: Reactive<string | ((event: Event) => void)>;
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
   prop?: PropFor<'desc'> | null; persist?: boolean;
@@ -1118,7 +1156,7 @@ type DtAttributes = { prop?: PropFor<'dt'> | null; persist?: boolean; } & NameSp
 
 type EllipseAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'cx'?: Reactive<number | string>;
   'cy'?: Reactive<number | string>;
   'id'?: Reactive<string>;
@@ -1188,7 +1226,7 @@ type EllipseAttributes = {
   'role'?: Reactive<string>;
   'rx'?: Reactive<number | string>;
   'ry'?: Reactive<number | string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1206,9 +1244,9 @@ type EmbedAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeBlendAttributes = {
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1216,9 +1254,9 @@ type FeBlendAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeColorMatrixAttributes = {
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1226,9 +1264,9 @@ type FeColorMatrixAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeComponentTransferAttributes = {
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1236,9 +1274,9 @@ type FeComponentTransferAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeCompositeAttributes = {
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1246,9 +1284,9 @@ type FeCompositeAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeConvolveMatrixAttributes = {
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1256,9 +1294,9 @@ type FeConvolveMatrixAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeDiffuseLightingAttributes = {
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1266,9 +1304,9 @@ type FeDiffuseLightingAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeDisplacementMapAttributes = {
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1284,9 +1322,9 @@ type FeDistantLightAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeDropShadowAttributes = {
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1294,9 +1332,9 @@ type FeDropShadowAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeFloodAttributes = {
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1336,9 +1374,9 @@ type FeFuncRAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeGaussianBlurAttributes = {
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1346,10 +1384,10 @@ type FeGaussianBlurAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeImageAttributes = {
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'externalResourcesRequired'?: Reactive<"true" | "false">;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1357,9 +1395,9 @@ type FeImageAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeMergeAttributes = {
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1375,9 +1413,9 @@ type FeMergeNodeAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeMorphologyAttributes = {
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1385,9 +1423,9 @@ type FeMorphologyAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeOffsetAttributes = {
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1403,9 +1441,9 @@ type FePointLightAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeSpecularLightingAttributes = {
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1421,9 +1459,9 @@ type FeSpotLightAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeTileAttributes = {
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1431,9 +1469,9 @@ type FeTileAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FeTurbulenceAttributes = {
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1452,10 +1490,10 @@ type FigcaptionAttributes = { prop?: PropFor<'figcaption'> | null; persist?: boo
 type FigureAttributes = { prop?: PropFor<'figure'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FilterAttributes = {
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'externalResourcesRequired'?: Reactive<"true" | "false">;
   'id'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1466,7 +1504,7 @@ type FooterAttributes = { prop?: PropFor<'footer'> | null; persist?: boolean; } 
 
 type ForeignObjectAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'height'?: Reactive<number | string>;
   'id'?: Reactive<string>;
   'lang'?: Reactive<string>;
@@ -1532,7 +1570,7 @@ type ForeignObjectAttributes = {
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'width'?: Reactive<number | string>;
@@ -1558,7 +1596,7 @@ type FormAttributes = {
 
 type GAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'id'?: Reactive<string>;
   'lang'?: Reactive<string>;
   'oncancel'?: Reactive<string | ((event: Event) => void)>;
@@ -1623,7 +1661,7 @@ type GAttributes = {
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -1670,7 +1708,7 @@ type IframeAttributes = {
 
 type ImageAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'crossorigin'?: Reactive<"anonymous" | "use-credentials">;
   'height'?: Reactive<number | string>;
   'href'?: Reactive<string>;
@@ -1739,7 +1777,7 @@ type ImageAttributes = {
   'preserveAspectRatio'?: Reactive<string>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'width'?: Reactive<number | string>;
@@ -1829,7 +1867,7 @@ type LiAttributes = {
 
 type LineAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'id'?: Reactive<string>;
   'lang'?: Reactive<string>;
   'oncancel'?: Reactive<string | ((event: Event) => void)>;
@@ -1895,7 +1933,7 @@ type LineAttributes = {
   'pathLength'?: Reactive<number | `${number}`>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'x1'?: Reactive<number | string>;
@@ -1908,7 +1946,7 @@ type LineAttributes = {
 
 type LinearGradientAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'gradientTransform'?: Reactive<string>;
   'gradientUnits'?: Reactive<"userSpaceOnUse" | "objectBoundingBox">;
   'href'?: Reactive<string>;
@@ -1975,7 +2013,7 @@ type LinearGradientAttributes = {
   'onwaiting'?: Reactive<string | ((event: Event) => void)>;
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
   'spreadMethod'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'x1'?: Reactive<number | string>;
   'x2'?: Reactive<number | string>;
@@ -2018,7 +2056,7 @@ type MarkAttributes = { prop?: PropFor<'mark'> | null; persist?: boolean; } & Na
 
 type MarkerAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'id'?: Reactive<string>;
   'lang'?: Reactive<string>;
   'markerHeight'?: Reactive<string>;
@@ -2088,7 +2126,7 @@ type MarkerAttributes = {
   'preserveAspectRatio'?: Reactive<string>;
   'refX'?: Reactive<string>;
   'refY'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'viewBox'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -2096,11 +2134,11 @@ type MarkerAttributes = {
 } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type MaskAttributes = {
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'id'?: Reactive<string>;
   'requiredExtensions'?: Reactive<string>;
   'requiredFeatures'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'xml:base'?: Reactive<string>;
   'xml:lang'?: Reactive<string>;
@@ -2110,7 +2148,7 @@ type MaskAttributes = {
 
 type MathAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   'display'?: Reactive<string>;
   'displaystyle'?: Reactive<string>;
@@ -2121,7 +2159,7 @@ type MathAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'xmlns'?: Reactive<string>;
   prop?: PropFor<'math'> | null; persist?: boolean;
@@ -2129,7 +2167,7 @@ type MathAttributes = {
 
 type MencloseAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   'displaystyle'?: Reactive<string>;
   'href'?: Reactive<string>;
@@ -2140,7 +2178,7 @@ type MencloseAttributes = {
   'nonce'?: Reactive<string>;
   'notation'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'menclose'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2149,7 +2187,7 @@ type MenuAttributes = { prop?: PropFor<'menu'> | null; persist?: boolean; } & Na
 
 type MerrorAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   'displaystyle'?: Reactive<string>;
   'href'?: Reactive<string>;
@@ -2159,7 +2197,7 @@ type MerrorAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'merror'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2176,7 +2214,7 @@ type MetaAttributes = {
 
 type MetadataAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'id'?: Reactive<string>;
   'lang'?: Reactive<string>;
   'oncancel'?: Reactive<string | ((event: Event) => void)>;
@@ -2239,7 +2277,7 @@ type MetadataAttributes = {
   'onvolumechange'?: Reactive<string | ((event: Event) => void)>;
   'onwaiting'?: Reactive<string | ((event: Event) => void)>;
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
   prop?: PropFor<'metadata'> | null; persist?: boolean;
@@ -2257,7 +2295,7 @@ type MeterAttributes = {
 
 type MfracAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   'displaystyle'?: Reactive<string>;
   'href'?: Reactive<string>;
@@ -2268,14 +2306,14 @@ type MfracAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'mfrac'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MiAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   'displaystyle'?: Reactive<string>;
   'href'?: Reactive<string>;
@@ -2285,14 +2323,14 @@ type MiAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'mi'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MmultiscriptsAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   'displaystyle'?: Reactive<string>;
   'href'?: Reactive<string>;
@@ -2302,14 +2340,14 @@ type MmultiscriptsAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'mmultiscripts'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MnAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   'displaystyle'?: Reactive<string>;
   'href'?: Reactive<string>;
@@ -2319,7 +2357,7 @@ type MnAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'mn'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2327,7 +2365,7 @@ type MnAttributes = {
 type MoAttributes = {
   'accent'?: Reactive<string>;
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   'displaystyle'?: Reactive<string>;
   'fence'?: Reactive<string>;
@@ -2345,7 +2383,7 @@ type MoAttributes = {
   'scriptlevel'?: Reactive<string>;
   'separator'?: Reactive<string>;
   'stretchy'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'symmetric'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'mo'> | null; persist?: boolean;
@@ -2354,7 +2392,7 @@ type MoAttributes = {
 type MoverAttributes = {
   'accent'?: Reactive<string>;
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   'displaystyle'?: Reactive<string>;
   'href'?: Reactive<string>;
@@ -2364,14 +2402,14 @@ type MoverAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'mover'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MpaddedAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'depth'?: Reactive<string>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   'displaystyle'?: Reactive<string>;
@@ -2384,7 +2422,7 @@ type MpaddedAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'voffset'?: Reactive<string>;
   'width'?: Reactive<number | string>;
@@ -2393,7 +2431,7 @@ type MpaddedAttributes = {
 
 type MpathAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'href'?: Reactive<string>;
   'id'?: Reactive<string>;
   'lang'?: Reactive<string>;
@@ -2457,7 +2495,7 @@ type MpathAttributes = {
   'onvolumechange'?: Reactive<string | ((event: Event) => void)>;
   'onwaiting'?: Reactive<string | ((event: Event) => void)>;
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
   prop?: PropFor<'mpath'> | null; persist?: boolean;
@@ -2465,7 +2503,7 @@ type MpathAttributes = {
 
 type MphantomAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   'displaystyle'?: Reactive<string>;
   'href'?: Reactive<string>;
@@ -2475,14 +2513,14 @@ type MphantomAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'mphantom'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MprescriptsAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   'displaystyle'?: Reactive<string>;
   'href'?: Reactive<string>;
@@ -2492,14 +2530,14 @@ type MprescriptsAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'mprescripts'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MrootAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   'displaystyle'?: Reactive<string>;
   'href'?: Reactive<string>;
@@ -2509,14 +2547,14 @@ type MrootAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'mroot'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MrowAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   'displaystyle'?: Reactive<string>;
   'href'?: Reactive<string>;
@@ -2526,14 +2564,14 @@ type MrowAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'mrow'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MsAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   'displaystyle'?: Reactive<string>;
   'href'?: Reactive<string>;
@@ -2543,14 +2581,14 @@ type MsAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'ms'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MspaceAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   'displaystyle'?: Reactive<string>;
   'height'?: Reactive<number | string>;
@@ -2561,7 +2599,7 @@ type MspaceAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'width'?: Reactive<number | string>;
   prop?: PropFor<'mspace'> | null; persist?: boolean;
@@ -2569,7 +2607,7 @@ type MspaceAttributes = {
 
 type MsqrtAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   'displaystyle'?: Reactive<string>;
   'href'?: Reactive<string>;
@@ -2579,14 +2617,14 @@ type MsqrtAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'msqrt'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MstyleAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   'displaystyle'?: Reactive<string>;
   'href'?: Reactive<string>;
@@ -2596,14 +2634,14 @@ type MstyleAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'mstyle'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MsubAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   'displaystyle'?: Reactive<string>;
   'href'?: Reactive<string>;
@@ -2613,14 +2651,14 @@ type MsubAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'msub'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MsubsupAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   'displaystyle'?: Reactive<string>;
   'href'?: Reactive<string>;
@@ -2630,14 +2668,14 @@ type MsubsupAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'msubsup'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MsupAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   'displaystyle'?: Reactive<string>;
   'href'?: Reactive<string>;
@@ -2647,7 +2685,7 @@ type MsupAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'msup'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2655,7 +2693,7 @@ type MsupAttributes = {
 type MtableAttributes = {
   'align'?: Reactive<string>;
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'columnalign'?: Reactive<string>;
   'columnlines'?: Reactive<string>;
   'columnspacing'?: Reactive<string>;
@@ -2673,7 +2711,7 @@ type MtableAttributes = {
   'rowlines'?: Reactive<string>;
   'rowspacing'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'width'?: Reactive<number | string>;
   prop?: PropFor<'mtable'> | null; persist?: boolean;
@@ -2681,7 +2719,7 @@ type MtableAttributes = {
 
 type MtdAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'columnalign'?: Reactive<string>;
   'columnspan'?: Reactive<string>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
@@ -2695,14 +2733,14 @@ type MtdAttributes = {
   'rowalign'?: Reactive<string>;
   'rowspan'?: Reactive<number | `${number}`>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'mtd'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MtextAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   'displaystyle'?: Reactive<string>;
   'href'?: Reactive<string>;
@@ -2712,14 +2750,14 @@ type MtextAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'mtext'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
 
 type MtrAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'columnalign'?: Reactive<string>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   'displaystyle'?: Reactive<string>;
@@ -2731,7 +2769,7 @@ type MtrAttributes = {
   'nonce'?: Reactive<string>;
   'rowalign'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'mtr'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2739,7 +2777,7 @@ type MtrAttributes = {
 type MunderAttributes = {
   'accentunder'?: Reactive<string>;
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   'displaystyle'?: Reactive<string>;
   'href'?: Reactive<string>;
@@ -2749,7 +2787,7 @@ type MunderAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'munder'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2758,7 +2796,7 @@ type MunderoverAttributes = {
   'accent'?: Reactive<string>;
   'accentunder'?: Reactive<string>;
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   'displaystyle'?: Reactive<string>;
   'href'?: Reactive<string>;
@@ -2768,7 +2806,7 @@ type MunderoverAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'munderover'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2819,7 +2857,7 @@ type PAttributes = { prop?: PropFor<'p'> | null; persist?: boolean; } & NameSpac
 
 type PathAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'd'?: Reactive<string>;
   'id'?: Reactive<string>;
   'lang'?: Reactive<string>;
@@ -2886,7 +2924,7 @@ type PathAttributes = {
   'pathLength'?: Reactive<number | `${number}`>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -2895,7 +2933,7 @@ type PathAttributes = {
 
 type PatternAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'height'?: Reactive<number | string>;
   'href'?: Reactive<string>;
   'id'?: Reactive<string>;
@@ -2964,7 +3002,7 @@ type PatternAttributes = {
   'patternTransform'?: Reactive<string>;
   'patternUnits'?: Reactive<string>;
   'preserveAspectRatio'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'viewBox'?: Reactive<string>;
   'width'?: Reactive<number | string>;
@@ -2980,7 +3018,7 @@ type PictureAttributes = { prop?: PropFor<'picture'> | null; persist?: boolean; 
 
 type PolygonAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'id'?: Reactive<string>;
   'lang'?: Reactive<string>;
   'oncancel'?: Reactive<string | ((event: Event) => void)>;
@@ -3047,7 +3085,7 @@ type PolygonAttributes = {
   'points'?: Reactive<string>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -3056,7 +3094,7 @@ type PolygonAttributes = {
 
 type PolylineAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'id'?: Reactive<string>;
   'lang'?: Reactive<string>;
   'oncancel'?: Reactive<string | ((event: Event) => void)>;
@@ -3123,7 +3161,7 @@ type PolylineAttributes = {
   'points'?: Reactive<string>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -3145,7 +3183,7 @@ type QAttributes = {
 
 type RadialGradientAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'cx'?: Reactive<number | string>;
   'cy'?: Reactive<number | string>;
   'fr'?: Reactive<string>;
@@ -3218,7 +3256,7 @@ type RadialGradientAttributes = {
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
   'r'?: Reactive<number | string>;
   'spreadMethod'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'xlink:href'?: Reactive<string>;
   'xlink:title'?: Reactive<string>;
@@ -3228,7 +3266,7 @@ type RadialGradientAttributes = {
 
 type RectAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'height'?: Reactive<number | string>;
   'id'?: Reactive<string>;
   'lang'?: Reactive<string>;
@@ -3297,7 +3335,7 @@ type RectAttributes = {
   'role'?: Reactive<string>;
   'rx'?: Reactive<number | string>;
   'ry'?: Reactive<number | string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'width'?: Reactive<number | string>;
@@ -3350,7 +3388,7 @@ type SelectedcontentAttributes = { prop?: PropFor<'selectedcontent'> | null; per
 
 type SemanticsAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   'displaystyle'?: Reactive<string>;
   'href'?: Reactive<string>;
@@ -3360,7 +3398,7 @@ type SemanticsAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'semantics'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -3369,7 +3407,7 @@ type SetAttributes = {
   'attributeName'?: Reactive<string>;
   'autofocus'?: Reactive<boolean>;
   'begin'?: Reactive<string>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dur'?: Reactive<string>;
   'end'?: Reactive<string>;
   'fill'?: Reactive<"remove" | "freeze">;
@@ -3445,7 +3483,7 @@ type SetAttributes = {
   'repeatDur'?: Reactive<string>;
   'requiredExtensions'?: Reactive<string>;
   'restart'?: Reactive<"always" | "never" | "whenNotActive">;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'to'?: Reactive<string>;
@@ -3475,7 +3513,7 @@ type SpanAttributes = { prop?: PropFor<'span'> | null; persist?: boolean; } & Na
 
 type StopAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'id'?: Reactive<string>;
   'lang'?: Reactive<string>;
   'offset'?: Reactive<number | `${number}`>;
@@ -3539,7 +3577,7 @@ type StopAttributes = {
   'onvolumechange'?: Reactive<string | ((event: Event) => void)>;
   'onwaiting'?: Reactive<string | ((event: Event) => void)>;
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
   prop?: PropFor<'stop'> | null; persist?: boolean;
@@ -3561,7 +3599,7 @@ type SupAttributes = { prop?: PropFor<'sup'> | null; persist?: boolean; } & Name
 
 type SvgAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'height'?: Reactive<number | string>;
   'id'?: Reactive<string>;
   'lang'?: Reactive<string>;
@@ -3630,7 +3668,7 @@ type SvgAttributes = {
   'preserveAspectRatio'?: Reactive<string>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'transform'?: Reactive<string>;
@@ -3645,7 +3683,7 @@ type SvgAttributes = {
 
 type SwitchAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'id'?: Reactive<string>;
   'lang'?: Reactive<string>;
   'oncancel'?: Reactive<string | ((event: Event) => void)>;
@@ -3710,7 +3748,7 @@ type SwitchAttributes = {
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -3719,7 +3757,7 @@ type SwitchAttributes = {
 
 type SymbolAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'height'?: Reactive<number | string>;
   'id'?: Reactive<string>;
   'lang'?: Reactive<string>;
@@ -3787,7 +3825,7 @@ type SymbolAttributes = {
   'refX'?: Reactive<string>;
   'refY'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'viewBox'?: Reactive<string>;
   'width'?: Reactive<number | string>;
@@ -3820,7 +3858,7 @@ type TemplateAttributes = {
 
 type TextAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dx'?: Reactive<string>;
   'dy'?: Reactive<string>;
   'id'?: Reactive<string>;
@@ -3889,7 +3927,7 @@ type TextAttributes = {
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
   'rotate'?: Reactive<number | string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'textLength'?: Reactive<string>;
@@ -3918,7 +3956,7 @@ type TextareaAttributes = {
 
 type TextPathAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'href'?: Reactive<string>;
   'id'?: Reactive<string>;
   'lang'?: Reactive<string>;
@@ -3990,7 +4028,7 @@ type TextPathAttributes = {
   'side'?: Reactive<string>;
   'spacing'?: Reactive<string>;
   'startOffset'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'textLength'?: Reactive<string>;
@@ -4033,7 +4071,7 @@ type TrackAttributes = {
 
 type TspanAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'dx'?: Reactive<string>;
   'dy'?: Reactive<string>;
   'id'?: Reactive<string>;
@@ -4102,7 +4140,7 @@ type TspanAttributes = {
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
   'rotate'?: Reactive<number | string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'textLength'?: Reactive<string>;
@@ -4118,7 +4156,7 @@ type UlAttributes = { prop?: PropFor<'ul'> | null; persist?: boolean; } & NameSp
 
 type UseAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'height'?: Reactive<number | string>;
   'href'?: Reactive<string>;
   'id'?: Reactive<string>;
@@ -4185,7 +4223,7 @@ type UseAttributes = {
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
   'requiredExtensions'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'systemLanguage'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   'width'?: Reactive<number | string>;
@@ -4217,7 +4255,7 @@ type VideoAttributes = {
 
 type ViewAttributes = {
   'autofocus'?: Reactive<boolean>;
-  'class'?: Reactive<string | string[]>;
+  'class'?: Reactive<string | ClassValue[]>;
   'id'?: Reactive<string>;
   'lang'?: Reactive<string>;
   'oncancel'?: Reactive<string | ((event: Event) => void)>;
@@ -4282,7 +4320,7 @@ type ViewAttributes = {
   'onwheel'?: Reactive<string | ((event: Event) => void)>;
   'preserveAspectRatio'?: Reactive<string>;
   'role'?: Reactive<string>;
-  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)> | ReactiveStyleProperties;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'viewBox'?: Reactive<string>;
   'xml:space'?: Reactive<"default" | "preserve">;
@@ -4291,21 +4329,36 @@ type ViewAttributes = {
 
 type WbrAttributes = { prop?: PropFor<'wbr'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type ColgroupContent = ColTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean | (ColTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean)[];
-type DlContent = DtTag | DdTag | DivTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean | (DtTag | DdTag | DivTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean)[];
-type HgroupContent = H1Tag | H2Tag | H3Tag | H4Tag | H5Tag | H6Tag | PTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean | (H1Tag | H2Tag | H3Tag | H4Tag | H5Tag | H6Tag | PTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean)[];
-type HtmlContent = HeadTag | BodyTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean | (HeadTag | BodyTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean)[];
-type MenuContent = LiTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean | (LiTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean)[];
-type OlContent = LiTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean | (LiTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean)[];
-type OptgroupContent = OptionTag | ScriptTag | TemplateTag | NoscriptTag | DivTag | LegendTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean | (OptionTag | ScriptTag | TemplateTag | NoscriptTag | DivTag | LegendTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean)[];
-type PictureContent = SourceTag | ImgTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean | (SourceTag | ImgTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean)[];
-type SelectContent = OptionTag | OptgroupTag | HrTag | ScriptTag | TemplateTag | NoscriptTag | DivTag | ButtonTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean | (OptionTag | OptgroupTag | HrTag | ScriptTag | TemplateTag | NoscriptTag | DivTag | ButtonTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean)[];
-type TableContent = CaptionTag | ColgroupTag | TheadTag | TbodyTag | TfootTag | TrTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean | (CaptionTag | ColgroupTag | TheadTag | TbodyTag | TfootTag | TrTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean)[];
-type TbodyContent = TrTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean | (TrTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean)[];
-type TfootContent = TrTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean | (TrTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean)[];
-type TheadContent = TrTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean | (TrTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean)[];
-type TrContent = ThTag | TdTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean | (ThTag | TdTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean)[];
-type UlContent = LiTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean | (LiTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean)[];
+type ColgroupContentItem = ColTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean;
+type ColgroupContent = ColgroupContentItem | readonly ColgroupContent[];
+type DlContentItem = DtTag | DdTag | DivTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean;
+type DlContent = DlContentItem | readonly DlContent[];
+type HgroupContentItem = H1Tag | H2Tag | H3Tag | H4Tag | H5Tag | H6Tag | PTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean;
+type HgroupContent = HgroupContentItem | readonly HgroupContent[];
+type HtmlContentItem = HeadTag | BodyTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean;
+type HtmlContent = HtmlContentItem | readonly HtmlContent[];
+type MenuContentItem = LiTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean;
+type MenuContent = MenuContentItem | readonly MenuContent[];
+type OlContentItem = LiTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean;
+type OlContent = OlContentItem | readonly OlContent[];
+type OptgroupContentItem = OptionTag | ScriptTag | TemplateTag | NoscriptTag | DivTag | LegendTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean;
+type OptgroupContent = OptgroupContentItem | readonly OptgroupContent[];
+type PictureContentItem = SourceTag | ImgTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean;
+type PictureContent = PictureContentItem | readonly PictureContent[];
+type SelectContentItem = OptionTag | OptgroupTag | HrTag | ScriptTag | TemplateTag | NoscriptTag | DivTag | ButtonTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean;
+type SelectContent = SelectContentItem | readonly SelectContent[];
+type TableContentItem = CaptionTag | ColgroupTag | TheadTag | TbodyTag | TfootTag | TrTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean;
+type TableContent = TableContentItem | readonly TableContent[];
+type TbodyContentItem = TrTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean;
+type TbodyContent = TbodyContentItem | readonly TbodyContent[];
+type TfootContentItem = TrTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean;
+type TfootContent = TfootContentItem | readonly TfootContent[];
+type TheadContentItem = TrTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean;
+type TheadContent = TheadContentItem | readonly TheadContent[];
+type TrContentItem = ThTag | TdTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean;
+type TrContent = TrContentItem | readonly TrContent[];
+type UlContentItem = LiTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean;
+type UlContent = UlContentItem | readonly UlContent[];
 
 /**
  * Valid content for any tag method: a string, number, tag instance, or an array of those.
@@ -4315,7 +4368,8 @@ type UlContent = LiTag | ScriptTag | TemplateTag | LiteralTag | CommentTag | Rea
  * @example
  * t.ul([t.li('one'), t.li(2), t.li(t.span('three'))]);
  */
-export type Content = ContentTag | VoidTag | LiteralTag | CommentTag | ReadonlySignal<any> | string | number | boolean | null | undefined | (ContentTag | VoidTag | LiteralTag | CommentTag | ReadonlySignal<any> | string | number | boolean | null | undefined)[];
+export type ContentItem = ContentTag | VoidTag | LiteralTag | CommentTag | ReadonlySignal<any> | string | number | boolean | null | undefined;
+export type Content = ContentItem | readonly Content[];
 
 export type UniversalAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
@@ -4331,13 +4385,22 @@ export type UniversalAttributes = NameSpaceAttributes & GlobalAttributes & Globa
  * }
  */
 export interface ContentMethod<T = {}> {
-  (attributes: T & UniversalAttributes, content?: Content): ContentTag;
+  (attributes: T & UniversalAttributes & { prop?: PropFor<string> | null; persist?: boolean }, content?: Content): ContentTag;
   (content?: Content): ContentTag;
 }
 
 type PrimitiveConstructor = StringConstructor | NumberConstructor | BooleanConstructor | FunctionConstructor;
 type Primitive = string | number | boolean | Function;
-type AttributeValue = PrimitiveConstructor | Primitive | (PrimitiveConstructor | Primitive)[];
+type AttributeValue = PrimitiveConstructor | Primitive | readonly (PrimitiveConstructor | Primitive)[];
+type ResolveAttrValue<V> =
+  V extends StringConstructor ? string :
+  V extends NumberConstructor ? number :
+  V extends BooleanConstructor ? boolean :
+  V extends FunctionConstructor ? Function :
+  V extends readonly (infer U)[] ? ResolveAttrValue<U> :
+  V extends string | number | boolean ? V :
+  V extends Function ? V :
+  unknown;
 type CamelCase<S extends string> = S extends `${infer Head}-${infer Rest}` ? `${Head}${Capitalize<CamelCase<Rest>>}` : S;
 type KebabCase<S extends string> = S extends `${infer H}${infer T}` ? H extends Uppercase<H> ? H extends Lowercase<H> ? `${H}${KebabCase<T>}` : `-${Lowercase<H>}${KebabCase<T>}` : `${H}${KebabCase<T>}` : S;
 
@@ -4366,7 +4429,7 @@ type KebabCase<S extends string> = S extends `${infer H}${infer T}` ? H extends 
  *   ),
  * ]).toString();
  */
-export default class Kensington {
+export class Kensington {
   constructor(options?: {
     /** Allow extra attributes on all elements, e.g. `{ enterkeyhint: ['enter', 'done', 'go', 'next', 'previous', 'search', 'send'] }`. */
     additionalGlobalAttributes?: Record<string, unknown>;
@@ -4395,10 +4458,10 @@ export default class Kensington {
    * const t = new MyEngine();
    * t.myCard({ 'card-type': 'primary' }, 'Content here').toString();
    */
-  createCustomTag<A extends Record<string, AttributeValue> = Record<never, AttributeValue>>(
+  createCustomTag<const A extends Record<string, AttributeValue> = Record<never, AttributeValue>>(
     tagName: string,
     allowedAttributes?: A
-  ): ContentMethod<{ [K in keyof A as K | CamelCase<K & string> | KebabCase<K & string>]?: unknown }>
+  ): ContentMethod<{ [K in keyof A as K | CamelCase<K & string> | KebabCase<K & string>]?: Reactive<ResolveAttrValue<A[K]>> }>
 
   /**
    * Embeds a raw HTML string verbatim into the output.
@@ -4823,6 +4886,8 @@ export default class Kensington {
   wbr(attributes?: WbrAttributes): VoidTag;
 }
 
+export default Kensington;
+
 /**
  * Shared `Kensington` instance for use when no subclassing or custom configuration is needed.
  *
@@ -4883,7 +4948,7 @@ export const isBrowser: boolean;
  * import { registerComponents } from 'kensington';
  * registerComponents({ counter, userCard });
  */
-export function registerComponents(components: Record<string, (state: Record<string, unknown>) => ContentTag | ContentTag[] | null>): void;
+export function registerComponents(components: Record<string, (state: any) => ContentTag | ContentTag[] | null>): void;
 
 /**
  * Renders a component to an HTML string and embeds the state as a JSON script block for
@@ -4893,7 +4958,7 @@ export function registerComponents(components: Record<string, (state: Record<str
  * // server
  * renderForHydration(counter, { count: 42 })
  */
-export function renderForHydration<S extends Record<string, unknown>>(
+export function renderForHydration<S>(
   fn: (state: S) => ContentTag | ContentTag[] | null,
   state: S,
   name?: string
@@ -4912,7 +4977,7 @@ export function renderForHydration<S extends Record<string, unknown>>(
  */
 export function hmrReplaceComponent(
   name: string,
-  newFn: (state: Record<string, unknown>) => ContentTag | ContentTag[] | null
+  newFn: (state: any) => ContentTag | ContentTag[] | null
 ): void;
 
 

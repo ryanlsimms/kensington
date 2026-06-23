@@ -1109,6 +1109,39 @@ describe('custom tags', () => {
     assert.doesNotThrow(() => tt.customElement({ type: 'primary' }).toString());
     assert.throws(() => tt.customElement({ type: 'secondary' }).toString());
   });
+
+  it('createCustomTag with no allowedAttributes accepts any attribute without warnings', () => {
+    const logs = [];
+    const origLog = console.log;
+    console.log = msg => logs.push(String(msg));
+    try {
+      class WaEngine extends Kensington {
+        waInput = this.createCustomTag('wa-input');
+      }
+      const k = new WaEngine({ validationLevel: 'warn' });
+      const html = k.waInput({ size: 'small', clearable: true, placeholder: 'Search' }).toString();
+      assert.strictEqual(logs.length, 0, `unexpected warnings: ${logs.join(' | ')}`);
+      assert.ok(html.includes('size="small"'), 'size attribute missing');
+    } finally {
+      console.log = origLog;
+    }
+  });
+
+  it('createCustomTag with explicit allowedAttributes still validates attribute names', () => {
+    const logs = [];
+    const origLog = console.log;
+    console.log = msg => logs.push(String(msg));
+    try {
+      class Strict extends Kensington {
+        myEl = this.createCustomTag('my-el', { size: ['small', 'large'] });
+      }
+      const k = new Strict({ validationLevel: 'warn' });
+      k.myEl({ unknown: 'val' }).toString();
+      assert.ok(logs.some(w => /not allowed/.test(w)), 'expected attribute validation warning');
+    } finally {
+      console.log = origLog;
+    }
+  });
 });
 
 // ─── other ─────────────────────────────────────────────────────────────────
@@ -3250,6 +3283,32 @@ describe('reactive context warnings', () => {
       const e = effect(() => { items.mapWithKey('id', fakeTag); });
       assert.match(warns.join('\n'), /mapWithKey called inside a computed or effect/);
       e.stop();
+    } finally {
+      console.warn = origWarn;
+    }
+  });
+
+  it('mapWithKey() inside another mapWithKey\'s mapFn does not fire the warning', () => {
+    const warns = [];
+    const origWarn = console.warn;
+    console.warn = msg => warns.push(String(msg));
+    try {
+      const child = signal([{ id: 'a' }, { id: 'b' }]);
+      const parent = signal([{ id: 1 }, { id: 2 }]);
+      const fakeTag = () => ({
+        _isKensingtonTag: true,
+        _isKensingtonContentTag: true,
+      });
+      const result = parent.mapWithKey('id', () => {
+        child.mapWithKey('id', fakeTag);
+        return fakeTag();
+      });
+      result.get();
+      assert.equal(
+        warns.filter(w => /mapWithKey called inside a computed or effect/.test(w)).length,
+        0,
+        `unexpected mapwithkey-in-reactive warnings: ${warns.join(' | ')}`,
+      );
     } finally {
       console.warn = origWarn;
     }

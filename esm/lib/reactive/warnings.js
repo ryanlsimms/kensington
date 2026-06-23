@@ -13,7 +13,11 @@ export function throttledError(key, msg) {
   if (now - (warnLastSeen.get(key) ?? 0) >= WARN_THROTTLE_MS) {
     warnLastSeen.set(key, now);
     const error = filterStack(new Error(msg));
-    console.error(error.stack ?? msg);
+    // Pass message as first arg so test harnesses that capture only the first
+    // argument keep working. Pass the Error second so browser DevTools render
+    // its stack with source-map mapping applied (turns minified bundle
+    // positions into .ts source positions in the user's project).
+    console.error(msg, error);
   }
 }
 
@@ -22,7 +26,7 @@ export function throttledWarn(key, msg) {
   if (now - (warnLastSeen.get(key) ?? 0) >= WARN_THROTTLE_MS) {
     warnLastSeen.set(key, now);
     const error = filterStack(new Error(msg));
-    console.warn(error.stack ?? msg);
+    console.warn(msg, error);
   }
 }
 

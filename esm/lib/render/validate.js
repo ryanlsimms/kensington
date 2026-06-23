@@ -69,6 +69,9 @@ export function attributeValueIsValid(tag, attr, value) {
   if (isValidNamespaceAttribute(tag, attr)) {
     return true; // namespace attrs (data-*, aria-*) have no type spec in the map. Any value is accepted
   }
+  if (tag.skipElementAttributeValidation) {
+    return true; // no allow-list was passed to createCustomTag. Any attribute value is accepted
+  }
   if (attr === 'id' && typeof value === 'string' && /^\d/.test(value)) {
     return false;
   }
@@ -97,7 +100,9 @@ export function attributeValueIsValid(tag, attr, value) {
 }
 
 export function validate(tag) {
-  const unallowedAttributes = Object.keys(tag.attributes).filter(attr => !attributeIsValid(tag, attr));
+  const unallowedAttributes = tag.skipElementAttributeValidation
+    ? []
+    : Object.keys(tag.attributes).filter(attr => !attributeIsValid(tag, attr));
   if (unallowedAttributes.length) {
     showInvalid(`attribute(s): ${unallowedAttributes.join(', ')} not allowed for ${tag.tagName}`, tag.validationLevel, tag.logger);
   }

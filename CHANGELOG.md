@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Fixed
+- Spurious `computed-in-computed` warning when nesting `mapWithKey` inside another `mapWithKey`'s `mapFn`. The recursive-tree pattern (a row component calls itself via the inner `mapWithKey`) is documented as canonical, but the outer wrapper's `computed()` call was tripping the warning on every render of every nested tree. The wrapper is now built via `_internalComputed`, which clears the reactive-context flags before constructing.
+- Spurious `out-of-scope-reactive-reference` warning when an internal computed (class-list assembly, attribute composition, the `mapWithKey` wrapper above) reads a user-keyed `signal`, `computed`, or `.transform()` result. The reads were library-internal but the warning gate only checked `effect._isInternal`, not the new computed's internal status. `_internalComputed` now marks the resulting computed's update closure as `_isInternal`, so user-keyed signals can flow through internal composition without tripping the gate.
+- Stack-frame filter no longer strips every user frame in browser-bundled deployments. In a bundled app, kensington and user code share the bundle URL, so the previous filter (which removed any frame whose URL matched the kensington module URL) removed user frames too. Warnings ended up displaying only `forEach@[native code]` with no caller. The filter now preserves the full stack when it cannot reliably distinguish internal from external frames (browser bundles, IIFE), and only strips internal frames in Node.js where the file path is unambiguous.
+- Warnings now resolve to source `.ts` / `.tsx` / `.jsx` files instead of bundled `.js` positions in browser DevTools. `throttledWarn`/`throttledError` were passing `error.stack` as a plain string to `console.warn`/`console.error`, and browsers do not run source-map resolution over arbitrary string output. They now pass the message as the first argument and the `Error` object as the second; DevTools then maps each frame through the source map. Node.js output is unchanged (the Error inspector prints the same stack the string form did). Test harnesses that captured only the first argument (`console.warn = msg => ...`) keep working unchanged.
+
 ## [2.0.0-signals.21] - 2026-06-22
 
 ### Fixed

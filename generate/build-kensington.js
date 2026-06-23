@@ -79,17 +79,22 @@ export default class Kensington {
    *   myCard = this.createCustomTag('my-card', { 'card-type': ['primary', 'secondary'] });
    * }
    */
-  createCustomTag(tagName, allowedAttributes = {}) {
+  createCustomTag(tagName, allowedAttributes) {
     if (typeof tagName !== 'string' || !tagName) {
       throw new Error(\`createCustomTag: tagName must be a non-empty string; got: \${JSON.stringify(tagName)}\`);
     }
-    if (allowedAttributes === null || typeof allowedAttributes !== 'object' || Array.isArray(allowedAttributes)) {
+    if (allowedAttributes !== undefined &&
+        (allowedAttributes === null || typeof allowedAttributes !== 'object' || Array.isArray(allowedAttributes))) {
       throw new Error(\`createCustomTag: allowedAttributes must be a plain object; got: \${typeof allowedAttributes}\`);
     }
-    const kebabAttributes = Object.fromEntries(Object.entries(allowedAttributes).map(([k, v]) => [camelToKebab(k), v]));
+    const hasAllowList = allowedAttributes !== undefined && Object.keys(allowedAttributes).length > 0;
+    const kebabAttributes = hasAllowList
+      ? Object.fromEntries(Object.entries(allowedAttributes).map(([k, v]) => [camelToKebab(k), v]))
+      : {};
     return this.createTag(tagName, kebabAttributes, ContentTag, {
       includeGlobalAttributes: true,
       includeGlobalEvents: true,
+      skipElementAttributeValidation: !hasAllowList,
     });
   }
 
@@ -139,6 +144,7 @@ export default class Kensington {
       includeGlobalAttributes,
       includeGlobalEvents,
       namespace,
+      skipElementAttributeValidation = false,
     } = options;
     const allowedAttributeMap = new Map(Object.entries(allowedAttributes));
     for (const name of (allAttributes.camelCaseNames ?? [])) {
@@ -202,6 +208,7 @@ export default class Kensington {
         logger: this.logger,
         namespace,
         namespaces: this.namespaces,
+        skipElementAttributeValidation,
         tagName,
         validationLevel: this.validationLevel,
       });

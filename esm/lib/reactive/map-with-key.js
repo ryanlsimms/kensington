@@ -1,9 +1,11 @@
 import {
+  _enterMapWithKeyInner,
+  _exitMapWithKeyInner,
   _internalComputed,
   _internalEffect,
+  _isInMapWithKeyInner,
   _isInReactiveContext,
   _runMapWithKeyProbe,
-  computed,
 } from './signal.js';
 import { throttledError, throttledWarn } from './warnings.js';
 
@@ -37,7 +39,14 @@ function buildEntry(item, mapFn) {
   // so the outer's track() cycle can't drop the inner to zero subs and re-run mapFn on the
   // next .get(). _internalComputed clears the outer reactive context around the creation so
   // the "computed-in-computed" warning (meant for user mistakes) doesn't fire here.
-  const inner = _internalComputed(() => mapFn(item));
+  const inner = _internalComputed(() => {
+    _enterMapWithKeyInner();
+    try {
+      return mapFn(item);
+    } finally {
+      _exitMapWithKeyInner();
+    }
+  });
   const keepAwake = _internalEffect(() => { inner.get(); });
   return { tag: null, inner, keepAwake };
 }
@@ -65,7 +74,7 @@ export function mapWithKey(keyOrProp, mapFn) {
   if (typeof mapFn !== 'function') {
     throw new TypeError('mapWithKey: second argument must be a function (mapFn)');
   }
-  if (_isInReactiveContext()) {
+  if (_isInReactiveContext() && !_isInMapWithKeyInner()) {
     throttledWarn(
       'mapwithkey-in-reactive',
       'kensington: mapWithKey called inside a computed or effect callback. ' +
@@ -74,7 +83,14 @@ export function mapWithKey(keyOrProp, mapFn) {
     );
   }
   const cache = new Map();
-  return computed(() => {
+  // The outer wrapper is library-internal: it is a computed that iterates the
+  // source array and assembles a Tag[]. When mapWithKey is nested inside another
+  // mapWithKey's mapFn (recursive trees), a plain computed() call here would
+  // trip the computed-in-computed warning even though the nesting is legitimate
+  // and supported. Using _internalComputed also marks the wrapper's reads as
+  // internal so reading user-keyed signals from inside it does not trip the
+  // out-of-scope warning.
+  return _internalComputed(() => {
     const items = this.get();
     const result = new Array(items.length);
     const seen = new Set();
