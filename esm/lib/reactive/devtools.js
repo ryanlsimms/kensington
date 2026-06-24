@@ -16,12 +16,20 @@ const pendingZeroSubscribers = new Set();
 // Automatically remove devtools entries for signals that are garbage-collected without
 // an explicit .stop() call. Covers embedded signals (e.g. task.done) that become
 // unreachable when the containing data structure is updated.
-const signalGcRegistry = new FinalizationRegistry(id => {
-  if (!hook) { return; }
-  hook.signals.delete(id);
-  hook._emit('update', { type: 'signal:stop', id, isComputed: computedIds.has(id) });
-  computedIds.delete(id);
-});
+// FinalizationRegistry is not available in all JS runtimes (notably Cloudflare Workers
+// without an opt-in compatibility flag, and some restricted embeddings). When the
+// constructor is missing, we fall back to a stub. The downside is that long-running
+// devtools-enabled sessions might accumulate orphaned signal entries for signals that
+// were GC'd without an explicit .stop(). Acceptable. Devtools is a browser-only feature
+// and the user can refresh.
+const signalGcRegistry = typeof FinalizationRegistry === 'undefined'
+  ? { register() {}, unregister() {} }
+  : new FinalizationRegistry(id => {
+    if (!hook) { return; }
+    hook.signals.delete(id);
+    hook._emit('update', { type: 'signal:stop', id, isComputed: computedIds.has(id) });
+    computedIds.delete(id);
+  });
 
 export function enableDevtools() {
   if (enabled) { return; }

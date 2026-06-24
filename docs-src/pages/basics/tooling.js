@@ -110,18 +110,26 @@ export function basicsTooling() {
       'writes inside computed derivations, orphaned effects, async pitfalls, and more. ',
       'Requires ESLint 9+ and Node 18+.',
     ]),
-    code('sh', 'npm install --save-dev kensington-eslint-plugin'),
+    code('sh', "npm install --save-dev 'kensington-eslint-plugin@^0.5.0'"),
     t.p([
-      'Add the recommended config to your ',
+      'Add the strict config to your ',
       t.code('eslint.config.js'),
-      ':',
+      ' (this is the canonical setup for new projects):',
     ]),
     code('javascript', `import kensington from 'kensington-eslint-plugin';
 
 export default [
-  kensington.configs.recommended,
+  kensington.configs.strict,
   // ...your other configs
 ];`),
+    t.p([
+      'Chain ',
+      t.code('kensington-check-reactive'),
+      ' into your lint script so cross-file reactive traps are caught alongside ESLint:',
+    ]),
+    code('json', `"scripts": {
+  "lint": "eslint . && kensington-check-reactive src --quiet"
+}`),
     panels([
       {
         label: 'Error',

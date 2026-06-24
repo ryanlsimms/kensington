@@ -21,13 +21,14 @@ export class ContentTag {
    * initial mount and on every reconnect for `persist: true` parents. Returns this
    * instance for chaining.
    */
-  addConnectedCallback(fn: (this: Element, el: Element) => void): this;
+  addConnectedCallback<E extends Element = HTMLElement>(fn: (this: E, el: E) => void): this;
   /**
    * Registers a callback invoked each time this element is removed from the live DOM.
    * The callback receives the element as both `this` and its first argument. Returns this
-   * instance for chaining.
+   * instance for chaining. The element type defaults to `HTMLElement`; narrow it via the
+   * generic parameter when you need a more specific interface (e.g. `HTMLInputElement`).
    */
-  addDisconnectedCallback(fn: (this: Element, el: Element) => void): this;
+  addDisconnectedCallback<E extends Element = HTMLElement>(fn: (this: E, el: E) => void): this;
 }
 
 /**
@@ -319,7 +320,7 @@ export type GlobalEvents = {
   onvolumechange?: string | ((event: Event) => void);
   onwaiting?: string | ((event: Event) => void);
   onwheel?: string | ((event: WheelEvent) => void);
-  on?: Record<string, (event: Event) => void>;
+  on?: Record<string, (event: any) => void>;
 }
 
 type SvgPresentationAttributes = {
@@ -4935,6 +4936,9 @@ export function computed<T>(fn: () => T, key?: SignalKey): ReadonlySignal<T>;
  * e.stop(); // unsubscribe
  */
 export function effect(fn: () => void): { stop(): void };
+
+/** True if `v` is a kensington Signal (or ReadonlySignal). Duck-types via `_isKensingtonSignal === true` so it returns true for signals from any kensington module copy. Useful when writing helpers that accept `Reactive<T>` and need to differentiate a signal from a static value at runtime. */
+export function isKensingtonSignal(v: unknown): v is Signal<unknown>;
 
 /** True in a browser environment, false in Node.js. Use to guard browser-only code that cannot be placed inside effect(). */
 export const isBrowser: boolean;

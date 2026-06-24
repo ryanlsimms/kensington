@@ -1,5 +1,5 @@
 import Kensington from './kensington.js';
-import Signal, { computed, effect, signal } from './lib/reactive/signal.js';
+import Signal, { computed, effect, isKensingtonSignal, signal } from './lib/reactive/signal.js';
 
 export { Kensington, Signal };
 
@@ -10,7 +10,7 @@ export default Kensington;
 // in package.json, an unused `t` removes the class and all its transitive imports.
 export const t = /* @__PURE__ */ new Kensington();
 
-export { computed, effect, signal };
+export { computed, effect, isKensingtonSignal, signal };
 export const isBrowser = typeof window !== 'undefined';
 
 export { __kInstrument, hmrReplaceComponent, registerComponents, renderForHydration } from './lib/render/hydration.js';
