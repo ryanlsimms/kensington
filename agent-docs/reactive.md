@@ -2,6 +2,64 @@
 
 Subdoc of the root `AGENTS.md`. Read this any time the work touches `signal()`, `computed()`, `effect()`, `.transform()`, `mapWithKey`, or any reactive lifecycle (`addConnectedCallback`, `persist: true`, dev-tools, loading state). The root file has only the decision check and the warning table.
 
+---
+
+## Summary. Read this first
+
+If you're writing trivial reactive code (a couple of signals, one computed, a simple effect), this summary may be all you need. Read deeper sections only when your task lands in the table at the bottom.
+
+### Imports
+
+```javascript
+import { t, signal, computed, effect, isBrowser } from 'kensington';
+import type { Signal, ReadonlySignal, Reactive } from 'kensington';
+```
+
+### The five core operations
+
+- `signal(initial, key?)` — writable state. `.get()` subscribes the current reactive context, `.value` reads without subscribing, `.set(v)` or `.set(prev => next)` writes, `.stop()` tears down subscribers. `.transform(fn, key?)` chains a derivation.
+- `computed(fn, key?)` — derived state. Auto-disposes when it has no subscribers, re-runs when its tracked signals change.
+- `effect(fn)` — side effect (DOM updates, fetches, timers). Returns `{ pause, resume, stop }`. Re-runs when tracked signals change.
+- `signal.mapWithKey(keyOrProp, mapFn)` — keyed list rendering. mapFn runs once per key; the resulting tag is cached and reused across renders.
+- `tag.addConnectedCallback(el => …)` / `addDisconnectedCallback(() => …)` — lifecycle hooks tied to the live DOM element.
+
+### The one rule that bites: pass a key when inside a reactive callback
+
+Before writing any `signal()` / `computed()` / `.transform()` call, ask: will this call run on the call stack of `computed(fn)`, `signal.transform(fn)`, `mapWithKey(key, mapFn)`'s mapFn, or `effect(fn)` at runtime? If yes, pass a stable key as the second argument. Call-stack matters, not lexical position. A helper called from inside a reactive callback is in the trap even though the call looks top-level in the source.
+
+### `.get()` vs `.value`
+
+Default to `.get()`. It reads the current value AND subscribes the surrounding reactive context. Use `.value` only when you want the current value WITHOUT subscribing (imperative event handlers, async callbacks, or a peek that would otherwise create a self-trigger loop). A computed that uses `.value` where it should have used `.get()` silently never updates.
+
+### Common patterns at a glance
+
+- Live text or attribute: `t.span(sig)`, `t.button({ class: cls, disabled: isLoading })`.
+- Live input: `t.input({ type: 'text', prop: { value: sig }, oninput: e => sig.set(e.target.value) })`.
+- Conditional subtree containing a keyed list: prefer the **display-toggle** pattern (`style: { display: visible.transform(v => v ? 'block' : 'none', 'k') }`) over `computed(() => visible.get() ? subtree : null)`, which rebuilds the per-key cache on every flip.
+- Per-row local state: `signal(false, item.id)` inside a `mapWithKey` mapFn.
+- Drag-and-drop sortable items: add `persist: true` to each row tag so effects pause on removal and resume on re-insertion.
+- Standalone `effect()` cleanup: capture the return, stop it from `addDisconnectedCallback`. The `kensington/no-ignored-effect-return` lint rule expects an assignment.
+
+### When to read which section
+
+| Task | Section |
+|---|---|
+| Choosing `.get()` vs `.value` | Signal API → .get() vs .value |
+| Binding `value` / `checked` / `<select>` to a signal | DOM properties with `prop` |
+| Side effects, timers, fetches | effect |
+| Rendering a list | Keyed lists |
+| Row contents that update from outside the row | Updating a row after it's been cached |
+| External code driving per-row state | Addressing per-row state from outside the row |
+| Lazy module-level signal registry | Lazy registries called from reactive callbacks |
+| Drag/drop, view toggling, mount/unmount lifetime | Cleanup, addConnectedCallback / addDisconnectedCallback |
+| Loading spinners, view replacement | Loading state |
+| Diagnosing a runtime warning | Reactive pitfalls |
+| Inspecting state | DevTools |
+
+Full reference follows.
+
+---
+
 ## Reactive data
 
 Signals and `computed` work in any JavaScript environment. `.toElement()` and DOM-mutating effects require a browser. During `renderForHydration`, `effect()` is suppressed entirely. Browser-only code inside an `effect()` is safe to call on the server.
@@ -135,6 +193,34 @@ t.input({ type: 'search', value: query })         // live value attribute
 ```
 
 An unkeyed `Signal<Tag[]>` passed as content reconciles in place by position — the array becomes the new content on every change. For stable per-item identity (caching tags across re-renders, preserving DOM state per row), use `mapWithKey` instead.
+
+A `Signal<Tag | null>` passed as content works the same way the single-tag case does. When the signal flips between a tag and `null`, the previous DOM is removed and the new one is inserted in place. Use this for "show this only when X" patterns where no list is involved. The "Conditional subtrees that contain a keyed list" guidance in [Keyed lists](#keyed-lists) below covers the case where the conditional subtree contains a `mapWithKey` and the simple `null`-toggle pattern would tear down the keyed cache.
+
+### Whole-object signals on attribute slots
+
+`style`, `data`, `aria`, and any namespaced attribute can take a `Signal<Object>` at any nesting depth, not just per-leaf signals on individual properties.
+
+```javascript
+// Per-property (still works). Only the changed property writes to the DOM.
+t.div({ style: { color: colorSignal, fontSize: '1rem' } });
+
+// Whole-style signal. The signal yields a {prop: value} object; each emission
+// diffs against the previous, applying changed properties and clearing missing ones.
+const position = computed(() => ({ top: `${y.get()}px`, left: `${x.get()}px` }), 'pos');
+t.div({ style: position });
+
+// Same shape for namespaced attributes.
+const bsState = signal({ toggle: 'collapse', target: '#pane' });
+t.div({ data: { bs: bsState } });       // → data-bs-toggle="collapse" data-bs-target="#pane"
+
+// And at the top level.
+const cursorData = signal({ x: 10, y: 20, color: 'red' });
+t.div({ data: cursorData });            // → data-x="10" data-y="20" data-color="red"
+```
+
+`prop` and `on` deliberately do NOT support whole-object signals. Use per-property signals there (`prop: { value: sig, disabled: another }`, `on: { input: handler }`). Removal semantics for those slots are undefined when a property disappears from a new signal emission.
+
+When a signal-yielded object contains *other* signals as values, those inner signals are sampled (via `.value`, no subscription) at outer-emission time. The outer signal owns the subscription. If you want inner signals to drive updates independently, use the per-property form instead.
 
 Use `.transform(String)` when an attribute expects a string but the signal holds a non-string value:
 
@@ -564,7 +650,7 @@ function statsPanel() {
 - For one-shot setup that doesn't need a teardown, you can still use `addConnectedCallback` alone (e.g. focus a newly mounted input via `el => el.focus()`).
 - The callback body is a plain function call, NOT inside a reactive scope. Creating `effect()` here is the right pattern when you need to react to a signal for as long as the element is mounted. Capture the stop function and call it from `addDisconnectedCallback`: `let stop; panel.addConnectedCallback(() => { stop = effect(() => { ... }); }); panel.addDisconnectedCallback(() => stop?.());`. The `kensington/no-ignored-effect-return` lint rule recognises this capture-and-stop pattern. Creating `signal()` or `computed()` here is also free of warnings since the callback is not a `computed` body.
 - **Window- or document-level listeners** are wired the same way. `panel.addConnectedCallback(() => { window.addEventListener('keydown', handler); }); panel.addDisconnectedCallback(() => { window.removeEventListener('keydown', handler); });` keeps the listener's lifetime tied to the panel's mount. Useful for global keyboard shortcuts, scroll listeners, `online`/`offline` events, etc. Always pair with a `removeEventListener` in the disconnect callback, since these listeners are not on a node that gets garbage collected with the panel.
-- **`addConnectedCallback` fires BEFORE `prop` bindings apply.** When a tag declares `prop: { value: someSignal }`, the binding effect runs as part of the lifecycle setup that happens around (and partly after) the connected callbacks. Calling `el.focus(); el.select()` synchronously inside `addConnectedCallback` for an input that uses `prop: { value }` may find the input's `.value` still empty. Defer the focus/select with `queueMicrotask(() => { el.focus(); el.select(); })` so the prop binding has time to land first. Plain `el.focus()` (no select) is safe in either order because focus does not depend on the value.
+- **`addConnectedCallback` fires BEFORE `prop` bindings apply.** This is a general rule, not just a `<select>` or focus-and-select special case. When a tag declares `prop: { value: someSignal }`, the binding effect runs as part of the lifecycle setup that happens around (and partly after) the connected callbacks. **Anything inside `addConnectedCallback` that reads `el.value` (or any other prop-bound property) synchronously will see the pre-binding state, even when the signal is non-empty.** Example failures: measuring a textarea's content size to compute character-cell dimensions, calling `el.focus(); el.select()` on a pre-filled input, mirroring `el.value` to a sibling element. Defer any read with `queueMicrotask(() => { ... })` so the prop binding lands first. Plain `el.focus()` (no value read) is safe in either order because focus does not depend on the prop-bound value.
 
 This is the canonical place for `setInterval`/`setTimeout`, `IntersectionObserver`, `ResizeObserver`, manual focus, `effect()` whose lifetime should match the element's mount, or any imperative DOM API that needs symmetric setup/cleanup tied to element mount/unmount.
 

@@ -88,6 +88,34 @@ export default app;  // Bun calls fetch() on the default export.
 
 Start with `bun --watch server.ts`. No build step on the server side. The client bundle is produced by `Bun.build({ entrypoints: ['src/client.ts'], outdir: 'public' })` driven by a small `build.ts`.
 
+### Bun + Hono with WebSocket upgrade
+
+Bun's native WebSocket support is exposed via the default-export object, not via Hono's route handlers. Hono handles HTTP; Bun's runtime handles the upgrade. The pattern:
+
+```typescript
+import { Hono } from 'hono';
+
+const app = new Hono();
+app.get('/', c => c.html(/* shell */));
+// ...other HTTP routes...
+
+export default {
+  port: 3852,
+  fetch(req, server) {
+    // Upgrade /ws requests to WebSocket; fall through to Hono for everything else.
+    if (new URL(req.url).pathname === '/ws' && server.upgrade(req)) { return; }
+    return app.fetch(req, { server });
+  },
+  websocket: {
+    open(ws)      { /* on connect */ },
+    message(ws, raw) { /* JSON parse, dispatch */ },
+    close(ws)     { /* on disconnect */ },
+  },
+};
+```
+
+`server.upgrade(req)` returns `true` if the upgrade succeeded; if so, return early with no response. Otherwise the request falls through to Hono. The `websocket` object's lifecycle handlers see a `ServerWebSocket`, which has `.send(data)`, `.close()`, `.subscribe(channel)`, and `.publish(channel, data)` for pub/sub-style broadcast. Per-connection state goes on `ws.data` (assigned in `open`).
+
 ## Fastify, Elysia, Deno, Node http, and other frameworks
 
 Same shape as Express and Hono. Build the tag tree, call `.toString()`, send it as `text/html; charset=utf-8`. One example shape covers them all:

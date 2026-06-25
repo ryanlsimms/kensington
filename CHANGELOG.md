@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- `style`, `data`, `aria`, and other namespaced-attribute slots now accept a `Signal<Object>` at any depth, in addition to the existing per-leaf signal form.
 - `isKensingtonSignal` is now exported from the package root.
 - `addConnectedCallback<E extends Element = HTMLElement>(fn)` and `addDisconnectedCallback<E>(fn)` are now generic.
 

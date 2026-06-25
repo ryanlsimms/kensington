@@ -94,6 +94,74 @@ test('signal as boolean attribute toggles presence live', async ({ page, bundle 
   await expect(page.locator('#sig-bool')).not.toHaveAttribute('checked');
 });
 
+test('subtree-signal at data: flattens initial value and applies diff updates', async ({ page, bundle }) => {
+  await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    window.dataSig = signal({ foo: '1', bar: '2' });
+    document.body.append(t.div({ id: 'subtree-data', data: window.dataSig }).toElement());
+  }, bundle);
+  await expect(page.locator('#subtree-data')).toHaveAttribute('data-foo', '1');
+  await expect(page.locator('#subtree-data')).toHaveAttribute('data-bar', '2');
+  await page.evaluate(() => window.dataSig.set({ foo: '9', baz: '3' }));
+  // foo updated, baz added, bar removed
+  await expect(page.locator('#subtree-data')).toHaveAttribute('data-foo', '9');
+  await expect(page.locator('#subtree-data')).toHaveAttribute('data-baz', '3');
+  await expect(page.locator('#subtree-data')).not.toHaveAttribute('data-bar', /.*/);
+});
+
+test('subtree-signal at data: { bs: signal } flattens with the nested prefix', async ({ page, bundle }) => {
+  await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    window.bsSig = signal({ toggle: 'collapse', target: '#pane' });
+    document.body.append(t.div({ id: 'subtree-bs', data: { bs: window.bsSig } }).toElement());
+  }, bundle);
+  await expect(page.locator('#subtree-bs')).toHaveAttribute('data-bs-toggle', 'collapse');
+  await expect(page.locator('#subtree-bs')).toHaveAttribute('data-bs-target', '#pane');
+  await page.evaluate(() => window.bsSig.set({ toggle: 'modal' }));
+  await expect(page.locator('#subtree-bs')).toHaveAttribute('data-bs-toggle', 'modal');
+  await expect(page.locator('#subtree-bs')).not.toHaveAttribute('data-bs-target', /.*/);
+});
+
+test('subtree-signal at style: per-property diff updates and clears', async ({ page, bundle }) => {
+  await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    window.styleSig = signal({ color: 'red', fontSize: '14px' });
+    document.body.append(t.div({ id: 'subtree-style', style: window.styleSig }, 'x').toElement());
+  }, bundle);
+  await expect(page.locator('#subtree-style')).toHaveCSS('color', 'rgb(255, 0, 0)');
+  await expect(page.locator('#subtree-style')).toHaveCSS('font-size', '14px');
+  await page.evaluate(() => window.styleSig.set({ color: 'blue' }));
+  await expect(page.locator('#subtree-style')).toHaveCSS('color', 'rgb(0, 0, 255)');
+  // fontSize removed; element falls back to the inherited/default font-size, NOT 14px.
+  const fontSize = await page.locator('#subtree-style').evaluate(el => el.style.fontSize);
+  expect(fontSize).toBe('');
+});
+
+test('subtree-signal at aria: flattens and diffs across emissions', async ({ page, bundle }) => {
+  await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    window.ariaSig = signal({ label: 'Close', expanded: 'false' });
+    document.body.append(t.button({ id: 'subtree-aria', aria: window.ariaSig }, 'x').toElement());
+  }, bundle);
+  await expect(page.locator('#subtree-aria')).toHaveAttribute('aria-label', 'Close');
+  await expect(page.locator('#subtree-aria')).toHaveAttribute('aria-expanded', 'false');
+  await page.evaluate(() => window.ariaSig.set({ label: 'Close dialog', pressed: 'true' }));
+  await expect(page.locator('#subtree-aria')).toHaveAttribute('aria-label', 'Close dialog');
+  await expect(page.locator('#subtree-aria')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#subtree-aria')).not.toHaveAttribute('aria-expanded', /.*/);
+});
+
+test('subtree-signal yielding empty object then non-empty adds attributes correctly', async ({ page, bundle }) => {
+  await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    window.emptyStart = signal({});
+    document.body.append(t.div({ id: 'subtree-empty', data: window.emptyStart }).toElement());
+  }, bundle);
+  await expect(page.locator('#subtree-empty')).not.toHaveAttribute('data-foo', /.*/);
+  await page.evaluate(() => window.emptyStart.set({ foo: 'hello' }));
+  await expect(page.locator('#subtree-empty')).toHaveAttribute('data-foo', 'hello');
+});
+
 test('computed signal derives value from other signals and updates live', async ({ page, bundle }) => {
   await page.evaluate(async src => {
     const { t, signal, computed } = await import(src);

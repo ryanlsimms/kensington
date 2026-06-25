@@ -2,6 +2,7 @@ import { markContentTracked } from '../lib/reactive/dom-tracker.js';
 import { createLifecycle } from '../lib/reactive/lifecycle.js';
 import { reconcile } from '../lib/reactive/reconcile.js';
 import { isKensingtonSignal } from '../lib/reactive/signal.js';
+import { attributesArrayFromObject, SUBTREE_SIGNAL_KEY } from '../lib/render/attributes.js';
 import {
   attributeArray,
   attributeString,
@@ -207,7 +208,72 @@ export default class ContentTag {
     let hasSignalContent = false;
 
     for (const [attrName, attrValue] of this.attributeArray()) {
-      if (/^on[a-z]/.test(attrName) && typeof attrValue === 'function') {
+      if (attrName === SUBTREE_SIGNAL_KEY) {
+        const { signal, prefix, attrsSet, isStyle } = attrValue;
+        if (isStyle) {
+          // style: signal-yielding-object. On each emission, diff per-property
+          // against the previous emission. New/changed: setProperty. Missing: removeProperty.
+          const prevProps = new Set();
+          ensureLifecycle().signalEffect(signal, (el, val) => {
+            const next = new Set();
+            if (val !== null && typeof val === 'object' && !Array.isArray(val)) {
+              for (const propKey of Object.keys(val)) {
+                let v;
+                try { v = val[propKey]; } catch { continue; }
+                if (isKensingtonSignal(v)) {
+                  try { v = v.value; } catch { v = null; }
+                }
+                const cssProp = camelToKebab(propKey);
+                next.add(cssProp);
+                if (v === null || v === undefined || v === false || v === '') {
+                  el.style.removeProperty(cssProp);
+                } else {
+                  el.style.setProperty(cssProp, String(v));
+                }
+              }
+            }
+            for (const old of prevProps) {
+              if (!next.has(old)) {
+                el.style.removeProperty(old);
+              }
+            }
+            prevProps.clear();
+            for (const p of next) { prevProps.add(p); }
+          }, `${prefix}(signal)`);
+        } else {
+          // Namespace subtree (data/aria/hx/...). On each emission, recursively
+          // expand the snapshot into kebab-name attribute pairs with the established
+          // prefix, then diff against the previous set.
+          const prevAttrs = new Map();
+          ensureLifecycle().signalEffect(signal, (el, val) => {
+            const next = new Map();
+            if (val !== null && typeof val === 'object' && !Array.isArray(val)) {
+              const pairs = attributesArrayFromObject(val, { attrsSet, encode: false, prefix });
+              for (const [n, v] of pairs) {
+                if (n === SUBTREE_SIGNAL_KEY) { continue; } // nested subtree-signal sampled at outer emission, not re-subscribed
+                let resolved = v;
+                if (isKensingtonSignal(resolved)) {
+                  try { resolved = resolved.value; } catch { resolved = null; }
+                }
+                if (resolved === false || resolved === null || resolved === undefined) { continue; }
+                next.set(n, resolved === true ? '' : String(resolved));
+              }
+            }
+            for (const [n, v] of next) {
+              if (prevAttrs.get(n) !== v) {
+                el.setAttribute(n, v);
+              }
+            }
+            for (const old of prevAttrs.keys()) {
+              if (!next.has(old)) {
+                el.removeAttribute(old);
+              }
+            }
+            prevAttrs.clear();
+            for (const [n, v] of next) { prevAttrs.set(n, v); }
+          }, `${prefix}(signal)`);
+        }
+      } else if (/^on[a-z]/.test(attrName) && typeof attrValue === 'function') {
         element.addEventListener(attrName.slice(2), attrValue);
       } else if (isKensingtonSignal(attrValue)) {
         ensureLifecycle().signalEffect(attrValue, (el, val) => {

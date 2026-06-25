@@ -3,6 +3,13 @@ import he from '../util/he.js';
 import { styleObjectToCss } from '../util/style-utils.js';
 import { getAttrName } from '../util/text-utils.js';
 
+// Marker used as the first element of an attribute pair when the value is a
+// signal yielding an object. The pair shape is
+//   [SUBTREE_SIGNAL_KEY, { signal, prefix, attrsSet, encode, isStyle }]
+// Consumed by attributesStringFromObject (toString) and the toElement attribute
+// loop in content-tag.js. See "subtree-signal handling" notes below.
+export const SUBTREE_SIGNAL_KEY = Symbol('kensington.subtree-signal');
+
 function resolveStyleSignals(obj) {
   const resolved = {};
   for (const k of Object.keys(obj)) {
@@ -71,6 +78,23 @@ export function attributesArrayFromObject(obj, options = {}) {
     if (val === true) {
       result.push([attrName, '']); // empty string signals the string builder to emit a bare attribute name (e.g. disabled, checked)
       continue;
+    }
+    // Subtree-signal detection. A signal whose current value is a plain object
+    // (or any signal at the `style` slot) is treated as a "subtree-signal" that
+    // expands at toString/toElement time into the attributes its current value
+    // would have produced if it had been inlined here. Updates diff against the
+    // previous emission's attribute set so missing keys remove their attributes.
+    // Per-leaf signals (signal yielding a string/number/boolean) take the
+    // existing leaf-attribute path below.
+    if (isKensingtonSignal(val)) {
+      let current;
+      try { current = val.value; } catch { current = null; }
+      const isObjectValued = current !== null && typeof current === 'object' && !Array.isArray(current);
+      if (isObjectValued || attr === 'style') {
+        const isStyle = attr === 'style';
+        result.push([SUBTREE_SIGNAL_KEY, { signal: val, prefix: attrName, attrsSet, encode, isStyle }]);
+        continue;
+      }
     }
     if (attr === 'style' && val !== null && typeof val === 'object' && !Array.isArray(val)) { // !Array.isArray: typeof [] === 'object'
       let hasSignal = false;
@@ -150,7 +174,28 @@ export function attributesArrayFromObject(obj, options = {}) {
 export function attributesStringFromObject(obj, options = {}) {
   const { onFunction, encode } = options;
   let result = '';
+  const subtreeSignalToString = rawVal => {
+    const { signal, prefix, attrsSet, isStyle } = rawVal;
+    let snapshot;
+    try { snapshot = signal.value; } catch { return ''; }
+    if (snapshot === null || typeof snapshot !== 'object' || Array.isArray(snapshot)) {
+      return '';
+    }
+    if (isStyle) {
+      const css = styleObjectToCss(resolveStyleSignals(snapshot));
+      return css ? `${prefix}="${encode ? he.encode(css) : css}"` : '';
+    }
+    return attributesStringFromObject(snapshot, { onFunction, encode, attrsSet, prefix });
+  };
   for (const [name, rawVal] of attributesArrayFromObject(obj, options)) {
+    if (name === SUBTREE_SIGNAL_KEY) {
+      const sub = subtreeSignalToString(rawVal);
+      if (sub) {
+        if (result) { result += ' '; }
+        result += sub;
+      }
+      continue;
+    }
     let val = rawVal;
     if (isKensingtonSignal(val)) {
       val = val.get();

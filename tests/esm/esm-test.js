@@ -1689,6 +1689,76 @@ describe('signal', () => {
   });
 });
 
+// ─── subtree-signal attributes ─────────────────────────────────────────────
+// Signals that yield objects can sit at any depth inside `style`, `data`,
+// `aria`, or any other namespaced-attribute slot. toString resolves the
+// signal's current value and flattens to attribute pairs. (toElement diff
+// behavior is exercised by tests/browser/signals.spec.js.)
+
+describe('subtree-signal attributes (toString)', () => {
+  it('top-level data: Signal<Object> flattens to data-* attributes', () => {
+    const s = signal({ foo: 'bar', count: 3 });
+    assert.strictEqual(t.div({ data: s }).toString(), '<div data-foo="bar" data-count="3"></div>');
+  });
+  it('top-level aria: Signal<Object> flattens to aria-* attributes', () => {
+    const s = signal({ label: 'Close', expanded: 'false' });
+    assert.strictEqual(t.button({ aria: s }).toString(), '<button aria-label="Close" aria-expanded="false"></button>');
+  });
+  it('nested data: { bs: Signal<Object> } flattens to data-bs-* attributes', () => {
+    const s = signal({ toggle: 'collapse', target: '#pane' });
+    const expected = '<div data-bs-toggle="collapse" data-bs-target="#pane"></div>';
+    assert.strictEqual(t.div({ data: { bs: s } }).toString(), expected);
+  });
+  it('two-level nesting data: { wa: { dialog: Signal<Object> } } flattens correctly', () => {
+    const s = signal({ open: 'true' });
+    assert.strictEqual(t.div({ data: { wa: { dialog: s } } }).toString(), '<div data-wa-dialog-open="true"></div>');
+  });
+  it('static keys and subtree-signal keys at the same level coexist', () => {
+    const s = signal({ toggle: 'collapse' });
+    const expected = '<div data-theme="dark" data-bs-toggle="collapse"></div>';
+    assert.strictEqual(t.div({ data: { theme: 'dark', bs: s } }).toString(), expected);
+  });
+  it('style: Signal<Object> emits a style attribute with the resolved css', () => {
+    const s = signal({ color: 'red', fontSize: '14px' });
+    assert.strictEqual(t.div({ style: s }).toString(), '<div style="color: red; font-size: 14px"></div>');
+  });
+  it('style: Signal<Object> snapshots the current value after .set()', () => {
+    const s = signal({ color: 'red' });
+    assert.strictEqual(t.div({ style: s }).toString(), '<div style="color: red"></div>');
+    s.set({ color: 'blue', fontWeight: 600 });
+    assert.strictEqual(t.div({ style: s }).toString(), '<div style="color: blue; font-weight: 600"></div>');
+  });
+  it('data: Signal<Object> snapshots the current value after .set()', () => {
+    const s = signal({ a: '1' });
+    assert.strictEqual(t.div({ data: s }).toString(), '<div data-a="1"></div>');
+    s.set({ a: '9', b: '2' });
+    assert.strictEqual(t.div({ data: s }).toString(), '<div data-a="9" data-b="2"></div>');
+  });
+  it('data: Signal<Object> with empty object emits no attributes', () => {
+    const s = signal({});
+    assert.strictEqual(t.div({ data: s }).toString(), '<div></div>');
+  });
+  it('data: Signal yielding null is treated as no attributes', () => {
+    const s = signal(null);
+    assert.strictEqual(t.div({ data: s }).toString(), '<div></div>');
+  });
+  it('inner signals inside a subtree-signal value are sampled at outer-emission time', () => {
+    const inner = signal('a-value');
+    const outer = signal({ inner });
+    assert.strictEqual(t.div({ data: outer }).toString(), '<div data-inner="a-value"></div>');
+  });
+  it('per-property style signals (the existing shape) still work alongside subtree-signal', () => {
+    const colorSig = signal('green');
+    const expected = '<div style="color: green; font-size: 20px"></div>';
+    assert.strictEqual(t.div({ style: { color: colorSig, fontSize: '20px' } }).toString(), expected);
+  });
+  it('subtree-signal at custom namespace defined via additionalNamespaces', () => {
+    const tt = new Kensington({ additionalNamespaces: ['hx'] });
+    const s = signal({ get: '/items', trigger: 'click' });
+    assert.strictEqual(tt.div({ hx: s }).toString(), '<div hx-get="/items" hx-trigger="click"></div>');
+  });
+});
+
 // ─── signal.transform ──────────────────────────────────────────────────────
 
 describe('signal.transform', () => {
