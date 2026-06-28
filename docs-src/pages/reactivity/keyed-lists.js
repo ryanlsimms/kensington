@@ -17,21 +17,21 @@ export function reactivityKeyedLists() {
   { id: 2, name: 'Banana' },
 ]);
 
-// Plain map. Correct, but every render builds fresh tag instances and the reconciler
-// builds fresh DOM for each one. Adding a row rebuilds every existing <li>.
+// Plain map. Correct, but every render builds fresh tag instances and fresh DOM
+// for each one. Adding a row rebuilds every existing <li>.
 t.ul(items.transform(arr => arr.map(item => t.li(item.name)))).toElement();`),
     t.p([
       'The catch is performance. ',
       t.code('arr.map(item => t.li(...))'),
-      ' produces a fresh tag for every item on every re-render. The reconciler has no way to know that the new ',
+      ' produces a fresh tag for every item on every re-render, so Kensington cannot tell that the new ',
       t.code('<li>'),
-      ' at position 0 represents the same Apple as the previous one, so it builds a fresh DOM node. For a 10-row list this is invisible. For 1000 rows with frequent updates the cost adds up. Focus, scroll, and input value also reset because the DOM nodes are new each time.',
+      ' at position 0 is the same Apple as before and builds a fresh DOM node. For a 10-row list this is invisible. For 1000 rows with frequent updates the cost adds up. Focus, scroll, and input value also reset because the DOM nodes are new each time.',
     ]),
     t.p([
       t.code('signal.mapWithKey(keyOrProp, mapFn)'),
       ' is the optimized form. It runs ',
       t.code('mapFn'),
-      ' once per key the first time the key is seen and caches the resulting tag. Subsequent renders return the same tag instance, so the reconciler matches it to the existing DOM node and reuses it. Reordering, adding, and removing items reorder existing nodes rather than rebuilding them.',
+      ' once per key the first time the key is seen and caches the resulting tag. Subsequent renders return the same tag instance, so Kensington reuses the existing DOM node. Reordering, adding, and removing items reorder existing nodes rather than rebuilding them.',
     ]),
     code('javascript', `const items = signal([
   { id: 1, name: 'Apple' },
@@ -92,7 +92,7 @@ t.ul(rows).toElement();`),
       t.code('computed()'),
       ', or ',
       t.code('.transform()'),
-      ' so each per-item instance is scoped to mapWithKey\'s internal computed and stopped automatically when the item leaves the list.',
+      ' so each per-item instance is scoped to the row and stopped automatically when the item leaves the list.',
     ]),
     code('javascript', `const filter = signal('fruit');
 
@@ -115,14 +115,14 @@ const list = items.mapWithKey('id', item => {
 
 t.ul(list).toElement();`),
     t.p([
-      'Because mapFn only runs the first time a key is seen, these per-item primitives are created once and live for the life of the row. Removing the item drops it from mapWithKey\'s cache, the keyed registry sweeps its primitives, and they are stopped automatically. See the ',
+      'Because mapFn only runs the first time a key is seen, these per-item primitives are created once and live for the life of the row. Removing the item drops it from the list and its primitives are stopped automatically. See the ',
       exLink('?page=examples#editable-rows', 'editable rows example'),
       ' for a realistic use of these patterns together.',
     ]),
 
     t.h4({ id: 'signals-keyed-no-escape' }, 'Don\'t reference a keyed instance from outside its scope'),
     t.p([
-      'mapWithKey\'s internal computed can stop a keyed primitive whenever its key isn\'t accessed during a re-run (e.g. when the item leaves the list). After that point, external subscribers held in user-land code silently stop receiving updates. Use the instance freely inside the mapFn (read it with ',
+      'A keyed primitive is stopped whenever its key isn\'t accessed during a re-run (e.g. when the item leaves the list). After that point, external subscribers held in user-land code silently stop receiving updates. Use the instance freely inside the mapFn (read it with ',
       t.code('.get()'),
       ', transform it, pass it as tag content or an attribute value, etc.), but don\'t let the instance reference itself escape. The unsafe patterns are assigning it to a module-level variable, returning it bare from the mapFn, or passing it to a function that retains it.',
     ]),

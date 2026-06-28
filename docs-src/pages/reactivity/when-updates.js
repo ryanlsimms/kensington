@@ -160,7 +160,7 @@ items.set(prev => prev.map(it =>
           [
             'The effect re-runs. Multiple ',
             t.code('.set()'),
-            ' calls in the same synchronous turn coalesce into a single re-run via microtask batching.',
+            ' calls in the same synchronous turn are batched into a single re-run.',
           ],
         ],
         [
@@ -193,7 +193,7 @@ const list = t.ul(items.mapWithKey('id', row)).toElement();
 // class attribute is rewritten. Adding or removing a row still uses items.set() with a
 // fresh array.
 items.get()[0].done.set(true);`),
-      t.p(`The keyed reconciler is built for the array-set path (adding, removing, reordering rows). Per-row signals are the right tool when only a row's contents change.`),
+      t.p(`mapWithKey is built for the array-set path (adding, removing, reordering rows). Per-row signals are the right tool when only a row's contents change.`),
     ]),
   ];
 }

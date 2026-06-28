@@ -306,6 +306,12 @@ export const searchIndex = [
     keywords: ['ssr', 'server side rendering', 'hydration', 'ssrDepth', 'isomorphic', 'universal'],
   },
   {
+    label: 'Live signals (intro)',
+    page: 'reactivity',
+    id: 'signals-live',
+    keywords: ['live', 'liveSignal', 'shared', 'multi-client', 'sync', 'kensington/live', 'intro', 'basics'],
+  },
+  {
     label: 'Live signals (multi-client state)',
     page: 'reactivity',
     id: 'live-signals',
@@ -349,15 +355,15 @@ export const searchIndex = [
     keywords: ['canWrite', 'canRead', 'auth', 'permission', 'server-only', 'validation', 'transition', 'prev', 'next'],
   },
   {
-    label: 'Atomic updates with .set(fn)',
+    label: 'Updates that depend on the current value',
     page: 'reactivity',
     id: 'live-signals-atomic',
     keywords: [
-      'atomic', 'cas', 'compare-and-swap', 'set fn', 'optimistic', 'race', 'increment', 'append', 'concurrent',
+      'set fn', 'updater', 'race', 'increment', 'append', 'concurrent', 'converge', 'atomic', 'cas',
     ],
   },
   {
-    label: 'Live connection status pill',
+    label: 'Connection status',
     page: 'reactivity',
     id: 'live-signals-status',
     keywords: ['connection', 'pill', 'reconnect', 'disconnected', 'status'],

@@ -59,29 +59,27 @@ type CanWrite =
       '; both must allow.',
     ]),
 
-    t.h3({ id: 'api-live-set-fn' }, '.set(value | fn). Atomic compare-and-swap'),
-    code('typescript', `// Direct write. Fire-and-forget last-write-wins.
-sig.set(value: T): void
-
-// Read-modify-write. Atomic via compare-and-swap.
-sig.set(fn: (current: T) => T): Promise<void>`),
+    t.h3({ id: 'api-live-set-fn' }, '.set under multiple clients'),
     t.p([
-      t.code('.set(value)'),
-      ' is a direct write: optimistic local apply, server accepts unconditionally (subject to ',
-      t.code('canWrite'),
-      '), last-write-wins under concurrency. ',
-      t.code('.set(fn)'),
-      ' performs CAS: the library runs ',
-      t.code('fn'),
-      ' locally for optimistic apply, sends the proposed value with the client\'s last-seen Lamport version, and on conflict re-runs ',
-      t.code('fn'),
-      ' against the server\'s authoritative value. Concurrent calls converge. ',
-      t.code('fn'),
-      ' must be pure; it may run multiple times.',
+      'Same signature as a regular signal. Two things change when the value is shared across clients.',
     ]),
-    code('javascript', `theme.set('dark');                                       // direct
-counter.set(n => n + 1);                                 // CAS
-viewers.set(prev => ({ users: [...prev.users, me] }));   // CAS`),
+    t.ul([
+      t.li([
+        t.code('.set(value)'),
+        ' races against concurrent writers from other clients. Last-write-wins.',
+      ]),
+      t.li([
+        t.code('.set(prev => next)'),
+        ' returns a ',
+        t.code('Promise<void>'),
+        ' that resolves once the server confirms, and ',
+        t.code('fn'),
+        ' may run more than once, so it must be pure.',
+      ]),
+    ]),
+    t.p([
+      'Prefer the updater form whenever the new value depends on the current value.',
+    ]),
 
     t.h3({ id: 'api-connection-status' }, 'Connection status'),
     code('typescript', `type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected'`),
@@ -136,14 +134,10 @@ interface ClientTransport {
       t.code("'/__kensington/live'"),
       ' (matches ',
       t.code('liveServer'),
-      '\'s default path).',
+      '\'s default path). See the ',
+      t.a({ href: '?page=reactivity#live-signals' }, 'live signals guide'),
+      ' for setup.',
     ]),
-    code('javascript', `import { registerComponents } from 'kensington';
-import { connectLive } from 'kensington/live';
-import { todos } from './shared/todos.js';
-
-connectLive();
-registerComponents({ todos });`),
     t.ul([
       t.li([
         t.code('close()'),
@@ -298,27 +292,6 @@ interface LiveServer {
       t.code('effect()'),
       ' around it to react to client writes and server-side mutations.',
     ]),
-    code('javascript', `import http from 'node:http';
-import express from 'express';
-import { renderForHydration } from 'kensington';
-import { liveServer, liveSignal } from 'kensington/live';
-import { todos } from './shared/todos.js';
-
-const live = await liveServer({
-  persistence: { kind: 'sqlite', path: './data/live.db' },
-});
-
-const items = liveSignal([], 'todos:list');
-effect(() => audit.log('todos changed', items.get()));
-
-const app = express();
-app.get('/', (req, res) => {
-  res.send(renderForHydration(todos, { items: live.get('todos:list') ?? [] }));
-});
-
-const server = http.createServer(app);
-await live.attach(server);
-server.listen(3000);`),
 
     t.h3({ id: 'api-live-subpaths' }, 'Import paths'),
     t.p([

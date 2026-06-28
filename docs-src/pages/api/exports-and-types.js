@@ -58,7 +58,7 @@ import { t } from 'https://cdn.jsdelivr.net/npm/kensington/dist/kensington.min.j
 
       t.h3('kensington/devtools'),
       t.p([
-        'Side-effect import that enables the in-page devtools panel for signal inspection. Drop into a dev-only entry point. The panel mounts itself on first import and listens to signal lifecycle events emitted by the reactive runtime.',
+        'Side-effect import that enables the in-page devtools panel for inspecting signals, effects, and DOM bindings. Drop into a dev-only entry point. The panel mounts itself on first import.',
       ]),
       code('javascript', `// dev-only entry. Importing for side effects.
 import 'kensington/devtools';`),

@@ -363,7 +363,7 @@ customElements.define('user-card', UserCard);`),
         t.code('toElement()'),
         '. Updating the attribute calls ',
         t.code('attributeChangedCallback'),
-        ', which sets the signal, which updates only the affected text node. The dom-tracker cleans up the effects automatically when the element is removed from the DOM.',
+        ', which sets the signal, which updates only the affected text node. The effects are cleaned up automatically when the element is removed from the DOM.',
       ]),
     ]),
 

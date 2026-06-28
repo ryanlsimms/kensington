@@ -4,11 +4,13 @@ import { githubLink } from '../../components/ui.js';
 import { reactivityBestPractices } from './best-practices.js';
 import { reactivityCleanup } from './cleanup.js';
 import { reactivityDevtools } from './devtools.js';
+import { reactivityExistingElements } from './existing-elements.js';
 import { reactivityInTemplates } from './in-templates.js';
 import { reactivityIntro } from './intro.js';
 import { reactivityKeyedLists } from './keyed-lists.js';
 import { reactivityLifecycle } from './lifecycle.js';
 import { reactivityLiveSignals } from './live-signals.js';
+import { reactivityLiveSignalsIntro } from './live-signals-intro.js';
 import { reactivityPrimitives } from './primitives.js';
 import { reactivitySsr } from './ssr.js';
 import { reactivityKnownTradeoffs } from './tradeoffs.js';
@@ -30,7 +32,7 @@ export function reactivitySidebar() {
       t.li(t.a({ href: '#signals-style-props' }, 'Style properties')),
       t.li(t.a({ href: '#signals-dom-props' }, 'DOM properties')),
       t.li(t.a({ href: '#signals-literal' }, '.literal() & comments')),
-      t.li(t.a({ href: '#signals-existing-elements' }, 'Existing elements')),
+      t.li(t.a({ href: '#signals-live' }, 'Live signals')),
     ]),
     t.h2({ class: 'sidebar-title' }, 'Advanced'),
     t.ul([
@@ -51,6 +53,7 @@ export function reactivitySidebar() {
           t.li(t.a({ href: '#per-row-signals' }, 'Per-row signals')),
         ]),
       ]),
+      t.li(t.a({ href: '#signals-existing-elements' }, 'Existing elements')),
       t.li(t.a({ href: '#signals-cleanup' }, 'Cleanup')),
       t.li([
         t.a({ href: '#lifecycle' }, 'Lifecycle'),
@@ -67,8 +70,8 @@ export function reactivitySidebar() {
           t.li(t.a({ href: '#live-signals-naming' }, 'Naming')),
           t.li(t.a({ href: '#live-signals-persistence' }, 'Persistence')),
           t.li(t.a({ href: '#live-signals-canwrite' }, 'canRead / canWrite')),
-          t.li(t.a({ href: '#live-signals-atomic' }, 'Atomic updates with .set(fn)')),
-          t.li(t.a({ href: '#live-signals-status' }, 'Connection status pill')),
+          t.li(t.a({ href: '#live-signals-atomic' }, 'Updates that depend on the current value')),
+          t.li(t.a({ href: '#live-signals-status' }, 'Connection status')),
           t.li(t.a({ href: '#live-signals-server-subscribe' }, 'Server-side liveSignal')),
           t.li(t.a({ href: '#live-signals-auto-unsubscribe' }, 'Auto-unsubscribe trap')),
           t.li(t.a({ href: '#live-signals-where-created' }, 'Where liveSignals are created')),
@@ -102,10 +105,12 @@ export function reactivityContent() {
     reactivityIntro(),
     reactivityPrimitives(),
     ...reactivityInTemplates(),
+    reactivityLiveSignalsIntro(),
     reactivityAdvancedHeader(),
     ...reactivityValueAndTransform(),
     reactivityKeyedLists(),
     ...reactivityWhenUpdates(),
+    reactivityExistingElements(),
     reactivityCleanup(),
     reactivityLifecycle(),
     reactivitySsr(),

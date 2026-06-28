@@ -55,7 +55,7 @@ export function reactivityKnownTradeoffs() {
         t.code('computed()'),
         ', and ',
         t.code('.transform()'),
-        ' created inside a computed callback without a key. The reconciler detects the changed instance reference and swaps in a fresh node so the new instance drives it. Focus, scroll, input values, and text selection are preserved across the swap. IME composition, CSS animations in flight, pointer capture, ',
+        ' created inside a computed callback without a key. When the instance reference changes, the DOM node is replaced so the new instance drives it. Focus, scroll, input values, and text selection are preserved across the swap. IME composition, CSS animations in flight, pointer capture, ',
         t.code('<canvas>'),
         ' bitmaps, ',
         t.code('<iframe>'),
@@ -63,7 +63,7 @@ export function reactivityKnownTradeoffs() {
       ]),
       t.li([
         t.strong('Reactive element reset after removal is asynchronous.'),
-        ' When a reactive element is removed from the DOM, its effects are stopped and the internal reference is cleared via MutationObserver. Calling ',
+        ' When a reactive element is removed from the DOM, its effects are stopped and the internal reference is cleared automatically, on the next tick. Calling ',
         t.code('.toElement()'),
         ' immediately after removal in synchronous code still returns the old element. Awaiting a tick (',
         t.code('await Promise.resolve()'),

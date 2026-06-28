@@ -17,7 +17,7 @@ export function examplesReactiveData() {
         t.code('effect'),
         '. Multiple synchronous ',
         t.code('set()'),
-        ' calls batch into a single DOM update via microtask.',
+        ' calls batch into a single DOM update.',
       ]),
       code('javascript', `import { t, signal, computed, effect } from 'kensington';
 

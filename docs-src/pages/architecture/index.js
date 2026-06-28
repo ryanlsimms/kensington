@@ -6,8 +6,10 @@ import { architectureDomOutput } from './dom-output.js';
 import { stageDot } from './helpers.js';
 import { architectureHmr } from './hmr.js';
 import { architectureHydration } from './hydration.js';
+import { architectureInfrastructure } from './infrastructure.js';
 import { architectureLifecycle } from './lifecycle.js';
 import { architectureLiveSignals } from './live-signals.js';
+import { architectureMapWithKey } from './map-with-key.js';
 import { architectureOverview } from './overview.js';
 import { architecturePipeline } from './pipeline.js';
 import { architectureReconcile } from './reconcile.js';
@@ -15,6 +17,7 @@ import { architectureReference } from './reference.js';
 import { architectureRemoval } from './removal.js';
 import { architectureSignals } from './signals.js';
 import { architectureStringOutput } from './string-output.js';
+import { architectureTooling } from './tooling.js';
 
 const MERMAID_INIT = `
 (async function () {
@@ -90,6 +93,15 @@ export function architectureSidebar() {
         ]),
       ]),
       t.li([
+        t.a({ href: '#map-with-key' }, 'mapWithKey internals'),
+        t.ul([
+          t.li(t.a({ href: '#map-with-key-probe' }, 'The probe')),
+          t.li(t.a({ href: '#map-with-key-entries' }, 'Static vs reactive')),
+          t.li(t.a({ href: '#map-with-key-render' }, 'Render and sweeping')),
+          t.li(t.a({ href: '#map-with-key-warnings' }, 'Misuse warnings')),
+        ]),
+      ]),
+      t.li([
         t.a({ href: '#hydration' }, 'SSR and Hydration'),
         t.ul([
           t.li(t.a({ href: '#hydration-bypass' }, 'SSR bypass')),
@@ -116,6 +128,22 @@ export function architectureSidebar() {
           t.li(t.a({ href: '#live-server' }, 'Server runtime')),
           t.li(t.a({ href: '#live-persistence' }, 'Persistence adapters')),
           t.li(t.a({ href: '#live-cheatsheet' }, 'Where to look')),
+        ]),
+      ]),
+      t.li([
+        t.a({ href: '#infrastructure' }, 'Infrastructure'),
+        t.ul([
+          t.li(t.a({ href: '#infra-warnings' }, 'Warning throttling')),
+          t.li(t.a({ href: '#infra-filter-stack' }, 'Stack stripping')),
+          t.li(t.a({ href: '#infra-devtools' }, 'Devtools hook')),
+          t.li(t.a({ href: '#infra-preserve-state' }, 'State preservation')),
+          t.li(t.a({ href: '#infra-duck-types' }, 'Cross-module duck-types')),
+        ]),
+      ]),
+      t.li([
+        t.a({ href: '#tooling' }, 'Build and tooling'),
+        t.ul([
+          t.li(t.a({ href: '#tooling-cli' }, 'html-to-kensington CLI')),
         ]),
       ]),
       t.li(t.a({ href: '#invariants' }, 'Invariants')),
@@ -161,9 +189,12 @@ export function architectureContent() {
     ...architectureLifecycle(),
     ...architectureRemoval(),
     architectureReconcile(),
+    architectureMapWithKey(),
     architectureHydration(),
     architectureHmr(),
     architectureLiveSignals(),
+    ...architectureInfrastructure(),
+    ...architectureTooling(),
     ...architectureReference(),
     // eslint-disable-next-line kensington/no-unsafe-literal -- inline script tag, content controlled by us
     t.unsafeLiteral(`<script type="module">${MERMAID_INIT}</script>`),

@@ -385,8 +385,8 @@ t.div({ hxBoost: 'true' });  // now valid`),
         t.code('persist: true'),
         ' to the tag options. Effects are paused on removal and resume automatically on re-insertion, across any number of cycles.',
       ]),
-      code('javascript', `// Without persist: true, the reconciler's insertBefore moves during drag-reorder
-// trigger dom-tracker to permanently stop the item's signal effects (class, checked, etc.).
+      code('javascript', `// Without persist: true, removing the item during a drag-reorder permanently stops
+// its signal effects (class, checked, etc.).
 // With persist: true, effects pause on removal and resume when the node is re-inserted.
 const item = t.li({ class: statusClass, persist: true }, [
   t.input({ type: 'checkbox', checked: task.done }),

@@ -7,17 +7,17 @@ export function apiSignals() {
   return t.section({ id: 'api-signals' }, [
     t.h2('Signals'),
     t.p([
-      'Signals are reactive values. Read them with ',
+      'Reactive values. Read with ',
       t.code('.get()'),
-      ', write them with ',
+      ', write with ',
       t.code('.set()'),
-      ', and derive new ones with ',
+      ', derive with ',
       t.code('computed()'),
       ' or ',
       t.code('.transform()'),
-      '. Pass a signal as an option value or content and ',
-      t.code('.toElement()'),
-      ' wires up live DOM updates automatically.',
+      '. See the ',
+      t.a({ href: '?page=reactivity' }, 'reactive data guide'),
+      ' for usage.',
     ]),
 
     t.h3({ id: 'api-signal' }, 'signal'),
@@ -28,12 +28,8 @@ signal<T>(initialValue: T, key: SignalKey): Signal<T>  // keyed form`),
     t.p([
       'Creates a writable signal holding ',
       t.code('initialValue'),
-      '. Inside a ',
-      t.code('computed'),
-      ' callback, pass a stable ',
-      t.code('key'),
-      ' to scope the signal to the surrounding computed. See ',
-      t.a({ href: '#api-keyed-forms' }, 'Keyed forms inside a computed'),
+      '. The keyed form is documented under ',
+      t.a({ href: '#api-keyed-forms' }, 'Keyed forms'),
       '.',
     ]),
 
@@ -42,32 +38,27 @@ signal<T>(initialValue: T, key: SignalKey): Signal<T>  // keyed form`),
       [
         t.code('.get(): T'),
         [
-          'Returns the current value. When called inside ',
+          'Returns the current value. Inside ',
           t.code('computed()'),
           ' or ',
           t.code('effect()'),
-          ', registers this signal as a dependency of the running computation.',
+          ', registers this signal as a dependency.',
         ],
       ],
       [
         t.code('.value: T'),
         [
-          'Property getter. Returns the current value without tracking. Unlike ',
-          t.code('.get()'),
-          ', reading ',
-          t.code('.value'),
-          ' inside ',
+          'Property getter. Returns the current value without tracking. Reading it inside ',
           t.code('computed()'),
           ' or ',
           t.code('effect()'),
-          ' does not subscribe to this signal. The computation will not re-run when this signal changes.',
+          ' does not subscribe.',
         ],
       ],
       [
         t.code('.set(value: T | (prev: T) => T): void'),
         [
-          'Updates the value and notifies subscribers. Accepts a new value or an updater function. ',
-          'Throws if called on a signal created by ',
+          'Updates the value and notifies subscribers. Accepts a value or an updater function. Throws on signals from ',
           t.code('computed()'),
           ' or ',
           t.code('.transform()'),
@@ -77,44 +68,26 @@ signal<T>(initialValue: T, key: SignalKey): Signal<T>  // keyed form`),
       [
         t.code('.transform<U>(fn, key?): Signal<U>'),
         [
-          'Returns a new read-only derived signal equivalent to ',
+          'Returns a read-only derived signal, equivalent to ',
           t.code('computed(() => fn(this.get()), key)'),
           '. Tracks all signals read inside ',
           t.code('fn'),
-          ', not just the source. When called inside a ',
-          t.code('computed'),
-          ' callback with a stable ',
-          t.code('key'),
-          ', returns the same inner instance across outer re-runs. Same lifecycle as ',
-          t.code('computed(fn, key)'),
           '.',
         ],
       ],
       [
         t.code('.stop(): void'),
         [
-          'Clears all subscribers. For signals created by ',
-          t.code('computed()'),
-          ' or ',
-          t.code('.transform()'),
-          ', also tears down the derived computation and freezes the value.',
+          'Clears all subscribers. For derived signals, also tears down the computation and freezes the value.',
         ],
       ],
       [
         t.code('.toJSON(): T'),
-        [
-          'Returns the raw value without tracking side effects. Makes signals transparent to ',
-          t.code('JSON.stringify'),
-          '.',
-        ],
+        ['Returns the raw value without tracking. Makes signals transparent to ', t.code('JSON.stringify'), '.'],
       ],
       [
         t.code('.toString(): string'),
-        [
-          'Calls ',
-          t.code('.get()'),
-          ' and converts to string. Allows signals to be used in template literals inside reactive contexts.',
-        ],
+        ['Calls ', t.code('.get()'), ' and converts to string. Tracks in reactive contexts.'],
       ],
     ]),
 
@@ -124,103 +97,38 @@ signal<T>(initialValue: T, key: SignalKey): Signal<T>  // keyed form`),
 computed<T>(fn: () => T): Signal<T>
 computed<T>(fn: () => T, key: SignalKey): Signal<T>  // keyed form`),
     t.p([
-      'Creates a read-only signal whose value is derived from other signals. Re-evaluates ',
+      'Creates a read-only signal derived from other signals. Re-evaluates ',
       t.code('fn'),
-      ' synchronously whenever any signal read inside it changes. The returned signal exposes ',
+      ' synchronously whenever any signal read inside it changes. Exposes ',
       t.code('.stop()'),
-      ' to unsubscribe from all tracked signals and freeze the value.',
-    ]),
-    code('javascript', `const count = signal(0);
-const label = computed(() => count.get() === 1 ? 'item' : 'items');
-
-label.stop(); // unsubscribes from tracked signals, value freezes`),
-    t.p([
-      'Inside a ',
-      t.code('computed'),
-      ' callback, pass a stable ',
-      t.code('key'),
-      ' to scope the inner computed to the surrounding computed. See ',
-      t.a({ href: '#api-keyed-forms' }, 'Keyed forms inside a computed'),
-      '. The same pattern applies to ',
-      t.code('signal()'),
-      ' and ',
-      t.code('.transform()'),
+      ' to unsubscribe and freeze the value. The keyed form is documented under ',
+      t.a({ href: '#api-keyed-forms' }, 'Keyed forms'),
       '.',
     ]),
 
     t.h3({ id: 'api-keyed-forms' }, 'Keyed forms inside a computed'),
     t.p([
-      'When you create a ',
-      t.code('signal()'),
-      ', ',
-      t.code('computed()'),
-      ', or ',
-      t.code('.transform()'),
-      ' inside a ',
-      t.code('computed'),
-      ' callback, pass a stable ',
+      'Pass a stable ',
       t.code('key'),
-      ' as the second argument. All three forms behave the same way, the same key returns the same instance across outer re-runs, the instance is stopped automatically when its key leaves the list, and the whole registry is torn down when the owning computed is stopped.',
+      ' as the second argument to scope the instance to the surrounding ',
+      t.code('computed'),
+      ' callback. The same key returns the same instance across outer re-runs. The instance is stopped automatically when its key leaves the list, and the whole registry is torn down when the owning computed is stopped.',
     ]),
-    code('javascript', `const filter = signal('fruit');
-
-const list = items.mapWithKey('id', item => {
-  // signal(initial, key). Per-item local state
-  const highlight = signal(false, item.id);
-  // computed(fn, key). Derived value reading multiple signals
-  const cls = computed(() => [
-    filter.get() === item.category && 'match',
-    highlight.get() && 'on',
-  ].filter(Boolean).join(' '), item.id);
-  // signal.transform(fn, key). Single-source derivation chained off filter
-  const tag = filter.transform(f => f === item.category ? 'in' : 'out', item.id);
-  return t.li({ class: cls, data: { tag } }, item.name);
-});`),
-    t.p([
-      'For ',
-      t.code('computed(fn, key)'),
-      ' and ',
-      t.code('signal.transform(fn, key)'),
-      ', the fn closure is replaced on every outer re-run so captured variables (e.g. ',
-      t.code('item.category'),
-      ') stay fresh while the instance identity is stable. For ',
-      t.code('signal(initial, key)'),
-      ', only the first call\'s ',
-      t.code('initial'),
-      ' is used. Subsequent calls return the existing signal unchanged. Duplicate keys in the same outer run log an error.',
+    apiTable(['Form', 'Identity across outer re-runs'], [
+      [t.code('signal(initial, key)'), 'Same key returns the same signal. Only the first call\'s initial is used.'],
+      [
+        t.code('computed(fn, key)'),
+        'Same key returns the same inner instance. The fn closure is refreshed each run so captured values stay current.',
+      ],
+      [t.code('signal.transform(fn, key)'), ['Same lifecycle as ', t.code('computed(fn, key)'), '. Single-source.']],
     ]),
-    t.h4({ id: 'api-keyed-no-escape' }, 'Don\'t reference a keyed instance from outside its scope'),
-    t.p([
-      'The owner can stop a keyed instance whenever its key isn\'t accessed during a re-run (e.g. during a loading or filter state). After that point, external subscribers held in user-land code silently stop receiving updates. Use the instance freely inside the owning callback (read it, transform it, pass it as tag content or an attribute value), but don\'t let the instance reference itself escape. The unsafe patterns are assigning it to a module-level variable, returning it bare from the callback, or passing it to a function that retains it.',
-    ]),
-    t.p([
-      'The library emits a runtime warning, and the ',
-      t.code('no-out-of-scope-reactive-reference'),
-      ' ESLint rule catches it statically, when a keyed instance is referenced from outside its owner.',
-    ]),
-    t.h4({ id: 'api-keyed-signalkey' }, 'SignalKey'),
     code('typescript', 'type SignalKey = string | number | object | symbol;'),
     t.p([
-      'Any value usable in a ',
-      t.code('Map'),
-      ' works. Object keys (e.g. passing ',
-      t.code('item'),
-      ' itself) require a stable reference across outer re-runs. Immutable update patterns that clone the item break the match and lose state. Prefer ',
-      t.code('item.id'),
-      ' for the common immutable-update style. Reach for object keys only when you have stable item references.',
-    ]),
-    t.h4({ id: 'api-keyed-unkeyed' }, 'Without a key'),
-    t.p([
-      t.code('signal()'),
-      ', ',
-      t.code('computed()'),
-      ', and ',
-      t.code('.transform()'),
-      ' inside a computed without a key still work. The reconciler detects the changed instance reference and replaces the DOM node so the fresh instance drives it. Focus, scroll, input value, and selection are preserved. Local state resets to the initial value. The library logs a ',
-      t.code('console.warn'),
-      ' for each form steering you toward the keyed alternative. Outside any ',
-      t.code('computed'),
-      ' callback, the key argument is ignored.',
+      'Without a key these forms still work, but the instance is re-created on every outer re-run, local state resets, and a warning is logged. A keyed instance reference must not escape its owner. The ',
+      t.code('no-out-of-scope-reactive-reference'),
+      ' ESLint rule and a runtime warning catch escapes. See ',
+      t.a({ href: '?page=reactivity#signals-keyed-local-state' }, 'per-item local state'),
+      ' in the guide.',
     ]),
 
     t.h3({ id: 'api-map-with-key' }, 'signal.mapWithKey'),
@@ -229,38 +137,17 @@ const list = items.mapWithKey('id', item => {
   mapFn: (item: Item) => U,
 ): ReadonlySignal<U[]>`),
     t.p([
-      'Keyed list mapper. The first argument is either a function that extracts the key from an item or a property-name string like ',
-      t.code('\'id\''),
-      '. The mapFn runs once per key the first time that key is seen and the resulting tag is cached. On every subsequent render where the same key reappears, the cached tag (and therefore its already-built DOM node) is reused.',
-    ]),
-    code('javascript', `const items = signal([{ id: 1, name: 'Apple' }, { id: 2, name: 'Banana' }]);
-
-// Function form
-const rows = items.mapWithKey(item => item.id, item => t.li(item.name));
-
-// Property-name string shortcut
-const rows2 = items.mapWithKey('id', item => t.li(item.name));
-
-t.ul(rows).toElement();`),
-    t.p([
-      'The key is stamped onto the tag instance via an internal property (',
-      t.code('_kensingtonKey'),
-      ') and read by the reconciler from a ',
-      t.code('WeakMap'),
-      ' keyed on the live DOM node. The rendered HTML stays free of internal bookkeeping.',
-    ]),
-    t.p([
-      'Calling ',
-      t.code('mapWithKey'),
-      ' inside a ',
+      'Keyed list mapper. The first argument extracts the key (a function or a property-name string). ',
+      t.code('mapFn'),
+      ' runs once per key the first time the key is seen and the resulting tag is cached and reused on later renders. Call it at the same scope as ',
+      t.code('signal()'),
+      ', not inside a ',
       t.code('computed'),
       ' or ',
       t.code('effect'),
-      ' callback logs a warning because the per-key cache would reset on every outer re-run. Call it at the same scope where you call ',
-      t.code('signal()'),
-      '. Duplicate keys in the same render fire a ',
-      t.code('console.error'),
-      ' and the first item wins. The duplicate is silently skipped.',
+      ' callback. See ',
+      t.a({ href: '?page=reactivity#signals-keyed-lists' }, 'keyed lists'),
+      ' in the guide.',
     ]),
 
     t.h3({ id: 'api-effect' }, 'effect'),
@@ -270,60 +157,32 @@ effect(fn: () => void): { pause(): void, resume(): void, stop(): void }`),
     t.p([
       'Runs ',
       t.code('fn'),
-      ' immediately and re-runs it whenever any signal read inside it changes. Re-runs are deferred via ',
-      t.code('queueMicrotask'),
-      ', so multiple synchronous ',
+      ' immediately and re-runs it whenever any signal read inside it changes. Synchronous ',
       t.code('.set()'),
-      ' calls in the same turn batch into one re-run. Errors thrown inside the callback are re-surfaced asynchronously so they do not abort other pending effects.',
-    ]),
-    code('javascript', `const e = effect(() => {
-  document.title = \`\${count.get()} items\`;
-});
-
-e.pause();  // unsubscribes temporarily
-e.resume(); // re-runs fn and re-establishes subscriptions
-e.stop();   // permanently destroys. resume() after stop() is a no-op`),
-    t.p([
-      'Elements created with ',
-      t.code('.toElement()'),
-      ' automatically stop their signal effects when removed from the DOM. During SSR (',
+      ' calls in the same turn are batched into one re-run. During SSR (',
       t.code('renderForHydration'),
-      '), ',
-      t.code('effect()'),
-      ' is a no-op.',
+      ') it is a no-op.',
+    ]),
+    apiTable(['Method', 'Description'], [
+      [t.code('.pause()'), 'Unsubscribes temporarily.'],
+      [t.code('.resume()'), 'Re-runs fn and re-establishes subscriptions.'],
+      [
+        t.code('.stop()'),
+        ['Permanently destroys the effect. ', t.code('resume()'), ' after ', t.code('stop()'), ' is a no-op.'],
+      ],
     ]),
 
     t.h3({ id: 'prop-key' }, 'prop key'),
     t.p([
-      'Use the ',
-      t.code('prop'),
-      ' key to assign DOM properties directly (',
+      'Assigns DOM properties directly (',
       t.code('el[name] = value'),
-      ') instead of using ',
+      ') instead of ',
       t.code('setAttribute'),
-      '. This matters for properties that diverge from their HTML attributes after user interaction. Notably ',
-      t.code('value'),
-      ' and ',
-      t.code('checked'),
-      ' on form elements. And for properties with no attribute equivalent such as ',
-      t.code('muted'),
-      ' and ',
-      t.code('playbackRate'),
-      ' on media elements.',
-    ]),
-    code('javascript', `const query = signal('');
-
-// Assigns el.value reactively. Keeps the live property in sync
-t.input({ type: 'search', prop: { value: query } }).toElement();
-
-// Static prop. Assigned once at render time
-t.video({ src: '/intro.mp4', prop: { muted: true, playbackRate: 1.5 } }).toElement();`),
-    t.p([
-      'Accepts a plain object whose values are static or ',
+      '. Accepts a plain object whose values are static or ',
       t.code('ReadonlySignal'),
-      '. Silently ignored in ',
+      '. Ignored in ',
       t.code('.toString()'),
-      '. Known writable properties (those on the element\'s DOM interface) are typed in TypeScript. Expando properties and arbitrary string keys are also accepted. Property existence and writability are validated at render time against the live element and reported via ',
+      '. Property existence and writability are validated at render time and reported via ',
       t.code('validationLevel'),
       '.',
     ]),
@@ -341,27 +200,33 @@ renderForHydration(
   name?: string
 ): LiteralTag`),
     t.p([
-      'Renders a component to an HTML string for server-side delivery, then embeds the state as a ',
+      'Renders a synchronous component to an HTML string and embeds ',
+      t.code('state'),
+      ' as a ',
       t.code('<script type="application/json">'),
-      ' block so the browser can replace it with a live reactive DOM. Signal effects are suppressed during the component call. The component function must be synchronous.',
+      ' block for client hydration.',
     ]),
-    t.p([
-      t.code('name'),
-      ' defaults to ',
-      t.code('fn.name'),
-      ' when called server-side. Pass an explicit string when calling in the browser. Bundlers and minifiers rename function identifiers, so ',
-      t.code('fn.name'),
-      ' is not reliable after a production build. Passing an explicit name is also required for anonymous functions. The same name is used by ',
-      t.code('registerComponents'),
-      ' to match script blocks to component functions on the client.',
+    apiTable(['Argument', 'Description'], [
+      [t.code('fn'), 'The component function. Signal effects are suppressed during the call.'],
+      [
+        t.code('state'),
+        [
+          'A plain serializable object. Values that cannot survive ',
+          t.code('JSON.stringify'),
+          ' warn or throw.',
+        ],
+      ],
+      [
+        t.code('name'),
+        [
+          'Defaults to ',
+          t.code('fn.name'),
+          ' server-side. Pass an explicit string in the browser and for anonymous functions. Must match the key used by ',
+          t.code('registerComponents'),
+          '.',
+        ],
+      ],
     ]),
-    t.p([
-      'State must be a plain serializable object. Values that cannot survive ',
-      t.code('JSON.stringify'),
-      ' (functions, symbols, BigInt, circular references, class instances) cause a warning or throw.',
-    ]),
-    code('javascript', `// server
-res.send(layout(renderForHydration(counter, { count: 0 })).toString());`),
 
     t.h3({ id: 'register-components' }, 'registerComponents'),
     code('typescript', `import { registerComponents } from 'kensington';
@@ -370,21 +235,11 @@ registerComponents(
   components: Record<string, Function>
 ): { stop(): void }`),
     t.p([
-      'Registers component functions and hydrates all server-rendered instances already in the page. Each matching ',
+      'Hydrates all server-rendered instances in the page, replacing each matching ',
       t.code('<script type="application/json" data-k-component="…">'),
-      ' block is replaced with the live reactive DOM produced by the component function. A ',
-      t.code('MutationObserver'),
-      ' is installed to handle components inserted dynamically after this call.',
-    ]),
-    t.p([
-      'Returns ',
+      ' block with live reactive DOM, and watches for components inserted later. Returns ',
       t.code('{ stop() }'),
-      ' to disconnect the observer and halt auto-hydration.',
+      ' to halt auto-hydration.',
     ]),
-    code('javascript', `// client
-const { stop } = registerComponents({ counter, userCard });
-
-// later, if you want to stop watching for new components:
-stop();`),
   ]);
 }

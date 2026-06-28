@@ -46,8 +46,7 @@ tag.toElement();  // both callbacks re-fire on every insert/remove cycle`),
 
     t.h3({ id: 'disconnected-callback', style: { fontSize: 'clamp(1rem, 6vw, 1.35rem);' } }, 'addDisconnectedCallback'),
     t.p([
-      'Fires when the element leaves the DOM. ',
-      'Signal effects are stopped first, then disconnected callbacks run. ',
+      'Fires when the element leaves the DOM, after its signal effects have been cleaned up. ',
       'Use it for cleanup that signals cannot handle automatically, ',
       'such as clearing intervals and timers, destroying third-party library instances, ',
       'or removing portal elements.',

@@ -308,20 +308,29 @@ const bidHistory = liveSignal([], 'auction:bid-history', {
       ' for "no client can write."',
     ]),
 
-    t.h3({ id: 'live-signals-atomic' }, 'Atomic updates with .set(fn)'),
+    t.h3({ id: 'live-signals-atomic' }, 'Updates that depend on the current value'),
     t.p([
       'When the new value depends on the current value (counter increment, append to a list, toggle a flag, merge into an object), pass a function to ',
       t.code('.set'),
-      ' instead of a value. The library handles atomicity via compare-and-swap.',
+      ' instead of a value.',
     ]),
     code('javascript', `counter.set(n => n + 1);
 viewers.set(prev => ({ users: [...prev.users, me] }));
 reactions.set(prev => ({ ...prev, [me]: emoji }));
 items.set(prev => prev.filter(it => it.id !== removedId));`),
     t.p([
-      'The end-to-end guarantee. ',
-      t.strong('fn always operates on the server\'s authoritative value.'),
-      ' Concurrent calls from multiple clients converge. Returns a Promise that resolves on confirmation or rejects on permanent failure (canWrite denied, value not serializable, retry cap exhausted). Most callers ignore the return; ',
+      'Under concurrent writes from multiple clients, the function form converges. ',
+      t.code('fn'),
+      ' runs against the latest server value, so each client sees the others\' updates instead of overwriting them. ',
+      t.code('.set(value)'),
+      ' on the same name races with last-write-wins.',
+    ]),
+    t.p([
+      'Returns a ',
+      t.code('Promise<void>'),
+      ' that resolves once the server confirms or rejects on permanent failure (',
+      t.code('canWrite'),
+      ' denied, value not serializable, retry cap exhausted). Most callers ignore the return. ',
       t.code('await sig.set(fn)'),
       ' if you need to know when the write landed.',
     ]),
@@ -364,7 +373,7 @@ items.set(prev => prev.filter(it => it.id !== removedId));`),
       ]),
     ]),
 
-    t.h3({ id: 'live-signals-status' }, 'Connection status pill'),
+    t.h3({ id: 'live-signals-status' }, 'Connection status'),
     t.p([
       'The connection-status signal lives on the transport handles. Read ',
       t.code('connectLive().status'),
@@ -476,17 +485,9 @@ export function room(state) {
       '; the application to live signals is direct.',
     ]),
     t.p([
-      'For live signals specifically, the creation step also drives the WS ',
-      t.code('subscribe'),
-      ' for the name (the first ',
+      'For live signals specifically, the first ',
       t.code('liveSignal(initial, name)'),
-      ' call is what registers the name with the transport). Creating the names at mount via ',
-      t.code('addConnectedCallback'),
-      ' + ',
-      t.code('queueMicrotask'),
-      ' (so the creation runs on a plain stack with ',
-      t.code('currentEffect === null'),
-      ') ensures every name is subscribed before the first render reads it.',
+      ' call is what subscribes the name to the server. Create your live signals at the component scope, before the first render reads them, so every name is subscribed in time.',
     ]),
   ]);
 }
