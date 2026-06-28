@@ -99,19 +99,149 @@ describe('kensington/live protocol', () => {
 });
 
 describe('kensington/live liveSignal without transport', () => {
-  it('falls back to a regular signal when no transport is registered', () => {
+  it('returns a readable placeholder when no transport is registered', () => {
     _clearTransport();
-    const sig = liveSignal(7, 'fallback');
+    const sig = liveSignal(7, 'placeholder-reads');
     assert.strictEqual(sig.value, 7);
-    sig.set(9);
-    assert.strictEqual(sig.value, 9);
-    assert.strictEqual(sig._liveName, 'fallback');
+    assert.strictEqual(sig.get(), 7);
+    assert.strictEqual(sig._liveName, 'placeholder-reads');
+    assert.strictEqual(sig._isLivePlaceholder, true);
+    sig.stop();
+  });
+  it('allows .set on a placeholder, updating the local value', () => {
+    _clearTransport();
+    const sig = liveSignal(0, 'placeholder-writes-value');
+    sig.set(5);
+    assert.strictEqual(sig.value, 5);
+    sig.set(prev => prev + 1);
+    assert.strictEqual(sig.value, 6);
+    sig.stop();
   });
   it('requires a non-empty string name', () => {
     _clearTransport();
     assert.throws(() => liveSignal(0, ''), TypeError);
     assert.throws(() => liveSignal(0, 123), TypeError);
     assert.throws(() => liveSignal(0, undefined), TypeError);
+  });
+});
+
+describe('kensington/live liveSignal lazy upgrade', () => {
+  it('upgrades a pre-transport placeholder when a transport later registers', async () => {
+    _clearTransport();
+    const sig = liveSignal(0, 'upgrade-basic');
+
+    const live = await liveServer({ persistence: { kind: 'memory' } });
+    try {
+      // After registration .set works and persists through the registry.
+      sig.set(5);
+      assert.strictEqual(sig.value, 5);
+      assert.strictEqual(live.get('upgrade-basic'), 5);
+
+      sig.set(prev => prev + 10);
+      assert.strictEqual(sig.value, 15);
+      assert.strictEqual(live.get('upgrade-basic'), 15);
+    } finally {
+      sig.stop();
+      live.close();
+      _clearTransport();
+    }
+  });
+
+  it('preserves placeholder identity across upgrade', async () => {
+    _clearTransport();
+    const sig = liveSignal(0, 'upgrade-identity');
+    const ref = sig;
+
+    const live = await liveServer({ persistence: { kind: 'memory' } });
+    try {
+      assert.strictEqual(sig, ref);
+      sig.set(42);
+      assert.strictEqual(ref.value, 42);
+    } finally {
+      sig.stop();
+      live.close();
+      _clearTransport();
+    }
+  });
+
+  it('mirrors remote-originated changes into the placeholder after upgrade', async () => {
+    _clearTransport();
+    const sig = liveSignal(0, 'upgrade-mirror');
+
+    const live = await liveServer({ persistence: { kind: 'memory' } });
+    try {
+      const seen = [];
+      const eff = effect(() => { seen.push(sig.get()); });
+
+      live.set('upgrade-mirror', 99);
+      await new Promise(r => { queueMicrotask(r); });
+
+      assert.strictEqual(sig.value, 99);
+      assert.deepStrictEqual(seen.slice(-1), [99]);
+      eff.stop();
+    } finally {
+      sig.stop();
+      live.close();
+      _clearTransport();
+    }
+  });
+
+  it('drops a placeholder from the pending set when stopped before upgrade', async () => {
+    _clearTransport();
+    const sig = liveSignal(0, 'upgrade-stopped-early');
+    sig.stop();
+
+    const live = await liveServer({ persistence: { kind: 'memory' } });
+    try {
+      // The placeholder was stopped before upgrade. The registry should
+      // not have an entry for the name from this signal.
+      assert.strictEqual(live.get('upgrade-stopped-early'), undefined);
+    } finally {
+      live.close();
+      _clearTransport();
+    }
+  });
+
+  it('carries a pre-upgrade .set value through to the upgraded signal', async () => {
+    _clearTransport();
+    const sig = liveSignal(0, 'upgrade-preserves-pre-write');
+    sig.set(42);
+    assert.strictEqual(sig.value, 42);
+
+    const live = await liveServer({ persistence: { kind: 'memory' } });
+    try {
+      // The placeholder's pre-upgrade value seeds the cached server-side
+      // Signal. After upgrade the placeholder still reads 42, and a later
+      // .set propagates through to the registry as usual.
+      assert.strictEqual(sig.value, 42);
+      sig.set(43);
+      assert.strictEqual(sig.value, 43);
+      assert.strictEqual(live.get('upgrade-preserves-pre-write'), 43);
+    } finally {
+      sig.stop();
+      live.close();
+      _clearTransport();
+    }
+  });
+
+  it('two placeholders with the same name upgrade to one shared real value', async () => {
+    _clearTransport();
+    const a = liveSignal(0, 'upgrade-shared');
+    const b = liveSignal(0, 'upgrade-shared');
+
+    const live = await liveServer({ persistence: { kind: 'memory' } });
+    try {
+      a.set(7);
+      // Allow the mirror effect on b to pick up the change from real.
+      await new Promise(r => { queueMicrotask(r); });
+      assert.strictEqual(a.value, 7);
+      assert.strictEqual(b.value, 7);
+    } finally {
+      a.stop();
+      b.stop();
+      live.close();
+      _clearTransport();
+    }
   });
 });
 
@@ -802,10 +932,11 @@ describe('kensington/live canWrite: server-side enforcement', () => {
       await handlers.open(fakeWs);
       handlers.message(fakeWs, JSON.stringify({ type: 'subscribe', name: 'guarded' }));
       received.length = 0;
-      // No opId on this MSG_SET, so the server replies with MSG_ERROR (legacy path).
-      handlers.message(fakeWs, JSON.stringify({ type: 'set', name: 'guarded', value: 'x', lamport: 0 }));
-      assert.strictEqual(received[0]?.type, 'error');
+      // Every MSG_SET carries an opId; rejection comes back as MSG_SET_FAIL.
+      handlers.message(fakeWs, JSON.stringify({ type: 'set', name: 'guarded', value: 'x', opId: 1 }));
+      assert.strictEqual(received[0]?.type, 'set-fail');
       assert.strictEqual(received[0]?.reason, 'forbidden');
+      assert.strictEqual(received[0]?.opId, 1);
       // Server-side write still works.
       live.set('guarded', 'y');
       assert.strictEqual(live.get('guarded'), 'y');
@@ -826,12 +957,12 @@ describe('kensington/live canWrite: server-side enforcement', () => {
       handlers.message(fakeWs, JSON.stringify({ type: 'subscribe', name: 'open' }));
       received.length = 0;
       // locked: rejected.
-      handlers.message(fakeWs, JSON.stringify({ type: 'set', name: 'locked', value: 'x', lamport: 0 }));
-      assert.strictEqual(received[0]?.type, 'error');
+      handlers.message(fakeWs, JSON.stringify({ type: 'set', name: 'locked', value: 'x', opId: 1 }));
+      assert.strictEqual(received[0]?.type, 'set-fail');
       assert.strictEqual(received[0]?.reason, 'forbidden');
       received.length = 0;
       // open: accepted (no canWrite registered, defaults to 'any').
-      handlers.message(fakeWs, JSON.stringify({ type: 'set', name: 'open', value: 'y', lamport: 0 }));
+      handlers.message(fakeWs, JSON.stringify({ type: 'set', name: 'open', value: 'y', opId: 2 }));
       assert.strictEqual(live.get('open'), 'y');
     } finally {
       _clearTransport();
@@ -857,7 +988,7 @@ describe('kensington/live canWrite: server-side enforcement', () => {
       handlers.message(fakeWs, JSON.stringify({ type: 'subscribe', name: 'guarded:counter' }));
       received.length = 0;
       // First write: prev is undefined, next is 5. 5 > -1 → allow.
-      handlers.message(fakeWs, JSON.stringify({ type: 'set', name: 'guarded:counter', value: 5, lamport: 0 }));
+      handlers.message(fakeWs, JSON.stringify({ type: 'set', name: 'guarded:counter', value: 5, opId: 1 }));
       assert.strictEqual(live.get('guarded:counter'), 5);
       assert.strictEqual(calls.length, 1);
       assert.strictEqual(calls[0].prev, undefined);
@@ -865,8 +996,8 @@ describe('kensington/live canWrite: server-side enforcement', () => {
       assert.deepStrictEqual(calls[0].ctx, { userId: 'ryan' });
       // Second write tries to go backwards. Rejected.
       received.length = 0;
-      handlers.message(fakeWs, JSON.stringify({ type: 'set', name: 'guarded:counter', value: 3, lamport: 0 }));
-      assert.strictEqual(received[0]?.type, 'error');
+      handlers.message(fakeWs, JSON.stringify({ type: 'set', name: 'guarded:counter', value: 3, opId: 2 }));
+      assert.strictEqual(received[0]?.type, 'set-fail');
       assert.strictEqual(received[0]?.reason, 'forbidden');
       assert.strictEqual(live.get('guarded:counter'), 5);
     } finally {
@@ -890,14 +1021,14 @@ describe('kensington/live canWrite: server-side enforcement', () => {
       handlers.message(fakeWs, JSON.stringify({ type: 'subscribe', name: 'doubly-gated' }));
       received.length = 0;
       // Allowed: global says yes (authenticated), per-signal says yes (not forbidden value).
-      handlers.message(fakeWs, JSON.stringify({ type: 'set', name: 'doubly-gated', value: 'ok', lamport: 0 }));
+      handlers.message(fakeWs, JSON.stringify({ type: 'set', name: 'doubly-gated', value: 'ok', opId: 1 }));
       assert.strictEqual(live.get('doubly-gated'), 'ok');
       // Rejected: per-signal rejects 'forbidden-value'.
       received.length = 0;
       handlers.message(fakeWs, JSON.stringify({
-        type: 'set', name: 'doubly-gated', value: 'forbidden-value', lamport: 1,
+        type: 'set', name: 'doubly-gated', value: 'forbidden-value', opId: 2,
       }));
-      assert.strictEqual(received[0]?.type, 'error');
+      assert.strictEqual(received[0]?.type, 'set-fail');
       assert.strictEqual(live.get('doubly-gated'), 'ok');
     } finally {
       _clearTransport();
@@ -994,6 +1125,37 @@ describe('kensington/live CAS (compare-and-swap) writes', () => {
       assert.strictEqual(received.find(m => m.type === 'set-ok'), undefined);
       assert.strictEqual(received.find(m => m.type === 'set-fail'), undefined);
       assert.strictEqual(live.get('lww:x'), 'foo');
+    } finally {
+      _clearTransport();
+      live.close();
+    }
+  });
+
+  it('direct write (with opId) replies set-ok on success and set-fail on canWrite rejection', async () => {
+    const live = await liveServer({
+      persistence: { kind: 'memory' },
+      canWrite: (name, ctx, { next }) => next !== 'no',
+    });
+    try {
+      const { handlers, fakeWs, received } = makeFakeSocket(live);
+      await handlers.open(fakeWs);
+      handlers.message(fakeWs, JSON.stringify({ type: 'subscribe', name: 'direct:y' }));
+      received.length = 0;
+      // Allowed direct write — server replies set-ok with the registry's new lamport.
+      handlers.message(fakeWs, JSON.stringify({ type: 'set', name: 'direct:y', value: 'yes', opId: 11 }));
+      const ok = received.find(m => m.type === 'set-ok');
+      assert.ok(ok, 'expected set-ok');
+      assert.strictEqual(ok.opId, 11);
+      assert.strictEqual(live.get('direct:y'), 'yes');
+      received.length = 0;
+      // Rejected direct write — set-fail carries the authoritative value for rollback.
+      handlers.message(fakeWs, JSON.stringify({ type: 'set', name: 'direct:y', value: 'no', opId: 12 }));
+      const fail = received.find(m => m.type === 'set-fail');
+      assert.ok(fail, 'expected set-fail');
+      assert.strictEqual(fail.opId, 12);
+      assert.strictEqual(fail.reason, 'forbidden');
+      assert.strictEqual(fail.value, 'yes');
+      assert.strictEqual(live.get('direct:y'), 'yes');
     } finally {
       _clearTransport();
       live.close();
@@ -1188,6 +1350,50 @@ describe('kensington/live ClientTransport lifecycle methods', () => {
     }
   });
 
+  it('rejects pending and new .set with reason=disconnected on transition to disconnected', async () => {
+    const { connectLive, liveSignal: clientLiveSignal } = await import('kensington/live');
+    const origWebSocket = globalThis.WebSocket;
+    globalThis.WebSocket = class FakeWebSocket {
+      constructor() {
+        this.readyState = 0;
+        this.listeners = { open: [], close: [], message: [], error: [] };
+        queueMicrotask(() => {
+          for (const fn of this.listeners.close) { fn({}); }
+        });
+      }
+
+      addEventListener(type, fn) { this.listeners[type].push(fn); }
+
+      close() {}
+    };
+    const transport = connectLive({
+      url: 'ws://127.0.0.1:0/__kensington/live',
+      reconnect: { initialDelay: 5, maxDelay: 10, maxRetries: 2 },
+    });
+    try {
+      const sig = clientLiveSignal('initial', 'cap:hang');
+      const pending = sig.set('queued-while-connecting');
+      await waitForStatus(transport, 'disconnected', 5_000);
+      // Pending write rejected with reason=disconnected, not hung.
+      let caught;
+      try { await pending; }
+      catch (err) { caught = err; }
+      assert.ok(caught, 'pending write must reject');
+      assert.strictEqual(caught.name, 'LiveSetRejected');
+      assert.strictEqual(caught.reason, 'disconnected');
+      // New writes attempted while disconnected reject immediately.
+      let caughtNew;
+      try { await sig.set('attempted-while-disconnected'); }
+      catch (err) { caughtNew = err; }
+      assert.ok(caughtNew, 'new write must reject');
+      assert.strictEqual(caughtNew.reason, 'disconnected');
+    } finally {
+      transport.close();
+      _clearTransport();
+      globalThis.WebSocket = origWebSocket;
+    }
+  });
+
   it('maxRetries cap transitions status to disconnected when the server is unreachable', async () => {
     const { connectLive } = await import('kensington/live');
     // Replace globalThis.WebSocket with a stub that fires `close` on the next
@@ -1319,6 +1525,137 @@ describe('kensington/live ClientTransport lifecycle methods', () => {
       await new Promise(resolve => { setTimeout(resolve, 50); });
       const unsubFrame = outbound.find(f => f.type === 'unsubscribe' && f.name === 'unsub:test');
       assert.ok(unsubFrame !== undefined, 'MSG_UNSUBSCRIBE went out');
+    } finally {
+      transport.close();
+      _clearTransport();
+      live.close();
+      await new Promise(resolve => { httpServer.close(resolve); });
+    }
+  });
+
+  it('rejects .set with non-finite numbers (NaN, Infinity) with a structured error and warning', async () => {
+    const http = await import('node:http');
+    const { connectLive, liveSignal: clientLiveSignal } = await import('kensington/live');
+    const httpServer = http.createServer((_req, res) => res.end('ok'));
+    const live = await liveServer({ persistence: { kind: 'memory' }, heartbeatInterval: false });
+    await live.attach(httpServer);
+    const port = await listen(httpServer);
+    _clearTransport();
+    const transport = connectLive({
+      url: `ws://127.0.0.1:${port}/__kensington/live`,
+      reconnect: { initialDelay: 30, maxDelay: 200 },
+    });
+    const warns = [];
+    const origWarn = console.warn;
+    console.warn = msg => warns.push(msg);
+    try {
+      await waitForStatus(transport, 'connected');
+      const sig = clientLiveSignal(0, 'non-finite');
+      await new Promise(resolve => { setTimeout(resolve, 50); });
+
+      // Top-level NaN.
+      let caught;
+      try { await sig.set(NaN); }
+      catch (err) { caught = err; }
+      assert.ok(caught, 'NaN write must reject');
+      assert.strictEqual(caught.name, 'LiveSetRejected');
+      assert.strictEqual(caught.reason, 'unserializable');
+
+      // Nested Infinity inside an object.
+      let caughtNested;
+      try { await sig.set({ x: 1, y: Infinity }); }
+      catch (err) { caughtNested = err; }
+      assert.ok(caughtNested, 'nested Infinity write must reject');
+      assert.strictEqual(caughtNested.reason, 'unserializable');
+
+      assert.ok(warns.some(w => /non-finite/.test(w)), 'expected non-finite warning');
+    } finally {
+      console.warn = origWarn;
+      transport.close();
+      _clearTransport();
+      live.close();
+      await new Promise(resolve => { httpServer.close(resolve); });
+    }
+  });
+
+  it('fire-and-forget sig.set(value) does not surface unhandled rejection on canWrite failure', async () => {
+    const http = await import('node:http');
+    const { connectLive, liveSignal: clientLiveSignal } = await import('kensington/live');
+    const httpServer = http.createServer((_req, res) => res.end('ok'));
+    const live = await liveServer({
+      persistence: { kind: 'memory' },
+      canWrite: 'server-only',
+      heartbeatInterval: false,
+    });
+    await live.attach(httpServer);
+    const port = await listen(httpServer);
+    _clearTransport();
+    const transport = connectLive({
+      url: `ws://127.0.0.1:${port}/__kensington/live`,
+      reconnect: { initialDelay: 30, maxDelay: 200 },
+    });
+    const unhandled = [];
+    const handler = ev => { unhandled.push(ev.reason); };
+    process.on('unhandledRejection', handler);
+    try {
+      await waitForStatus(transport, 'connected');
+      const sig = clientLiveSignal('initial', 'fire-and-forget:silencer');
+      await new Promise(resolve => { setTimeout(resolve, 50); });
+      // Fire-and-forget. Promise is rejected but the internal silencer keeps
+      // it from emitting unhandledRejection.
+      sig.set('blocked');
+      // Two microtask boundaries to let any pending unhandledRejection fire.
+      await new Promise(resolve => { setTimeout(resolve, 100); });
+      assert.deepStrictEqual(unhandled, []);
+    } finally {
+      process.off('unhandledRejection', handler);
+      transport.close();
+      _clearTransport();
+      live.close();
+      await new Promise(resolve => { httpServer.close(resolve); });
+    }
+  });
+
+  it('sig.set(value) resolves on success and rejects with structured info + rollback on canWrite failure', async () => {
+    const http = await import('node:http');
+    const { connectLive, liveSignal: clientLiveSignal } = await import('kensington/live');
+    const httpServer = http.createServer((_req, res) => res.end('ok'));
+    const live = await liveServer({
+      persistence: { kind: 'memory' },
+      canWrite: (name, ctx, { next }) => next !== 'banned',
+      heartbeatInterval: false,
+    });
+    await live.attach(httpServer);
+    const port = await listen(httpServer);
+    _clearTransport();
+    const transport = connectLive({
+      url: `ws://127.0.0.1:${port}/__kensington/live`,
+      reconnect: { initialDelay: 30, maxDelay: 200 },
+    });
+    try {
+      await waitForStatus(transport, 'connected');
+      const sig = clientLiveSignal('initial', 'direct:e2e');
+      // Wait one microtask cycle for the snapshot to arrive.
+      await new Promise(resolve => { setTimeout(resolve, 50); });
+
+      // Success: Promise resolves; server-side registry reflects the write.
+      await sig.set('ok');
+      assert.strictEqual(sig.value, 'ok');
+      assert.strictEqual(live.get('direct:e2e'), 'ok');
+
+      // Rejection: optimistic apply happens, then server-authoritative rollback,
+      // then Promise rejects with structured error.
+      let caught;
+      try { await sig.set('banned'); }
+      catch (err) { caught = err; }
+      assert.ok(caught, 'expected sig.set to reject');
+      assert.strictEqual(caught.name, 'LiveSetRejected');
+      assert.strictEqual(caught.signalName, 'direct:e2e');
+      assert.strictEqual(caught.reason, 'forbidden');
+      assert.strictEqual(caught.attemptedValue, 'banned');
+      assert.strictEqual(caught.authoritativeValue, 'ok');
+      // Local Signal rolled back to the authoritative value.
+      assert.strictEqual(sig.value, 'ok');
     } finally {
       transport.close();
       _clearTransport();

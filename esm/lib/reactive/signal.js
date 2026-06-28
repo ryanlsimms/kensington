@@ -235,6 +235,16 @@ export default class Signal {
     if (derivedSignals.has(this) && derivedWriteDepth === 0) {
       throw new Error('Cannot call .set() on a computed or derived signal. Use signal() for writable state.');
     }
+    if (isSSRMode()) {
+      throttledWarn(
+        'set-during-ssr',
+        'kensington: .set() called inside renderForHydration. ' +
+        'Server-render functions should be read-only over signals. ' +
+        'Seeding per-request state belongs in the signal() constructor (signal(initialFromState)); ' +
+        'server-side liveSignal mutations belong in route handlers or startup code, not inside the render body. ' +
+        'For module-scope signals this leaks state across requests; for liveSignals this broadcasts to every connected client on every render.',
+      );
+    }
     const next = typeof valueOrFn === 'function' ? valueOrFn(this.#value) : valueOrFn;
     if (Object.is(next, this.#value)) {
       return;

@@ -13,19 +13,18 @@ export function reactivityLiveSignalsIntro() {
       '.',
     ]),
     t.p([
-      'A shared file declares the signal once and exports it through a helper. Both the SSR component and the server-side observer call the helper, so the name and initial value live in one place.',
+      'A shared file declares the signal once and exports it. Both the SSR component and the server-side observer use the same exported instance.',
     ]),
     code('javascript', `// shared/viewers.js
 import { t } from 'kensington';
 import { liveSignal } from 'kensington/live';
 
-export const viewerCount = () => liveSignal(0, 'home:viewers');
+export const viewerCount = liveSignal(0, 'home:viewers');
 
 export function viewers() {
-  const count = viewerCount();
   return t.div([
-    t.span([count, ' people viewing. ']),
-    t.button({ onclick: () => count.set(n => n + 1) }, 'I am here'),
+    t.span([viewerCount, ' people viewing. ']),
+    t.button({ onclick: () => viewerCount.set(n => n + 1) }, 'I am here'),
   ]);
 }`),
     t.p([
@@ -52,7 +51,7 @@ const live = await liveServer();
 await live.attach(httpServer);
 
 // The server sees the same value. Each client write fires this effect.
-effect(() => console.log('viewers:', viewerCount().get()));
+effect(() => console.log('viewers:', viewerCount.get()));
 
 httpServer.listen(3000);`),
     t.p('The client opens the WebSocket and hydrates the shared component.'),

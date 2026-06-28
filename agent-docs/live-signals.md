@@ -41,7 +41,7 @@ The runtime accepts any value. Only the static type is narrow.
 
 - Component file: `liveSignal(initial, name)`. Works in both server and client.
 - Server entry: `liveServer({ persistence, canRead, canWrite, onConnect, onSocketClose, heartbeatInterval })`, then `.attach(httpServer)` (Node) or spread `.bunWebsocket()` into the Bun default-export's `websocket` slot. `.attach()` returns the underlying `ws` `WebSocketServer` so you can iterate `clients` or call `terminate()` directly when implementing admin or diagnostic features.
-- Client entry: `connectLive({ url, reconnect, onStatus, onError, onFrame })` before the first render that touches a live signal. `onFrame(dir, frame)` fires on every WebSocket frame (`'out'` or `'in'`) for debug overlays, frame logs, and audit trails.
+- Client entry: `connectLive({ url, reconnect, onStatus, onFrame })` before the first render that touches a live signal. `onFrame(dir, frame)` fires on every WebSocket frame (`'out'` or `'in'`) for debug overlays, frame logs, and audit trails.
 
 **One import path. `kensington/live`.** Everything you need is here. `liveSignal`, `connectLive`, `liveServer`, types. Safe to import on both server and client. Works for bundler users (esbuild, Vite, etc.) AND for no-bundler importmap deployments. All node-only dependencies (`ws`, `better-sqlite3`, `node:http`) are loaded via lazy dynamic import inside `liveServer()` and `attach()`, so a browser that fetches `/lib/kensington/esm/live/index.js` from a static-served `node_modules` never resolves them. The narrower subpaths `kensington/live/client` and `kensington/live/server` exist for users who want environment boundaries enforced at the import level; the unified path is the default for most setups.
 
@@ -223,7 +223,7 @@ The two-argument form `(name, ctx) => boolean` continues to work — predicates 
 
 **Don't use `isBrowser` inside `canWrite`.** `canWrite` always runs on the server, where `isBrowser === false`. `canWrite: !isBrowser` evaluates to `true` and allows all client writes — the opposite of the intent. Use `canWrite: 'server-only'` for "no client can write."
 
-**Rejected client writes** are returned to the originator via `MSG_ERROR` (for fire-and-forget writes) or `MSG_SET_FAIL` (for `.set(fn)` writes). Other clients see nothing — the rejected value never reaches the registry.
+**Rejected client writes** are returned to the originator as `MSG_SET_FAIL` carrying the server's authoritative value + lamport for both `.set(value)` and `.set(fn)`. The client rolls back the optimistic local apply via `_setFromRemote` and rejects the per-call Promise with a `LiveSetRejected` Error (`{ signalName, reason, attemptedValue, authoritativeValue }`). Other clients see nothing — the rejected value never reaches the registry. `MSG_ERROR` is reserved for `canRead` subscribe rejection and is logged via `console.error` (no per-call surface).
 
 **`canWrite` can read other live state.** The predicate runs synchronously on the server with access to the `live` handle (via closure). Reading `live.get('other:name')` inside the predicate body is safe and composes cleanly. Common pattern: a per-slot write predicate that gates on a separate `meta` signal's `state` field (poll-must-be-open, document-must-be-editable, auction-must-be-active). The read is a plain registry lookup — no subscription, no cycle. Example:
 
@@ -382,7 +382,6 @@ import { counter } from './shared/counter.js';
 connectLive({
   reconnect: { initialDelay: 250, maxDelay: 30_000, maxRetries: Infinity },
   onStatus: status => { document.documentElement.dataset.live = status; },
-  onError:  err => { console.error('live error:', err); },
 });
 
 registerComponents({ counter });
@@ -799,7 +798,7 @@ const live = await liveServer({
 });
 ```
 
-For real auth, swap the query-string identity for a cookie / JWT / session token check inside `onConnect`. Reject the connection by throwing; the transport's reconnect will keep retrying so the rejection should be permanent (e.g., a wrong session token), otherwise prefer an `onError` channel that the client can surface to the user.
+For real auth, swap the query-string identity for a cookie / JWT / session token check inside `onConnect`. Reject the connection by throwing; the transport's reconnect will keep retrying so the rejection should be permanent (e.g., a wrong session token), otherwise surface the failure to the user via the reactive `status` signal (which transitions to `'disconnected'` after the reconnect cap is exhausted).
 
 ## Reading the connection status reactively
 
@@ -871,9 +870,9 @@ The frame shapes kensington/live emits (the `type` discriminator is the stable s
 | `snapshot` | in | `values: { [name]: value }`, `lamport` | Sent on `subscribe` (and on reconnect for every previously-subscribed name) with the current value. |
 | `update` | in | `name`, `value`, `lamport` | Broadcast of a single name's new value. |
 | `batch-update` | in | `updates: Array<{ name, value, lamport }>` | Coalesced broadcast of multiple names that changed in the same server microtask. |
-| `set-ok` | in | `name`, `lamport`, `opId` | Acknowledges a CAS write succeeded. |
-| `set-fail` | in | `name`, `reason: 'conflict' \| 'forbidden' \| 'unserializable'`, `lamport?`, `value?`, `opId` | Rejects a CAS write. `value` carries the server's authoritative value on `conflict`. |
-| `error` | in | `name?`, `reason` | Non-fatal server-reported error. Also delivered via `onError`. |
+| `set-ok` | in | `name`, `lamport`, `opId` | Acknowledges a write succeeded. Sent for both `.set(value)` and `.set(fn)`. |
+| `set-fail` | in | `name`, `reason: 'conflict' \| 'forbidden' \| 'unserializable'`, `lamport`, `value`, `opId` | Rejects a write. `value` always carries the server's authoritative value so the client can roll back the optimistic local apply. |
+| `error` | in | `name?`, `reason` | `canRead` subscribe rejection. Logged via `console.error`. Not used for write failures. |
 
 `onFrame` is the only sanctioned hook into the protocol layer. Reading fields beyond `type` is at your own risk across kensington versions.
 
@@ -1027,16 +1026,4 @@ Runtime warnings fire once per name (or once per process, where noted):
 - **Persist-flag mismatch.** Two callers of `liveSignal('foo', initial, { persist: true })` and `liveSignal('foo', initial, { persist: false })`. The first declaration wins. The policy is global to the name. Pass the same flag at every call site to silence.
 - **canWrite-flag mismatch.** Same shape. First declaration wins per name.
 - **Unserializable value.** A `.set()` with a value that JSON cannot round-trip. The local set is rejected (no broadcast, no local update) so the in-memory state stays consistent with what other clients see.
-- **liveSignal before transport.** In dev mode (`NODE_ENV !== 'production'`), a one-shot console.warn fires if `liveSignal()` is called before `liveServer({...})` or `connectLive(...)` has registered. The call falls back to a non-synchronized local signal. Almost always indicates a boot-order bug (forgot the `await`). Suppress in tests via `globalThis.__KENSINGTON_LIVE_SUPPRESS_NO_TRANSPORT__ = true`. For TypeScript projects under `strict` / `noImplicitAny`, declare the global once in a test-setup file:
-
-```typescript
-// tests/setup.ts
-declare global {
-  // eslint-disable-next-line no-var
-  var __KENSINGTON_LIVE_SUPPRESS_NO_TRANSPORT__: boolean | undefined;
-}
-globalThis.__KENSINGTON_LIVE_SUPPRESS_NO_TRANSPORT__ = true;
-export {};
-```
-
-The `var` (not `let`/`const`) is required by `declare global`. The `eslint-disable` line is unavoidable because most configs warn on `var`, but the disable is correctly localised to the one place it must appear.
+- **liveSignal before transport.** `liveSignal()` called before `liveServer({...})` or `connectLive(...)` has registered returns a placeholder `Signal` that automatically rewires to the live registry when a transport later registers. Module-scope declarations like `export const x = liveSignal(0, 'name')` work without import-ordering tricks. Pre-upgrade reads and writes both work locally. On upgrade the placeholder's current value seeds the registry entry, so single-client / fresh-registry flows (tests, first boot) get the pre-upgrade write as their canonical value. If the registry already holds a value for that name, the mirror's first run overwrites the placeholder with the authoritative value and the pre-upgrade local write is silently lost. Pre-upgrade writes do not broadcast.

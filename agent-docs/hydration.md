@@ -196,6 +196,7 @@ registerComponents({
 The same component function runs on both server and client. Write components so they work in both environments:
 
 - Create signals inside the component function body, not at module level.
+- Server-render functions must be read-only over signals. `.set()` called inside `renderForHydration` fires a throttled `set-during-ssr` warning because the write leaks state across requests for module-scope signals and broadcasts on every render for `liveSignal`. Seed per-request state by passing it to the `signal()` constructor (`signal(initialFromState)`); server-side `liveSignal` mutations belong in route handlers or startup code, not inside the render body.
 - Wrap any browser-only side effects in `effect()` . `effect()` is a no-op during `renderForHydration`, so it is safe to reference `document`, `window`, or `localStorage` inside one. Direct references to browser globals in the function body outside an `effect()` will throw on the server.
 - For browser-only code that cannot go inside `effect()` (module-level code, `computed()` values, direct assignments), use the `isBrowser` export: `if (isBrowser) { ... }`.
 - State passed to `renderForHydration` must be JSON-serializable. It warns on lossy values (Date, Map, Set, RegExp, undefined, function, Symbol, non-finite numbers, class instances) and throws on unserializable ones (BigInt, circular references).

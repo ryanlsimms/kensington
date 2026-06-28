@@ -2770,6 +2770,46 @@ describe('renderForHydration', () => {
   });
 });
 
+// ─── set during SSR warning ───────────────────────────────────────────────
+
+describe('Signal.set during renderForHydration', () => {
+  beforeEach(() => { _resetWarningThrottle(); });
+
+  function capture(fn) {
+    const warnings = [];
+    const orig = console.warn;
+    console.warn = msg => warnings.push(msg);
+    try { fn(); } finally { console.warn = orig; }
+    return warnings;
+  }
+
+  it('warns when .set is called on a module-scope signal inside renderForHydration', () => {
+    const shared = signal(0);
+    function comp() {
+      shared.set(shared.value + 1);
+      return t.div(shared);
+    }
+    const warnings = capture(() => renderForHydration(comp, {}).toString());
+    assert.ok(warnings.some(w => w.includes('.set() called inside renderForHydration')));
+  });
+
+  it('warns when .set is called on a function-scope signal inside renderForHydration', () => {
+    function comp() {
+      const local = signal(0);
+      local.set(1);
+      return t.div(local);
+    }
+    const warnings = capture(() => renderForHydration(comp, {}).toString());
+    assert.ok(warnings.some(w => w.includes('.set() called inside renderForHydration')));
+  });
+
+  it('does not warn when .set runs outside renderForHydration', () => {
+    const x = signal(0);
+    const warnings = capture(() => { x.set(1); });
+    assert.strictEqual(warnings.length, 0);
+  });
+});
+
 // ─── renderForHydration — checkState ──────────────────────────────────────
 
 describe('renderForHydration checkState', () => {

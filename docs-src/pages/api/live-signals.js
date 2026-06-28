@@ -110,7 +110,6 @@ interface ConnectLiveOptions {
     maxRetries?: number;              // default Infinity
   };
   onStatus?: (status: ConnectionStatus) => void;
-  onError?: (err: unknown) => void;
   onFrame?: (direction: 'out' | 'in', frame: unknown) => void;
 }
 

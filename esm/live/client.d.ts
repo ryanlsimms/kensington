@@ -30,8 +30,6 @@ export interface ConnectLiveOptions {
   reconnect?: ReconnectOptions;
   /** Called on every status transition. Same value is available via `transport.status`. */
   onStatus?: (status: ConnectionStatus) => void;
-  /** Called when the transport encounters a non-fatal error (parse failure, server-sent error message, etc). */
-  onError?: (err: unknown) => void;
   /**
    * Called on every WebSocket frame the transport sends or receives. Direction
    * `'out'` for client → server, `'in'` for server → client. `frame` is the

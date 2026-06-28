@@ -418,11 +418,11 @@ export async function liveServer({
   };
   _registerTransport(serverTransport);
 
-  // Reply to a client MSG_SET. opId is optional; when absent the client did
-  // a fire-and-forget direct write (.set(value)) and isn't expecting a reply.
-  // When present, the client is in the CAS retry loop and needs to know
-  // ok/fail. On failure the reply carries the server's authoritative value
-  // and lamport so the client can re-run its update fn against current state.
+  // Reply to a client MSG_SET. Every MSG_SET from a current-generation client
+  // carries an opId, so the server replies with MSG_SET_OK on success or
+  // MSG_SET_FAIL on rejection (carrying the authoritative value + lamport for
+  // rollback). Legacy clients that omitted opId get no reply (the early
+  // return); their writes apply or fail silently.
   function replyToClientSet(sock, name, opId, ok, reason) {
     if (opId === undefined) { return; }
     const entry = registry.get(name);
@@ -433,15 +433,8 @@ export async function liveServer({
     sendRaw(sock, encode(reply));
   }
 
-  // Send the failure response for a client set. CAS writers (opId present)
-  // get a typed MSG_SET_FAIL with the current authoritative value. Direct
-  // (non-CAS) writers don't expect a structured reply, so they get a
-  // best-effort MSG_ERROR so the client can surface the rejection.
   function rejectClientSet(sock, name, msg, reason) {
     replyToClientSet(sock, name, msg.opId, false, reason);
-    if (msg.opId === undefined) {
-      sendRaw(sock, encode({ type: MSG_ERROR, name, reason }));
-    }
   }
 
   // Process a client MSG_SET. Combines canWrite enforcement (global +

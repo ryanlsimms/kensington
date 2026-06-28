@@ -3,7 +3,7 @@
 // Client → Server:
 //   { type: 'subscribe',   name, persist? }
 //   { type: 'unsubscribe', name }
-//   { type: 'set',         name, value, ifLamport?, opId? }
+//   { type: 'set',         name, value, opId, ifLamport? }
 //
 // Server → Client:
 //   { type: 'snapshot',   values: { [name]: value }, lamport }
@@ -24,18 +24,24 @@
 // stored policy. See `agent-docs/live-signals.md` for the user-facing
 // description.
 //
-// CAS (compare-and-swap) writes. When the client's `.set(fn)` form is used,
-// the library sends MSG_SET with `ifLamport` set to the last lamport the
-// client has seen for this name, plus an `opId` to correlate the response.
-// The server applies the write only if its current lamport for the name
-// matches `ifLamport`; otherwise it sends `set-fail` with reason `conflict`
-// and the current authoritative value+lamport so the client can re-run fn
-// and retry. The server replies with `set-ok` on success. `set-ok` and
-// `set-fail` go ONLY to the originating socket; the regular `update`
-// broadcast still goes to all other subscribers. Direct value writes
-// (.set(value)) omit `ifLamport` and `opId`; the server applies
-// unconditionally as before. canWrite rejections come back as `set-fail`
-// with reason `forbidden`.
+// Writes. Every client-side `.set` (both `.set(value)` and `.set(fn)`)
+// carries an `opId` so the server can route its verdict back to the
+// originating call site. Direct writes (`.set(value)`) omit `ifLamport`;
+// the server applies them unconditionally subject to `canWrite`. CAS writes
+// (`.set(fn)`) include `ifLamport` set to the client's last-seen lamport
+// for the name; the server applies only if its current lamport matches,
+// otherwise it sends `set-fail` with reason `conflict` and the
+// authoritative value so the client can re-run fn and retry. `set-fail`
+// always includes the server's authoritative `value` + `lamport` so the
+// client can roll back the optimistic local apply via `_setFromRemote`
+// before rejecting the per-call Promise. Rejection reasons: `'forbidden'`
+// (canWrite), `'conflict'` (CAS lamport mismatch), `'unserializable'`.
+// `set-ok` and `set-fail` go ONLY to the originating socket; the regular
+// `update` broadcast still goes to all other subscribers.
+//
+// `error` is reserved for non-write protocol failures (currently only
+// canRead rejection on `subscribe`). Write rejections always come back as
+// `set-fail`, never `error`.
 
 export const MSG_SUBSCRIBE = 'subscribe';
 export const MSG_UNSUBSCRIBE = 'unsubscribe';

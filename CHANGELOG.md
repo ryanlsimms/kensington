@@ -9,9 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 - `kensington/live`. New subpath for state shared across browsers. `liveSignal(initial, name, options?)` reads like a regular signal but synchronizes through a server registry. `connectLive()` on the client and `liveServer()` on the server complete the setup. Protocol is plain JSON with Lamport ordering. `better-sqlite3` and `ws` are optional peer dependencies. See docs.
   - Persistence backends: memory or sqlite. Per-signal `persist` flag; transient names drop 30s after the last subscriber leaves.
-  - Atomic compare-and-swap via `liveSignal.set(fn)`. Concurrent writes converge instead of clobbering.
   - Per-signal and per-server `canRead` / `canWrite` policies (`'any'`, `'server-only'`, or a predicate).
-  - Reactive connection `status` on both client and server handles.
+  - Reactive connection `status` on both client and server handles. Connection-level errors log via `console.error`; the `status` signal is the canonical surface for connection state.
   - SSR state threading via `live.get` / `live.set` / `live.list` / `live.delete`.
   - Node (`ws` peer dep) and Bun-native attach modes.
   - Client transport controls: `reconnect()`, `disconnect()`, `pauseSend()` / `resumeSend()`, `unsubscribe(name)`, `onFrame` callback, `ReconnectOptions.maxRetries`.
@@ -22,7 +21,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `addConnectedCallback<E>` / `addDisconnectedCallback<E>` are now generic over the element type.
 
 ### Fixed
-- `Signal.get()` now fires `_onFirstSubscriber` on a 0 → 1 transition, matching `_bindingSubscribe`. A live signal whose subscriber dropped and was re-added via `.get()` could otherwise stay unsubscribed on the server.
+- `Signal.set()` called inside `renderForHydration` now fires a throttled `set-during-ssr` warning. Server-render functions are expected to be read-only over signals. Writing during SSR leaks state across requests for module-scope signals.
+- `Signal.get()` now fires `_onFirstSubscriber` on a 0 → 1 transition, matching `_bindingSubscribe`. A signal whose subscriber dropped and was re-added via `.get()` could otherwise stay unsubscribed.
 - Spurious `computed-in-computed` and `out-of-scope-reactive-reference` warnings on legitimate patterns: nested `mapWithKey`, and internal computeds (class lists, attribute composition, the `mapWithKey` wrapper) reading user-keyed primitives.
 - Warnings resolve to source `.ts` / `.tsx` / `.jsx` positions in browser devtools, and the stack-frame filter no longer strips every user frame in bundled deployments.
 
