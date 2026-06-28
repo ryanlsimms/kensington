@@ -17,7 +17,7 @@ import type { Signal, ReadonlySignal, Reactive } from 'kensington';
 
 ### The five core operations
 
-- `signal(initial, key?)` — writable state. `.get()` subscribes the current reactive context, `.value` reads without subscribing, `.set(v)` or `.set(prev => next)` writes, `.stop()` tears down subscribers. `.transform(fn, key?)` chains a derivation.
+- `signal(initial, key?)` — writable state. **Read with `.get()`** (subscribes the current reactive context if one is active; equivalent to a plain read otherwise). Write with `.set(v)` or `.set(prev => next)`. `.stop()` tears down subscribers. `.transform(fn, key?)` chains a derivation. `.value` exists as a non-subscribing peek; it is the exception, not a peer of `.get()`. See [Always use `.get()`](#always-use-get).
 - `computed(fn, key?)` — derived state. Auto-disposes when it has no subscribers, re-runs when its tracked signals change.
 - `effect(fn)` — side effect (DOM updates, fetches, timers). Returns `{ pause, resume, stop }`. Re-runs when tracked signals change.
 - `signal.mapWithKey(keyOrProp, mapFn)` — keyed list rendering. mapFn runs once per key; the resulting tag is cached and reused across renders.
@@ -27,9 +27,17 @@ import type { Signal, ReadonlySignal, Reactive } from 'kensington';
 
 Before writing any `signal()` / `computed()` / `.transform()` call, ask: will this call run on the call stack of `computed(fn)`, `signal.transform(fn)`, `mapWithKey(key, mapFn)`'s mapFn, or `effect(fn)` at runtime? If yes, pass a stable key as the second argument. Call-stack matters, not lexical position. A helper called from inside a reactive callback is in the trap even though the call looks top-level in the source.
 
-### `.get()` vs `.value`
+### Always use `.get()`
 
-Default to `.get()`. It reads the current value AND subscribes the surrounding reactive context. Use `.value` only when you want the current value WITHOUT subscribing (imperative event handlers, async callbacks, or a peek that would otherwise create a self-trigger loop). A computed that uses `.value` where it should have used `.get()` silently never updates.
+**Read signals with `.get()`. Always.** It reads the current value and, if you happen to be inside a reactive context, subscribes. Outside a reactive context (event handlers, top-level code, `addConnectedCallback` bodies, async callbacks), `.get()` is functionally identical to `.value` — there is no context to subscribe to, so nothing is tracked. There is no penalty for "always use `.get()`."
+
+**`.value` is an escape hatch, not a peer of `.get()`.** It exists for one specific case: you are inside a reactive callback (`computed`, `transform`, `effect`, `mapWithKey` mapFn) AND you deliberately do NOT want to subscribe. Examples include reading a signal you are about to `.set()` later in the same callback (avoids a self-trigger loop) or capturing a "frozen" initial value when you genuinely want the rest of the callback to not re-run on changes. If you are not solving one of those problems, use `.get()`.
+
+The failure mode is silent: `computed(() => list.value.filter(...))` never re-runs when `list` changes, because the computed never subscribed. The DOM bound to that computed shows the initial value forever. The eslint plugin cannot catch this (it cannot know your intent). The discipline is yours.
+
+**The `.transform` trap.** `sigA.transform(a => ... sigB.value ...)` only re-runs when `sigA` changes. The transform is a computed off `sigA` alone. Reading `sigB.value` inside it does NOT add a dependency on `sigB`, so changes to `sigB` will not refresh the derived value. If the transform body needs to react to a second signal, read it with `.get()`. If you actually wanted "compute from `sigA`, sampling `sigB` untracked," prefer an explicit `computed(() => fn(sigA.get(), sigB.value))` so the asymmetry is visible at the call site. The shape `sigA.transform(a => sigB.value)` reads as a mistake even when it isn't.
+
+**Do not cargo-cult `.value` from the [Spreadsheet-style inline-edit cell](#dom-properties-with-prop) recipe.** That recipe uses `.value` deliberately on `prop: { value: draft.value }` so keystrokes (via an `oninput` write to the same `draft` signal) do not rebuild the input and destroy the cursor. The `.value` there is paired with a same-callback `.set()`. Copying `.value` into an unrelated `.transform` or `computed` body without that write pairing is the silent-failure case. The recipe's `[!]` comments mark the spots where untracked reads are intentional; absent that pairing, default to `.get()`.
 
 ### Common patterns at a glance
 
@@ -44,7 +52,7 @@ Default to `.get()`. It reads the current value AND subscribes the surrounding r
 
 | Task | Section |
 |---|---|
-| Choosing `.get()` vs `.value` | Signal API → .get() vs .value |
+| Why `.get()` is always the default | Signal API → Always use .get() |
 | Binding `value` / `checked` / `<select>` to a signal | DOM properties with `prop` |
 | Side effects, timers, fetches | effect |
 | Rendering a list | Keyed lists |
@@ -75,13 +83,14 @@ import { renderForHydration, registerComponents } from 'kensington';
 
 ```javascript
 const n = signal(0);
-n.get()                   // read; subscribes inside computed/effect
-n.value                   // read without tracking; does not create a dependency inside computed/effect
+n.get()                   // read. ALWAYS PREFER THIS. Subscribes if inside computed/effect; plain read otherwise.
 n.set(1)                  // set
 n.set(v => v + 1)         // update via function
 n.stop()                  // clear all subscribers; signal retains current value
 n.toJSON()                // returns the current value; makes signals transparent to JSON.stringify
 n.toString()              // returns String(this.get()); works in template literals and string concatenation
+
+n.value                   // ESCAPE HATCH. Reads without subscribing. See "Always use .get()" before reaching for this.
 
 const double = n.transform(v => v * 2)                       // derived; chainable
 const label  = computed(() => n.get() === 1 ? 'item' : 'items')  // read multiple signals
@@ -100,6 +109,33 @@ const matchesT = activeFilter.transform(f => f === item.category, item.id)
 ```
 
 **TypeScript inference for literal initial values.** `signal('light')` infers `Signal<'light'>`, not `Signal<string>`. Subsequent `.set('dark')` then fails to typecheck. Whenever the signal will hold a value the initial form does not exhibit, pass the type parameter explicitly: `signal<'light' | 'dark'>('light')` or `signal<string>('')`. Same applies to `signal(0)` → `Signal<0>` (write `signal<number>(0)`), `signal([])` → `Signal<never[]>` (write `signal<TreeNode[]>([])`), and union arrays. The runtime accepts any value; only the static type is narrow.
+
+**Using JSDoc with `.d.ts` sidecars.** Projects that use JavaScript with `.d.ts` sidecar files (rather than full TypeScript) get `any` for `transform` / `computed` / `mapWithKey` callback parameters under `noImplicitAny`. The fix is an inline JSDoc `@param` annotation on the callback. Annotate the parameter, not the whole function.
+
+```js
+// Wrong. parameter `p` is implicit `any`. Fails under strict + checkJs + noImplicitAny.
+const connected = presence.transform(p => p.users.length, 'connected-count');
+
+// Right. Inline @param tells tsc the parameter type.
+const connected = presence.transform(
+  /** @param {PresenceList} p */ p => p.users.length,
+  'connected-count',
+);
+
+// Same shape for computed.
+const visible = computed(
+  /** @returns {Sticky[]} */ () => stickies.get().filter(s => !s.archived),
+  'visible-stickies',
+);
+
+// Same shape for mapWithKey. Annotate the row arg.
+const rows = stickyList.mapWithKey(
+  s => s.id,
+  /** @param {Sticky} s */ s => stickyRow(s),
+);
+```
+
+The annotation hangs off the parameter, so tsc narrows the function body without inferring through call-graph context. Verbose, but doesn't require switching the whole file to TS. Skip the annotation entirely on full-TypeScript projects. Inference picks up the source signal's element type.
 
 **Reactive collections (arrays, maps, sets).** Store the collection in a `Signal<T[]>` (or `Signal<Map<...>>`, etc.) and always replace it with a NEW value via `.set(newValue)` instead of mutating in place. Reads inside a `computed` then re-run on every replacement. In-place mutation (`arr.push(x)`, `set.add(x)`, `arr.length = 0`) does not notify subscribers because the signal's identity has not changed.
 
@@ -156,14 +192,19 @@ function maybeSignal(value) {
 }
 ```
 
-**`.get()` vs `.value`. The default is `.get()`.** This trips up enough agents to be worth restating bluntly.
+**Read with `.get()`. Always.** This is restated multiple times in this doc because it is the single most common silent-failure mode in kensington apps.
 
-- **`.get()`. Reads the current value AND subscribes** the surrounding reactive callback (`computed`, `transform`, `effect`, `mapWithKey` mapFn) to this signal. The callback re-runs whenever the signal changes. **Use `.get()` in 99% of reactive-context reads.** If you want the surrounding `computed` to track this signal as a dependency, this is the call.
-- **`.value`. Reads the current value WITHOUT subscribing.** The surrounding reactive callback does NOT track this signal as a dependency, so a later `.set()` will not re-trigger the callback. Use only in: imperative code (event handlers, async callbacks, top-level code, `addConnectedCallback` bodies) where there is no surrounding reactive callback to subscribe; OR inside a reactive callback when you want to peek at the current value without creating a dependency (uncommon but legitimate, e.g. reading a signal you are about to `.set()` later in the same flow to avoid a self-trigger).
+`.get()` reads the current value and — if a reactive callback (`computed`, `transform`, `effect`, `mapWithKey` mapFn) is currently running — subscribes the callback to this signal so it re-runs on future changes. Outside any reactive callback (event handlers, top-level code, `addConnectedCallback` bodies, async callbacks), `.get()` simply returns the current value. There is no penalty for using `.get()` everywhere. **If you are reaching for `.value`, stop and confirm you actually need to skip subscription.** The number of legitimate reasons is small:
 
-Common failure mode: a `computed(() => list.value.filter(...))` silently never updates when `list` changes, because the computed never subscribed. The DOM bound to that computed shows the initial value forever. The fix is `list.get().filter(...)`. The kensington-eslint-plugin does NOT catch this (it cannot know what the author intended) — the discipline is yours to maintain.
+1. Reading a signal you are about to `.set()` later in the same reactive callback, to avoid a self-trigger loop (see [Do not read and write the same signal in the same effect or computed run](#do-not-read-and-write-the-same-signal-in-the-same-effect-or-computed-run)).
+2. Capturing a "frozen" initial value inside a reactive callback when you genuinely want subsequent changes NOT to re-trigger the callback (rare; the [Spreadsheet-style inline-edit cell](#dom-properties-with-prop) recipe is one example).
+3. Sampling current state from inside an async callback that fires long after the surrounding code returned (e.g., a `setTimeout` or `fetch().then(...)` body).
 
-When in doubt, `.get()`. Over-subscribing to a signal you also write to is a real but well-defined hazard (the `set-in-effect` warning catches it for effects); under-subscribing produces a UI that visibly doesn't update and gives you no warning at all.
+If your call doesn't match one of those, use `.get()`.
+
+**The silent-failure mode.** A `computed(() => list.value.filter(...))` never re-runs when `list` changes, because the computed never subscribed. The DOM bound to that computed shows the initial value forever. There is no warning. The lint plugin cannot catch this. Fix: `list.get().filter(...)`.
+
+**The `.transform` variant of the same trap.** `sigA.transform(a => ... sigB.value ...)` is a computed off `sigA` only. Reading a second signal via `.value` inside the body does not subscribe the transform to that second signal, so it will not re-run on its changes. The shape `sigA.transform(a => sigB.value)` reads as a mistake even when it isn't. If both signals should drive the result, read the second with `.get()` (or use a freestanding `computed` so the dependencies are explicit at the call site).
 
 ```javascript
 const searchTerm   = signal('');
@@ -249,6 +290,148 @@ userInput.set('');  // el.value resets immediately via the live effect
 const vid = t.video({ src: '/intro.mp4', prop: { muted: true, playbackRate: 1.5 } });
 ```
 
+**Editing a number through a text input.** `HTMLInputElement.value` is typed `string` in `lib.dom`, so a `Signal<number>` can't bind to `prop: { value: ... }` directly. The canonical pattern is a string draft signal plus a numeric source signal, with a commit step that parses on blur or Enter:
+
+```javascript
+const hours = signal(0);                          // numeric source of truth
+const draft = signal(String(hours.get()));        // string scratch, bound to el.value
+
+function commit() {
+  // commit() runs from event handlers (blur, keydown), not inside a reactive
+  // callback. .get() here is a plain read with no tracking.
+  const n = Number(draft.get().trim());
+  if (Number.isFinite(n)) {
+    hours.set(n);
+  } else {
+    draft.set(String(hours.get()));               // reset draft on bad input
+  }
+}
+
+t.input({
+  type: 'number',
+  prop: { value: draft },
+  on: {
+    input: e => draft.set(e.target.value),
+    blur: commit,
+    keydown: e => { if (e.key === 'Enter') { commit(); } },
+  },
+});
+```
+
+The same shape works for any "edit-and-commit" field where the on-screen text and the in-model value need different types. Two signals avoid the value-must-be-string typing constraint without forcing the rest of the app to deal in strings.
+
+**Spreadsheet-style inline-edit cell.** A pattern that combines several of the above pieces. Click the cell to enter edit mode, type a value, press Enter or blur to commit, Escape to cancel. The cell starts in read mode showing the current value; it swaps to an input on click; on commit it goes back to read mode displaying the new value.
+
+```javascript
+import { t, signal, computed } from 'kensington';
+
+function cell(weekSig, dayIso, myEdit, empId, projId, commit, cancel) {
+  // Boolean signal: "is THIS cell the one being edited?" Shared via the keyed
+  // registry so reading it elsewhere (cellClass below) returns the same
+  // instance.
+  const editing = myEdit.transform(
+    e => e !== null && e.empId === empId && e.projId === projId && e.dayIso === dayIso,
+    `is-editing:${empId}:${projId}:${dayIso}`,
+  );
+
+  // Class string reacts to editing state AND to the underlying cell value
+  // (for the heatmap class). Use .get() for both so the class attribute
+  // re-renders when either changes. (The week-map entry shape is `{ hours }`;
+  // .hours is a plain object property, not a signal read.)
+  const cellClass = computed(() => {
+    const map = weekSig.get();
+    const hours = map[dayIso]?.hours ?? 0;
+    return ['cell', `hrs-${Math.min(8, Math.round(hours))}`, editing.get() ? 'cell-editing' : '']
+      .filter(Boolean)
+      .join(' ');
+  }, `cell-class:${empId}:${projId}:${dayIso}`);
+
+  // Body. Read-mode shows the number; edit-mode renders an input that is
+  // focused and selected on mount. CRITICAL points marked with [!].
+  const body = editing.transform(isEd => {
+    if (isEd) {
+      const input = t.input({
+        type: 'number',
+        // [!] Read .value (untracked) here. We want the CURRENT draft at the
+        // moment of render. If we read draft.get(), every keystroke would
+        // trigger this transform to re-run and rebuild the input element,
+        // destroying the user's selection and cursor position.
+        prop: { value: myEdit.value ? myEdit.value.draft : '' },
+        oninput: e => {
+          // Event handler is imperative scope; .get() is a plain read here.
+          const cur = myEdit.get();
+          if (cur === null) { return; }
+          myEdit.set({ ...cur, draft: e.target.value });
+        },
+        onkeydown: e => {
+          if (e.key === 'Enter') { commit(); }
+          else if (e.key === 'Escape') { cancel(); }
+        },
+        onblur: () => commit(),
+      });
+      // [!] Focus + select on mount. queueMicrotask defers so the prop:value
+      // binding lands before .select() runs. Without this, the input
+      // appears in the DOM but cannot be typed into because nothing has
+      // focused it; users perceive the tab as frozen.
+      input.addConnectedCallback(el => {
+        queueMicrotask(() => {
+          el.focus();
+          // [!] <input type="number">.select() throws InvalidStateError in
+          // Safari but no-ops in Chrome. Wrap in try/catch.
+          try { el.select(); } catch { /* Safari type=number */ }
+        });
+      });
+      return input;
+    }
+    // [!] Read mode uses .get() (tracked). When the underlying week-map
+    // signal changes (e.g., from a remote write), the cell text refreshes.
+    // Using .value here would make the text stale.
+    const map = weekSig.get();
+    const entry = map[dayIso];
+    return t.div({ class: 'cell-inner' },
+      entry ? String(entry.hours) : '',
+    );
+  }, `cell-body:${empId}:${projId}:${dayIso}`);
+
+  // The onclick handler runs in imperative scope (event dispatch), not
+  // inside a reactive callback. .get() here is a plain read with no tracking.
+  return t.div({
+    class: cellClass,
+    onclick: () => {
+      if (myEdit.get() === null) {
+        const cur = weekSig.get()[dayIso];
+        myEdit.set({
+          empId, projId, dayIso,
+          draft: cur ? String(cur.hours) : '',
+        });
+      }
+    },
+  }, body);
+}
+```
+
+The footguns marked `[!]` are the ones that bite. (1) The input's `prop: { value: ... }` reads `.value` (untracked) because you want the draft AT the moment the input is rendered, not on every keystroke. (2) The `addConnectedCallback` with `queueMicrotask` for focus is required because the input is inserted into the DOM after the click event finishes, and without a focus call the user has no cursor. (3) Safari throws on `<input type="number">.select()` while Chrome no-ops. Wrap in try/catch. (4) The read-mode branch uses `.get()` so the cell re-renders on underlying signal changes. The edit-mode branch does NOT read the underlying signal so typing doesn't rebuild the input.
+
+**Do not generalise `.value` from this recipe.** The `.value` here is correct because the same callback writes back to `myEdit` via `oninput`. That self-write is what makes the untracked read necessary. In a `.transform` or `computed` body that does NOT write back to the signal it is reading, `.value` is the silent-failure case from [Always use `.get()`](#always-use-get). Default to `.get()` and reach for `.value` only when you are pairing it with a same-callback `.set()` on the same signal.
+
+**The same dance applies to every editable element**, not just `<input type="number">`. Swap the edit-mode tag for a `<textarea>` (multi-line sticky notes), `<input type="text">` (free-text fields), `<input type="email">`, `<select>`, `<input type="checkbox">` (with appropriate event), or any custom element that owns a `value` property. The same four footguns apply. `prop: { value: untracked }` for the initial draft. `queueMicrotask` deferred focus. `try/catch` around `.select()` because some elements/browsers throw on it (notably `<input type="number">` in Safari. `<textarea>.select()` is well-supported but harmless to wrap). Tracked-read read-mode vs. untracked-read edit-mode.
+
+```js
+// Textarea variant (e.g. sticky note body).
+const ta = t.textarea({
+  prop: { value: draft.value },          // untracked initial
+  oninput: e => draft.set(e.target.value),
+  onblur: () => commit(),
+  onkeydown: e => { if (e.key === 'Escape') { cancel(); } },
+});
+ta.addConnectedCallback(el => {
+  queueMicrotask(() => {
+    el.focus();
+    try { el.select(); } catch { /* defensive; textarea.select() works everywhere */ }
+  });
+});
+```
+
 `prop` is silently ignored in `.toString()`. Known writable properties on the element's DOM interface are typed in TypeScript. Expando properties (arbitrary string keys) are also accepted as `unknown`. Property existence and writability are validated at render time via `validationLevel`.
 
 **`<select>` ordering gotcha.** Setting `prop: { value: ... }` on a `<select>` requires its `<option>` children to be mounted FIRST. If the prop binding fires before children are attached, the assigned value silently does not stick (the browser can't match the value to an option that doesn't exist yet). With kensington's normal `(attrs, content)` argument order this is fine. The risk is when you build the select via `addConnectedCallback` and assign `el.value` synchronously; defer the assignment with `queueMicrotask(...)` so the options land first. The same risk applies if you `.set()` the bound signal from `addConnectedCallback` before the children's binding effects have run.
@@ -270,6 +453,8 @@ e.stop();    // permanently destroy; resume() becomes a no-op after this
 ```
 
 Common mistakes around `effect` (loops, leaked nested effects, signals created inside) are catalogued in [Reactive pitfalls](#reactive-pitfalls). For component-shaped effects whose lifetime should match a DOM element's, capture the handle and stop it from [addDisconnectedCallback](#addconnectedcallback--adddisconnectedcallback).
+
+**For page-lifetime effects that intentionally never stop**, the `kensington/no-ignored-effect-return` lint rule still expects an assignment. The idiomatic suppression is to assign to a leading-underscore name: `const _keepAlive = effect(() => { presenceSig.get(); });`. The rule allows leading-underscore identifiers because their intentional-unused semantics match the no-stop case (an underscore-prefixed binding tells the next reader "I will never read this back, but the side effect of calling the function is the point"). Same idiom works for top-of-module pinning of a live signal that should outlive every render.
 
 **Don't `effect()` on your own writes.** If the only writer to a signal is your own event handler (an `oninput`, `onclick`, etc. that calls `.set()` on it), you do not need an `effect()` to react to the change. The handler already runs imperatively on the user action; piggyback the side effect (debounced save, validation, network call) onto the same handler call:
 
@@ -315,9 +500,29 @@ const rows = items.mapWithKey('id', item => t.tr(t.td(item.name)));
 t.tbody(rows);
 ```
 
+`signal.mapWithKey(keyOrProp, mapFn)` is a method on `Signal<Item[]>` (and `ReadonlySignal<Item[]>`). The receiver MUST hold the array directly. For an envelope shape like `Signal<{ tabs: Tab[] }>`, project the array first: `presence.transform(p => p.tabs, 'presence-tabs').mapWithKey('id', tab => ...)`. See the "envelope around a list" note below.
+
 `signal.mapWithKey(keyOrProp, mapFn)` returns a `ReadonlySignal<Tag[]>`. The first argument is either a property name string (the common case) or a function that extracts the key. The mapFn runs once per key the first time it is seen. The resulting tag is cached and reused on every subsequent render where the same key reappears, so the user never pays to rebuild thousands of unchanged tag subtrees only to discard them after a reconciler diff. Keys live on the tag instance via a Kensington-internal property and are read by the reconciler via a `WeakMap`. They do not appear in the rendered DOM.
 
+Both forms of the first argument:
+
+```javascript
+// Property-name string. Common case. Picks the value at item[prop] as the key.
+items.mapWithKey('id', item => t.tr(t.td(item.name)));
+
+// Function extractor. Required for primitive arrays, composite keys, or
+// computed keys.
+ids.mapWithKey(id => id, id => t.li(getName(id)));               // primitive array
+rows.mapWithKey(r => `${r.sheet}:${r.row}`, r => cellRow(r));    // composite key
+```
+
+The function form is the right choice when the array elements are strings/numbers (no `id` property to point at), when the key is composed from multiple fields, or when the key depends on a transform of the element.
+
 `mapWithKey` is a method on `Signal` and `ReadonlySignal`. It is not a method on plain arrays. If the source data is a plain array (e.g. lazily-loaded children), wrap it in a `signal()` first, then call `.mapWithKey()` on the wrapped signal.
+
+**The source signal must hold the array, not an object containing the array.** A signal shaped like `Signal<{ tabs: Tab[] }>` cannot call `.mapWithKey('id', ...)` directly. TypeScript reports `this of type 'Signal<{ tabs: Tab[] }>' is not assignable to method's this of type 'Signal<Tab[]>'`, which reads as a generic-inference error but is structural. Project the inner array first via `.transform`: `presence.transform(p => p.tabs, 'tabs').mapWithKey('id', tab => ...)`. The keyed transform is cheap (one extra inner signal, reused across re-runs) and the cache still keys off `id` on the underlying `Tab`. Common pitfall on live signals that hold a single document shape (`{ users: [...] }`, `{ items: [...] }`, `{ rows: [...] }`).
+
+**TypeScript tip. Source element type must be uniform.** `mapWithKey<Item>` infers `Item` from the source signal's element type. A signal that holds a *union* of inlined object shapes (e.g. `Signal<{ kind: 'emp', name: string }[] | { kind: 'proj', label: string }[]>` produced by a `computed(() => mode.get() === 'employee' ? employees : projects)`) is rejected at `.mapWithKey('id', ...)` because the union does not have a single shared `Item` type. Declare a named row type, narrow both branches before returning, and the inference resolves: `type Row = { kind: 'emp', name: string } | { kind: 'proj', label: string }; const rows = computed<Row[]>(() => ...)`.
 
 Calling `.mapWithKey()` on a derived signal works the same way the writable form does. The canonical "derive a slice then list-map" pattern is `const visible = items.transform(list => list.filter(p), 'visible'); visible.mapWithKey('id', row)` or `computed(() => items.get().filter(p), 'visible').mapWithKey('id', row)`. The per-key cache still keys off `id`; the underlying derivation triggers reconciliation when the slice changes.
 
@@ -376,11 +581,13 @@ const rows = items.mapWithKey('id', ticket => t.article({
   t.ul(ticket.comments.mapWithKey('id', c => t.li(c.body))),
 ]));
 
-// Mutating a row from outside: find it, mutate its signals.
+// Mutating a row from outside: find it, mutate its signals. This function
+// runs in imperative code (an SSE handler, a WebSocket message handler), not
+// inside a computed/effect — so .get() here is a plain read with no tracking.
 function applyServerUpdate(ticketId, patch) {
-  const row = items.value.find(t => t.id === ticketId);
+  const row = items.get().find(t => t.id === ticketId);
   if (row && 'status' in patch) row.status.set(patch.status);
-  if (row && 'newComment' in patch) row.comments.set([...row.comments.value, patch.newComment]);
+  if (row && 'newComment' in patch) row.comments.set([...row.comments.get(), patch.newComment]);
 }
 ```
 
@@ -428,7 +635,7 @@ function nodeRow(node: Node): ContentTag {
 async function expandToReveal(ancestorIds: string[]) {
   for (const id of ancestorIds) {
     const s = getOrCreateRowState(id);
-    if (!s.childrenLoaded.value) {
+    if (!s.childrenLoaded.get()) {
       const rows = await fetchChildren(id);
       s.children.set(rows);
       s.childrenLoaded.set(true);
@@ -540,6 +747,32 @@ export function seedAll(sheet) {
 After seeding, every later `getCellRaw(addr)` call (from anywhere, including reactive callbacks) is a Map lookup that returns an existing signal. No `signal()` constructor call inside a reactive scope, no warning.
 
 When the addressable space is unbounded or unknown ahead of time, the alternatives are: only seed addresses that exist in the loaded data set (acceptable if non-existent addresses can be treated as "not in registry, return 0 / fall through"), or restructure the helper so the lazy creation is forced to the outermost call site (the consumer ensures the signal exists before reading it).
+
+**Seed BEFORE the `.set()` that triggers the read, not after.** `.set()` notifies subscribers synchronously. A computed subscribed to the signal re-runs *inside* the `.set` call, before any code that runs after the `.set`. This matters for virtualized lists, infinite-scroll grids, and mode toggles where mutating a "window" signal causes a render computed to re-evaluate over a new range of addresses:
+
+```javascript
+// Wrong. seedRange runs AFTER .set, but the rowsBody computed already re-ran
+// synchronously inside .set(), found a Map miss, and lazily created a signal
+// inside the reactive callback.
+function scrollRowsBy(delta) {
+  visibleRowStart.set(visibleRowStart.get() + delta);
+  visibleRowEnd.set(visibleRowEnd.get() + delta);
+  seedRange(...);   // too late
+}
+
+// Right. Seed for the NEXT window's coordinates before .set fires. By the time
+// the rowsBody computed re-evaluates (synchronously inside .set), every
+// address it touches is already in the Map.
+function scrollRowsBy(delta) {
+  const nextStart = visibleRowStart.get() + delta;
+  const nextEnd   = visibleRowEnd.get() + delta;
+  seedRange(nextStart, nextEnd, ...);
+  visibleRowStart.set(nextStart);
+  visibleRowEnd.set(nextEnd);
+}
+```
+
+The same rule applies to mode/grouping toggles (`groupMode.set('project')` reshapes which addresses the render computed reads) and to any other "small mutation that changes the reactive read set's shape." If you find yourself writing `helper(); signal.set(next);` instead of `signal.set(next); helper();`, the helper probably needs to run first.
 
 **Unique keys per keyed call.** `signal()` lives in its own registry, so `signal(0, item.id)` doesn't collide with `computed(fn, item.id)`. But `computed()` and `.transform()` share a registry, so two of them with the same key inside the same outer run collide and silently return the same instance. Use a per-call label: `${item.id}-cls`, `${item.id}-matches`.
 

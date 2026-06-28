@@ -31,6 +31,58 @@ import { t } from 'https://cdn.jsdelivr.net/npm/kensington/dist/kensington.min.j
   // ... one export per element
 } from 'kensington/attributes';`),
 
+      t.h3('kensington/live'),
+      t.p([
+        'Multi-client state shared across connected browsers. See the ',
+        t.a({ href: '?page=api#api-live-signals' }, 'Live signals API'),
+        ' and the ',
+        t.a({ href: '?page=reactivity#live-signals' }, 'live signals guide'),
+        '.',
+      ]),
+      code('javascript', `import { liveSignal, connectLive, liveServer } from 'kensington/live';`),
+      t.p([
+        'Two narrower subpaths exist for environment-bounded imports. ',
+        t.code('kensington/live/client'),
+        ' exports ',
+        t.code('liveSignal'),
+        ' and ',
+        t.code('connectLive'),
+        '. ',
+        t.code('kensington/live/server'),
+        ' exports ',
+        t.code('liveServer'),
+        '. The unified ',
+        t.code('kensington/live'),
+        ' path is the documented default.',
+      ]),
+
+      t.h3('kensington/devtools'),
+      t.p([
+        'Side-effect import that enables the in-page devtools panel for signal inspection. Drop into a dev-only entry point. The panel mounts itself on first import and listens to signal lifecycle events emitted by the reactive runtime.',
+      ]),
+      code('javascript', `// dev-only entry. Importing for side effects.
+import 'kensington/devtools';`),
+
+      t.h3('kensington/vite'),
+      t.p([
+        'Vite plugin that wires transparent HMR for component files. Accepts an ',
+        t.code('include'),
+        ' option (glob string, array of globs, or a callback returning either). On save, registered components hot-swap in place. Apply mode is ',
+        t.code("'serve'"),
+        ' only. Production builds ship the user\'s original source with no instrumentation. Requires ',
+        t.code('acorn'),
+        ' and ',
+        t.code('magic-string'),
+        ' as optional peer deps (lazy-loaded when the plugin runs).',
+      ]),
+      code('javascript', `// vite.config.js
+import { defineConfig } from 'vite';
+import { kensingtonHmr } from 'kensington/vite';
+
+export default defineConfig({
+  plugins: [kensingtonHmr({ include: 'src/components/**/*.js' })],
+});`),
+
       t.h3('Slim build'),
       t.p([
         'Proxy-based class with no per-element attribute spec data. About 5× smaller minified (~148 KB to ~27 KB). For signal-only consumers tree-shaking drops the bundle to ~1.5 KB. Throws if ',

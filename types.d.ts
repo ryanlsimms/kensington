@@ -4928,14 +4928,18 @@ export function computed<T>(fn: () => T, key?: SignalKey): ReadonlySignal<T>;
 /**
  * Runs `fn` immediately and re-runs it whenever any signal read via `.get()` inside changes.
  * Use for side effects: syncing to localStorage, updating the URL, fetching data, etc.
- * Returns a handle with a `stop()` method. Call it to unsubscribe and prevent further runs.
+ *
+ * Returns a handle with three methods. `pause()` temporarily unsubscribes (no runs while paused);
+ * `resume()` re-runs the callback and re-establishes signal subscriptions; `stop()` permanently
+ * destroys the effect (resume() becomes a no-op afterwards). `persist: true` on a tag uses
+ * pause/resume internally to keep effects alive across DOM removal and re-insertion.
  * @example
  * const e = effect(() => {
  *   localStorage.setItem('sort', sortKey.get());
  * });
- * e.stop(); // unsubscribe
+ * e.stop(); // unsubscribe permanently
  */
-export function effect(fn: () => void): { stop(): void };
+export function effect(fn: () => void): { pause(): void; resume(): void; stop(): void };
 
 /** True if `v` is a kensington Signal (or ReadonlySignal). Duck-types via `_isKensingtonSignal === true` so it returns true for signals from any kensington module copy. Useful when writing helpers that accept `Reactive<T>` and need to differentiate a signal from a static value at runtime. */
 export function isKensingtonSignal(v: unknown): v is Signal<unknown>;

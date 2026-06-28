@@ -91,6 +91,62 @@ const rows = items.mapWithKey('id', item => t.li({ class: item.cls }, item.label
       ]),
     ),
 
+    t.h3({ id: 'bp-signal-scope' }, "Don't read a signal outside the scope where it was created"),
+    t.p([
+      'A signal created inside a ',
+      t.code('computed'),
+      ', ',
+      t.code('effect'),
+      ', ',
+      t.code('transform'),
+      ', or ',
+      t.code('mapWithKey'),
+      ' mapFn belongs to that reactive scope. Reading it from outside is the bug. The keyed-signal pattern above works precisely because per-row state is only read by tags built inside the row — same scope, same lifecycle.',
+    ]),
+    t.p([
+      'The failure mode is subtle: the signal looks fine at first read, but when the surrounding callback re-runs without the key (the row disappears, the outer state changes), the keyed sweep stops the signal. Any external reader still holding a reference now subscribes to a dead signal. Kensington fires an ',
+      t.code('out-of-scope-reactive-reference'),
+      ' warning when it can detect this at read time.',
+    ]),
+    code('javascript', `// Wrong. The signal is created inside the mapFn (a reactive scope), but a
+// header component elsewhere also reads it. When the row leaves the list,
+// the signal stops; the header is left with a dead reference.
+const rows = items.mapWithKey('id', item => {
+  const expanded = signal(false, item.id);
+  exposeExpandedFlag(item.id, expanded);   // ← reader outside the mapFn
+  return t.li({ class: expanded.transform(v => v ? 'on' : '') }, item.label);
+});`),
+    code('javascript', `// Right. The signal needs to live longer than any single row, so create
+// it outside any reactive scope. The mapFn just reads it.
+const expandedFlags = new Map();   // module scope. Outside any callback.
+for (const id of knownIds) { expandedFlags.set(id, signal(false)); }
+
+const rows = items.mapWithKey('id', item => {
+  const expanded = expandedFlags.get(item.id);   // lookup, not creation
+  return t.li({ class: expanded.transform(v => v ? 'on' : '') }, item.label);
+});`),
+    t.p([
+      'The diagnostic question. ',
+      t.strong('Where will this signal be read?'),
+    ]),
+    t.ul([
+      t.li([
+        'Only inside the surrounding callback (and its descendants) → safe to create inline. Pass a key so the same instance is reused across re-runs.',
+      ]),
+      t.li([
+        'From outside that callback too (other components, other effects, module-level code) → create the signal outside the callback. If you need lazy creation, do the lazy creation outside any reactive scope (a one-shot loop in ',
+        t.code('addConnectedCallback'),
+        ', or a top-level effect that defers via ',
+        t.code('queueMicrotask'),
+        ').',
+      ]),
+    ]),
+    t.p([
+      'Same rule for ',
+      t.code('liveSignal'),
+      '. Per-user cursors, per-cell raw values, per-document metadata are usually read by multiple components, so the signal needs to outlive any one reactive callback. Create the names outside the reactive scope before the first render that reads them.',
+    ]),
+
     t.h3({ id: 'bp-named-handler' }, 'Use a named function for event handlers that read mutable state'),
     t.p([
       'When you use ',

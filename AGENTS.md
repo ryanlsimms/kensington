@@ -8,8 +8,9 @@ HTML/SVG/MathML library for JavaScript and TypeScript. Tags are method calls on 
 
 | Reach for this subdoc when… | File | What's inside |
 |---|---|---|
-| You touch `signal()`, `computed()`, `effect()`, `.transform()`, `mapWithKey`, `addConnectedCallback`, `persist: true`, devtools, or any reactive lifecycle. | [`agent-docs/reactive.md`](agent-docs/reactive.md) | Signal API, `.get()` vs `.value`, keyed lists, the keyed-primitive rule with worked examples and the helper-function trap, lazy registries, cleanup, addConnectedCallback / addDisconnectedCallback, isBrowser, DevTools, Loading state, **Reactive pitfalls** (every warning's wrong/right pair). |
-| The app is SSR + client-takeover (`renderForHydration` / `registerComponents`) OR you're wiring `kensington/vite` for HMR. Skip this if the app is a client-only SPA. | [`agent-docs/hydration.md`](agent-docs/hydration.md) | Server/client component rules, multiple mounts, asymmetric SSR/client renderers, stateless edge-runtime hazards, HMR Vite plugin and state preservation. |
+| You touch `signal()`, `computed()`, `effect()`, `.transform()`, `mapWithKey`, `addConnectedCallback`, `persist: true`, devtools, or any reactive lifecycle. | [`agent-docs/reactive.md`](agent-docs/reactive.md) | Signal API (read with `.get()`, always — `.value` is an escape hatch), keyed lists, the keyed-primitive rule with worked examples and the helper-function trap, lazy registries, cleanup, addConnectedCallback / addDisconnectedCallback, isBrowser, DevTools, Loading state, **Reactive pitfalls** (every warning's wrong/right pair). |
+| The app is SSR + client-takeover (`renderForHydration` / `registerComponents`) OR you're wiring `kensington/vite` for HMR. Skip this if the app is a client-only SPA. | [`agent-docs/hydration.md`](agent-docs/hydration.md) | Server/client component rules, multiple mounts, asymmetric SSR/client renderers, stateless edge-runtime hazards, HMR Vite plugin and state preservation. Threading external dependencies via the dual-env-module pattern (default) or wrapper closures (for per-request env). |
+| You're sharing state between connected browsers (collab UI, presence, multi-window editing, server-pushed updates). | [`agent-docs/live-signals.md`](agent-docs/live-signals.md) | `liveSignal(initial, name, opts?)` shared primitive with CAS via `.set(fn)`, per-signal `canWrite`. `liveServer(opts)` registry + persistence (memory or sqlite) + heartbeat + graceful `close()`. `connectLive(opts)` transport with `status`/`reconnect()`/`pauseSend()`/`onFrame` for diagnostic UIs. Domain-factory pattern for per-entity signals. |
 | You're integrating a web-component library (Web Awesome, Shoelace, Lit-based design systems, Material Web, FAST, Spectrum) or any vanilla custom element. | [`agent-docs/custom-elements.md`](agent-docs/custom-elements.md) | `createCustomTag`, manifest-driven loops, typing with `declare` fields, htmx-shaped namespace augmentation. |
 | You need a small reusable helper. `styled`, `portal`, `createContext`, `useReducer`, `useLocalStorage`, `useDebounce`, `useFetch`, `useId`. Or a layout/Tailwind starter. | [`agent-docs/recipes.md`](agent-docs/recipes.md) | Each helper as a copyable file, plus the shared-primitives `ui.js` pattern. |
 | You're wiring a server framework. Express, Hono (Node or Bun), Fastify, Elysia, Deno, Node built-in http. | [`agent-docs/frameworks.md`](agent-docs/frameworks.md) | Per-framework route shape. For Express prefer the `kensington-express` package described below. |
@@ -45,24 +46,16 @@ Full runnable example apps live in the `examples/` directory of the GitHub repo 
 ## Imports
 
 ```javascript
-import { t } from 'kensington';               // shared default instance. Use this in most cases
-import Kensington from 'kensington';           // class. Use when subclassing or custom config
-import { Kensington } from 'kensington';       // same class as above, also available as a named export
-import { formAttributes } from 'kensington/attributes';  // attribute objects for each element
+// Everyday. The shared `t` instance, the reactive primitives, isBrowser.
+import { t, signal, computed, effect, isBrowser } from 'kensington';
+
+// Component file types. Most files only need these three.
+import type { Signal, ReadonlySignal, Reactive, ContentTag } from 'kensington';
 ```
 
-```typescript
-// Tag classes and content unions.
-import type { ContentTag, VoidTag, LiteralTag, CommentTag, Content, ContentItem, ContentMethod } from 'kensington';
+Use `Reactive<T>` (the `T | Signal<T> | ReadonlySignal<T>` union) when typing component parameters that accept either a plain value or a signal. Use `ReadonlySignal<T>` for derived signals returned by `computed`, `transform`, or `mapWithKey`. Use `Signal<T>` only when the caller must be able to write via `.set()`. `ContentTag` is the return type of every content element method.
 
-// Attribute slot types.
-import type { NameSpaceAttributes, GlobalAttributes, GlobalEvents, UniversalAttributes, ClassValue } from 'kensington';
-
-// Signal types.
-import type { Signal, ReadonlySignal, Reactive, SignalKey } from 'kensington';
-```
-
-Use `Reactive<T>` (the `T | Signal<T> | ReadonlySignal<T>` union) when typing component parameters that accept either a plain value or a signal. Use `ReadonlySignal<T>` for derived signals returned by `computed`, `transform`, or `mapWithKey`. Use `Signal<T>` only when the caller must be able to write via `.set()`.
+Less common imports (use when actually needed): the `Kensington` class for custom configuration, `import { Kensington } from 'kensington'`; the `formAttributes` / `globalAttributes` objects from `'kensington/attributes'`; the `VoidTag` / `LiteralTag` / `CommentTag` / `Content` / `ContentMethod` types; the `NameSpaceAttributes` / `GlobalAttributes` / `GlobalEvents` / `UniversalAttributes` / `ClassValue` slot types. All exported from `'kensington'`.
 
 ## Recommended packages
 
@@ -359,17 +352,7 @@ import { t, signal, computed, effect, isBrowser } from 'kensington';
 import type { Signal, ReadonlySignal, Reactive } from 'kensington';
 ```
 
-Everything else — the full Signal API, `.get()` vs `.value`, keyed lists, the helper-function trap with wrong/right pairs, lazy registries, cleanup, `addConnectedCallback`/`addDisconnectedCallback`, devtools, loading state, and the full pitfalls catalogue — is in `agent-docs/reactive.md`.
-
-## Custom elements, SSR/HMR, examples, frameworks, recipes
-
-These topics each live in their own subdoc under `agent-docs/`. Reach for them per the "Where to find what" table at the top of this file:
-
-- Custom elements (Web Awesome, Shoelace, Lit, Material Web, FAST, Spectrum, vanilla web components) and TypeScript namespace augmentation. [`agent-docs/custom-elements.md`](agent-docs/custom-elements.md)
-- Hydration (`renderForHydration`, `registerComponents`) and HMR (`kensington/vite`). [`agent-docs/hydration.md`](agent-docs/hydration.md)
-- Helpers (`styled`, `portal`, `createContext`, hooks) plus shared-layout and Tailwind. [`agent-docs/recipes.md`](agent-docs/recipes.md)
-- Server frameworks (Express, Hono, Fastify, Elysia, Deno, Node http). [`agent-docs/frameworks.md`](agent-docs/frameworks.md)
-- Worked examples (forms, pagination, htmx, SVG, MathML, ten reactive-data scenarios, TypeScript design system). [`agent-docs/examples.md`](agent-docs/examples.md)
+Everything else — the full Signal API (read with `.get()`, always; `.value` is an escape hatch), keyed lists, the helper-function trap with wrong/right pairs, lazy registries, cleanup, `addConnectedCallback`/`addDisconnectedCallback`, devtools, loading state, and the full pitfalls catalogue — is in `agent-docs/reactive.md`.
 
 ## Validation and error policy
 

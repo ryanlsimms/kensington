@@ -129,6 +129,19 @@ export function architectureReference() {
             t.td([loc('esm/tag-classes/'), '. Extend ContentTag']),
           ]),
           t.tr([
+            t.td('Live signal transport, protocol, persistence'),
+            t.td([
+              loc('esm/live/client.js'),
+              ' for client transport. ',
+              loc('esm/live/server.js'),
+              ' for the registry + broadcast multiplexer + heartbeat. ',
+              loc('esm/live/protocol.js'),
+              ' for the wire format. ',
+              loc('esm/live/state.js'),
+              ' for the process-wide transport handle.',
+            ]),
+          ]),
+          t.tr([
             t.td('Generated Kensington class behavior'),
             t.td([loc('generate/build-javascript.js'), '. The template that emits esm/kensington.js']),
           ]),

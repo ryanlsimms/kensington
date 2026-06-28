@@ -18,7 +18,7 @@ import { getCurrentHydrationScope } from './hydration-scope.js';
 import { mapWithKey } from './map-with-key.js';
 import { renderSignalAsTag } from './signal-render.js';
 import { isSSRMode } from './ssr.js';
-import { throttledError, throttledWarn } from './warnings.js';
+import { throttledError, throttledWarn, warnKeyedInitialMismatch } from './warnings.js';
 
 let currentEffect = null;
 const pending = new Set();
@@ -188,12 +188,13 @@ export default class Signal {
   get() {
     if (currentEffect !== null && !this.#subscribers.has(currentEffect)) {
       if (this.#subscribers.size === 0) {
-        if (pendingSleep.has(this)) {
-          pendingSleep.delete(this);
-        } else {
-          const wake = wakeFns.get(this);
-          if (wake !== undefined) { wake(); }
-        }
+        // Defer to the shared wakeup helper so we also fire _onFirstSubscriber.
+        // The inline-only path used to wake computeds but skip the external
+        // hook (kensington/live's MSG_SUBSCRIBE), which silently desynced live
+        // signals whose subscriber count went 0 → 1 via a .get() inside a
+        // computed/effect (the common case). _bindingSubscribe already routes
+        // through #wakeIfSleeping; .get() must too.
+        this.#wakeIfSleeping();
       }
       this.#subscribers.add(currentEffect);
       currentEffect._reads.add(this);
@@ -268,6 +269,26 @@ export default class Signal {
     }
   }
 
+  // Internal. Used by kensington/live to apply a value received from the server
+  // without re-broadcasting it. Bypasses the derived-signal guard and the
+  // set-in-effect / set-in-computed loop checks (a remote-origin update can
+  // legitimately land while local code is reading the signal). Still notifies
+  // subscribers so DOM bindings update.
+  _setFromRemote(next) {
+    if (Object.is(next, this.#value)) {
+      return;
+    }
+    this.#value = next;
+    notifySignalSet(this, next, this.#subscribers.size);
+    for (const fn of [...this.#subscribers]) {
+      if (fn._isEffect) {
+        scheduleRun(fn);
+      } else {
+        fn(this.#value);
+      }
+    }
+  }
+
   stop() {
     const fn = stopFns.get(this);
     if (fn !== undefined) {
@@ -313,22 +334,32 @@ export default class Signal {
     const sleep = sleepFns.get(this);
     if (sleep === undefined) {
       notifySignalZeroSubscribers(this);
+      if (typeof this._onZeroSubscribers === 'function') { this._onZeroSubscribers(); }
       return;
     }
-    if (!inFlush) { sleep(); return; }
+    if (!inFlush) { sleep(); if (typeof this._onZeroSubscribers === 'function') { this._onZeroSubscribers(); } return; }
     pendingSleep.add(this);
     queueMicrotask(() => {
       if (!pendingSleep.delete(this)) { return; }
       sleep();
+      if (typeof this._onZeroSubscribers === 'function') { this._onZeroSubscribers(); }
     });
   }
 
   // First subscriber resumes a sleeping computed (or cancels a deferred sleep). Plain
   // signals have no wake function; the call is a no-op for them.
+  //
+  // External subscribers (kensington/live's transport) can also install
+  // `_onFirstSubscriber` / `_onZeroSubscribers` callbacks on the signal
+  // instance to participate in the sleep/wake cycle. The hooks are called
+  // alongside the internal computed-sleep machinery; either, both, or
+  // neither may be set.
   #wakeIfSleeping() {
-    if (pendingSleep.delete(this)) { return; }
+    const wasPending = pendingSleep.delete(this);
+    if (wasPending) { return; }
     const wake = wakeFns.get(this);
     if (wake !== undefined) { wake(); }
+    if (typeof this._onFirstSubscriber === 'function') { this._onFirstSubscriber(); }
   }
 }
 
@@ -413,20 +444,35 @@ function createEffect(fn, isInternal = false) {
 }
 
 export function effect(fn) {
-  if (inComputedFn) {
+  if (inMapWithKeyProbe) {
+    // The probe sets currentEffect to a sentinel and turns on suppressReactiveCheck
+    // to silence the signal()/computed() in-computed warnings. effect() is the one
+    // case where we still want a diagnostic, because the call cannot be valid here
+    // (a fresh effect leaks on every probe re-run). Emit a mapWithKey-specific
+    // message so the user is not sent looking for an outer effect that does not
+    // exist.
     throttledError(
       'effect-in-computed',
-      'kensington: effect() called inside a computed or transform callback. ' +
+      'kensington: effect() called inside a mapWithKey mapFn (a computed-like callback). ' +
       'A new effect is started on every re-run and the previous one is never stopped. ' +
-      'Create effects outside the reactive callback.',
+      'Create effects outside the mapFn.',
     );
-  } else if (currentEffect !== null) {
-    throttledError(
-      'effect-in-effect',
-      'kensington: effect() called inside an effect callback. ' +
-      'A new effect is started on every re-run and the previous one is never stopped. ' +
-      'Create effects at the top level or return a cleanup from the outer effect.',
-    );
+  } else if (!suppressReactiveCheck) {
+    if (inComputedFn) {
+      throttledError(
+        'effect-in-computed',
+        'kensington: effect() called inside a computed or transform callback. ' +
+        'A new effect is started on every re-run and the previous one is never stopped. ' +
+        'Create effects outside the reactive callback.',
+      );
+    } else if (currentEffect !== null) {
+      throttledError(
+        'effect-in-effect',
+        'kensington: effect() called inside an effect callback. ' +
+        'A new effect is started on every re-run and the previous one is never stopped. ' +
+        'Create effects at the top level or return a cleanup from the outer effect.',
+      );
+    }
   }
   return createEffect(fn);
 }
@@ -788,6 +834,7 @@ export function signal(initial, key) {
     const scope = hydrationScope;
     const existing = scope.signals.get(key);
     if (existing !== undefined) {
+      warnKeyedInitialMismatch(key, scope.initials.get(key), initial);
       return existing;
     }
     const prevSuppress = suppressReactiveCheck;
@@ -795,13 +842,14 @@ export function signal(initial, key) {
     const sig = new Signal(initial);
     suppressReactiveCheck = prevSuppress;
     scope.signals.set(key, sig);
+    scope.initials.set(key, initial);
     return sig;
   }
   if (key !== undefined && currentComputed !== null) {
     const owner = currentComputed;
     let registry = keyedRegistries.get(owner);
     if (registry === undefined) {
-      registry = { signals: new Map(), accessed: new Set() };
+      registry = { signals: new Map(), accessed: new Set(), initials: new Map() };
       keyedRegistries.set(owner, registry);
     }
     if (registry.accessed.has(key)) {
@@ -815,6 +863,7 @@ export function signal(initial, key) {
     registry.accessed.add(key);
     const existing = registry.signals.get(key);
     if (existing !== undefined) {
+      warnKeyedInitialMismatch(key, registry.initials.get(key), initial);
       return existing;
     }
     // Suppress the signal-in-computed warning. Keyed signals are the intended pattern;
@@ -826,6 +875,7 @@ export function signal(initial, key) {
     notifySignalMarkKeyed(sig, key);
     keyedScopeOwners.set(sig, owner);
     registry.signals.set(key, sig);
+    registry.initials.set(key, initial);
     return sig;
   }
   return new Signal(initial);

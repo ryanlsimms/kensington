@@ -7,18 +7,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- `style`, `data`, `aria`, and other namespaced-attribute slots now accept a `Signal<Object>` at any depth, in addition to the existing per-leaf signal form.
-- `isKensingtonSignal` is now exported from the package root.
-- `addConnectedCallback<E extends Element = HTMLElement>(fn)` and `addDisconnectedCallback<E>(fn)` are now generic.
-
-### Changed
-- `on?: Record<string, (event: Event) => void>` on `GlobalEvents` is now `Record<string, (event: any) => void>`.
+- `kensington/live`. New subpath for state shared across browsers. `liveSignal(initial, name, options?)` reads like a regular signal but synchronizes through a server registry. `connectLive()` on the client and `liveServer()` on the server complete the setup. Protocol is plain JSON with Lamport ordering. `better-sqlite3` and `ws` are optional peer dependencies. See docs.
+  - Persistence backends: memory or sqlite. Per-signal `persist` flag; transient names drop 30s after the last subscriber leaves.
+  - Atomic compare-and-swap via `liveSignal.set(fn)`. Concurrent writes converge instead of clobbering.
+  - Per-signal and per-server `canRead` / `canWrite` policies (`'any'`, `'server-only'`, or a predicate).
+  - Reactive connection `status` on both client and server handles.
+  - SSR state threading via `live.get` / `live.set` / `live.list` / `live.delete`.
+  - Node (`ws` peer dep) and Bun-native attach modes.
+  - Client transport controls: `reconnect()`, `disconnect()`, `pauseSend()` / `resumeSend()`, `unsubscribe(name)`, `onFrame` callback, `ReconnectOptions.maxRetries`.
+  - Server: `heartbeatInterval` (default 30s), `onSocketClose(ctx, ws)`, `policyOf(name)`.
+  - Structural `AttachedWebSocket` / `AttachedWebSocketServer` types re-exported so consumers don't cast through `ws.WebSocket`.
+- `style`, `data`, `aria`, and other namespaced-attribute slots accept `Signal<Object>` at any depth.
+- `isKensingtonSignal` exported from the package root.
+- `addConnectedCallback<E>` / `addDisconnectedCallback<E>` are now generic over the element type.
 
 ### Fixed
-- Spurious `computed-in-computed` warning when nesting `mapWithKey` inside another `mapWithKey`'s `mapFn`.
-- Spurious `out-of-scope-reactive-reference` warning when an internal computed (class-list assembly, attribute composition, the `mapWithKey` wrapper above) reads a user-keyed `signal`, `computed`, or `.transform()` result.
-- Stack-frame filter no longer strips every user frame in browser-bundled deployments.
-- Warnings now resolve to source `.ts` / `.tsx` / `.jsx` files instead of bundled `.js` positions in browser DevTools.
+- `Signal.get()` now fires `_onFirstSubscriber` on a 0 → 1 transition, matching `_bindingSubscribe`. A live signal whose subscriber dropped and was re-added via `.get()` could otherwise stay unsubscribed on the server.
+- Spurious `computed-in-computed` and `out-of-scope-reactive-reference` warnings on legitimate patterns: nested `mapWithKey`, and internal computeds (class lists, attribute composition, the `mapWithKey` wrapper) reading user-keyed primitives.
+- Warnings resolve to source `.ts` / `.tsx` / `.jsx` positions in browser devtools, and the stack-frame filter no longer strips every user frame in bundled deployments.
+
+### Changed
+- `GlobalEvents.on` handler signature widened from `(event: Event) => void` to `(event: any) => void`.
 
 ## [2.0.0-signals.21] - 2026-06-22
 

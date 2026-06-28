@@ -13,7 +13,7 @@ let currentHydrationScope = null;
 export function _enterHydrationScope(scopeId) {
   let scope = hydrationScopes.get(scopeId);
   if (scope === undefined) {
-    scope = { signals: new Map(), computeds: new Map() };
+    scope = { signals: new Map(), computeds: new Map(), initials: new Map() };
     hydrationScopes.set(scopeId, scope);
   }
   hydrationScopeStack.push(currentHydrationScope);

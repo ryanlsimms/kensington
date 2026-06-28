@@ -33,3 +33,47 @@ export function throttledWarn(key, msg) {
 export function _resetWarningThrottle() {
   warnLastSeen.clear();
 }
+
+// Track which keyed-signal name+key pairs have already produced an
+// initial-mismatch warning so the message fires once per offender rather than
+// once per throttle window. Cleared by _resetWarningThrottle for tests.
+const warnedKeyedInitialMismatches = new Set();
+
+function isPrimitiveValue(v) {
+  return v === null || v === undefined || (typeof v !== 'object' && typeof v !== 'function');
+}
+
+function formatInitialValue(v) {
+  if (v === null) { return 'null'; }
+  if (v === undefined) { return 'undefined'; }
+  if (typeof v === 'string') { return JSON.stringify(v); }
+  return String(v);
+}
+
+/**
+ * Fires a once-per-key throttled warning when a keyed signal is reused under
+ * the same key but with a different primitive initial value than the first
+ * caller passed. Object/array initials skip the comparison to avoid false
+ * positives on structurally-equal-but-reference-different cases (the common
+ * SSR-vs-client shape). Called from signal.js's keyed-signal lookup paths.
+ */
+export function warnKeyedInitialMismatch(key, originalInitial, newInitial) {
+  if (!isPrimitiveValue(originalInitial) || !isPrimitiveValue(newInitial)) { return; }
+  if (Object.is(originalInitial, newInitial)) { return; }
+  const seenKey = `keyed-initial:${String(key)}`;
+  if (warnedKeyedInitialMismatches.has(seenKey)) { return; }
+  warnedKeyedInitialMismatches.add(seenKey);
+  throttledWarn(
+    'keyed-signal-initial-mismatch',
+    `kensington: signal(initial, '${String(key)}') was called multiple times with different primitive initial values `
+    + `(first: ${formatInitialValue(originalInitial)}, then: ${formatInitialValue(newInitial)}). `
+    + 'The second caller\'s initial is ignored; the existing keyed signal is returned with its current value. '
+    + 'If this is intentional (a key reused across re-runs of one computed), pass the same initial. '
+    + 'If not, check for an accidental key collision.',
+  );
+}
+
+// Test-only reset.
+export function _resetKeyedInitialWarnings() {
+  warnedKeyedInitialMismatches.clear();
+}

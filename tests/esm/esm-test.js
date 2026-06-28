@@ -1687,6 +1687,53 @@ describe('signal', () => {
     const s = signal(0);
     assert.throws(() => { s.value = 99; }, TypeError);
   });
+  // Regression. The 0 → 1 subscriber transition must fire _onFirstSubscriber
+  // regardless of which subscribe path triggered it. Live signals install this
+  // hook to send MSG_SUBSCRIBE to the server. Before the fix, `.get()` inside
+  // a computed/effect woke the signal locally but skipped the hook, so a live
+  // signal whose count went 0 → 1 via the .get() path stayed silently
+  // unsubscribed server-side and missed every future broadcast. The symptom
+  // was "remote updates land until the first time the rendering chain drops
+  // and reattaches; after that the cell shows stale data until reload."
+  it('_onFirstSubscriber fires on 0 → 1 via .get() inside an effect', async () => {
+    const s = signal('a');
+    let firstCount = 0;
+    let zeroCount = 0;
+    s._onFirstSubscriber = () => { firstCount++; };
+    s._onZeroSubscribers = () => { zeroCount++; };
+    // First subscriber added via .get() inside an effect.
+    const eff = effect(() => { s.get(); });
+    assert.strictEqual(firstCount, 1, 'first subscriber via .get() must fire _onFirstSubscriber');
+    // Drop the only subscriber.
+    eff.stop();
+    await Promise.resolve();
+    assert.strictEqual(zeroCount, 1, 'last subscriber leaving must fire _onZeroSubscribers');
+    // Re-add via .get() inside a fresh effect. Hook must fire again.
+    const eff2 = effect(() => { s.get(); });
+    assert.strictEqual(firstCount, 2, 'resubscribe via .get() must fire _onFirstSubscriber');
+    eff2.stop();
+  });
+  it('_onFirstSubscriber fires on 0 → 1 via .get() inside a computed', async () => {
+    const s = signal(0);
+    let firstCount = 0;
+    let zeroCount = 0;
+    s._onFirstSubscriber = () => { firstCount++; };
+    s._onZeroSubscribers = () => { zeroCount++; };
+    // Wire the computed through an effect so it has a subscriber and stays awake.
+    let c = computed(() => s.get() * 2);
+    const eff = effect(() => { c.get(); });
+    assert.strictEqual(firstCount, 1);
+    // Tear down the chain. The computed should sleep, releasing s.
+    eff.stop();
+    c = null;
+    await Promise.resolve();
+    assert.strictEqual(zeroCount, 1);
+    // Build a fresh chain. Resubscribe through .get() must re-fire the hook.
+    const c2 = computed(() => s.get() + 1);
+    const eff2 = effect(() => { c2.get(); });
+    assert.strictEqual(firstCount, 2);
+    eff2.stop();
+  });
 });
 
 // ─── subtree-signal attributes ─────────────────────────────────────────────
@@ -2071,27 +2118,35 @@ describe('computed signal', () => {
     // closure stays subscribed to src forever. After N runs, src has N stale subscribers
     // that each invoke the user's compute function on every set, so the work per set
     // grows quadratically with run count.
-    const src = signal(1);
-    let computeCalls = 0;
-    const fx = effect(() => {
-      const c = computed(() => {
-        computeCalls++;
-        return src.get() * 2;
+    // The pattern under test deliberately triggers the `computed-in-effect` warning,
+    // so silence console.error for the duration.
+    const origError = console.error;
+    console.error = () => {};
+    try {
+      const src = signal(1);
+      let computeCalls = 0;
+      const fx = effect(() => {
+        const c = computed(() => {
+          computeCalls++;
+          return src.get() * 2;
+        });
+        c.get();
       });
-      c.get();
-    });
-    assert.strictEqual(computeCalls, 1);
-    for (let i = 0; i < 10; i++) {
-      src.set(i + 2);
-      await new Promise(resolve => { queueMicrotask(resolve); });
+      assert.strictEqual(computeCalls, 1);
+      for (let i = 0; i < 10; i++) {
+        src.set(i + 2);
+        await new Promise(resolve => { queueMicrotask(resolve); });
+      }
+      // With cleanup: ~21 calls (1 initial + 2 per set: existing update fires, then new
+      // computed is created during the parent re-run). Without: ~66 (quadratic).
+      assert.ok(
+        computeCalls < 30,
+        `computed inside effect leaked: ${computeCalls} compute calls after 10 sets`,
+      );
+      fx.stop();
+    } finally {
+      console.error = origError;
     }
-    // With cleanup: ~21 calls (1 initial + 2 per set: existing update fires, then new
-    // computed is created during the parent re-run). Without: ~66 (quadratic).
-    assert.ok(
-      computeCalls < 30,
-      `computed inside effect leaked: ${computeCalls} compute calls after 10 sets`,
-    );
-    fx.stop();
   });
 });
 
@@ -2817,6 +2872,84 @@ describe('renderForHydration checkState', () => {
   });
 });
 
+// ─── keyed signal initial-mismatch ────────────────────────────────────────────
+// Surfaces accidental key collisions where two callers share a key but pass
+// different primitive initial values. The second caller's initial is ignored
+// (the existing keyed signal is returned), so without this warning the bug
+// would only show up later as a wrong-value UI surprise.
+
+describe('keyed signal initial-mismatch warning', () => {
+  beforeEach(() => { _resetWarningThrottle(); });
+
+  it('warns when the same key is reused with a different primitive initial inside a computed', () => {
+    const warns = [];
+    const origWarn = console.warn;
+    console.warn = msg => warns.push(msg);
+    const trigger = signal(0);
+    computed(() => {
+      trigger.get();
+      const a = signal(0, 'shared-k');
+      const b = signal(7, 'shared-k'); // mismatched primitive initial
+      return [a, b];
+    });
+    console.warn = origWarn;
+    assert.ok(warns.some(w => /'shared-k'/.test(w) && /first: 0, then: 7/.test(w)));
+  });
+
+  it('does not warn when the same key is reused with the same primitive initial', () => {
+    const warns = [];
+    const origWarn = console.warn;
+    console.warn = msg => warns.push(msg);
+    const trigger = signal(0);
+    computed(() => {
+      trigger.get();
+      signal(0, 'same-init');
+      signal(0, 'same-init-other');
+      return null;
+    });
+    console.warn = origWarn;
+    assert.strictEqual(warns.filter(w => /initial-mismatch|different primitive initial values/.test(w)).length, 0);
+  });
+
+  it('does not warn when either initial is an object/array', () => {
+    const warns = [];
+    const origWarn = console.warn;
+    console.warn = msg => warns.push(msg);
+    const trigger = signal(0);
+    computed(() => {
+      trigger.get();
+      signal({ a: 1 }, 'obj-k');
+      signal({ a: 2 }, 'obj-k'); // different object refs — should NOT warn
+      signal([], 'arr-k');
+      signal([{ id: 'x' }], 'arr-k'); // different array refs — should NOT warn
+      return null;
+    });
+    console.warn = origWarn;
+    assert.strictEqual(warns.filter(w => /different primitive initial values/.test(w)).length, 0);
+  });
+
+  it('fires once per offending key across many re-runs', () => {
+    const warns = [];
+    const origWarn = console.warn;
+    console.warn = msg => warns.push(msg);
+    const trigger = signal(0);
+    const c = computed(() => {
+      trigger.get();
+      signal(0, 'churn-k');
+      signal(7, 'churn-k');
+      return null;
+    });
+    c.get();
+    trigger.set(1);
+    c.get();
+    trigger.set(2);
+    c.get();
+    console.warn = origWarn;
+    const matches = warns.filter(w => /'churn-k'/.test(w) && /different primitive initial values/.test(w));
+    assert.strictEqual(matches.length, 1);
+  });
+});
+
 // ─── keyed computed ───────────────────────────────────────────────────────────
 
 describe('keyed computed', () => {
@@ -3381,6 +3514,35 @@ describe('reactive context warnings', () => {
       );
     } finally {
       console.warn = origWarn;
+    }
+  });
+
+  it('effect() inside a mapWithKey mapFn fires the computed-shaped warning, not the effect-in-effect one', () => {
+    // Regression. Pre-fix, the mapWithKey probe (which sets currentEffect to a
+    // sentinel) caused effect() inside mapFn to emit "called inside an effect
+    // callback", sending users looking for an outer effect that did not exist.
+    // The fix gates the warning behind !suppressReactiveCheck and emits a
+    // mapWithKey-specific message when inMapWithKeyProbe is true.
+    _resetWarningThrottle();
+    const errs = [];
+    const origErr = console.error;
+    console.error = msg => errs.push(String(msg));
+    try {
+      const items = signal([{ id: 'a' }]);
+      const fakeTag = () => ({
+        _isKensingtonTag: true,
+        _isKensingtonContentTag: true,
+      });
+      const result = items.mapWithKey('id', () => {
+        effect(() => {});
+        return fakeTag();
+      });
+      result.get();
+      const joined = errs.join('\n');
+      assert.match(joined, /mapWithKey mapFn|computed or transform callback/);
+      assert.doesNotMatch(joined, /called inside an effect callback/);
+    } finally {
+      console.error = origErr;
     }
   });
 });

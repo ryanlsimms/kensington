@@ -8,6 +8,7 @@ import { reactivityInTemplates } from './in-templates.js';
 import { reactivityIntro } from './intro.js';
 import { reactivityKeyedLists } from './keyed-lists.js';
 import { reactivityLifecycle } from './lifecycle.js';
+import { reactivityLiveSignals } from './live-signals.js';
 import { reactivityPrimitives } from './primitives.js';
 import { reactivitySsr } from './ssr.js';
 import { reactivityKnownTradeoffs } from './tradeoffs.js';
@@ -60,10 +61,25 @@ export function reactivitySidebar() {
       ]),
       t.li(t.a({ href: '#hydration' }, 'SSR reactive data')),
       t.li([
+        t.a({ href: '#live-signals' }, 'Live signals'),
+        t.ul([
+          t.li(t.a({ href: '#live-signals-setup' }, 'Setup. Three calls')),
+          t.li(t.a({ href: '#live-signals-naming' }, 'Naming')),
+          t.li(t.a({ href: '#live-signals-persistence' }, 'Persistence')),
+          t.li(t.a({ href: '#live-signals-canwrite' }, 'canRead / canWrite')),
+          t.li(t.a({ href: '#live-signals-atomic' }, 'Atomic updates with .set(fn)')),
+          t.li(t.a({ href: '#live-signals-status' }, 'Connection status pill')),
+          t.li(t.a({ href: '#live-signals-server-subscribe' }, 'Server-side liveSignal')),
+          t.li(t.a({ href: '#live-signals-auto-unsubscribe' }, 'Auto-unsubscribe trap')),
+          t.li(t.a({ href: '#live-signals-where-created' }, 'Where liveSignals are created')),
+        ]),
+      ]),
+      t.li([
         t.a({ href: '#best-practices' }, 'Best practices'),
         t.ul([
           t.li(t.a({ href: '#bp-use-signal' }, 'Use signals for reactive values')),
           t.li(t.a({ href: '#bp-reactive-in-callback' }, 'Reactive values in callbacks')),
+          t.li(t.a({ href: '#bp-signal-scope' }, 'Signal read scope')),
           t.li(t.a({ href: '#bp-named-handler' }, 'Named event handlers')),
           t.li(t.a({ href: '#bp-keyed-lists' }, 'Keyed lists')),
         ]),
@@ -93,6 +109,7 @@ export function reactivityContent() {
     reactivityCleanup(),
     reactivityLifecycle(),
     reactivitySsr(),
+    reactivityLiveSignals(),
     reactivityBestPractices(),
     reactivityDevtools(),
     reactivityKnownTradeoffs(),

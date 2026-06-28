@@ -7,6 +7,7 @@ import { stageDot } from './helpers.js';
 import { architectureHmr } from './hmr.js';
 import { architectureHydration } from './hydration.js';
 import { architectureLifecycle } from './lifecycle.js';
+import { architectureLiveSignals } from './live-signals.js';
 import { architectureOverview } from './overview.js';
 import { architecturePipeline } from './pipeline.js';
 import { architectureReconcile } from './reconcile.js';
@@ -106,6 +107,17 @@ export function architectureSidebar() {
           t.li(t.a({ href: '#hmr-ssr' }, 'SSR + HMR parity')),
         ]),
       ]),
+      t.li([
+        t.a({ href: '#live-signals' }, 'Live signals'),
+        t.ul([
+          t.li(t.a({ href: '#live-state-module' }, 'Transport registry')),
+          t.li(t.a({ href: '#live-protocol' }, 'Wire protocol')),
+          t.li(t.a({ href: '#live-client' }, 'Client transport')),
+          t.li(t.a({ href: '#live-server' }, 'Server runtime')),
+          t.li(t.a({ href: '#live-persistence' }, 'Persistence adapters')),
+          t.li(t.a({ href: '#live-cheatsheet' }, 'Where to look')),
+        ]),
+      ]),
       t.li(t.a({ href: '#invariants' }, 'Invariants')),
       t.li(t.a({ href: '#cheatsheet' }, 'Where to look')),
     ]),
@@ -151,6 +163,7 @@ export function architectureContent() {
     architectureReconcile(),
     architectureHydration(),
     architectureHmr(),
+    architectureLiveSignals(),
     ...architectureReference(),
     // eslint-disable-next-line kensington/no-unsafe-literal -- inline script tag, content controlled by us
     t.unsafeLiteral(`<script type="module">${MERMAID_INIT}</script>`),

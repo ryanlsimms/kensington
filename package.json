@@ -54,6 +54,18 @@
       "types": "./esm/vite/index.d.ts",
       "import": "./esm/vite/index.js"
     },
+    "./live": {
+      "types": "./esm/live/index.d.ts",
+      "import": "./esm/live/index.js"
+    },
+    "./live/client": {
+      "types": "./esm/live/client.d.ts",
+      "import": "./esm/live/client.js"
+    },
+    "./live/server": {
+      "types": "./esm/live/server.d.ts",
+      "import": "./esm/live/server.js"
+    },
     ".": {
       "import": {
         "types": "./types.d.ts",
@@ -95,7 +107,7 @@
     "test": "npm run test-esm && npm run test-cjs && npm run test-ts && npm run test-browser && npm run test-cli && npm run test-treeshake && echo 'All tests passed'",
     "test-browser": "npx playwright test --config ./tests/browser/config/playwright.config.js",
     "stop-server": "lsof -ti:3847 | xargs kill 2>/dev/null || true",
-    "test-esm": "node --test \"./tests/esm/esm-test.js\"",
+    "test-esm": "node --test \"./tests/esm/esm-test.js\" \"./tests/esm/live-test.js\"",
     "test-cjs": "node --test \"./tests/cjs/cjs-test.js\"",
     "test-ts": "tsc --noEmit -p tests/typescript/tsconfig.json && echo 'TypeScript types OK'",
     "test-cli": "node --test \"./tests/html-to-kensington-test.js\"",
@@ -147,13 +159,21 @@
   },
   "peerDependencies": {
     "acorn": "^8.0.0",
-    "magic-string": "^0.30.0"
+    "better-sqlite3": "^11.0.0",
+    "magic-string": "^0.30.0",
+    "ws": "^8.0.0"
   },
   "peerDependenciesMeta": {
     "acorn": {
       "optional": true
     },
+    "better-sqlite3": {
+      "optional": true
+    },
     "magic-string": {
+      "optional": true
+    },
+    "ws": {
       "optional": true
     }
   }

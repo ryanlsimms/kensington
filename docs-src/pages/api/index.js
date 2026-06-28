@@ -3,6 +3,7 @@ import { t } from 'kensington';
 import { githubLink, headerGithubLink } from '../../components/ui.js';
 import { apiConstructor } from './constructor.js';
 import { apiExportsAndTypes } from './exports-and-types.js';
+import { apiLiveSignals } from './live-signals.js';
 import { apiSignals } from './signals.js';
 import { apiSpecialMethods } from './special-methods.js';
 import { apiTagMethods } from './tag-methods.js';
@@ -42,6 +43,16 @@ export function apiSidebar() {
           t.li(t.a({ href: '#register-components' }, 'registerComponents()')),
         ]),
       ]),
+      t.li([
+        t.a({ href: '#api-live-signals' }, 'Live signals'),
+        t.ul([
+          t.li(t.a({ href: '#api-live-signal' }, 'liveSignal()')),
+          t.li(t.a({ href: '#api-connection-status' }, 'Connection status')),
+          t.li(t.a({ href: '#api-connect-live' }, 'connectLive()')),
+          t.li(t.a({ href: '#api-live-server' }, 'liveServer()')),
+          t.li(t.a({ href: '#api-live-subpaths' }, 'Subpaths')),
+        ]),
+      ]),
       t.li(t.a({ href: '#exports' }, 'Exports')),
       t.li(t.a({ href: '#types' }, 'TypeScript types')),
     ]),
@@ -64,6 +75,7 @@ export function apiContent() {
     apiTagMethods(),
     apiSpecialMethods(),
     apiSignals(),
+    apiLiveSignals(),
     ...apiExportsAndTypes(),
     t.section([
       t.p({ style: { marginTop: '3rem', fontSize: '0.83rem', color: 'var(--color-muted)' } }, [

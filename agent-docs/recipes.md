@@ -486,3 +486,260 @@ t.div({ class: 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8' }, [
   ]),
 ]);
 ```
+
+## Presence with heartbeat. Multi-client list aggregation without races
+
+Canonical pattern for any "list of users / items / facts contributed by many writers." Replaces the naive single-shared-list shape that has a fundamental read-modify-write race under concurrent writes (see `agent-docs/live-signals.md` → "Shared collections under concurrent writes").
+
+The shape. Each client writes ONLY its own per-key slot. The server aggregates all slots into a shared, server-only-writable view. Clients READ the view, never write it. Heartbeats keep stale slots from accumulating; the server evicts slots whose `lastSeen` ages past a TTL.
+
+Use this pattern for. Presence/viewers, online status, currently-typing indicators, vote tallies, multi-user reactions, cart contributors, shared whiteboard cursors, "who has read this thread" markers. Anything where the list members are independent and additive.
+
+```js
+// shared/names.js. Name builders. The same scoping convention on both sides.
+export function presenceName(roomId, userId) { return `room:${roomId}:presence:user:${userId}`; }
+export function presencePrefix(roomId)        { return `room:${roomId}:presence:user:`; }
+export function viewersName(roomId)           { return `room:${roomId}:viewers`; }
+```
+
+```js
+// shared/room.js. Component file. Imported by both server and client.
+import { t, effect, isBrowser } from 'kensington';
+import { liveSignal } from 'kensington/live';
+import { presenceName, viewersName } from './names.js';
+
+const HEARTBEAT_MS = 2000;
+
+export function room(state, env) {
+  const { roomId } = state;
+  const { userId, userName } = env;
+
+  // READ ONLY. Server aggregator writes; clients display.
+  const viewers = liveSignal({ users: [] }, viewersName(roomId), { persist: true });
+
+  // The per-user slot. Each tab writes ONLY its own slot. The server
+  // discovers slots via `live.list(prefix)`, hence persist:true.
+  const presence = liveSignal(null, presenceName(roomId, userId), { persist: true });
+
+  const root = t.div({ class: 'room' }, [
+    t.p(viewers.transform(v => `${v.users.length} watching`, 'viewer-count')),
+    t.ul(viewers.transform(
+      v => v.users.map(u => t.li({ 'data-uid': u.id }, u.name)),
+      'viewer-list',
+    )),
+  ]);
+
+  if (isBrowser) {
+    let joinedAt = 0;
+    let heartbeatHandle = null;
+    let keepAlive = null;
+    let nameEffect = null;
+
+    root.addConnectedCallback(() => {
+      // Keep-alive. See agent-docs/live-signals.md → "The auto-unsubscribe trap".
+      keepAlive = effect(() => { viewers.get(); presence.get(); });
+
+      // Write the slot on mount and whenever the display name changes.
+      nameEffect = effect(() => {
+        const name = userName.get();
+        if (!name) { return; }
+        if (joinedAt === 0) { joinedAt = Date.now(); }
+        presence.set({ name, joinedAt, lastSeen: Date.now() });
+      });
+
+      // Heartbeat. Refresh `lastSeen` so the server keeps us listed.
+      heartbeatHandle = setInterval(() => {
+        const name = userName.value;
+        if (!name) { return; }
+        presence.set({ name, joinedAt: joinedAt || Date.now(), lastSeen: Date.now() });
+      }, HEARTBEAT_MS);
+    });
+
+    root.addDisconnectedCallback(() => {
+      if (keepAlive !== null) { keepAlive.stop(); keepAlive = null; }
+      if (nameEffect !== null) { nameEffect.stop(); nameEffect = null; }
+      if (heartbeatHandle !== null) { clearInterval(heartbeatHandle); heartbeatHandle = null; }
+      // Best-effort. Mark slot as gone immediately. If the WS does not flush
+      // before the tab dies, the server's TTL eviction handles cleanup.
+      try { presence.set(null); } catch { /* socket already closed */ }
+    });
+  }
+
+  return root;
+}
+```
+
+```js
+// server-effects/presence-aggregator.js. The server-side piece.
+import { liveSignal } from 'kensington/live';
+import { presencePrefix, viewersName } from '../shared/names.js';
+
+// Heartbeat policy. Clients refresh every HEARTBEAT_MS. The server considers
+// a slot live if its lastSeen is within TTL_MS of now. Set TTL above twice
+// the heartbeat interval to tolerate one missed beat.
+const POLL_MS = 500;
+const TTL_MS = 5_000;
+
+export function startPresenceAggregator(live, roomId) {
+  const viewers = liveSignal({ users: [] }, viewersName(roomId), { persist: true });
+  const prefix = presencePrefix(roomId);
+
+  function tick() {
+    const now = Date.now();
+    const users = [];
+    for (const [name, value] of live.list(prefix)) {
+      if (value === null || typeof value !== 'object') { continue; }
+      const lastSeen = Number(value.lastSeen ?? 0);
+      if (now - lastSeen > TTL_MS) { continue; }
+      users.push({
+        id: name.slice(prefix.length),
+        name: String(value.name ?? ''),
+        joinedAt: Number(value.joinedAt ?? lastSeen),
+      });
+    }
+    users.sort((a, b) => a.joinedAt - b.joinedAt);
+    viewers.set({ users });
+  }
+
+  tick();
+  const handle = setInterval(tick, POLL_MS);
+  if (typeof handle.unref === 'function') { handle.unref(); }
+
+  return { stop: () => clearInterval(handle) };
+}
+```
+
+```js
+// server.js wiring.
+import { liveServer } from 'kensington/live';
+import { startPresenceAggregator } from './server-effects/presence-aggregator.js';
+
+const live = await liveServer({
+  persistence: { kind: 'sqlite', path: './data/live.db' },
+  canWrite: name => !name.endsWith(':viewers'),         // clients cannot write the aggregated view
+});
+
+for (const roomId of rooms) {
+  startPresenceAggregator(live, roomId);
+}
+```
+
+### Why this shape
+
+- **No race.** Each client writes a different name. No tab can clobber another out of the view.
+- **The server is the single writer to the aggregate.** Server-only-writable enforced by `canWrite`. The runtime guarantees one authoritative source for the displayed list.
+- **Crashed tabs self-heal.** A tab that closes without flushing its null-write disappears after TTL_MS. No zombie entries linger forever.
+- **Discovery happens via `live.list(prefix)`.** Server learns about new slots passively. No subscription contract needed for the aggregator to find new users.
+
+### Tuning
+
+- `POLL_MS` controls latency of departure-by-TTL and arrival-of-first-tab. 500ms feels live. Below 250ms is wasteful on a typical machine.
+- `TTL_MS` controls how long a crashed/closed tab lingers. Set above `2 * HEARTBEAT_MS` to tolerate one missed beat. Below that risks evicting a healthy slow tab.
+- `HEARTBEAT_MS` controls heartbeat write frequency. Smaller is faster departure detection but more writes. 2s is a sane default. 5s is the upper bound that still feels live.
+
+### What this is not
+
+- **Not for high-frequency per-user state** like cursor positions. Use transient signals (persist:false, see `cursor:user:*` in the live-cursors app) where the per-user signal itself is the broadcast channel, no aggregation needed.
+- **Not for ordered append-only logs.** Chat messages, audit trails, etc. need a server-authoritative writer for the shared list. Use a server-side effect that watches per-user "outbox" slots and appends to a server-only-writable log.
+- **Not a substitute for a real CRDT.** Two writes to the same per-user slot still race against each other in the last-write-wins sense, but since each user has their own slot, the race is intra-user and almost always harmless (the latest write expresses the user's current state).
+
+### Variant. Reactive aggregator (sub-second updates, transient slots)
+
+The polled-aggregator shape above re-derives the view on every `POLL_MS` tick. Fine for presence (latency on the order of seconds is acceptable). Not fine for vote tallies or any aggregation where each individual write should produce a near-immediate update across all readers. The reactive variant uses an `effect()` instead of a `setInterval`.
+
+Three structural changes from the polled shape:
+
+1. **Per-user slots are transient (`persist: false`)** so they evaporate naturally on tab close (the 30s transient grace period handles the WS-drop case; explicit `onSocketClose` cleanup handles the prompt case).
+2. **A `slots` Map holds one cached server-side `Signal` per discovered user.** The effect reads every entry on each run; new entries (new voters) are added by a periodic seed that scans `live.list(prefix)`.
+3. **A `slotsVersion` counter forces the effect to re-run when a new slot is added.** Without it, the effect only re-runs on changes to slots it already reads; a brand-new voter's first vote arrives at a name that the effect has never subscribed to, so the aggregate undercounts for one tick.
+
+```js
+// server-effects/poll-aggregator.js
+import { effect, signal } from 'kensington';
+import { liveSignal } from 'kensington/live';
+
+export function startPollAggregator(live, pollId) {
+  const meta = liveSignal(null, `poll:${pollId}:meta`);
+  const slots = new Map(); // userId → Signal<string | null>
+  // Bumped by the seed step whenever a new slot is added. The tally effect
+  // reads this signal to subscribe to "the set of known slots." Without it
+  // a new voter's first vote isn't visible until the next reseed AND a
+  // separate change to an already-tracked slot.
+  const slotsVersion = signal(0);
+
+  function ensureSlot(userId) {
+    let s = slots.get(userId);
+    if (s !== undefined) { return s; }
+    // kensington-check-reactive-ignore. Seeded outside the tally effect's
+    // reactive scope by the scheduleReseed body below.
+    s = liveSignal(null, `vote:poll:${pollId}:user:${userId}`, {
+      persist: false,
+      canWrite: voteCanWrite(pollId, userId, live),
+    });
+    slots.set(userId, s);
+    return s;
+  }
+
+  function scheduleReseed() {
+    let added = 0;
+    for (const [name] of live.list(`vote:poll:${pollId}:user:`)) {
+      const userId = name.slice(`vote:poll:${pollId}:user:`.length);
+      if (userId !== '' && !slots.has(userId)) {
+        ensureSlot(userId);
+        added += 1;
+      }
+    }
+    if (added > 0) {
+      slotsVersion.set(v => v + 1);
+    }
+  }
+
+  scheduleReseed();
+  const reseedTimer = setInterval(scheduleReseed, 500);
+  if (typeof reseedTimer.unref === 'function') { reseedTimer.unref(); }
+
+  const tallyEffect = effect(() => {
+    slotsVersion.get();                              // re-run when new slots are added
+    const m = meta.value;                            // .value: meta changes don't drive the tally
+    if (m === null) { return; }
+    const counts = Object.fromEntries(m.options.map(o => [o, 0]));
+    let voters = 0;
+    for (const s of slots.values()) {
+      const v = s.get();                             // subscribes the effect to each slot
+      if (v !== null && v in counts) {
+        counts[v] += 1;
+        voters += 1;
+      }
+    }
+    live.set(`tally:poll:${pollId}`, { counts, voters, lamport: Date.now() }, { persist: true });
+  });
+
+  return {
+    stop() {
+      clearInterval(reseedTimer);
+      tallyEffect.stop();
+      for (const s of slots.values()) { s.stop(); }
+    },
+  };
+}
+```
+
+The `voteCanWrite` predicate reads `live.get('poll:${pollId}:meta').state` inside its body. That's the documented "canWrite reads other live state" pattern (see `agent-docs/live-signals.md` → "canRead / canWrite"). Synchronous, no cycle, no warning.
+
+**On disconnect, use `live.set(slot, null)` not `live.delete(slot)`.** The tally effect's cached `Signal` would otherwise keep the slot's last value and undercount the drop. `live.delete` is registry cleanup, not a value transition; reactive aggregators need the `set(null)` for the change to flow through.
+
+```js
+// onSocketClose body. Clear every slot owned by the departing user.
+onSocketClose: ctx => {
+  if (ctx === null || ctx.userId === '') { return; }
+  for (const [name] of live.list('vote:poll:')) {
+    if (name.endsWith(`:user:${ctx.userId}`)) {
+      live.set(name, null);                          // not delete: subscribers need the transition
+    }
+  }
+},
+```
+
+The `slots` Map holds a Signal for every discovered user across the process lifetime. On long-running servers with high turnover, the Map grows. For most apps the leak is negligible; if it matters, drop the Signal from the Map when its value goes null AND no new vote arrives within a grace period (a separate timer per slot, fired from the tally effect's null-branch).
+
+**When to pick reactive vs polled.** Reactive when individual writes must produce near-immediate downstream updates (vote tallies, score boards, in-play game state). Polled when batched eventual consistency is fine (presence rosters, "currently typing" indicators, online counts). The polled shape is simpler and harder to get wrong. Pick reactive only if the latency budget demands it.

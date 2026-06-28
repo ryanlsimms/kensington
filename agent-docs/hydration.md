@@ -78,6 +78,119 @@ registerComponents({ themeToggle, treePane, inspector, searchBox });
 
 The two `searchBox` mounts above each get their own `{ id, placeholder }` state and their own keyed-signal registry. A `signal(0, 'cursor')` inside `searchBox` is two independent signals across the two mounts.
 
+### Threading external dependencies into a registered component
+
+A component often needs things the server can't serialize. A live connection-status signal. A router. An analytics client. A per-tab user id. State arrives as a JSON-serialized blob; these "env" values live in process memory and must be picked up at the component, not piped through state.
+
+Two patterns cover this. **The dual-env-module pattern is the default.** **The wrapper-closure pattern is the escape hatch for per-request env.**
+
+#### Pattern 1. Dual-env module. (Default.)
+
+A single shared module declares each env key with its server-side and client-side behavior side by side, branched by `isBrowser`. Components import env directly from the module. No wrapper closure at any call site. The component is just `(state) => Tag`.
+
+```js
+// shared/env.js. One source of truth. Imported by every component.
+import { isBrowser, signal } from 'kensington';
+
+const TAB_KEY = 'liveAuctionTabId';
+const NAME_KEY = 'liveAuctionName';
+
+function browserTabId() {
+  let id = sessionStorage.getItem(TAB_KEY);
+  if (id === null) {
+    id = `u-${Math.random().toString(36).slice(2, 10)}`;
+    sessionStorage.setItem(TAB_KEY, id);
+  }
+  return id;
+}
+
+export const env = {
+  userId: isBrowser ? browserTabId() : 'ssr',
+  userName: signal(isBrowser ? (localStorage.getItem(NAME_KEY) ?? '') : ''),
+};
+
+export function setEnvUserName(name) {
+  if (!isBrowser) { return; }
+  localStorage.setItem(NAME_KEY, name);
+  env.userName.set(name);
+}
+```
+
+```js
+// shared/todo-list.js. Component imports env directly.
+import { env } from './env.js';
+
+export function todoList(state) {
+  // env.userId, env.userName.get(), etc. just work on both sides.
+}
+```
+
+```js
+// server.js. No wrapper closure. No env arg.
+res.send(renderForHydration(todoList, state, 'todoList'));
+
+// client.js. No wrapper closure. No env bag.
+registerComponents({ todoList });
+```
+
+**Why this works.** Kensington already has a per-side singleton for live transports (set by `liveServer()` on the server, `connectLive()` on the client). Env keys ride the same singleton pattern. `isBrowser` is the dispatch on the rare key that has truly different code paths per side.
+
+**Why this is the default.**
+
+- **No wrapper closures.** Components are `(state) => Tag`. The shape the framework expects matches what the component file declares.
+- **One env declaration, two sides.** The dual nature is explicit and local. A reader sees both branches in one file.
+- **No library API surface added.** Pure userland convention.
+- **Test ergonomics are decent.** Mock the env module if needed; otherwise tests import env normally.
+
+**What this gives up.**
+
+- **Module-level singleton.** If env needs to vary per request (multi-tenant SSR, per-user feature flags resolved at request time), the dual-env module can't express that. The env values are computed at module-load time.
+- **Init timing requires laziness.** Keys that depend on transports must use getters (`get status() { return liveTransport.status; }`) so they are resolved at first access, after `liveServer()` / `connectLive()` has run.
+- **Implicit dependency.** A component reads env from an import. The dependency is visible at the top of the file but not at the function signature. The trade-off vs. an explicit second argument is the cost of the convention.
+
+#### Pattern 2. Wrapper closure. (Per-request env. Escape hatch.)
+
+When env varies per request (per-user, per-tenant, per-locale), the dual-env-module's module-level singleton breaks. Use a wrapper closure at the `renderForHydration` call site to thread per-request env into the component.
+
+```js
+// shared/todo-list.js. Component takes (state, env).
+export function todoList(state, env) {
+  // env.tenant, env.locale, etc. vary per request.
+}
+```
+
+```js
+// server.js. Per-request env constructed inside the route handler.
+app.get('/dashboard', async (req, res) => {
+  const tenant = await resolveTenant(req);
+  const locale = req.headers['accept-language'] ?? 'en';
+  const env = { tenant, locale };
+
+  const state = { items: live.get('items') ?? [] };
+  res.send(renderForHydration(s => todoList(s, env), state, 'todoList'));
+});
+```
+
+```js
+// client.js. The client side typically does NOT have per-request env, so it
+// keeps using the dual-env-module pattern. If for some reason the client
+// also needs varying env (e.g. routing into different per-tenant code paths
+// from a SPA), the wrapper applies the same way.
+const env = { tenant: getTenantFromUrl(), locale: navigator.language };
+registerComponents({
+  todoList: state => todoList(state, env),
+});
+```
+
+**When to reach for this.**
+
+- Multi-tenant SSR where each request renders against a different tenant configuration.
+- Per-user feature flags resolved fresh inside the request handler.
+- Locale/timezone derived from request headers, not from process-global config.
+- A/B test buckets assigned per request.
+
+**Mixing the two.** Common shape. Dual-env module for the universal keys (`userId`, `userName`, `live`), wrapper closure for the per-request keys. The component takes `(state, env)`. It reads universal keys from the module and per-request keys from the env arg. Avoid this if you can keep it simple. Use one pattern per component when possible.
+
 ### Component authoring rules
 
 The same component function runs on both server and client. Write components so they work in both environments:
@@ -112,7 +225,31 @@ A consequence: **event listeners attached to the SSR DOM do not survive register
 
 **Signals created during SSR are not stopped.** `renderForHydration` calls `fn(state)`, which creates signal and computed objects that are never explicitly stopped. They are unreachable after the request and will be garbage collected, but they add memory pressure on high-traffic servers.
 
-**State is plaintext in the page source.** The state passed to `renderForHydration` is embedded as a `<script type="application/json">` tag visible to anyone who views source. Do not pass secrets, tokens, or private data as hydration state.
+**State is plaintext in the page source.** The state passed to `renderForHydration` is embedded as a `<script type="application/json">` tag visible to anyone who views source. Do not pass secrets, tokens, or private data as hydration state. The script tag is removed from the DOM during hydration (each component's tag is deleted right after its SSR target is replaced), so after `registerComponents` runs there is no leftover JSON in the page.
+
+**Client-only initial state. Use `isBrowser` inside the component, not the script tag.** The common need is "render with a value that only the browser knows" — a display name from `localStorage`, the user's preferred timezone via `Intl.DateTimeFormat().resolvedOptions().timeZone`, a draft restored across reload, etc. The right pattern is to read the source-of-truth from inside the component, gated by `isBrowser`. The component runs twice in an SSR flow (once on the server, once on the client after hydration), so the same source code naturally produces the right value on each side:
+
+```javascript
+import { t, isBrowser } from 'kensington';
+
+export function header(state) {
+  const userName = isBrowser
+    ? (localStorage.getItem('userName') ?? state.userName)
+    : state.userName;
+
+  return t.div({ class: 'header' }, [
+    t.span({ class: 'chip-name' }, userName),
+  ]);
+}
+```
+
+The server SSR sends whatever `state.userName` it knows (often an empty string). The client component sees `isBrowser === true`, reads `localStorage`, and the first reactive render shows the right value. The hydration scope reuses keyed signals/computeds keyed off stable identifiers (a user id from a cookie, a document id from the URL), so component state survives the re-render even though the userName differs between server and client paint.
+
+There is a brief window (tens to a hundred milliseconds, depending on network and JS execution time) where the SSR HTML showing the server's empty/default value is visible before `registerComponents` runs. For a display-name chip this flash is usually acceptable. For theme/dark-mode swap, the standard solution is an inline `<head>` script that sets a CSS class or custom property before the document paints; kensington is not involved.
+
+**Do not query or mutate the SSR state `<script>` tags directly.** The attribute shape (`script[type="application/json"][data-k-component="<name>"][data-k-mount="<id>"]`) is internal kensington plumbing and may change between versions. The `<script>` tags are removed from the DOM during hydration, so they are not a stable place to hang user code anyway. If `isBrowser` inside the component does not cover your case, file an issue describing the use case rather than reading or mutating the script tag.
+
+**Smoke-testing rendered output.** Two different attributes show up in the SSR HTML and they are easy to confuse. The visible element a component renders into carries `data-k-mount-target="<id>"`. The companion `<script type="application/json">` tag (used internally to ship initial state and dispatch hydration) carries `data-k-component="<name>"` and `data-k-mount="<id>"`. For a smoke test that "the page is rendering through kensington's hydration pipeline," look for `data-k-mount-target` on visible elements. The component-name attribute is internal and lives on the script tag only.
 
 **`fn.name` is fragile under aggressive minification.** Server code is typically not minified, so `fn.name` is reliable in practice. If server code is bundled and minified, pass an explicit name as the third argument.
 
