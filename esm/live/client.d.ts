@@ -101,6 +101,41 @@ export type CanWrite<T = unknown, Ctx = any> =
   | 'server-only'
   | ((name: string, ctx: Ctx, transition: WriteTransition<T>) => boolean);
 
+/**
+ * Machine-readable reasons attached to a `LiveSetRejected` Error. Useful for
+ * branching in a `.catch` handler without parsing the message string. See the
+ * matching type in `kensington/live` for per-value documentation.
+ */
+export type LiveSetReason =
+  | 'forbidden'
+  | 'conflict'
+  | 'unserializable'
+  | 'disconnected'
+  | 'retries-exhausted'
+  | 'unsubscribed'
+  | 'aborted';
+
+/**
+ * Structured Error thrown (via Promise rejection) by `liveSignal.set(...)`.
+ * Catch via `instanceof Error` and narrow on `name === 'LiveSetRejected'`.
+ */
+export interface LiveSetRejected<T = unknown> extends Error {
+  name: 'LiveSetRejected';
+  signalName: string;
+  reason: LiveSetReason;
+  attemptedValue: T | undefined;
+  authoritativeValue: T | undefined;
+}
+
+/**
+ * A `Signal<T>` whose `.set` is wrapped by the live transport. Identical to
+ * `Signal<T>` except `.set` returns `Promise<void>`. Both value and
+ * updater-fn forms return the same type.
+ */
+export interface LiveSignal<T> extends Signal<T> {
+  set(valueOrFn: T | ((current: T) => T)): Promise<void>;
+}
+
 export interface LiveSignalOptions<T = unknown> {
   /**
    * Persistence policy for this name. Default false.
@@ -130,9 +165,14 @@ export interface LiveSignalOptions<T = unknown> {
 }
 
 /**
- * Returns a Signal whose value is shared across every connected client by name.
- * Same function as `liveSignal` on the unified `kensington/live` subpath; the
- * client subpath re-exports it so shared component files can import it without
- * pulling the server runtime into a client bundle.
+ * Returns a `LiveSignal<T>` whose value is shared across every connected
+ * client by name. Same function as `liveSignal` on the unified
+ * `kensington/live` subpath; the client subpath re-exports it so shared
+ * component files can import it without pulling the server runtime into a
+ * client bundle.
+ *
+ * Calls before `connectLive()` registers return a placeholder that rewires
+ * to the live registry on transport register. Module-scope declarations
+ * (`export const x = liveSignal(0, 'name')`) are safe.
  */
-export function liveSignal<T>(initial: T, name: string, options?: LiveSignalOptions<T>): Signal<T>;
+export function liveSignal<T>(initial: T, name: string, options?: LiveSignalOptions<T>): LiveSignal<T>;

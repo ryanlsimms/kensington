@@ -2620,6 +2620,24 @@ describe('renderForHydration', () => {
     assert.match(html, /<\\\/script>/);
   });
 
+  it('passes options.context as a second argument to the component and does not serialize it', () => {
+    const ctx = { transport: 'fake', userName: signal('Ada') };
+    let receivedState;
+    let receivedContext;
+    function ctxComp(state, context) {
+      receivedState = state;
+      receivedContext = context;
+      return t.div({ id: 'root' }, context.userName);
+    }
+    const html = renderForHydration(ctxComp, { count: 1 }, 'ctxComp', { context: ctx }).toString();
+    assert.strictEqual(receivedContext, ctx);
+    assert.deepStrictEqual(receivedState, { count: 1 });
+    // Context fields must not leak into the embedded JSON state block.
+    assert.doesNotMatch(html, /transport/);
+    assert.doesNotMatch(html, /userName/);
+    assert.match(html, /{"count":1}/);
+  });
+
   it('handles array return — all elements get data-k-mount-target', () => {
     function multi() {
       return [t.p('a'), t.p('b')];

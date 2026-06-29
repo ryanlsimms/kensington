@@ -47,6 +47,8 @@ export function apiSidebar() {
         t.a({ href: '#api-live-signals' }, 'Live signals'),
         t.ul([
           t.li(t.a({ href: '#api-live-signal' }, 'liveSignal()')),
+          t.li(t.a({ href: '#api-live-set-fn' }, '.set under multiple clients')),
+          t.li(t.a({ href: '#api-live-set-rejected' }, 'LiveSetRejected')),
           t.li(t.a({ href: '#api-connection-status' }, 'Connection status')),
           t.li(t.a({ href: '#api-connect-live' }, 'connectLive()')),
           t.li(t.a({ href: '#api-live-server' }, 'liveServer()')),

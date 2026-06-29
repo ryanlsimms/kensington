@@ -53,10 +53,18 @@ export function counter({ count: initial }) {
 }`),
     apiTable(['Export', 'Context', 'Description'], [
       [
-        t.code('renderForHydration(fn, state, name?)'),
+        t.code('renderForHydration(fn, state, name?, options?)'),
         'Server',
         [
-          'Renders the component to HTML and embeds state as a JSON script block. Uses ',
+          'Renders the component to HTML and embeds state as a JSON script block. ',
+          t.code('fn'),
+          ' is called as ',
+          t.code('fn(state, context)'),
+          ' where ',
+          t.code('context'),
+          ' comes from ',
+          t.code('options.context'),
+          ' (see below) and is never serialized. Uses ',
           t.code('fn.name'),
           ' by default server-side. Pass an explicit ',
           t.code('name'),
@@ -68,12 +76,20 @@ export function counter({ count: initial }) {
         ],
       ],
       [
-        t.code('registerComponents(components)'),
+        t.code('registerComponents(components, options?)'),
         'Client',
         [
           'Scans the page for components rendered by ',
           t.code('renderForHydration'),
-          ' and mounts each one reactively. Object keys are used as component names: ',
+          ' and mounts each one reactively. Each ',
+          t.code('fn'),
+          ' is called as ',
+          t.code('fn(state, context)'),
+          ' where ',
+          t.code('context'),
+          ' comes from ',
+          t.code('options.context'),
+          '. Object keys are used as component names: ',
           t.code('{ counter }'),
           ' registers the function under ',
           t.code("'counter'"),
@@ -93,6 +109,17 @@ export function counter({ count: initial }) {
         ],
       ],
       [
+        t.code('options.context'),
+        'Both',
+        [
+          'Non-serializable runtime bag passed as the second argument to every component invocation. The server provides its own via ',
+          t.code('renderForHydration'),
+          ', the client provides its own via ',
+          t.code('registerComponents'),
+          ', and the framework wires the appropriate one in for each environment. Use it for transport handles, local signals, identity, or anything else that cannot round-trip through JSON. Never embedded in the SSR script block. The framework also forwards context to HMR hot-swaps so a replaced component keeps its env wiring.',
+        ],
+      ],
+      [
         t.code('isBrowser'),
         'Both',
         [
@@ -106,6 +133,67 @@ export function counter({ count: initial }) {
           ' values.',
         ],
       ],
+    ]),
+
+    t.h3('Passing non-serializable runtime data via context'),
+    t.p([
+      'When a component needs runtime data the server cannot serialize (a live transport handle, an identity object, locally-created signals), pass an env bag as ',
+      t.code('options.context'),
+      '. The framework forwards it to ',
+      t.code('fn'),
+      ' as the second argument. The server provides its own bag; the client provides its own; the two never cross the wire.',
+    ]),
+    code('javascript', `// shared/env.js. Two factories, same shape.
+import { signal } from 'kensington';
+
+export function makeServerEnv() {
+  return { userId: 'ssr', userName: signal(''), transport: null };
+}
+export function makeClientEnv({ userId, transport }) {
+  return { userId, userName: signal(''), transport };
+}
+
+// shared/app-page.js. Component takes (state, env).
+import { t } from 'kensington';
+
+export function appPage(state, env) {
+  return t.main([
+    t.span(env.userId),
+    t.button({ onclick: () => env.transport?.reconnect() }, 'Reconnect'),
+  ]);
+}
+
+// server.js
+import { renderForHydration } from 'kensington';
+import { makeServerEnv } from './shared/env.js';
+import { appPage } from './shared/app-page.js';
+
+const env = makeServerEnv();
+renderForHydration(appPage, {}, 'appPage', { context: env });
+
+// client.js
+import { registerComponents } from 'kensington';
+import { connectLive } from 'kensington/live';
+import { makeClientEnv } from './shared/env.js';
+import { appPage } from './shared/app-page.js';
+
+const transport = connectLive({ /* ... */ });
+const env = makeClientEnv({ userId: getTabId(), transport });
+registerComponents({ appPage }, { context: env });`),
+    t.p([
+      'Avoid alternatives that solve the same problem in worse ways: closing over ',
+      t.code('env'),
+      ' in a wrapper at the ',
+      t.code('renderForHydration'),
+      ' call site (workable but awkward), ',
+      t.code('setEnv'),
+      '/',
+      t.code('getEnv'),
+      ' singletons (module-mutable state that races on concurrent SSR), or passing signals through ',
+      t.code('state'),
+      ' (they lose their methods through ',
+      t.code('JSON.stringify'),
+      ' and the framework warns).',
     ]),
 
     t.p([

@@ -60,8 +60,11 @@ type CanWrite =
     ]),
 
     t.h3({ id: 'api-live-set-fn' }, '.set under multiple clients'),
+    code('typescript', `// Both forms return Promise<void>.
+sig.set(value: T): Promise<void>
+sig.set(fn: (prev: T) => T): Promise<void>`),
     t.p([
-      'Same signature as a regular signal. Two things change when the value is shared across clients.',
+      'Same call sites as a regular signal. The return shape and the rejection contract are different.',
     ]),
     t.ul([
       t.li([
@@ -70,16 +73,71 @@ type CanWrite =
       ]),
       t.li([
         t.code('.set(prev => next)'),
-        ' returns a ',
-        t.code('Promise<void>'),
-        ' that resolves once the server confirms, and ',
+        ' converges under concurrent writes (the library retries against the latest server value when another client wrote first). ',
         t.code('fn'),
         ' may run more than once, so it must be pure.',
+      ]),
+      t.li([
+        'Both forms resolve once the server confirms and reject with a ',
+        t.code('LiveSetRejected'),
+        ' Error on rejection. The server-authoritative value is already applied to the local Signal via ',
+        t.code('_setFromRemote'),
+        ' before the rejection fires, so ',
+        t.code('sig.value'),
+        ' inside ',
+        t.code('.catch'),
+        ' reflects the truth, not the optimistic value.',
+      ]),
+      t.li([
+        'Fire-and-forget callers can ignore the Promise. The library suppresses unhandled-rejection warnings for unawaited / un-',
+        t.code('.catch'),
+        '\'d returns; ',
+        t.code('await'),
+        ' and explicit ',
+        t.code('.catch'),
+        ' still see the rejection.',
       ]),
     ]),
     t.p([
       'Prefer the updater form whenever the new value depends on the current value.',
     ]),
+
+    t.h3({ id: 'api-live-set-rejected' }, 'LiveSetRejected'),
+    code('typescript', `type LiveSetReason =
+  | 'forbidden'           // canWrite predicate rejected the write
+  | 'conflict'            // CAS lamport mismatch (retried internally; surfaced via 'retries-exhausted')
+  | 'unserializable'      // value can't round-trip JSON, or contains NaN / Infinity
+  | 'disconnected'        // transport is 'disconnected' or the socket dropped mid-flight
+  | 'retries-exhausted'   // CAS write retried MAX_CAS_RETRIES times without converging
+  | 'unsubscribed'        // signal was .stop()'d while a CAS retry was in flight
+  | 'aborted';            // transport was close()'d while the write was in flight
+
+interface LiveSetRejected<T = unknown> extends Error {
+  name: 'LiveSetRejected';
+  signalName: string;
+  reason: LiveSetReason;
+  attemptedValue: T | undefined;
+  authoritativeValue: T | undefined;
+}`),
+    t.p([
+      'Narrow via ',
+      t.code('err instanceof Error && err.name === \'LiveSetRejected\''),
+      '. ',
+      t.code('attemptedValue'),
+      ' is what the caller tried to write; ',
+      t.code('authoritativeValue'),
+      ' is the server\'s truth at the moment of rejection (already applied to ',
+      t.code('sig.value'),
+      ' before the rejection fires).',
+    ]),
+    code('typescript', `try {
+  await seat.set(myTabId);
+} catch (err) {
+  if (err instanceof Error && err.name === 'LiveSetRejected') {
+    const e = err as LiveSetRejected<string>;
+    toast(\`\${e.signalName}: \${e.reason}. owned by \${e.authoritativeValue}\`);
+  }
+}`),
 
     t.h3({ id: 'api-connection-status' }, 'Connection status'),
     code('typescript', `type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected'`),

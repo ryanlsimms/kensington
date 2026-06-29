@@ -326,14 +326,30 @@ items.set(prev => prev.filter(it => it.id !== removedId));`),
       ' on the same name races with last-write-wins.',
     ]),
     t.p([
-      'Returns a ',
+      'Both ',
+      t.code('.set(value)'),
+      ' and ',
+      t.code('.set(fn)'),
+      ' return a ',
       t.code('Promise<void>'),
-      ' that resolves once the server confirms or rejects on permanent failure (',
+      ' that resolves once the server confirms or rejects with a structured ',
+      t.code('LiveSetRejected'),
+      ' Error on permanent failure (',
       t.code('canWrite'),
-      ' denied, value not serializable, retry cap exhausted). Most callers ignore the return. ',
-      t.code('await sig.set(fn)'),
-      ' if you need to know when the write landed.',
+      ' denied, value not serializable, transport disconnected, retry cap exhausted). The server-authoritative value rolls back the local Signal before the rejection fires, so ',
+      t.code('sig.value'),
+      ' inside ',
+      t.code('.catch'),
+      ' already reflects the truth. Fire-and-forget callers can ignore the Promise; the library silences unhandled-rejection warnings for unawaited returns.',
     ]),
+    code('javascript', `// Surface a rejection to the user via a toast.
+try {
+  await seat.set(myTabId);
+} catch (err) {
+  if (err instanceof Error && err.name === 'LiveSetRejected') {
+    toast(\`\${err.signalName}: \${err.reason}. owned by \${err.authoritativeValue}\`);
+  }
+}`),
     t.h4('When to use which form'),
     t.ul([
       t.li([

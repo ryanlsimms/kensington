@@ -16,6 +16,11 @@ const liveInstances = new Map();
 // Registry of component name -> latest function. Populated by registerComponents and updated
 // by hmrReplaceComponent. Used by the MutationObserver to hydrate newly inserted scripts.
 const componentRegistry = new Map();
+// Per-name context bag passed as the second argument to every component invocation
+// (renderForHydration, hydrateComponent on first hydrate, hmrReplaceComponent on hot-swap).
+// Context is never serialized; it carries non-JSON runtime data like signals and transport
+// handles. Set via the options argument to renderForHydration / registerComponents.
+const contextRegistry = new Map();
 
 function recordInstance(name, instance) {
   let set = liveInstances.get(name);
@@ -151,10 +156,11 @@ function hydrateComponent(script, fn, name) {
   }
   try {
     const state = JSON.parse(script.textContent);
+    const context = contextRegistry.get(name);
     _enterHydrationScope(mountId);
     let result;
     try {
-      result = fn(state);
+      result = fn(state, context);
     } finally {
       _exitHydrationScope();
     }
@@ -221,9 +227,10 @@ export function hmrReplaceComponent(name, newFn) {
     let newNodes;
     try {
       _enterHydrationScope(inst.mountId);
+      const context = contextRegistry.get(name);
       let result;
       try {
-        result = actualFn(inst.state);
+        result = actualFn(inst.state, context);
       } finally {
         _exitHydrationScope();
       }
@@ -327,7 +334,7 @@ function hydrateAll(registry) {
  * @throws if the component function is async
  * @throws if the component returns a non-element value (string, number, etc.)
  */
-export function renderForHydration(fn, state, name = NAME_UNSET) {
+export function renderForHydration(fn, state, name = NAME_UNSET, options = undefined) {
   if (name === NAME_UNSET) {
     if (typeof window !== 'undefined') {
       throw new Error(`renderForHydration: pass an explicit name as the third argument when calling in the browser. Function names are not safe after minification`);
@@ -337,12 +344,13 @@ export function renderForHydration(fn, state, name = NAME_UNSET) {
   if (!name) {
     throw new Error('renderForHydration: component function must be named, or pass a name as the third argument');
   }
+  const context = options !== undefined && options !== null ? options.context : undefined;
   const id = makeId();
   _enterSSRMode();
   let result;
   let tagHtml;
   try {
-    result = fn(state);
+    result = fn(state, context);
     assertSync(result, name);
     const elements = (result === null || result === undefined)
       ? []
@@ -371,10 +379,14 @@ export function renderForHydration(fn, state, name = NAME_UNSET) {
  * @example
  * const { stop } = registerComponents({ counter, userCard });
  */
-export function registerComponents(components) {
+export function registerComponents(components, options = undefined) {
+  const context = options !== undefined && options !== null ? options.context : undefined;
   for (const [name, fn] of Object.entries(components)) {
     const actualFn = fn !== null && fn !== undefined && fn.__kFn !== undefined ? fn.__kFn : fn;
     componentRegistry.set(name, actualFn);
+    if (context !== undefined) {
+      contextRegistry.set(name, context);
+    }
   }
   return hydrateAll(componentRegistry);
 }
@@ -413,7 +425,7 @@ export function __kInstrument(name, fn) {
     _enterHydrationScope(mountId);
     let result;
     try {
-      result = fn(state);
+      result = fn(...args);
     } finally {
       _exitHydrationScope();
     }

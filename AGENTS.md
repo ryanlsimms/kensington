@@ -355,6 +355,82 @@ import type { Signal, ReadonlySignal, Reactive } from 'kensington';
 
 Everything else — the full Signal API (read with `.get()`, always; `.value` is an escape hatch), keyed lists, the helper-function trap with wrong/right pairs, lazy registries, cleanup, `addConnectedCallback`/`addDisconnectedCallback`, devtools, loading state, and the full pitfalls catalogue — is in `agent-docs/reactive.md`.
 
+## Live signals. Declare each name once
+
+When a `liveSignal(initial, name, opts?)` call needs to be referenced from more than one module, declare it once in a shared file and import the exported binding everywhere else. Do not call `liveSignal(...)` again with the same name from a second module just to "get the same instance back." The runtime caches by name so it works at runtime, but the duplication invites drift (different `initial` values, different `canWrite` predicates) and obscures which module owns the declaration.
+
+```javascript
+// shared/registry.js
+import { liveSignal } from 'kensington/live';
+
+export const capacity = liveSignal(0, 'meta:capacity', { canWrite: 'server-only' });
+
+// server.js
+import { capacity } from './shared/registry.js';
+capacity.set(60);
+
+// component.js
+import { capacity } from './shared/registry.js';
+t.span([capacity, ' seats']);
+```
+
+Module-scope declarations are safe even before `connectLive()` / `liveServer()` registers; `liveSignal()` returns a placeholder that automatically rewires to the live registry on transport register. So the shared-file pattern works for every consumption site, including server-only writers, SSR render functions, and client-side bindings.
+
+## Component dependencies. Use the framework's context argument
+
+Components for `renderForHydration` / `registerComponents` accept two arguments. The first is the JSON-serializable `state` that flows through the SSR script block to the client. The second is `context`, a non-serialized runtime bag you provide via the framework's `options.context` hook. Use it for anything that cannot or should not be serialized: a live transport handle, local signals, identity, toast trays, persistence handles.
+
+The server and the client each construct their own context (the shape matches; the runtime values differ). Neither side closes over the other's bag, and the framework wires the appropriate one in for each environment.
+
+```javascript
+// shared/env.js
+import { signal } from 'kensington';
+
+export function makeServerEnv() {
+  return { userId: 'ssr', userName: signal(''), toasts: signal([]), transport: null };
+}
+export function makeClientEnv({ userId, transport }) {
+  return { userId, userName: signal(localStorage.getItem('name') ?? ''), toasts: signal([]), transport };
+}
+
+// shared/app-page.js. Signature is (state, env).
+import { t } from 'kensington';
+export function appPage(_state, env) {
+  return t.main([header(env), seatGrid(env), toastTray(env)]);
+}
+
+// server.js
+import { renderForHydration } from 'kensington';
+import { makeServerEnv } from './shared/env.js';
+import { appPage } from './shared/app-page.js';
+
+const env = makeServerEnv();
+renderForHydration(appPage, {}, 'appPage', { context: env });
+
+// client.js
+import { registerComponents } from 'kensington';
+import { connectLive } from 'kensington/live';
+import { makeClientEnv } from './shared/env.js';
+import { appPage } from './shared/app-page.js';
+
+const transport = connectLive({ /* ... */ });
+const env = makeClientEnv({ userId, transport });
+registerComponents({ appPage }, { context: env });
+```
+
+### What goes where
+
+- **`state` (first arg)**: serializable per-request data the client hydrates from. Request id, initial counts, pre-fetched data. Round-trips through JSON. Limited to plain values.
+- **`context` (second arg)**: non-serializable runtime bag. Transport handles, signals, factories, identity. Same shape on both sides, different values. Never serialized.
+
+### What not to do
+
+- **Do not pass a runtime bag through `state`.** Signals serialized through `JSON.stringify` lose their methods; the framework fires `renderForHydration "..." N values — Signal will lose its methods` to catch this.
+- **Do not use a `setEnv`/`getEnv` singleton.** Module-mutable state masquerading as a context system. Only works because SSR rendering happens to be synchronous today; one async sneak-in cross-contaminates concurrent requests.
+- **Do not wrap the registered fn in a closure to inject env.** `renderForHydration(state => appPage(env, state), state, 'appPage')` is awkward at the call site and the second arg `context` exists to make it unnecessary.
+- **Do not import runtime data as module-scope state inside component files** (transport handles, identity-derived signals, etc.). The temptation reads as "import what you need." The problem is that the same component file runs on both server and client, and module-scope state in a shared file means concurrent SSR renders share the same instance. Keep `liveSignal` declarations module-scope (the placeholder + lazy-upgrade flow exists for them) and route everything else through the env bag.
+- **Do not `.set()` during SSR.** The `set-during-ssr` warning catches it. If the server needs to push canonical values, do it via the explicit `liveServer.set(name, value)` API outside any render path.
+
 ## Validation and error policy
 
 `validationLevel` controls how invalid input is handled: `'off'` silently renders nothing (no errors, no warnings), `'warn'` logs via `logger` and renders nothing, `'error'` throws. Never throw when `validationLevel` is `'off'`. Production deployments use `'off'` for performance, and an unexpected throw can crash a server or break a user-facing page. Invalid input at `'off'` must be silently skipped. This applies to invalid attribute values, invalid content items, bad `literal()` input, bad `inlineComment()` input, and any other runtime validation.

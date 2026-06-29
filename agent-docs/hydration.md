@@ -82,6 +82,62 @@ The two `searchBox` mounts above each get their own `{ id, placeholder }` state 
 
 A component often needs things the server can't serialize. A live connection-status signal. A router. An analytics client. A per-tab user id. State arrives as a JSON-serialized blob; these "env" values live in process memory and must be picked up at the component, not piped through state.
 
+**The framework's `options.context` argument is the answer.** Both `renderForHydration(fn, state, name, { context })` and `registerComponents({ fn }, { context })` accept a context bag that is passed to the component as its second argument. The bag is never serialized; the server provides its own, the client provides its own, and the framework wires the appropriate one in for each environment.
+
+The legacy patterns ("dual-env module" and "wrapper closure") are documented below as fallback patterns for codebases that pre-date the `context` arg, but new code should use `options.context`.
+
+#### Pattern 0. options.context. (Default.)
+
+```js
+// shared/env.js. Two factories. Same shape. Different runtime values.
+import { signal } from 'kensington';
+
+export function makeServerEnv() {
+  return { userId: 'ssr', userName: signal(''), transport: null };
+}
+export function makeClientEnv({ userId, transport }) {
+  return { userId, userName: signal(localStorage.getItem('name') ?? ''), transport };
+}
+```
+
+```js
+// shared/todo-list.js. Component signature is (state, env).
+export function todoList(state, env) {
+  // env.userId, env.userName.get(), env.transport just work.
+}
+```
+
+```js
+// server.js
+import { renderForHydration } from 'kensington';
+import { makeServerEnv } from './shared/env.js';
+import { todoList } from './shared/todo-list.js';
+
+const env = makeServerEnv();
+res.send(renderForHydration(todoList, state, 'todoList', { context: env }));
+
+// client.js
+import { registerComponents } from 'kensington';
+import { connectLive } from 'kensington/live';
+import { makeClientEnv } from './shared/env.js';
+import { todoList } from './shared/todo-list.js';
+
+const transport = connectLive({ /* ... */ });
+const env = makeClientEnv({ userId: getTabId(), transport });
+registerComponents({ todoList }, { context: env });
+```
+
+**Why this works.** The framework holds the context separately from state and forwards it to every component invocation (initial hydrate, HMR hot-swap, dynamic insertion). It is never embedded in the SSR JSON script block.
+
+**Why this is the default.**
+
+- **No closures at the framework boundary.** `renderForHydration(todoList, state, 'todoList', { context: env })` is first-class; `registerComponents({ todoList }, { context: env })` is a one-liner.
+- **No module-level mutable state.** No `setEnv`/`getEnv` singleton to race on concurrent requests.
+- **Per-request env works the same way.** The server can build a fresh env inside each route handler and pass it; concurrent requests cannot cross-contaminate because the framework holds the per-name context, not user code.
+- **The signature is explicit.** `function todoList(state, env)` declares both inputs. A reader sees the dependency at the function boundary, not by following imports.
+
+#### Legacy patterns (avoid in new code)
+
 Two patterns cover this. **The dual-env-module pattern is the default.** **The wrapper-closure pattern is the escape hatch for per-request env.**
 
 #### Pattern 1. Dual-env module. (Default.)

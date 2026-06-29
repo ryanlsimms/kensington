@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- `renderForHydration` and `registerComponents` now accept an `options.context` argument.
 - `kensington/live`. New subpath for state shared across browsers. `liveSignal(initial, name, options?)` reads like a regular signal but synchronizes through a server registry. `connectLive()` on the client and `liveServer()` on the server complete the setup. Protocol is plain JSON with Lamport ordering. `better-sqlite3` and `ws` are optional peer dependencies. See docs.
   - Persistence backends: memory or sqlite. Per-signal `persist` flag; transient names drop 30s after the last subscriber leaves.
   - Per-signal and per-server `canRead` / `canWrite` policies (`'any'`, `'server-only'`, or a predicate).

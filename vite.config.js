@@ -61,8 +61,10 @@ export default defineConfig(({ command }) => ({
     alias: command === 'build' ? { 'kensington': join(__dirname, 'dist/kensington.slim.min.js') } : {},
   },
   server: {
+    host: true,
     port: 4000,
   },
+  preview: { host: true },
   build: {
     outDir: '../docs',
     emptyOutDir: true,

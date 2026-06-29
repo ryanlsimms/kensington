@@ -194,10 +194,11 @@ t.div({ prop: { _instance: component } });       // expando: accepted as unknown
     t.h3({ id: 'render-for-hydration' }, 'renderForHydration'),
     code('typescript', `import { renderForHydration } from 'kensington';
 
-renderForHydration(
-  fn: (state: Record<string, unknown>) => ContentTag | ContentTag[] | null | undefined,
-  state: Record<string, unknown>,
-  name?: string
+renderForHydration<S, C = unknown>(
+  fn: (state: S, context: C) => ContentTag | ContentTag[] | null | undefined,
+  state: S,
+  name?: string,
+  options?: { context?: C },
 ): LiteralTag`),
     t.p([
       'Renders a synchronous component to an HTML string and embeds ',
@@ -207,7 +208,13 @@ renderForHydration(
       ' block for client hydration.',
     ]),
     apiTable(['Argument', 'Description'], [
-      [t.code('fn'), 'The component function. Signal effects are suppressed during the call.'],
+      [t.code('fn'), [
+        'The component function. Receives ',
+        t.code('state'),
+        ' and ',
+        t.code('context'),
+        ' as positional arguments. Signal effects are suppressed during the call.',
+      ]],
       [
         t.code('state'),
         [
@@ -226,20 +233,46 @@ renderForHydration(
           '.',
         ],
       ],
+      [
+        t.code('options.context'),
+        [
+          'Non-serializable runtime bag passed to ',
+          t.code('fn'),
+          ' as its second argument. Use it for transport handles, local signals, identity, or anything else that cannot round-trip through JSON. Never embedded in the SSR script block. The client supplies its own context via ',
+          t.code('registerComponents'),
+          '.',
+        ],
+      ],
     ]),
 
     t.h3({ id: 'register-components' }, 'registerComponents'),
     code('typescript', `import { registerComponents } from 'kensington';
 
-registerComponents(
-  components: Record<string, Function>
+registerComponents<C = unknown>(
+  components: Record<string, (state: any, context: C) => ContentTag | ContentTag[] | null>,
+  options?: { context?: C },
 ): { stop(): void }`),
     t.p([
       'Hydrates all server-rendered instances in the page, replacing each matching ',
       t.code('<script type="application/json" data-k-component="…">'),
       ' block with live reactive DOM, and watches for components inserted later. Returns ',
       t.code('{ stop() }'),
-      ' to halt auto-hydration.',
+      ' to halt auto-hydration. Pass ',
+      t.code('options.context'),
+      ' to thread a non-serializable runtime bag into every registered component as its second argument. The framework forwards the same context to HMR hot-swaps.',
     ]),
+    code('javascript', `// shared/app-page.js
+export function appPage(state, env) {
+  return t.main([header(env), seatGrid(env)]);
+}
+
+// server.js
+const env = makeServerEnv();
+renderForHydration(appPage, {}, 'appPage', { context: env });
+
+// client.js
+const transport = connectLive({ url: '/...' });
+const env = makeClientEnv({ transport });
+registerComponents({ appPage }, { context: env });`),
   ]);
 }
