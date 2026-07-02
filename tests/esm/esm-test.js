@@ -9,6 +9,7 @@ import {
   _enterHydrationScope,
   _exitHydrationScope,
 } from '../../esm/lib/reactive/hydration-scope.js';
+import { _internalEffect } from '../../esm/lib/reactive/signal.js';
 import { _resetWarningThrottle } from '../../esm/lib/reactive/warnings.js';
 import { attributesArrayFromObject } from '../../esm/lib/render/attributes.js';
 
@@ -3129,7 +3130,45 @@ describe('keyed computed', () => {
     assert.strictEqual(outerB.get(), 20);
   });
 
-  it('warns when computed() is called inside a computed without a key', () => {
+  it('warns when an unkeyed nested computed() is subscribed to by user code', () => {
+    const warns = [];
+    const origWarn = console.warn;
+    console.warn = msg => warns.push(msg);
+    const src = signal(0);
+    // Capture the inner so user code (an outer effect) can subscribe to it.
+    let capturedInner;
+    const outer = computed(() => {
+      capturedInner = computed(() => src.get() * 2);
+      return 0;
+    });
+    outer.get();
+    const e = effect(() => capturedInner.get());
+    e.stop();
+    console.warn = origWarn;
+    assert.ok(warns.some(w => w.includes('without a key') && w.includes('user code')));
+  });
+
+  it('does not warn for an unkeyed nested computed() consumed only by an internal effect', () => {
+    // Attribute, class, and text bindings subscribe via effects whose run is marked
+    // `_isInternal`. Those consumers are torn down on outer re-run alongside the inner,
+    // so no warning should fire. Simulated here directly with `_internalEffect`.
+    const warns = [];
+    const origWarn = console.warn;
+    console.warn = msg => warns.push(msg);
+    const src = signal(0);
+    let capturedInner;
+    const outer = computed(() => {
+      capturedInner = computed(() => src.get() * 2);
+      return 0;
+    });
+    outer.get();
+    const eff = _internalEffect(() => capturedInner.get());
+    eff.stop();
+    console.warn = origWarn;
+    assert.ok(!warns.some(w => w.includes('without a key')));
+  });
+
+  it('does not warn for an unkeyed nested computed() with no subscribers', () => {
     const warns = [];
     const origWarn = console.warn;
     console.warn = msg => warns.push(msg);
@@ -3137,9 +3176,9 @@ describe('keyed computed', () => {
     computed(() => {
       computed(() => src.get() * 2);
       return 0;
-    });
+    }).get();
     console.warn = origWarn;
-    assert.ok(warns.some(w => w.includes('without a key')));
+    assert.ok(!warns.some(w => w.includes('without a key')));
   });
 
   it('does not warn when computed() is called inside a computed with a key', () => {
@@ -3251,15 +3290,19 @@ describe('keyed computed', () => {
     assert.strictEqual(doubled.get(), 12);
   });
 
-  it('unkeyed transform inside a computed warns with transform-specific wording', () => {
+  it('unkeyed transform inside a computed warns with transform wording on user subscribe', () => {
     const warns = [];
     const origWarn = console.warn;
     console.warn = msg => warns.push(msg);
     const src = signal(0);
-    computed(() => {
-      src.transform(v => v * 2);
+    let capturedInner;
+    const outer = computed(() => {
+      capturedInner = src.transform(v => v * 2);
       return 0;
     });
+    outer.get();
+    const e = effect(() => capturedInner.get());
+    e.stop();
     console.warn = origWarn;
     assert.ok(warns.some(w => w.includes('.transform()') && w.includes('without a key')));
     assert.ok(!warns.some(w => w.startsWith('kensington: computed()')));

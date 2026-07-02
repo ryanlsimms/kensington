@@ -1032,9 +1032,11 @@ effect(() => {
 
 `setTimeout` is a macrotask. It fires after the browser renders, so the UI shows a frame of incorrect state before correcting itself. It also signals that the dependency graph is not quite right. Restructure with `.value` or a separate `effect` instead.
 
-### Do not create computed signals inside a computed or transform callback without a key
+### Nested computed and transform without a key
 
-When a `transform` or `computed` callback re-runs, an unkeyed `computed()` or `transform()` call inside it creates a new derived signal on every re-render. The reconciler detects the reference change at the same attribute or content position and rebuilds the DOM node so the new derived signal can drive the live element. DOM state (focus, scroll, input value, selection) is preserved across the rebuild, but the work is wasteful, and the old derived signal becomes an orphan that sleeps and accumulates in the devtools Signals tab on every list update.
+An unkeyed `computed()` or `.transform()` call inside a `computed` or `transform` callback creates a new derived signal on every outer re-run. That is fine when the inner value is consumed inline by an attribute, class, text, or prop slot. Those consumers are internal binding effects; they tear down and rebuild alongside the inner, so no identity is leaked and the warning stays silent.
+
+The `computed-in-computed` / `transform-in-computed` warning fires only when a **user-code subscriber** attaches to the inner. That means a user `effect(() => inner.get())`, or a user `computed(() => ...inner.get()...)` that reads it. In those cases the outer's re-run tears down the inner and creates a fresh one, but the user subscriber is still attached to the dead reference (or must resubscribe to the new one). Pass a stable key so the same inner is reused across re-runs and the user subscription stays valid.
 
 Both `computed(fn, key)` and `signal.transform(fn, key)` accept a stable key as a second argument, used the same way as keyed `signal(initial, key)`. Inside an outer `computed` (including `mapWithKey`'s per-key `mapFn`), the same inner instance is returned across re-runs. Two paths fix the issue. Pass a key so the inner is reused. Or precompute the derived signal once when the item is created and reuse it directly.
 

@@ -83,6 +83,13 @@ const keyedComputedRegistries = new WeakMap();
 // something outside the owner subscribes. The owner can stop the inner at any time when
 // its key isn't accessed during a re-run, so external references silently drop subscribers.
 const keyedScopeOwners = new WeakMap();
+// Deferred `computed-in-computed` / `transform-in-computed` warnings. An unkeyed nested
+// computed is only a problem when a *non-internal* subscriber attaches (a user effect or
+// user computed). Internal consumers (attribute-composition, class-list, and text/attr
+// binding effects) are safe because their run functions are torn down and rebuilt alongside
+// the inner. We stamp the created inner here and consult on subscribe: fire once if a
+// user subscriber attaches, silently drop if only internal subscribers ever read it.
+const pendingNestedWarning = new WeakMap();
 
 function rethrowAsync(err) {
   queueMicrotask(() => { throw err; });
@@ -199,6 +206,25 @@ export default class Signal {
       this.#subscribers.add(currentEffect);
       currentEffect._reads.add(this);
       notifySignalEffectSubscription(this, currentEffect._devId, this.#subscribers.size);
+      // Fire the deferred computed-in-computed / transform-in-computed warning only when a
+      // non-internal subscriber attaches. Internal consumers (attribute, class, or text
+      // bindings) tear down alongside the inner on outer re-run and don't leak identity.
+      if (!currentEffect._isInternal) {
+        const nestedKind = pendingNestedWarning.get(this);
+        if (nestedKind !== undefined) {
+          const isTransform = nestedKind === 'transform';
+          const callName = isTransform ? '.transform()' : 'computed()';
+          const keyedCall = isTransform ? 'signal.transform(fn, key)' : 'computed(fn, key)';
+          throttledWarn(
+            isTransform ? 'transform-in-computed' : 'computed-in-computed',
+            `kensington: ${callName} created inside a computed or transform callback ` +
+            'without a key is being subscribed to by user code. A fresh inner is allocated on every outer re-run and its ' +
+            'subscribers are torn down. Pass a stable key as the second argument to reuse the same inner across re-runs: ' +
+            `${keyedCall}.`,
+          );
+          pendingNestedWarning.delete(this);
+        }
+      }
       const ownerSig = keyedScopeOwners.get(this);
       // Sibling keyed primitives (created inside the same owner scope) read each other safely.
       // Their lifetime is tied to the same owner, so a drop affects both together. The warning
@@ -662,23 +688,13 @@ export function computed(fn, key) {
     notifySignalMarkComputed(s);
     return s;
   }
+  // We defer the nested `computed-in-computed` / `transform-in-computed` warning until we
+  // see who actually subscribes. Only fire when a non-internal subscriber attaches; internal
+  // consumers (attribute/class/text bindings) are safe.
+  let deferredNestedKind = null;
   if (!suppressReactiveCheck) {
     if (inComputedFn) {
-      if (computedCallSite === 'transform') {
-        throttledWarn(
-          'transform-in-computed',
-          'kensington: .transform() called inside a computed or transform callback without a key. ' +
-          'The DOM node will be replaced when outer state changes. ' +
-          'For best performance and to persist inner state, pass a stable key as the second argument: signal.transform(fn, key).',
-        );
-      } else {
-        throttledWarn(
-          'computed-in-computed',
-          'kensington: computed() called inside a computed or transform callback without a key. ' +
-          'The DOM node will be replaced when outer state changes. ' +
-          'For best performance and to persist inner computed state, pass a stable key as the second argument: computed(fn, key).',
-        );
-      }
+      deferredNestedKind = computedCallSite === 'transform' ? 'transform' : 'computed';
     } else if (currentEffect !== null) {
       throttledError(
         'computed-in-effect',
@@ -692,6 +708,7 @@ export function computed(fn, key) {
   suppressReactiveCheck = true;
   const s = new Signal(undefined);
   suppressReactiveCheck = prevSuppress;
+  if (deferredNestedKind !== null) { pendingNestedWarning.set(s, deferredNestedKind); }
   notifySignalMarkComputed(s);
   // Tracks the last successfully computed value so notifySignalWake can restore it.
   // Without this, a wake where s.set(result) is a no-op (Object.is match) would leave

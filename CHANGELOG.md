@@ -28,7 +28,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Warnings resolve to source `.ts` / `.tsx` / `.jsx` positions in browser devtools, and the stack-frame filter no longer strips every user frame in bundled deployments.
 
 ### Changed
+- `AGENTS.md` improved for navigability
 - `GlobalEvents.on` handler signature widened from `(event: Event) => void` to `(event: any) => void`.
+- `computed-in-computed` and `transform-in-computed` warnings now defer to subscription time and fire only when a user `effect` or user `computed` subscribes to the inner.
 
 ## [2.0.0-signals.21] - 2026-06-22
 

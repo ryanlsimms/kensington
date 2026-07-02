@@ -186,7 +186,8 @@ Granular "I want to…" → exact subdoc section. Use this to go straight to the
 | Make drag-and-drop reordering preserve signal effects | `reactive.md` → Cleanup → `persist: true` |
 | Show a loading spinner while data fetches | `reactive.md` → Loading state |
 | Debug reactive state with a dev panel | `reactive.md` → DevTools |
-| Fix a `signal-in-computed` or `transform-in-computed` warning | `reactive.md` → Reactive primitives inside a computed need a key |
+| Fix a `signal-in-computed` warning | `reactive.md` → Reactive primitives inside a computed need a key |
+| Fix a `computed-in-computed` or `transform-in-computed` warning | `reactive.md` → Nested computed and transform without a key |
 | Prevent a lazy-registry signal from being created inside a computed | `reactive.md` → Lazy registries called from reactive callbacks |
 | Server-render + client takeover, basic setup | `hydration.md` → Hydration |
 | Wrap `renderForHydration` output in a full HTML document | `hydration.md` → Full page template |
@@ -228,8 +229,8 @@ Each runtime warning ID gets a one-line fix sketch and a pointer to the section 
 | `set-during-ssr` | `.set()` was called inside `renderForHydration` | SSR is read-only over signals. Push canonical values via `liveServer.set(name, value)` outside any render path | `hydration.md` → Server-render functions must be read-only over signals |
 | `signal-in-computed` | `signal()` called inside a computed without a key | Pass a key as the second arg, for example `signal(initial, 'open')`, or `signal(initial, \`open-${item.id}\`)` inside `mapWithKey` | `reactive.md` → Reactive primitives inside a computed need a key |
 | `signal-in-effect` | `signal()` called inside an effect (recreated each run) | Move the `signal()` declaration outside the effect. Effects re-run, signals should not | `reactive.md` → Reactive primitives inside a computed need a key |
-| `transform-in-computed` | `.transform()` called inside a computed without a key | Pass a key as the second arg, for example `sig.transform(fn, 'label')` | `reactive.md` → Reactive primitives inside a computed need a key |
-| `computed-in-computed` | `computed()` called inside a computed without a key | Pass a key as the second arg, for example `computed(fn, 'total')` | `reactive.md` → Do not create computed signals inside a computed or transform callback without a key |
+| `transform-in-computed` | `.transform()` inside a computed without a key **and a user `effect`/`computed` subscribes to the inner**. Silent when only attribute/class/text/prop bindings read the inner | Pass a key as the second arg, for example `sig.transform(fn, 'label')` | `reactive.md` → Nested computed and transform without a key |
+| `computed-in-computed` | `computed()` inside a computed without a key **and a user `effect`/`computed` subscribes to the inner**. Silent when only attribute/class/text/prop bindings read the inner | Pass a key as the second arg, for example `computed(fn, 'total')` | `reactive.md` → Nested computed and transform without a key |
 | `computed-in-effect` | `computed()` called inside an effect (orphaned each run) | Move the `computed()` declaration outside the effect. Effects act, computeds derive | `reactive.md` → Do not call `effect()` from inside a function called from a reactive callback |
 | `effect-in-computed` | `effect()` called inside a computed (orphaned each run) | Move the `effect()` declaration out of the computed body. Computeds are for derivation; side effects go in `effect`, `addConnectedCallback`, or event handlers | `reactive.md` → same section |
 | `effect-in-effect` | `effect()` called inside another effect | Hoist the inner `effect()` out. If cleanup is needed, store its `.stop` and call it from the outer scope | `reactive.md` → same section |
