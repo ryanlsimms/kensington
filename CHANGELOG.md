@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [2.0.0-signals.22] - 2026-07-02
 
 ### Added
 - `renderForHydration` and `registerComponents` now accept an `options.context` argument.
