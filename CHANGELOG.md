@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `addConnectedCallback<E>` / `addDisconnectedCallback<E>` are now generic over the element type.
 
 ### Fixed
+- `renderForHydration` now throws a clearer error when the component returns a full HTML document (via `htmlWithDocType`) instead of a fragment, pointing the user at wrapping the component's output in `t.body(...)` in the route.
 - `Signal.set()` called inside `renderForHydration` now fires a throttled `set-during-ssr` warning. Server-render functions are expected to be read-only over signals. Writing during SSR leaks state across requests for module-scope signals.
 - `Signal.get()` now fires `_onFirstSubscriber` on a 0 → 1 transition, matching `_bindingSubscribe`. A signal whose subscriber dropped and was re-added via `.get()` could otherwise stay unsubscribed.
 - Spurious `computed-in-computed` and `out-of-scope-reactive-reference` warnings on legitimate patterns: nested `mapWithKey`, and internal computeds (class lists, attribute composition, the `mapWithKey` wrapper) reading user-keyed primitives.
