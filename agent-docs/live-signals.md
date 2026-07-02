@@ -43,7 +43,7 @@ The runtime accepts any value. Only the static type is narrow.
 - Server entry: `liveServer({ persistence, canRead, canWrite, onConnect, onSocketClose, heartbeatInterval })`, then `.attach(httpServer)` (Node) or spread `.bunWebsocket()` into the Bun default-export's `websocket` slot. `.attach()` returns the underlying `ws` `WebSocketServer` so you can iterate `clients` or call `terminate()` directly when implementing admin or diagnostic features.
 - Client entry: `connectLive({ url, reconnect, onStatus, onFrame })` before the first render that touches a live signal. `onFrame(dir, frame)` fires on every WebSocket frame (`'out'` or `'in'`) for debug overlays, frame logs, and audit trails.
 
-**One import path. `kensington/live`.** Everything you need is here. `liveSignal`, `connectLive`, `liveServer`, types. Safe to import on both server and client. Works for bundler users (esbuild, Vite, etc.) AND for no-bundler importmap deployments. All node-only dependencies (`ws`, `better-sqlite3`, `node:http`) are loaded via lazy dynamic import inside `liveServer()` and `attach()`, so a browser that fetches `/lib/kensington/esm/live/index.js` from a static-served `node_modules` never resolves them. The narrower subpaths `kensington/live/client` and `kensington/live/server` exist for users who want environment boundaries enforced at the import level; the unified path is the default for most setups.
+**One import path. `kensington/live`.** Everything you need is here. `liveSignal`, `connectLive`, `liveServer`, types. Safe to import on both server and client. Works for bundler users (esbuild, Vite, etc.) AND for no-bundler importmap deployments. All node-only dependencies (`ws`, `better-sqlite3`, `node:http`) are loaded via lazy dynamic import inside `liveServer()` and `attach()`, so a browser that fetches `/lib/kensington/esm/live/index.js` from a static-served `node_modules` never resolves them. For bundlers (esbuild `--platform=browser`, Vite browser build), the package exports map includes a `browser` condition on `kensington/live` that automatically resolves to the client-only subpath, so server deps are never bundled. The narrower subpaths `kensington/live/client` and `kensington/live/server` exist for users who want environment boundaries enforced at the import level; the unified path is the default.
 
 Connection status is not a separate export. It is a `.status` field on the handle returned by `connectLive()` (client) and `liveServer()` (server).
 
@@ -55,6 +55,23 @@ Connection status is not a separate export. It is a `.status` field on the handl
 - Race-sensitive counters or atomic increments → `liveSignal` with caveat (see "Last-write-wins" below).
 
 **When NOT to use it:** character-level collaborative text editing. `liveSignal` set on a whole document body is last-write-wins, which loses characters under concurrent typing. Use op-based sync (see `local-notes/collab-pad/` for an example) instead.
+
+### When to read which section
+
+| Task | Section |
+|---|---|
+| Basic server + client wiring | Server entry / Client entry |
+| Bundle `kensington/live` with esbuild | Bundler setup (esbuild) |
+| Atomic read-modify-write (counter, list append, flag toggle) | Atomic updates with .set(fn) |
+| Restrict which clients or roles can write | canRead / canWrite |
+| Presence: add this tab on connect, remove on close | Joining a presence list on connect |
+| Keep a live signal subscribed during conditional rendering or tab-swap | The auto-unsubscribe trap |
+| Group per-entity signals (auction, document, room) | Organizing per-entity signals with a domain factory |
+| React to live signal changes on the server (aggregation, logging) | Server-side liveSignal as a reactive subscription |
+| Wire reconnect, pauseSend, resumeSend buttons | Transport lifecycle control |
+| Log or audit WebSocket frames | Inspecting WebSocket frames |
+| Mixing live and local signals in one component | Mixing live and local signals |
+| `.stop()` a live signal or prevent auto-disposal | .stop() and auto-disposal |
 
 ## Server entry
 
@@ -225,6 +242,23 @@ The two-argument form `(name, ctx) => boolean` continues to work — predicates 
 
 **Rejected client writes** are returned to the originator as `MSG_SET_FAIL` carrying the server's authoritative value + lamport for both `.set(value)` and `.set(fn)`. The client rolls back the optimistic local apply via `_setFromRemote` and rejects the per-call Promise with a `LiveSetRejected` Error (`{ signalName, reason, attemptedValue, authoritativeValue }`). Other clients see nothing — the rejected value never reaches the registry. `MSG_ERROR` is reserved for `canRead` subscribe rejection and is logged via `console.error` (no per-call surface).
 
+`LiveSetRejected` is exported as an importable interface from `kensington/live`. Import it for type-safe error narrowing:
+
+```ts
+import type { LiveSetRejected } from 'kensington/live';
+
+try {
+  await seat.set(userId);
+} catch (err) {
+  if (err instanceof Error && err.name === 'LiveSetRejected') {
+    const e = err as LiveSetRejected<string>;
+    console.log(e.signalName, e.reason, e.attemptedValue, e.authoritativeValue);
+  }
+}
+```
+
+`instanceof LiveSetRejected` is not available — `LiveSetRejected` is an interface, not a class. The `name === 'LiveSetRejected'` check plus the `as LiveSetRejected<T>` cast is the canonical narrowing pattern. The generic `T` matches the signal's value type.
+
 **`canWrite` can read other live state.** The predicate runs synchronously on the server with access to the `live` handle (via closure). Reading `live.get('other:name')` inside the predicate body is safe and composes cleanly. Common pattern: a per-slot write predicate that gates on a separate `meta` signal's `state` field (poll-must-be-open, document-must-be-editable, auction-must-be-active). The read is a plain registry lookup — no subscription, no cycle. Example:
 
 ```ts
@@ -246,6 +280,32 @@ const vote = liveSignal(null, `vote:poll:${pollId}:user:${userId}`, {
 `onConnect(ws, req) => ctx | Promise<ctx>`. Called once per WebSocket open. The returned object is threaded into `canRead`, `canWrite`, and `onSocketClose`. Use it to read cookies, validate tokens, attach a user id, anything per-connection.
 
 `onSocketClose(ctx, ws) => void`. Called once per WebSocket close, with the `ctx` from `onConnect`. Use it to clean up per-user state instantly on disconnect (presence slots, locks, in-flight writes) without waiting for transient-drop TTLs. Closes the "abrupt-tab-close leaves stale data" window. Throws inside the callback are caught and logged.
+
+`live.contextFor(ws)`. Returns the `ctx` object that `onConnect` returned for a given socket, or `undefined` if the socket is not tracked. Use this to correlate `wss.clients` entries with the per-socket identity without casting to `any`.
+
+```js
+const wss = await live.attach(server);
+
+// Admin endpoint: broadcast a server message to a specific user's socket.
+for (const ws of wss.clients) {
+  const ctx = live.contextFor(ws);   // typed as Ctx | undefined
+  if (ctx?.userId === targetId) {
+    ws.send(JSON.stringify({ type: 'notify', message }));
+  }
+}
+```
+
+`liveServer` is generic on its context type. If you annotate `onConnect`'s return type, `contextFor` carries that type through without a cast:
+
+```ts
+type SocketCtx = { userId: string; role: 'admin' | 'user' };
+
+const live = await liveServer<SocketCtx>({
+  onConnect: (_ws, req) => parseSession(req),  // must return SocketCtx
+});
+
+const ctx = live.contextFor(ws);  // SocketCtx | undefined
+```
 
 `heartbeatInterval` (default `30_000` ms, `false` to disable). The `attach()` path pings every connected socket on the interval; any socket that does not pong before the next tick is terminated, which fires `onSocketClose`. Without this, silent drops (NAT timeouts, suspended laptops, dead Wi-Fi) leave the socket open from the server's perspective. Locks and presence held by the dead user never release until the OS eventually surfaces the close (minutes to hours, depending on TCP keepalive config). With this, the heartbeat surfaces the dead connection in ~one interval. No effect on `bunWebsocket()`. Configure Bun's `idleTimeout` and `sendPings` in your `Bun.serve` config for the same behavior on that path.
 
@@ -394,6 +454,30 @@ The default path (`'/__kensington/live'`) is deliberately namespaced so it can't
 `connectLive` is fire-and-forget. The transport is a singleton, registered globally. `liveSignal` finds it automatically. There's no per-component wiring.
 
 The transport reconnects with exponential backoff. Writes attempted while disconnected are buffered and replayed on reconnect. Inbound updates missed during the disconnect window are caught up by the snapshot the server sends on (re)connect.
+
+## Bundler setup (esbuild)
+
+`kensington/live` has a `browser` export condition that resolves to a client-only entry (`esm/live/client.js`), which excludes the server deps (`ws`, `better-sqlite3`, `node:fs`, etc.). With `--platform=browser`, esbuild should activate this condition automatically.
+
+In practice, when kensington is installed via a `file:` symlink (the standard local-dev and monorepo setup), esbuild 0.19.x may resolve via the `import` condition instead, pulling in the full entry that lazy-imports Node builtins. The reliable fix is `--external:"node:*"`:
+
+```bash
+esbuild src/client.ts \
+  --bundle \
+  --outfile=public/client.js \
+  --format=esm \
+  --platform=browser \
+  --external:express \
+  --external:ws \
+  --external:better-sqlite3 \
+  "--external:node:*"
+```
+
+The quotes around `"--external:node:*"` prevent the shell from glob-expanding `node:*`. The Node built-in imports inside sqlite.js and server.js are all `await import('node:...')` (lazy, never called in the browser), so marking them external lets the bundle include those files without the browser ever trying to resolve the imports at runtime.
+
+**Do not mark `kensington/live` itself as external** (`--external:kensington/live`). That leaves a bare `import { connectLive } from "kensington/live"` in the output that the browser cannot resolve — the whole client module fails to load and nothing reactive works.
+
+**Vite** automatically uses the `browser` export condition and handles this correctly without extra config.
 
 ## Last-write-wins, Lamport ordering
 
@@ -799,6 +883,73 @@ const live = await liveServer({
 ```
 
 For real auth, swap the query-string identity for a cookie / JWT / session token check inside `onConnect`. Reject the connection by throwing; the transport's reconnect will keep retrying so the rejection should be permanent (e.g., a wrong session token), otherwise surface the failure to the user via the reactive `status` signal (which transitions to `'disconnected'` after the reconnect cap is exhausted).
+
+### Joining a presence list on connect
+
+Once identity is threaded, the client needs to add itself to the presence signal when the connection is established. The pattern is an `effect` that watches the status signal and performs a CAS add on the first `'connected'` transition.
+
+```js
+// shared/app-page.js
+import { effect, isBrowser } from 'kensington';
+import { liveSignal } from 'kensington/live';
+
+const presence = liveSignal({ tabs: [] }, 'presence:tabs', {
+  persist: true,
+  canWrite: (_name, ctx) => typeof ctx.userId === 'string' && ctx.userId !== '',
+});
+
+export function appPage(state, env) {
+  const { userId, status } = env;
+
+  // Only runs in the browser. During SSR, isBrowser is false and effect() is a
+  // no-op, so the join never fires server-side.
+  if (isBrowser) {
+    // Stable color stored in sessionStorage so it doesn't change on reconnect.
+    let color = sessionStorage.getItem('tabColor') ?? '';
+    if (!color) {
+      color = `hsl(${Math.floor(Math.random() * 360)}, 65%, 55%)`;
+      sessionStorage.setItem('tabColor', color);
+    }
+
+    effect(() => {
+      if (status.get() !== 'connected') return;
+      // CAS add: only insert if this tab isn't already in the list.
+      void presence.set(prev => {
+        if (prev.tabs.some(t => t.id === userId)) return prev;
+        return {
+          tabs: [...prev.tabs, { id: userId, name: env.userName ?? '', color, joinedAt: Date.now() }],
+        };
+      });
+    });
+  }
+
+  // ...
+}
+```
+
+The corresponding server-side removal in `onSocketClose`:
+
+```js
+const live = await liveServer({
+  onConnect: (_ws, req) => {
+    const params = new URL(req.url ?? '/', 'http://x').searchParams;
+    return { userId: params.get('u') ?? '' };
+  },
+  onSocketClose: ctx => {
+    if (ctx.userId) {
+      void presence.set(prev => ({
+        tabs: prev.tabs.filter(t => t.id !== ctx.userId),
+      }));
+    }
+  },
+});
+```
+
+**Why `isBrowser` guards the join effect.** During SSR, `effect()` is a no-op. But `isBrowser` is still worth the explicit guard because it prevents the color/sessionStorage code from running on the server (where `sessionStorage` is undefined), keeps the server-side module free of client-side side effects, and documents the intent.
+
+**Why the CAS check matters.** The effect re-runs whenever `status` changes to `'connected'`, including on reconnect after a network drop. The `prev.tabs.some(t => t.id === userId)` guard prevents duplicate entries when the server's `onSocketClose` and the reconnect happen close together (the entry may still be in the list if the server hasn't processed the close yet). The `.set(fn)` CAS retry loop means the add is atomic even if two tabs connect simultaneously.
+
+**The remove belongs on the server, not the client.** A `beforeunload` event on the client is unreliable (the browser may not fire it on mobile or crash). `onSocketClose` on the server fires deterministically when the connection closes for any reason, including process kill, network drop, and heartbeat timeout.
 
 ## Reading the connection status reactively
 

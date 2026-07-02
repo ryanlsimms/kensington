@@ -131,7 +131,7 @@ export interface LiveSetOptions {
   persist?: boolean;
 }
 
-export interface LiveServer {
+export interface LiveServer<Ctx = unknown> {
   /**
    * Reactive connection-status signal. Server-side never disconnects, so the
    * value is always 'connected'. Exposed for parity with `connectLive().status`
@@ -162,6 +162,21 @@ export interface LiveServer {
    * diagnostic UIs without reimplementing the persist convention.
    */
   policyOf(name: string): boolean | undefined;
+  /**
+   * Return the context object returned by `onConnect` for a connected socket.
+   * Returns `undefined` if the socket is not tracked (not connected via
+   * `attach()`, or already closed). Use to correlate `wss.clients` entries
+   * with the per-socket identity established during connection without casting
+   * to `any`.
+   *
+   * ```ts
+   * for (const ws of wss.clients) {
+   *   const ctx = live.contextFor(ws);  // typed as Ctx | undefined
+   *   if (ctx) { ... }
+   * }
+   * ```
+   */
+  contextFor(ws: unknown): Ctx | undefined;
   /** Remove a name from the registry, persistence, and any subscribers. */
   delete(name: string): void;
   /** Shut down the live server. Flushes pending persistence writes and closes the database. */
@@ -194,4 +209,4 @@ export interface LiveServer {
  * is NOT re-run on the server when state changes; live updates flow directly
  * through the WebSocket connections.
  */
-export function liveServer<Ctx = unknown>(opts?: LiveServerOptions<Ctx>): Promise<LiveServer>;
+export function liveServer<Ctx = unknown>(opts?: LiveServerOptions<Ctx>): Promise<LiveServer<Ctx>>;

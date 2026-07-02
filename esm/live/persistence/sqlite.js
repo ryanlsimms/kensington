@@ -36,6 +36,10 @@ export async function createSqliteStore({ path, flushInterval = 250 } = {}) {
     }
   }
 
+  const { mkdirSync } = await import('node:fs');
+  const { dirname } = await import('node:path');
+  mkdirSync(dirname(path), { recursive: true });
+
   const db = new Database(path);
   db.pragma('journal_mode = WAL');
   db.exec(`

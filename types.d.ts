@@ -4952,24 +4952,39 @@ export const isBrowser: boolean;
  * Call once on the client; Kensington finds every component rendered by `renderForHydration`
  * and mounts it reactively.
  *
+ * Pass `options.context` to supply a non-serialized runtime bag to every component.
+ * The bag is forwarded as the second argument to each component function. Use it for
+ * transport handles, identity, signals, and anything else that cannot round-trip through
+ * JSON. Construct a matching bag on the server side and pass it to `renderForHydration`.
+ *
  * @example
  * import { registerComponents } from 'kensington';
- * registerComponents({ counter, userCard });
+ * registerComponents({ counter, userCard }, { context: clientEnv });
  */
-export function registerComponents(components: Record<string, (state: any) => ContentTag | ContentTag[] | null>): void;
+export function registerComponents(
+  components: Record<string, (state: any, context?: any) => ContentTag | ContentTag[] | null>,
+  options?: { context?: unknown }
+): void;
 
 /**
  * Renders a component to an HTML string and embeds the state as a JSON script block for
  * browser-side hydration.
  *
+ * Pass `options.context` to supply a non-serialized runtime bag to the component function.
+ * The bag is forwarded as the second argument. Construct a matching bag on the client side
+ * and pass it to `registerComponents`. The context is never serialized into the page.
+ *
  * @example
  * // server
- * renderForHydration(counter, { count: 42 })
+ * renderForHydration(counter, { count: 42 }, 'counter', { context: serverEnv })
+ * // client
+ * registerComponents({ counter }, { context: clientEnv })
  */
 export function renderForHydration<S>(
-  fn: (state: S) => ContentTag | ContentTag[] | null,
+  fn: (state: S, context?: any) => ContentTag | ContentTag[] | null,
   state: S,
-  name?: string
+  name?: string,
+  options?: { context?: unknown }
 ): LiteralTag;
 
 /**

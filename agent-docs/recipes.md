@@ -1,6 +1,8 @@
 # Recipes
 
-Subdoc of the root `AGENTS.md`. Read this when looking for small, copy-pasteable helpers built on top of `signal` and `effect` (`styled`, `portal`, `createContext`, `useReducer`, `useLocalStorage`, `useDebounce`, `useFetch`, `useId`) or for the shared-layout and Tailwind patterns. Each is a few lines; copy into your project as needed.
+Subdoc of the root `AGENTS.md`. Read this when looking for small, copy-pasteable helpers built on top of `signal` and `effect` or for shared-layout and Tailwind patterns. Each helper is a few lines; copy into your project as needed.
+
+**Helpers in this doc:** `styled` (CSS-in-JS with pseudo-selectors, media queries, composition) · `portal` (render outside the parent) · `createContext` (provider/consumer pattern) · `useReducer` (action-dispatch state) · `useLocalStorage` (signal backed by localStorage) · `useDebounce` (signal that settles after a delay) · `useFetch` (data/loading/error signals) · `useRef` (DOM access) · `useForm` (field state, validation errors, submit lifecycle) · `modal` (dialog with focus trap) · `useAutoFocus` and `useFocusTrap` (focus management) · `useId` (stable unique IDs) · Layout with shared header/footer · Tailwind patterns · Presence with heartbeat aggregator · Reactive poll aggregator.
 
 ## styled. CSS-in-JS components with pseudo-selectors, media queries, and composition
 
@@ -386,6 +388,278 @@ export function useFetch(urlSignal) {
   return { data, loading, error };
 }
 ```
+
+## useRef. DOM access for a tag
+
+Kensington has no React-style ref object. The element is the ref. Two patterns cover every case. Capture the return of `tag.toElement()`, or read it in `addConnectedCallback(el => ...)` where `el` is the live DOM node.
+
+```javascript
+// use-ref.js
+export function useRef(tag) {
+  const ref = { current: null };
+  tag.addConnectedCallback(el => { ref.current = el; });
+  tag.addDisconnectedCallback(() => { ref.current = null; });
+  return ref;
+}
+```
+
+```javascript
+import { t, signal } from 'kensington';
+import { useRef } from './use-ref.js';
+
+const input = t.input({ type: 'text', placeholder: 'name' });
+const inputRef = useRef(input);
+
+const panel = t.div([
+  input,
+  t.button({
+    type: 'button',
+    onclick: () => inputRef.current?.focus(),
+  }, 'Focus the input'),
+]);
+```
+
+The ref is live across mount and unmount cycles. `inputRef.current` is the DOM node while mounted and `null` while detached. For one-shot access tied to mount, skip the helper and write the connect callback inline.
+
+For measurements that depend on layout, read inside the connect callback (the element is already in the DOM when it fires):
+
+```javascript
+const card = t.div({ class: 'card' });
+card.addConnectedCallback(el => {
+  const { width, height } = el.getBoundingClientRect();
+  console.log('mounted at', width, 'x', height);
+});
+```
+
+## useForm. Field state, validation errors, submit lifecycle
+
+A `useForm({ initial, validate, onSubmit })` helper that bundles the three signals every form ends up needing. `values` (one signal per field, exposed as a map). `errors` (validation errors, populated by `validate` on every change). `status` (`'idle' | 'submitting' | 'success' | 'error'`).
+
+```javascript
+// use-form.js
+import { signal, computed } from 'kensington';
+
+export function useForm({ initial, validate, onSubmit }) {
+  const values = Object.fromEntries(
+    Object.entries(initial).map(([k, v]) => [k, signal(v)]),
+  );
+  const errors = computed(() => {
+    const snapshot = Object.fromEntries(
+      Object.entries(values).map(([k, s]) => [k, s.get()]),
+    );
+    return validate?.(snapshot) ?? {};
+  });
+  const status = signal('idle');
+  const submitError = signal(null);
+
+  async function submit(e) {
+    e?.preventDefault?.();
+    const errs = errors.get();
+    if (Object.keys(errs).length > 0) {
+      return;
+    }
+    status.set('submitting');
+    submitError.set(null);
+    try {
+      const snapshot = Object.fromEntries(
+        Object.entries(values).map(([k, s]) => [k, s.get()]),
+      );
+      await onSubmit(snapshot);
+      status.set('success');
+    } catch (err) {
+      submitError.set(err.message ?? String(err));
+      status.set('error');
+    }
+  }
+
+  return { values, errors, status, submitError, submit };
+}
+```
+
+```javascript
+import { t } from 'kensington';
+import { useForm } from './use-form.js';
+
+const form = useForm({
+  initial: { email: '', password: '' },
+  validate: v => {
+    const errs = {};
+    if (!v.email.includes('@')) { errs.email = 'Enter a valid email'; }
+    if (v.password.length < 8) { errs.password = 'At least 8 characters'; }
+    return errs;
+  },
+  onSubmit: async values => {
+    const res = await fetch('/api/login', { method: 'POST', body: JSON.stringify(values) });
+    if (!res.ok) { throw new Error('Login failed'); }
+  },
+});
+
+const login = t.form({ onsubmit: form.submit }, [
+  t.label([
+    'Email',
+    t.input({
+      type: 'email',
+      prop: { value: form.values.email },
+      oninput: e => form.values.email.set(e.target.value),
+    }),
+    t.span({ class: 'error' }, form.errors.transform(e => e.email ?? '', 'email-err')),
+  ]),
+  t.label([
+    'Password',
+    t.input({
+      type: 'password',
+      prop: { value: form.values.password },
+      oninput: e => form.values.password.set(e.target.value),
+    }),
+    t.span({ class: 'error' }, form.errors.transform(e => e.password ?? '', 'pwd-err')),
+  ]),
+  t.button({
+    type: 'submit',
+    prop: { disabled: form.status.transform(s => s === 'submitting', 'submitting') },
+  }, form.status.transform(s => s === 'submitting' ? 'Signing in…' : 'Sign in', 'btn-label')),
+  t.p({ class: 'error' }, form.submitError),
+]);
+```
+
+Each field is its own signal, so per-field bindings (`prop: { value: ... }`) update independently. `errors` recomputes on any field change. `status` drives button-disabled state and label.
+
+For a single-field form, skip the helper. The pattern is small enough to inline.
+
+## modal. Dialog with focus trap and Escape-to-close
+
+Built on the `portal` helper above. Renders into a sibling of `document.body` so it escapes the parent's stacking context, traps focus while open, and restores focus to the previously-focused element on close.
+
+```javascript
+// modal.js
+import { signal, effect, t } from 'kensington';
+import { portal } from './portal.js';
+import { useFocusTrap } from './use-focus-trap.js';
+
+let modalRoot;
+function root() {
+  return modalRoot ??= document.body.appendChild(
+    Object.assign(document.createElement('div'), { className: 'modal-root' }),
+  );
+}
+
+export function modal({ open, onClose, title, children }) {
+  let remove = null;
+  let untrap = null;
+  let previouslyFocused = null;
+
+  effect(() => {
+    if (open.get()) {
+      previouslyFocused = document.activeElement;
+      remove = portal(root(), () => {
+        const dialog = t.div({
+          class: 'modal-dialog',
+          role: 'dialog',
+          ariaModal: 'true',
+          tabindex: '-1',
+        }, [
+          t.header([
+            t.h2(title),
+            t.button({ type: 'button', onclick: () => onClose() }, '×'),
+          ]),
+          t.div({ class: 'modal-body' }, children),
+        ]);
+        dialog.addConnectedCallback(el => {
+          untrap = useFocusTrap(el);
+          el.focus();
+        });
+        return t.div({
+          class: 'modal-overlay',
+          onclick: e => { if (e.target === e.currentTarget) { onClose(); } },
+          onkeydown: e => { if (e.key === 'Escape') { onClose(); } },
+        }, dialog);
+      });
+    } else {
+      untrap?.();
+      untrap = null;
+      remove?.();
+      remove = null;
+      previouslyFocused?.focus?.();
+      previouslyFocused = null;
+    }
+  });
+}
+```
+
+```javascript
+import { signal, t } from 'kensington';
+import { modal } from './modal.js';
+
+const isOpen = signal(false);
+
+modal({
+  open: isOpen,
+  onClose: () => isOpen.set(false),
+  title: 'Delete account?',
+  children: [
+    t.p('This action cannot be undone.'),
+    t.button({ type: 'button', onclick: () => isOpen.set(false) }, 'Cancel'),
+    t.button({ type: 'button', class: 'danger' }, 'Delete'),
+  ],
+});
+
+t.button({ type: 'button', onclick: () => isOpen.set(true) }, 'Open dialog');
+```
+
+`modal` is a side-effecting helper, not a component. Call it once during setup. The signal `open` drives the lifecycle.
+
+## useAutoFocus and useFocusTrap. Focus management
+
+`useAutoFocus(tag)` focuses an element on mount. Useful for "open the search box and put the cursor in it" patterns. Pair with `useRef` if the element needs more than just focus on mount.
+
+```javascript
+// use-auto-focus.js
+export function useAutoFocus(tag) {
+  tag.addConnectedCallback(el => {
+    el.focus({ preventScroll: false });
+  });
+  return tag;
+}
+```
+
+```javascript
+import { t } from 'kensington';
+import { useAutoFocus } from './use-auto-focus.js';
+
+const search = useAutoFocus(t.input({ type: 'search', placeholder: 'Search…' }));
+```
+
+`useFocusTrap(el)` constrains Tab and Shift+Tab inside a container. Used internally by `modal`. The return value stops the trap.
+
+```javascript
+// use-focus-trap.js
+const FOCUSABLE = 'a[href], button, input, textarea, select, [tabindex]:not([tabindex="-1"])';
+
+export function useFocusTrap(container) {
+  function onKey(e) {
+    if (e.key !== 'Tab') { return; }
+    const items = container.querySelectorAll(FOCUSABLE);
+    if (items.length === 0) {
+      e.preventDefault();
+      container.focus();
+      return;
+    }
+    const first = items[0];
+    const last = items[items.length - 1];
+    const active = document.activeElement;
+    if (e.shiftKey && active === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+  container.addEventListener('keydown', onKey);
+  return () => container.removeEventListener('keydown', onKey);
+}
+```
+
+A trap is meaningful only inside a modal, off-canvas panel, or other "modal layer" UI. For an inline component, omit it; the natural Tab order is what users expect.
 
 ## useId. Stable unique IDs for pairing labels with inputs
 

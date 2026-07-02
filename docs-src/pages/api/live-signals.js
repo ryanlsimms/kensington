@@ -1,5 +1,6 @@
 import { t } from 'kensington';
 
+import { apiTable } from '../../components/table.js';
 import { code } from '../../components/ui.js';
 
 export function apiLiveSignals() {
@@ -185,62 +186,107 @@ interface ClientTransport {
       t.strong('before'),
       ' any ',
       t.code('liveSignal'),
-      ' call. Reconnect is automatic with exponential backoff. ',
-      t.code('url'),
-      ' defaults to ',
-      t.code("'/__kensington/live'"),
-      ' (matches ',
-      t.code('liveServer'),
-      '\'s default path). See the ',
+      ' call. Reconnect is automatic with exponential backoff. See the ',
       t.a({ href: '?page=reactivity#live-signals' }, 'live signals guide'),
       ' for setup.',
     ]),
-    t.ul([
-      t.li([
+    t.h4('Options'),
+    apiTable(['Option', 'Description'], [
+      [
+        t.code('url'),
+        [
+          'WebSocket URL. Defaults to ',
+          t.code("'/__kensington/live'"),
+          ', matching ',
+          t.code('liveServer'),
+          '\'s default path. Override both together if you need a different path.',
+        ],
+      ],
+      [
+        t.code('reconnect'),
+        [
+          'Reconnect policy. ',
+          t.code('initialDelay'),
+          ' (ms, default 250) and ',
+          t.code('maxDelay'),
+          ' (ms, default 30 000) set the exponential-backoff window. ',
+          t.code('maxRetries'),
+          ' (default ',
+          t.code('Infinity'),
+          ') caps attempts; once exhausted, status transitions to ',
+          t.code("'disconnected'"),
+          ' and ',
+          t.code('reconnect()'),
+          ' resets the counter.',
+        ],
+      ],
+      [
+        t.code('onStatus(status)'),
+        [
+          'Called each time the connection status changes. Same values as the reactive ',
+          t.code('transport.status'),
+          ' signal; use the callback form when you need the change outside a reactive context.',
+        ],
+      ],
+      [
+        t.code('onFrame(direction, frame)'),
+        [
+          'Fires per WebSocket frame. ',
+          t.code('direction'),
+          ' is ',
+          t.code("'out'"),
+          ' or ',
+          t.code("'in'"),
+          '. The ',
+          t.code('type'),
+          ' field on ',
+          t.code('frame'),
+          ' is the stable surface for inspection. Useful for protocol-level debugging.',
+        ],
+      ],
+    ]),
+    t.h4('Transport handle'),
+    apiTable(['Method / property', 'Description'], [
+      [
+        t.code('status'),
+        [
+          'Reactive ',
+          t.code('Signal<ConnectionStatus>'),
+          '. Read to drive connection-state UI.',
+        ],
+      ],
+      [
         t.code('close()'),
-        '. Terminal. Stops reconnect attempts and closes the WebSocket. No way back without a fresh ',
-        t.code('connectLive()'),
-        '.',
-      ]),
-      t.li([
+        [
+          'Terminal. Stops reconnect attempts and closes the WebSocket. No way back without a fresh ',
+          t.code('connectLive()'),
+          '.',
+        ],
+      ],
+      [
         t.code('disconnect()'),
-        '. Drop the WebSocket and stay disconnected. ',
+        [
+          'Drop the WebSocket and stay disconnected. Call ',
+          t.code('reconnect()'),
+          ' to come back.',
+        ],
+      ],
+      [
         t.code('reconnect()'),
-        ' to come back.',
-      ]),
-      t.li([t.code('reconnect()'), '. Drop and immediately re-open. Subscriptions survive. Backoff resets.']),
-      t.li([
-        t.code('pauseSend()'),
-        ' / ',
-        t.code('resumeSend()'),
-        '. Buffer outgoing writes locally; reads still apply. Status stays at ',
-        t.code("'connected'"),
-        '.',
-      ]),
-      t.li([
+        'Drop and immediately re-open. Subscriptions survive. Backoff resets.',
+      ],
+      [
+        [t.code('pauseSend()'), ' / ', t.code('resumeSend()')],
+        [
+          'Buffer outgoing writes locally; reads still apply. Status stays at ',
+          t.code("'connected'"),
+          '.',
+        ],
+      ],
+      [
         t.code('unsubscribe(name)'),
-        '. Stop following one name. The local Signal stays valid; updates stop arriving.',
-      ]),
-      t.li([
-        t.code('onFrame'),
-        '. Fires per WebSocket frame; ',
-        t.code('direction'),
-        ' is ',
-        t.code("'out'"),
-        ' or ',
-        t.code("'in'"),
-        '. The ',
-        t.code('type'),
-        ' field is the stable surface for inspection.',
-      ]),
-      t.li([
-        t.code('reconnect.maxRetries'),
-        '. After the cap, status transitions to ',
-        t.code("'disconnected'"),
-        '. ',
-        t.code('reconnect()'),
-        ' resets the counter.',
-      ]),
+        'Stop following one name. The local Signal stays valid; updates stop arriving.',
+      ],
     ]),
 
     t.h3({ id: 'api-live-server' }, 'liveServer'),
@@ -262,13 +308,14 @@ type PersistenceConfig =
   | { kind: 'memory' }
   | { kind: 'sqlite'; path: string; flushInterval?: number };
 
-interface LiveServer {
+interface LiveServer<Ctx = unknown> {
   status: Signal<ConnectionStatus>;
   readonly heartbeatInterval: number | false;
   get<T = unknown>(name: string): T | undefined;
   set(name: string, value: unknown, options?: { persist?: boolean }): void;
   list(prefix: string): Array<[string, unknown]>;
   policyOf(name: string): boolean | undefined;
+  contextFor(ws: unknown): Ctx | undefined;
   delete(name: string): void;
   close(): void;
   attach(httpServer: HTTPServer): Promise<AttachedWebSocketServer>;
@@ -283,62 +330,196 @@ interface LiveServer {
       t.code('canWrite'),
       '; it gates client writes only.',
     ]),
-    t.ul([
-      t.li([
-        t.code('attach(server)'),
-        '. Mounts the WebSocket handler on a Node HTTP server (requires the ',
-        t.code('ws'),
-        ' peer dep). Returns the underlying ',
-        t.code('WebSocketServer'),
-        '.',
-      ]),
-      t.li([
-        t.code('bunWebsocket()'),
-        '. Returns the handler config to spread into Bun\'s ',
-        t.code('websocket'),
-        ' slot.',
-      ]),
-      t.li([
+    t.h4('Options'),
+    apiTable(['Option', 'Description'], [
+      [
+        t.code('persistence'),
+        [
+          t.code("{ kind: 'memory' }"),
+          ' (default) keeps state in-process; lost on restart. ',
+          t.code("{ kind: 'sqlite', path: './data/live.db' }"),
+          ' persists names declared with ',
+          t.code('persist: true'),
+          ' across restarts. Optional ',
+          t.code('flushInterval'),
+          ' (ms, default 250) debounces writes so bursts coalesce into single transactions.',
+        ],
+      ],
+      [
+        t.code('canRead(name, ctx)'),
+        [
+          'Per-name read gate called on subscribe. Return ',
+          t.code('false'),
+          ' to reject; the client receives ',
+          t.code('MSG_ERROR'),
+          '. ',
+          t.code('ctx'),
+          ' is the object returned by ',
+          t.code('onConnect'),
+          '.',
+        ],
+      ],
+      [
+        t.code('canWrite'),
+        [
+          'Global write policy applied before any per-signal ',
+          t.code('canWrite'),
+          ' check. ',
+          t.code("'any'"),
+          ' (default) allows all client writes. ',
+          t.code("'server-only'"),
+          ' blocks all client writes. A function ',
+          t.code('(name, ctx, transition) => boolean'),
+          ' gates per-name. Rejected writes return ',
+          t.code('MSG_SET_FAIL'),
+          ' to the originating client.',
+        ],
+      ],
+      [
+        t.code('onConnect(ws, req)'),
+        [
+          'Called once per WebSocket open. Return a context object (sync or async) threaded into ',
+          t.code('canRead'),
+          ', ',
+          t.code('canWrite'),
+          ', ',
+          t.code('onSocketClose'),
+          ', and ',
+          t.code('contextFor()'),
+          '. Use it to read cookies, validate tokens, and attach a user id.',
+        ],
+      ],
+      [
         t.code('onSocketClose(ctx, ws)'),
-        '. Fires on WebSocket close. Release per-user state here (locks, presence, in-flight writes).',
-      ]),
-      t.li([
+        [
+          'Called once per WebSocket close with the ',
+          t.code('ctx'),
+          ' from ',
+          t.code('onConnect'),
+          '. Release per-user state here (presence slots, locks, in-flight writes) ',
+          'without waiting for transient-drop TTLs.',
+        ],
+      ],
+      [
+        t.code('path'),
+        [
+          'WebSocket mount path. Defaults to ',
+          t.code("'/__kensington/live'"),
+          '. Override both this and ',
+          t.code('connectLive({ url })'),
+          ' together if you need a different path.',
+        ],
+      ],
+      [
         t.code('heartbeatInterval'),
-        '. Pings + pong-timeout-terminates dead sockets on the ',
-        t.code('attach()'),
-        ' path, so ',
-        t.code('onSocketClose'),
-        ' fires after silent drops. ',
-        t.code('false'),
-        ' disables. No effect on ',
+        [
+          'Milliseconds between WebSocket pings on the ',
+          t.code('attach()'),
+          ' path (default ',
+          t.code('30_000'),
+          '). Sockets that miss a pong are terminated, firing ',
+          t.code('onSocketClose'),
+          ' so silent drops release locks and presence in ~one interval. ',
+          t.code('false'),
+          ' disables. No effect on ',
+          t.code('bunWebsocket()'),
+          '.',
+        ],
+      ],
+    ]),
+    t.h4('Handle'),
+    apiTable(['Method / property', 'Description'], [
+      [
+        t.code('attach(server)'),
+        [
+          'Mounts the WebSocket handler on a Node HTTP server (requires the ',
+          t.code('ws'),
+          ' peer dep). Returns the underlying ',
+          t.code('WebSocketServer'),
+          '.',
+        ],
+      ],
+      [
         t.code('bunWebsocket()'),
-        '.',
-      ]),
-      t.li([
+        ['Returns the handler config to spread into Bun\'s ', t.code('websocket'), ' slot.'],
+      ],
+      [
         t.code('close()'),
-        '. Terminates open WebSocket clients, then closes the WSS, then the persistence store.',
-        ' Call from SIGINT before ',
-        t.code('httpServer.close()'),
-        '.',
-      ]),
-      t.li([
+        [
+          'Terminates open WebSocket clients, then closes the WSS, then the persistence store. ',
+          'Call from SIGINT before ',
+          t.code('httpServer.close()'),
+          '.',
+        ],
+      ],
+      [
+        [
+          t.code('get(name)'),
+          ', ',
+          t.code('set(name, value)'),
+          ', ',
+          t.code('list(prefix)'),
+          ', ',
+          t.code('delete(name)'),
+        ],
+        [
+          'Read, write, enumerate, and remove registry entries from server-side code. Server ',
+          t.code('set'),
+          ' bypasses ',
+          t.code('canWrite'),
+          '. ',
+          t.code('delete'),
+          ' is registry cleanup only — does NOT notify subscribers. Use ',
+          t.code('set(name, null)'),
+          ' when subscribers should observe the removal.',
+        ],
+      ],
+      [
         t.code('policyOf(name)'),
-        '. Resolved persist policy: ',
-        t.code('true'),
-        ' / ',
-        t.code('false'),
-        ' / ',
-        t.code('undefined'),
-        '. Pair with ',
-        t.code('list()'),
-        ' to classify entries.',
-      ]),
-      t.li([
-        t.code('delete(name)'),
-        '. Registry cleanup. Does NOT notify subscribers. Use ',
-        t.code('set(name, null)'),
-        ' when subscribers should observe the removal.',
-      ]),
+        [
+          'Resolved persist policy: ',
+          t.code('true'),
+          ' / ',
+          t.code('false'),
+          ' / ',
+          t.code('undefined'),
+          '. Pair with ',
+          t.code('list()'),
+          ' to classify entries in diagnostic UIs.',
+        ],
+      ],
+      [
+        t.code('contextFor(ws)'),
+        [
+          'Returns the ',
+          t.code('ctx'),
+          ' object that ',
+          t.code('onConnect'),
+          ' returned for a given socket, or ',
+          t.code('undefined'),
+          ' if the socket is not tracked. Use to correlate ',
+          t.code('wss.clients'),
+          ' entries with per-socket identity without casting to ',
+          t.code('any'),
+          '. Typed as ',
+          t.code('Ctx | undefined'),
+          ' when ',
+          t.code('liveServer<Ctx>'),
+          ' is called with an explicit type parameter.',
+        ],
+      ],
+      [
+        [
+          t.code('heartbeatInterval'),
+          ' (read-only)',
+        ],
+        [
+          'The configured heartbeat cadence in milliseconds, or ',
+          t.code('false'),
+          '. Use for SSR state threading so clients can render "last beat N ago" ',
+          'relative to a known interval.',
+        ],
+      ],
     ]),
     t.p([
       'Outside ',

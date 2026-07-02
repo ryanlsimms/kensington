@@ -444,7 +444,8 @@ export async function liveServer({
   function handleClientSet(sock, state, msg) {
     const name = msg.name;
     const next = msg.value;
-    const prev = registry.get(name)?.value;
+    const entry = registry.get(name);
+    const prev = entry === undefined ? initialValues.get(name) : entry.value;
     const transition = { prev, next };
 
     const perSignal = canWritePolicy.get(name);
@@ -498,7 +499,8 @@ export async function liveServer({
       state.subscribed.add(msg.name);
       getSubs(msg.name).add(sock);
       const entry = registry.get(msg.name);
-      const values = entry === undefined ? { [msg.name]: undefined } : { [msg.name]: entry.value };
+      const snapshotValue = entry === undefined ? initialValues.get(msg.name) : entry.value;
+      const values = { [msg.name]: snapshotValue };
       // For fresh names with no registry entry, send lamport 0 so the
       // client's first CAS write (with ifLamport: 0) matches the server's
       // "no entry yet" baseline.
@@ -567,6 +569,13 @@ export async function liveServer({
     // returned by `list()` without reimplementing the convention.
     policyOf(name) {
       return persistPolicy.get(name);
+    },
+    // Return the context object returned by onConnect for this socket.
+    // Returns undefined if the socket is not tracked (not connected via
+    // attach(), or already closed). Use to correlate wss.clients entries
+    // with the per-socket identity set during connection.
+    contextFor(ws) {
+      return socketState.get(ws)?.ctx;
     },
     delete(name) {
       cancelTransientDrop(name);

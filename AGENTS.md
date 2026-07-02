@@ -2,47 +2,453 @@
 
 HTML/SVG/MathML library for JavaScript and TypeScript. Tags are method calls on a `Kensington` instance, returning tag objects that serialize to formatted HTML strings (`.toString()`) or live DOM nodes (`.toElement()`).
 
+## This file at a glance
+
+| Section | Content |
+|---|---|
+| Where to find what | Which subdoc to pull for each feature area |
+| Component mental model | Canonical component shape every example below matches |
+| Translation from React and Svelte | Closest-equivalent tables for agents reasoning by analogy |
+| Decision trees | Five common forks (signal vs let, prop vs attribute, effect vs connect, etc.) |
+| Task lookup | "I want to X" → exact subdoc section |
+| Warning index | Runtime warning ID → fix sketch + section that explains it |
+| Quick examples | Inline code for the 8 most common patterns |
+| Imports | Import statements and type aliases |
+| Recommended packages | `kensington-eslint-plugin` and `kensington-express` full setup |
+| The basics / Options / Content rules | Core API reference |
+| Reactive data | The key rule before writing any `signal()` |
+| Live signals | Module-scope `liveSignal` declaration pattern |
+| Component dependencies | `options.context` pattern for SSR + client env |
+| Common mistakes | Effect cleanup, `persist`, void elements, React/Svelte muscle-memory traps |
+| Key types | TypeScript type reference |
+
 ## Where to find what
 
-**This file** covers the surface that almost every kensington project touches. Imports, tag basics, options, content rules, validation, and the non-negotiable reactive decision check. Anything past that lives in a topic-specific subdoc under `agent-docs/`. Read those on demand using your Read tool. Do NOT read them eagerly — they're together about 6× the size of this file.
+**This file** covers the surface that almost every kensington project touches. Imports, tag basics, options, content rules, validation, the non-negotiable reactive decision check, and quick inline examples. Anything past that lives in a topic-specific subdoc under `agent-docs/`. Read those on demand using your Read tool. Do NOT read them eagerly — they're together about 6× the size of this file.
 
 | Reach for this subdoc when… | File | What's inside |
 |---|---|---|
-| You touch `signal()`, `computed()`, `effect()`, `.transform()`, `mapWithKey`, `addConnectedCallback`, `persist: true`, devtools, or any reactive lifecycle. | [`agent-docs/reactive.md`](agent-docs/reactive.md) | Signal API (read with `.get()`, always — `.value` is an escape hatch), keyed lists, the keyed-primitive rule with worked examples and the helper-function trap, lazy registries, cleanup, addConnectedCallback / addDisconnectedCallback, isBrowser, DevTools, Loading state, **Reactive pitfalls** (every warning's wrong/right pair). |
-| The app is SSR + client-takeover (`renderForHydration` / `registerComponents`) OR you're wiring `kensington/vite` for HMR. Skip this if the app is a client-only SPA. | [`agent-docs/hydration.md`](agent-docs/hydration.md) | Server/client component rules, multiple mounts, asymmetric SSR/client renderers, stateless edge-runtime hazards, HMR Vite plugin and state preservation. Threading external dependencies via the dual-env-module pattern (default) or wrapper closures (for per-request env). |
-| You're sharing state between connected browsers (collab UI, presence, multi-window editing, server-pushed updates). | [`agent-docs/live-signals.md`](agent-docs/live-signals.md) | `liveSignal(initial, name, opts?)` shared primitive. Module-scope declarations are safe. Both `.set` forms return `Promise<void>` with a structured `LiveSetRejected` rejection and authoritative server-side rollback. Per-signal `canWrite`. `liveServer(opts)` registry + persistence (memory or sqlite) + heartbeat + graceful `close()`. `connectLive(opts)` transport with `status`/`reconnect()`/`pauseSend()`/`onFrame` for diagnostic UIs. Domain-factory pattern for per-entity signals. |
-| You're integrating a web-component library (Web Awesome, Shoelace, Lit-based design systems, Material Web, FAST, Spectrum) or any vanilla custom element. | [`agent-docs/custom-elements.md`](agent-docs/custom-elements.md) | `createCustomTag`, manifest-driven loops, typing with `declare` fields, htmx-shaped namespace augmentation. |
-| You need a small reusable helper. `styled`, `portal`, `createContext`, `useReducer`, `useLocalStorage`, `useDebounce`, `useFetch`, `useId`. Or a layout/Tailwind starter. | [`agent-docs/recipes.md`](agent-docs/recipes.md) | Each helper as a copyable file, plus the shared-primitives `ui.js` pattern. |
-| You're wiring a server framework. Express, Hono (Node or Bun), Fastify, Elysia, Deno, Node built-in http. | [`agent-docs/frameworks.md`](agent-docs/frameworks.md) | Per-framework route shape. For Express prefer the `kensington-express` package described below. |
-| You want a runnable example of a specific pattern. Form with validation, pagination, fragments, caching, Alpine.js, SVG, MathML, htmx live search, hydrated like button, sortable table, accordion, hash router, etc. | [`agent-docs/examples.md`](agent-docs/examples.md) | ~30 worked examples including 10 reactive-data scenarios and TypeScript design-system patterns. |
+| You touch `signal()`, `computed()`, `effect()`, `.transform()`, `mapWithKey`, `addConnectedCallback`, `persist: true`, devtools, or any reactive lifecycle. | [`agent-docs/reactive.md`](agent-docs/reactive.md) | Signal API (read with `.get()`, always); keyed lists; the helper-function trap with wrong/right pairs; lazy registries; cleanup; `addConnectedCallback`/`addDisconnectedCallback`; `persist: true` for drag-and-drop; devtools; loading state; **Reactive pitfalls** (every warning's wrong/right pair). |
+| The app uses SSR + client-takeover (`renderForHydration` / `registerComponents`), you are wrapping `renderForHydration` output in a full HTML page, threading transport/userId/env into a component, using multiple components or multiple mounts on one page, or wiring `kensington/vite` for HMR. Skip if the app is a client-only SPA. | [`agent-docs/hydration.md`](agent-docs/hydration.md) | Server/client component rules; full page template (the `htmlWithDocType` wrapper a route must build); multiple mounts; asymmetric SSR/client renderers; stateless edge-runtime hazards; `options.context` for threading transport and identity; HMR Vite plugin and state preservation. |
+| You are sharing state between connected browsers (collab UI, presence, multi-window editing, server-pushed updates), bundling `kensington/live` with esbuild, or wiring transport reconnect/pauseSend/onFrame. | [`agent-docs/live-signals.md`](agent-docs/live-signals.md) | `liveSignal`; `liveServer`; `connectLive`; atomic `.set(fn)` with CAS retry; `canWrite`; presence join/leave on connect; the auto-unsubscribe trap; domain factory for per-entity signals; bundler setup for esbuild; transport lifecycle control. |
+| You are integrating a web-component library (Web Awesome, Shoelace, Lit-based design systems, Material Web, FAST, Spectrum) or any vanilla custom element. | [`agent-docs/custom-elements.md`](agent-docs/custom-elements.md) | `createCustomTag`, manifest-driven loops, typing with `declare` fields, htmx-shaped namespace augmentation. |
+| You need a small reusable helper: `styled`, `portal`, `createContext`, `useReducer`, `useLocalStorage`, `useDebounce`, `useFetch`, `useRef`, `useForm`, `modal`, `useAutoFocus` / `useFocusTrap`, `useId`. Or a layout / Tailwind starter. Or the presence-with-heartbeat or reactive-aggregator pattern. | [`agent-docs/recipes.md`](agent-docs/recipes.md) | Each helper as a copyable file; the shared-primitives `ui.js` pattern; presence heartbeat; reactive poll aggregator. |
+| You are bootstrapping a new project and want a complete working skeleton (Vite + Express + hydration + live signals + ESLint) in one place rather than reconstructing it from four subdocs. | [`agent-docs/starter.md`](agent-docs/starter.md) | Project layout, `package.json`, Vite config, ESLint config, server entry, client entry, env factory, shared component. |
+| You are wiring a server framework: Express, Hono (Node or Bun), Fastify, Elysia, Deno, Node built-in http. | [`agent-docs/frameworks.md`](agent-docs/frameworks.md) | Per-framework route shape. For Express prefer the `kensington-express` package described below. |
+| You want a runnable example of a specific pattern: form with validation, pagination, fragments, caching, Alpine.js, SVG, MathML, htmx live search, hydrated like button, sortable table, accordion, hash router, etc. | [`agent-docs/examples.md`](agent-docs/examples.md) | ~30 worked examples including 10 reactive-data scenarios and TypeScript design-system patterns. |
 
 **Read pattern**: pull in a subdoc only when the current task lands in its territory. Two or three subdocs per task is normal; reading all six is almost never the right call. The map above and each subdoc's opening paragraph identify when it's relevant.
 
+## Component mental model
+
+A Kensington component is a plain function. It takes props in and returns one `ContentTag`. There is no render loop. The function body runs once per mount on the client, and once per request on the server. Signals declared in the body are stable for the tag's lifetime. Bindings woven into the returned tree (signals used as content, attributes, or `prop` values) update the live DOM in place when those signals change. The function does not re-run when a signal changes.
+
+```javascript
+// shared/counter.js
+import { t, signal, computed } from 'kensington';
+
+export function counter({ initial = 0, label = 'clicks' }) {
+  const count = signal(initial);
+  const display = computed(() => `${count.get()} ${label}`);
+
+  return t.div({ class: 'counter' }, [
+    t.button({ onclick: () => count.set(n => n + 1) }, '+'),
+    t.span(display),
+  ]);
+}
+```
+
+Read this template once. Every example in this file and the subdocs matches the same shape. Signals declared at the top of the function. A single returned `ContentTag` (or `VoidTag`) tree. Bindings woven into options or content. No JSX, no template syntax, no re-render.
+
+For TypeScript components, type props inline and use `Reactive<T>` for parameters that can be either a plain value or a signal. `Reactive<T>` is shorthand for `T | Signal<T> | ReadonlySignal<T>`.
+
+```typescript
+import { t, signal, type Reactive, type ContentTag } from 'kensington';
+
+interface CounterProps {
+  initial?: number;
+  label?: Reactive<string>;
+}
+
+export function counter({ initial = 0, label = 'clicks' }: CounterProps): ContentTag {
+  const count = signal(initial);
+  return t.div([
+    t.button({ onclick: () => count.set(n => n + 1) }, '+'),
+    t.span([count, ' ', label]),
+  ]);
+}
+```
+
+Children are just another prop. Name it `children` if you want React-style ergonomics, or pick a more descriptive name (`header`, `actions`, `rows`).
+
+```javascript
+export function card({ title, children }) {
+  return t.section({ class: 'card' }, [
+    t.h2(title),
+    t.div({ class: 'card-body' }, children),
+  ]);
+}
+
+card({ title: 'Hello', children: [t.p('one'), t.p('two')] });
+```
+
+## Translation from React and Svelte
+
+If you already think in React or Svelte, these tables map the closest equivalents. They are for orientation only. The underlying execution model differs, and a few rows have no direct counterpart in the other direction.
+
+### React → Kensington
+
+| React | Kensington | Note |
+|---|---|---|
+| `function Component(props) { return <jsx /> }` | `function component(props) { return t.div(...) }` | Same function-as-component shape. No JSX. |
+| `useState(0)` returning `[v, setV]` | `const v = signal(0)`, then `v.get()` / `v.set(...)` | One object, not a tuple. |
+| `useEffect(() => {...}, [dep])` | `effect(() => { dep.get(); ... })` | Dependencies are tracked automatically via `.get()` reads. |
+| `useEffect(() => () => cleanup, [])` (mount/unmount) | `tag.addConnectedCallback(...)` and `tag.addDisconnectedCallback(...)` | Effect cleanup returns are silently ignored. Use the tag callbacks. |
+| `useMemo(() => fn(), [dep])` | `computed(() => fn())` | Auto-tracked. No dep array. |
+| `useCallback` | Not needed | Functions are not identity-tracked. Declare inline. |
+| `useRef(null)` for DOM access | Capture `tag.toElement()`, or `addConnectedCallback(el => { ref = el })` | The tag's element is the ref. |
+| `useContext` / `<Context.Provider>` | `options.context` arg on `renderForHydration` and `registerComponents` | One env bag threaded through component args. See `agent-docs/hydration.md`. |
+| `key={id}` on a list item | `items.mapWithKey('id', item => t.li(...))` | Key lives on the source, not the rendered tag. |
+| `<Child>{children}</Child>` | `function child({ children }) { return t.div(children) }` | "Children" is just another prop holding `Content`. |
+| Controlled `<input value={v} onChange={e => setV(...)} />` | `t.input({ prop: { value: v }, oninput: e => v.set(e.target.value) })` | `prop:` writes the DOM property. HTML `value` only sets default. |
+| `{cond && <Foo />}` inside JSX | `cond && t.div(...)` directly in a content array | `false` is silently dropped from content. |
+| `{items.map(i => <Li />)}` | `items.map(i => t.li(...))` for static, `signal.mapWithKey(...)` for reactive | Use `mapWithKey` when the source is a signal. |
+| `<Fragment>` / `<>` | Plain JS array | Arrays are auto-flattened in content. |
+| `React.Suspense` | Not built in. Swap a `view` signal in and out of a spinner. | See `agent-docs/reactive.md` → Loading state. |
+| `React.memo` / prop-identity cutoffs | Not applicable | Reactivity is per-signal. Only bindings that read a changed signal update. |
+| `useReducer` | Pattern over `signal` | See `agent-docs/recipes.md` → useReducer. |
+| `useId` | Pattern over a module-scope counter | See `agent-docs/recipes.md` → useId. |
+
+### Svelte → Kensington
+
+| Svelte | Kensington | Note |
+|---|---|---|
+| `<script>let x = 0;</script>` with `{x}` in markup | `const x = signal(0)`, then `[x]` in content | Signals are explicit. Assignment-as-reactivity is not. |
+| `$: doubled = x * 2` | `const doubled = computed(() => x.get() * 2)` | |
+| `$: { console.log(x) }` | `effect(() => { console.log(x.get()) })` | |
+| `{#each items as item (item.id)}` | `items.mapWithKey('id', item => ...)` | |
+| `{#if cond} ... {/if}` | `cond && t.div(...)` for static, a transform for reactive `cond` | |
+| `onMount(() => {...})` / `onDestroy` | `addConnectedCallback` / `addDisconnectedCallback` | |
+| `bind:value` on `<input>` | `prop: { value: sig }` plus `oninput: e => sig.set(e.target.value)` | No two-way binding sugar. |
+| `<slot />` | A prop holding `Content` (`children`, `header`, etc.) | |
+| `writable` / `derived` stores | `signal` / `computed` | Same role. No `$` prefix. |
+| `setContext` / `getContext` | `options.context` arg | See `agent-docs/hydration.md`. |
+| `tick()` | `await Promise.resolve()` | Reactive flush runs on the same microtask queue. |
+
+## Decision trees
+
+Five common forks. Each picks the right API in three lines.
+
+**`signal()` or plain `let`?**
+- Value bound anywhere in the DOM (content, attribute, or `prop`)? Use `signal()`.
+- Value only read inside event handlers, never bound to the DOM? Plain `let` is fine.
+- In doubt, use `signal()`. Cost is one allocation. Benefit is being reactivity-ready.
+
+**Bind via HTML attribute or via `prop:`?**
+- Form element with user-mutable state (`<input>`, `<textarea>`, `<select>`, `<details>`, `<dialog>`)? Use `prop: { value: ... }`, `prop: { checked: ... }`, etc.
+- Anything else (`class`, `style`, `id`, `href`, `aria-*`, `data-*`, custom)? Use the top-level option key.
+- Why. HTML attributes set defaults, DOM properties reflect live state. After user interaction the two diverge.
+
+**Wrap in `computed()` or inline a signal?**
+- Bound directly as content or as an attribute value? Inline. `t.p([count])` and `t.div({ class: theme })` subscribe without `computed`.
+- Derived value reused across multiple bindings? Use `computed()` once and share the result.
+- Inside a function passed to a callback (a content slot, `class:` array entry, transform fn)? Use `computed()` or `.transform()`. Plain values inside callbacks are not reactive.
+
+**`mapWithKey` or `.map()`?**
+- Source array is a signal AND row identity matters (focus, local state, animations, expensive child build)? Use `signal.mapWithKey('id', fn)`.
+- Source array is a signal but rows are stateless and cheap to rebuild? Either works. `mapWithKey` is still safer.
+- Source array is a plain JS array (built once)? Use `.map()`.
+
+**`effect()` or `addConnectedCallback`?**
+- Side effect tied to a DOM element's mount and unmount (timer, observer, third-party widget init)? Use `addConnectedCallback` and `addDisconnectedCallback`.
+- Side effect that should re-run when signals change (syncing to localStorage, logging)? Use `effect()`. Capture the return and call `.stop()` in a disconnect callback if it should not outlive the element.
+- Both apply? `addConnectedCallback(() => { const e = effect(...); return e.stop; })`. The pattern composes.
+
+**Does this `signal()` / `computed()` / `.transform()` need a key?**
+- Does the call's call-stack ever pass through `computed(fn)`, `signal.transform(fn)`, `signal.mapWithKey(key, fn)`, or `effect(fn)`? Pass a key.
+- Module-scope or inside a one-shot component function with no surrounding reactive callback? No key needed.
+- Unsure? Pass a key. Safe everywhere. Outside a reactive scope the key is a no-op.
+
+## Task lookup
+
+Granular "I want to…" → exact subdoc section. Use this to go straight to the right spot without reading a whole subdoc.
+
+| I want to… | Read |
+|---|---|
+| Create a signal, computed, or effect | Quick examples below, or `reactive.md` → Signal API |
+| Bind a signal to text content or an HTML attribute | Quick examples below |
+| Bind `<input>`, `<textarea>`, or `<select>` value to a signal | `reactive.md` → DOM properties with prop |
+| Inline-edit cell (click-to-edit, commit on blur/Enter, cursor preserved) | `reactive.md` → DOM properties with prop → Spreadsheet-style inline-edit cell |
+| Render a reactive keyed list | `reactive.md` → Keyed lists |
+| Use a signal that holds `{ tabs: [...] }` or any envelope shape as a list source | `reactive.md` → Keyed lists → "envelope around a list" |
+| Drive per-row state from outside the row (search handler, drag handler) | `reactive.md` → Updating a row after it's been cached |
+| Run a timer, observer, or side effect tied to an element's lifetime | `reactive.md` → addConnectedCallback / addDisconnectedCallback |
+| Make drag-and-drop reordering preserve signal effects | `reactive.md` → Cleanup → `persist: true` |
+| Show a loading spinner while data fetches | `reactive.md` → Loading state |
+| Debug reactive state with a dev panel | `reactive.md` → DevTools |
+| Fix a `signal-in-computed` or `transform-in-computed` warning | `reactive.md` → Reactive primitives inside a computed need a key |
+| Prevent a lazy-registry signal from being created inside a computed | `reactive.md` → Lazy registries called from reactive callbacks |
+| Server-render + client takeover, basic setup | `hydration.md` → Hydration |
+| Wrap `renderForHydration` output in a full HTML document | `hydration.md` → Full page template |
+| Thread transport, userId, or other env into a shared component | `hydration.md` → Threading external dependencies → Pattern 0. options.context |
+| Register multiple components or multiple mounts on one page | `hydration.md` → Full page template (multiple-mount example) |
+| HMR hot-swap during development | `hydration.md` → HMR |
+| SSR on Cloudflare Workers or Deno Deploy (no per-request module state) | `hydration.md` → Known tradeoffs → Stateless edge runtimes |
+| Share a signal value across all connected browsers | `live-signals.md` → Server entry |
+| Append to a shared list atomically (no race with concurrent writers) | `live-signals.md` → Atomic updates with .set(fn) |
+| Restrict which clients can write to a signal | `live-signals.md` → canRead / canWrite |
+| Presence: add this tab on connect, remove it on close | `live-signals.md` → Joining a presence list on connect |
+| Keep a live signal subscribed during conditional rendering or tab-swap | `live-signals.md` → The auto-unsubscribe trap |
+| Group per-entity signals (auction, document, room) | `live-signals.md` → Organizing per-entity signals with a domain factory |
+| Wire reconnect, pauseSend, resumeSend buttons | `live-signals.md` → Transport lifecycle control |
+| Bundle `kensington/live` client-side with esbuild | `live-signals.md` → Bundler setup (esbuild) |
+| Use a web component library (Shoelace, Web Awesome, etc.) | `custom-elements.md` |
+| CSS-in-JS with pseudo-selectors and media queries | `recipes.md` → styled |
+| Signal backed by localStorage | `recipes.md` → useLocalStorage |
+| Debounced signal | `recipes.md` → useDebounce |
+| Form with validation errors | `recipes.md` → useForm, or `examples.md` → Form with validation errors |
+| Access a live DOM element (React-style ref) | `recipes.md` → useRef |
+| Open a modal dialog with focus trap and Escape-to-close | `recipes.md` → modal |
+| Auto-focus an input on mount | `recipes.md` → useAutoFocus |
+| Trap focus inside a panel | `recipes.md` → useFocusTrap |
+| Bootstrap a new project end-to-end | `starter.md` |
+| Hash-router SPA | `examples.md` → Hash router |
+| Sortable table | `examples.md` → Sortable table |
+
 ## Warning index
 
-Each runtime warning ID maps to the section that explains it. Most live in `agent-docs/reactive.md`.
+Each runtime warning ID gets a one-line fix sketch and a pointer to the section that explains the underlying rule. Most explanations live in `agent-docs/reactive.md`.
 
-| ID | When it fires | See |
-|---|---|---|
-| `async-loop` | An effect's signal write triggers more flushes than the cycle limit allows | `agent-docs/reactive.md` → Reactive pitfalls |
-| `sync-loop` | The same effect re-queues itself in a single flush | `agent-docs/reactive.md` → Reactive pitfalls |
-| `set-in-effect` | A signal is read with `.get()` and written with `.set()` in the same effect run | `agent-docs/reactive.md` → Do not read and write the same signal in the same effect or computed run |
-| `set-in-computed` | `.set()` was called inside a computed body | `agent-docs/reactive.md` → Do not call `.set()` inside a `computed` body |
-| `set-during-ssr` | `.set()` was called inside `renderForHydration` | `agent-docs/hydration.md` → Server-render functions must be read-only over signals |
-| `signal-in-computed` | `signal()` called inside a computed without a key | `agent-docs/reactive.md` → Reactive primitives inside a computed need a key |
-| `signal-in-effect` | `signal()` called inside an effect (recreated each run) | `agent-docs/reactive.md` → Reactive primitives inside a computed need a key |
-| `transform-in-computed` | `.transform()` called inside a computed without a key | `agent-docs/reactive.md` → Reactive primitives inside a computed need a key |
-| `computed-in-computed` | `computed()` called inside a computed without a key | `agent-docs/reactive.md` → Do not create computed signals inside a computed or transform callback without a key |
-| `computed-in-effect` | `computed()` called inside an effect (orphaned each run) | `agent-docs/reactive.md` → Do not call `effect()` from inside a function that gets called from a `.map()`, `.transform()`, or `computed()` callback |
-| `effect-in-computed` | `effect()` called inside a computed (orphaned each run) | `agent-docs/reactive.md` → same section as above |
-| `effect-in-effect` | `effect()` called inside another effect | `agent-docs/reactive.md` → same section as above |
-| `duplicate-keyed-signal` | Two `signal(initial, key)` calls with the same key in one computed run | `agent-docs/reactive.md` → Reactive primitives inside a computed need a key |
-| `duplicate-keyed-computed` | Two `computed(fn, key)` calls with the same key in one computed run | `agent-docs/reactive.md` → Reactive primitives inside a computed need a key |
-| `out-of-scope-reactive-reference` | A keyed signal or computed is consumed from outside its owning scope | `agent-docs/reactive.md` → Addressing per-row state from outside the row |
-| `mapwithkey-in-reactive` | `mapWithKey` called inside an arbitrary computed or effect | `agent-docs/reactive.md` → Keyed lists |
-| `mapwithkey-duplicate-key` | Two items in a `mapWithKey` source share a key | `agent-docs/reactive.md` → Keyed lists |
+| ID | When it fires | Fix | See |
+|---|---|---|---|
+| `async-loop` | An effect's signal write triggers more flushes than the cycle limit allows | Break the cycle. Do not write a signal the effect reads, or guard the write with a value-equality check | `reactive.md` → Reactive pitfalls |
+| `sync-loop` | The same effect re-queues itself in a single flush | Same as above. Read the signal once at the top, derive locally, then guard the write | `reactive.md` → Reactive pitfalls |
+| `set-in-effect` | A signal is both read with `.get()` and written with `.set()` in the same effect run | Read once at the top into a local. Compute the new value. Only call `.set()` when it differs | `reactive.md` → Do not read and write the same signal in the same effect or computed run |
+| `set-in-computed` | `.set()` was called inside a computed body | `computed` is for derivation only. Move the write to an `effect` or event handler | `reactive.md` → Do not call `.set()` inside a `computed` body |
+| `set-during-ssr` | `.set()` was called inside `renderForHydration` | SSR is read-only over signals. Push canonical values via `liveServer.set(name, value)` outside any render path | `hydration.md` → Server-render functions must be read-only over signals |
+| `signal-in-computed` | `signal()` called inside a computed without a key | Pass a key as the second arg, for example `signal(initial, 'open')`, or `signal(initial, \`open-${item.id}\`)` inside `mapWithKey` | `reactive.md` → Reactive primitives inside a computed need a key |
+| `signal-in-effect` | `signal()` called inside an effect (recreated each run) | Move the `signal()` declaration outside the effect. Effects re-run, signals should not | `reactive.md` → Reactive primitives inside a computed need a key |
+| `transform-in-computed` | `.transform()` called inside a computed without a key | Pass a key as the second arg, for example `sig.transform(fn, 'label')` | `reactive.md` → Reactive primitives inside a computed need a key |
+| `computed-in-computed` | `computed()` called inside a computed without a key | Pass a key as the second arg, for example `computed(fn, 'total')` | `reactive.md` → Do not create computed signals inside a computed or transform callback without a key |
+| `computed-in-effect` | `computed()` called inside an effect (orphaned each run) | Move the `computed()` declaration outside the effect. Effects act, computeds derive | `reactive.md` → Do not call `effect()` from inside a function called from a reactive callback |
+| `effect-in-computed` | `effect()` called inside a computed (orphaned each run) | Move the `effect()` declaration out of the computed body. Computeds are for derivation; side effects go in `effect`, `addConnectedCallback`, or event handlers | `reactive.md` → same section |
+| `effect-in-effect` | `effect()` called inside another effect | Hoist the inner `effect()` out. If cleanup is needed, store its `.stop` and call it from the outer scope | `reactive.md` → same section |
+| `duplicate-keyed-signal` | Two `signal(initial, key)` calls with the same key in one computed run | Make the key unique per call site. Interpolate the item id, for example `signal(false, \`open-${item.id}\`)` | `reactive.md` → Reactive primitives inside a computed need a key |
+| `duplicate-keyed-computed` | Two `computed(fn, key)` calls with the same key in one computed run | Make the key unique per call site. Same fix as above | `reactive.md` → Reactive primitives inside a computed need a key |
+| `out-of-scope-reactive-reference` | A keyed signal or computed is consumed from outside its owning scope | Read the keyed primitive inside its own scope. To address a row from outside, use the documented row-handle pattern | `reactive.md` → Addressing per-row state from outside the row |
+| `mapwithkey-in-reactive` | `mapWithKey` called inside a computed or effect | Call `mapWithKey` at the binding site (directly in content or in an attribute slot), not from inside a reactive callback | `reactive.md` → Keyed lists |
+| `mapwithkey-duplicate-key` | Two items in a `mapWithKey` source share a key | Ensure the key field is unique per item. If the source has natural duplicates, use a stable composite key | `reactive.md` → Keyed lists |
 
 Full runnable example apps live in the `examples/` directory of the GitHub repo (https://github.com/ryanlsimms/kensington/tree/master/examples). Browseable docs at https://kensingtonjs.com.
+
+## Quick examples
+
+Short inline examples for the most common patterns. For the full rule set, pitfall catalogue, and edge cases, follow the link at the end of each example.
+
+### Reactive text and attributes
+
+```javascript
+import { t, signal, computed } from 'kensington';
+
+const count = signal(0);
+const label = computed(() => count.get() === 1 ? 'item' : 'items');
+const cls = count.transform(n => n > 0 ? 'badge badge--active' : 'badge', 'cls');
+
+const el = t.div([
+  t.button({ onclick: () => count.set(n => n + 1) }, 'Add'),
+  t.p({ class: cls }, [count, ' ', label]),  // signal as content updates live
+]).toElement();
+document.body.append(el);
+```
+
+Signals can appear anywhere in content or as any attribute value. `.get()` inside a `computed` or `.transform()` subscribes so it re-runs when the signal changes. See `agent-docs/reactive.md` → Signal API for the full API including `.stop()`, `.value` (escape hatch), and TypeScript inference traps.
+
+### Controlled input
+
+```javascript
+const query = signal('');
+
+t.div([
+  t.input({
+    type: 'search',
+    prop: { value: query },            // DOM property binding — not the value HTML attribute
+    oninput: e => query.set(e.target.value),
+  }),
+  t.p(computed(() => `You typed: ${query.get()}`)),
+]).toElement();
+```
+
+Use `prop: { value: sig }` to bind a signal to the live `el.value`. The HTML `value` attribute only sets the initial default; `prop` writes to the DOM property directly on every signal change. For number inputs, checkboxes, and `<select>`, see `agent-docs/reactive.md` → DOM properties with prop.
+
+### Conditional rendering
+
+```javascript
+const loggedIn = signal(false);
+
+// A transform that returns a tag or null swaps the subtree in place.
+t.nav([
+  loggedIn.transform(v =>
+    v ? t.button({ onclick: () => loggedIn.set(false) }, 'Log out')
+      : t.button({ onclick: () => loggedIn.set(true) }, 'Log in'),
+    'login-btn',  // key required: this transform runs inside a reactive context
+  ),
+]).toElement();
+
+// A signal holding a Tag or null also works directly as content.
+const view = signal(t.p({ class: 'spinner' }, 'Loading…'));
+fetch('/api/data')
+  .then(r => r.json())
+  .then(data => { view.set(t.p(data.message)); });
+t.div(view).toElement();
+```
+
+For conditional subtrees that themselves contain a `mapWithKey`, the display-toggle pattern is faster than a null-swap because it keeps the keyed cache warm. See `agent-docs/reactive.md` → Keyed lists → Conditional subtrees.
+
+### Reactive keyed list
+
+```javascript
+const items = signal([{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }]);
+
+const list = t.ul(items.mapWithKey('id', item => t.li(item.name)));
+list.toElement();
+
+// Add an item (new reference triggers reconciliation).
+items.set(prev => [...prev, { id: 3, name: 'Carol' }]);
+// Remove.
+items.set(prev => prev.filter(i => i.id !== 2));
+```
+
+`mapWithKey` caches the tag per key. Unchanged rows are not rebuilt; the reconciler reuses their DOM. If the signal holds an envelope shape like `{ tabs: [...] }` rather than a plain array, project first: `presence.transform(p => p.tabs, 'tabs').mapWithKey('id', ...)`. See `agent-docs/reactive.md` → Keyed lists for the full rule, per-row local state, and how to drive rows from outside the list.
+
+### Effect with cleanup
+
+```javascript
+const count = signal(0);
+const panel = t.div(count);
+
+let id;
+panel.addConnectedCallback(() => {
+  id = setInterval(() => count.set(n => n + 1), 1000);
+});
+panel.addDisconnectedCallback(() => {
+  clearInterval(id);
+});
+document.body.append(panel.toElement());
+```
+
+`addConnectedCallback` is for any side effect whose lifetime matches a DOM element: timers, `IntersectionObserver`, `ResizeObserver`, third-party widget init, `effect()` calls. Always pair with `addDisconnectedCallback`. See `agent-docs/reactive.md` → addConnectedCallback / addDisconnectedCallback.
+
+### Static server-rendered page
+
+```javascript
+import express from 'express';
+import { t } from 'kensington';
+
+const app = express();
+
+app.get('/', (req, res) => {
+  res.type('html').send(
+    t.htmlWithDocType({ lang: 'en' }, [
+      t.head([
+        t.meta({ charset: 'utf-8' }),
+        t.meta({ name: 'viewport', content: 'width=device-width, initial-scale=1' }),
+        t.title('My App'),
+        t.link({ rel: 'stylesheet', href: '/style.css' }),
+      ]),
+      t.body(t.main([
+        t.h1('Hello'),
+        t.p('Rendered on the server.'),
+      ])),
+    ]).toString()
+  );
+});
+
+app.listen(3000);
+```
+
+For a multi-route app, factor the `htmlWithDocType` wrapper into a `layout(title, content)` function. See `agent-docs/frameworks.md` and `agent-docs/recipes.md` → Layout.
+
+### SSR + client takeover
+
+```javascript
+// shared/counter.js — same file runs unchanged on server and client
+import { t, signal } from 'kensington';
+
+export function counter({ initial }) {
+  const count = signal(initial);
+  return t.div([
+    t.button({ onclick: () => count.set(n => n + 1) }, '+'),
+    t.p([count, ' clicks']),
+  ]);
+}
+```
+
+```javascript
+// server.js — route handler
+import { renderForHydration, t } from 'kensington';
+import { counter } from './shared/counter.js';
+
+app.get('/', (req, res) => {
+  // renderForHydration returns a fragment (component + state block), NOT a full document.
+  // Always wrap it in htmlWithDocType with a script[type="module"] for client takeover.
+  const component = renderForHydration(counter, { initial: 0 }, 'counter');
+  res.type('html').send(
+    t.htmlWithDocType({ lang: 'en' }, [
+      t.head([t.meta({ charset: 'utf-8' }), t.title('Counter')]),
+      t.body([
+        component,
+        t.script({ type: 'module', src: '/client.js' }),
+      ]),
+    ]).toString()
+  );
+});
+```
+
+```javascript
+// client.js
+import { registerComponents } from 'kensington';
+import { counter } from './shared/counter.js';
+
+registerComponents({ counter });
+```
+
+For threading env (transport, userId) into the component, multiple components on one page, HMR, or edge-runtime SSR, see `agent-docs/hydration.md`.
+
+### Live signal (shared across browsers)
+
+```javascript
+// shared/counter.js — runs on both server and client
+import { t } from 'kensington';
+import { liveSignal } from 'kensington/live';
+
+export function counter() {
+  const count = liveSignal(0, 'counter');  // same value on all connected browsers
+  return t.div([
+    t.button({ onclick: () => count.set(n => n + 1) }, '+'),
+    t.p([count, ' clicks']),
+  ]);
+}
+```
+
+```javascript
+// server.js — add before server.listen
+import http from 'node:http';
+import { liveServer } from 'kensington/live';
+
+const live = await liveServer({ persistence: { kind: 'memory' } });
+const server = http.createServer(app);
+await live.attach(server);
+server.listen(3000);
+```
+
+```javascript
+// client.js — call before registerComponents
+import { connectLive } from 'kensington/live';
+connectLive();
+registerComponents({ counter });
+```
+
+Module-scope `liveSignal` declarations are safe before `connectLive` / `liveServer` — the placeholder upgrades automatically. For `canWrite`, presence, atomic `.set(fn)`, bundler setup (esbuild), and the auto-unsubscribe trap, see `agent-docs/live-signals.md`.
 
 ## Imports
 
@@ -425,6 +831,8 @@ registerComponents({ appPage }, { context: env });
 
 ### What not to do
 
+- **Do not return `htmlWithDocType` (or any full document) from a component function.** `renderForHydration` stamps a `data-k-mount-target` attribute on the component's root opening tag. That injection fails if the serialized output starts with `<!DOCTYPE` instead of an element tag, and the framework throws with a clear message. The component must return a fragment — `t.div`, `t.main`, `t.section`, etc. Build the full HTML document in the server route and embed `renderForHydration`'s `LiteralTag` output inside `t.body(...)`. Example: `t.body([ component, t.script({ src: '/client.js', type: 'module' }) ])`.
+- **Do not read browser globals (`localStorage`, `sessionStorage`, `location`, `document`, etc.) inside component functions.** Component functions run on the server during `renderForHydration` where those globals don't exist. Read them in the env factory (`makeClientEnv`) and pass the values in through `context`. The component stays pure; the env factory owns all environment access.
 - **Do not pass a runtime bag through `state`.** Signals serialized through `JSON.stringify` lose their methods; the framework fires `renderForHydration "..." N values — Signal will lose its methods` to catch this.
 - **Do not use a `setEnv`/`getEnv` singleton.** Module-mutable state masquerading as a context system. Only works because SSR rendering happens to be synchronous today; one async sneak-in cross-contaminates concurrent requests.
 - **Do not wrap the registered fn in a closure to inject env.** `renderForHydration(state => appPage(env, state), state, 'appPage')` is awkward at the call site and the second arg `context` exists to make it unnecessary.
@@ -437,13 +845,26 @@ registerComponents({ appPage }, { context: env });
 
 ## Common mistakes to avoid
 
+General Kensington mistakes.
+
 - Do not use JSX or tagged template literals. Kensington uses method calls only
 - Do not pass content to void elements (`input`, `br`, `img`, `hr`, `meta`, `link`). They take options only, no content
 - Do not import `t` as a default import . `t` is a named export; the default export is the `Kensington` class
 - Do not skip `.toString()` when passing to HTTP framework response methods
 - Do not use `onclick="string"` for DOM usage. Pass a function; string handlers only serialize in `.toString()`
-- For drag-and-drop sortable lists: add `persist: true` to the item tag, not the container. Without it, `insertBefore` reorders fire a remove event that permanently stops the item's signal effects (class updates, checked state, etc. all break silently after the first drag). `persist: true` causes effects to pause on removal and resume on re-insertion instead.
-- For per-row local state inside a list mapping, use the keyed form: `signal(initial, item.id)` inside the surrounding `computed` callback returns the same instance per key across re-runs. Without a key, the DOM node is replaced on every outer re-render (focus, scroll, input value, and selection are copied over, but local signal state resets to the initial value).
+- For drag-and-drop sortable lists, add `persist: true` to the item tag, not the container. Without it, `insertBefore` reorders fire a remove event that permanently stops the item's signal effects (class updates, checked state, etc. all break silently after the first drag). `persist: true` causes effects to pause on removal and resume on re-insertion instead.
+- For per-row local state inside a list mapping, use the keyed form. `signal(initial, item.id)` inside the surrounding `computed` callback returns the same instance per key across re-runs. Without a key, the DOM node is replaced on every outer re-render (focus, scroll, input value, and selection are copied over, but local signal state resets to the initial value).
+
+Coming from React or Svelte. These traps catch agents whose muscle memory is built on a different execution model.
+
+- **The component function does not re-run.** Kensington has no render loop. A component runs once at mount, and signals declared in its body are stable for the tag's lifetime. Do not put logic in the function body that you expect to re-execute when state changes. Put it in a `computed`, an `effect`, or an event handler.
+- **`effect()` does not support a cleanup return value.** Unlike React's `useEffect`, returning a function from the effect body is silently ignored. Intervals, subscriptions, and other resources allocated inside the callback are not cleaned up. For teardown tied to a component's lifetime, use `addConnectedCallback` and `addDisconnectedCallback` on the surrounding tag, or store the return handle from `effect()` and call its `.stop()` in a disconnect callback.
+- **Do not early-return from a component to conditionally skip rendering.** A component must return one `ContentTag`. For conditional UI, use `null`, `false`, `''`, `undefined`, or `true` items inside a content array (they drop silently), or a `signal` / `computed` / `.transform()` that swaps the subtree in place.
+- **Do not call `signal()` inside a callback that re-runs.** React's `useState(initial)` is hook-tracked across renders. An unkeyed `signal(0)` inside a `computed` body, a `.transform()` callback, or a `mapWithKey` mapFn allocates a new instance on every run and loses its value. Pass a key (`signal(0, 'open')`) or hoist the declaration into the surrounding non-reactive scope.
+- **Do not rely on prop-identity comparisons.** There is no `React.memo`, no `===` cutoff on prop changes, no Svelte assignment-tracking. Reactivity is per-signal. Only the bindings that read a changed signal update. Pass signals (not snapshots) when downstream code needs reactivity.
+- **DOM access is not a ref object.** There is no ref that fills in after mount. Get the live element by capturing the return of the tag's `toElement()`, or via `addConnectedCallback(el => { ... })` where `el` is the live DOM node passed in. For a stable handle inside a component, declare a `let ref;` outside the tag and assign in the connect callback.
+- **Two-way binding is two one-way bindings.** `bind:value` / `v-model` style does not exist. Pair `prop: { value: sig }` with `oninput: e => sig.set(e.target.value)` (or `onchange` for selects and checkboxes).
+- **No `setState` batching to think about.** All signal writes in a synchronous block are coalesced into one flush automatically. Do not reach for `unstable_batchedUpdates` or `tick()` style helpers.
 
 ## HTML to Kensington CLI
 

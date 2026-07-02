@@ -987,11 +987,11 @@ describe('kensington/live canWrite: server-side enforcement', () => {
       await handlers.open(fakeWs);
       handlers.message(fakeWs, JSON.stringify({ type: 'subscribe', name: 'guarded:counter' }));
       received.length = 0;
-      // First write: prev is undefined, next is 5. 5 > -1 → allow.
+      // First write: prev is the initial value 0 (no registry entry yet), next is 5. 5 > 0 → allow.
       handlers.message(fakeWs, JSON.stringify({ type: 'set', name: 'guarded:counter', value: 5, opId: 1 }));
       assert.strictEqual(live.get('guarded:counter'), 5);
       assert.strictEqual(calls.length, 1);
-      assert.strictEqual(calls[0].prev, undefined);
+      assert.strictEqual(calls[0].prev, 0);
       assert.strictEqual(calls[0].next, 5);
       assert.deepStrictEqual(calls[0].ctx, { userId: 'ryan' });
       // Second write tries to go backwards. Rejected.
@@ -1156,6 +1156,45 @@ describe('kensington/live CAS (compare-and-swap) writes', () => {
       assert.strictEqual(fail.reason, 'forbidden');
       assert.strictEqual(fail.value, 'yes');
       assert.strictEqual(live.get('direct:y'), 'yes');
+    } finally {
+      _clearTransport();
+      live.close();
+    }
+  });
+
+  it('MSG_SNAPSHOT uses the declared initial value when the registry has no entry', async () => {
+    const live = await liveServer({ persistence: { kind: 'memory' } });
+    try {
+      liveSignal('hello', 'fresh:name');
+      const { handlers, fakeWs, received } = makeFakeSocket(live);
+      await handlers.open(fakeWs);
+      handlers.message(fakeWs, JSON.stringify({ type: 'subscribe', name: 'fresh:name' }));
+      const snap = received.find(m => m.type === 'snapshot');
+      assert.ok(snap, 'expected snapshot');
+      assert.strictEqual(snap.values['fresh:name'], 'hello');
+    } finally {
+      _clearTransport();
+      live.close();
+    }
+  });
+
+  it('canWrite prev is the declared initial value when the registry has no entry', async () => {
+    const live = await liveServer({ persistence: { kind: 'memory' } });
+    try {
+      const prevValues = [];
+      liveSignal(null, 'nullable:seat', {
+        canWrite: (_name, _ctx, { prev, next }) => {
+          prevValues.push(prev);
+          return prev === null && typeof next === 'string';
+        },
+      });
+      const { handlers, fakeWs, received } = makeFakeSocket(live);
+      await handlers.open(fakeWs);
+      handlers.message(fakeWs, JSON.stringify({ type: 'subscribe', name: 'nullable:seat' }));
+      received.length = 0;
+      handlers.message(fakeWs, JSON.stringify({ type: 'set', name: 'nullable:seat', value: 'user-a', opId: 1 }));
+      assert.strictEqual(prevValues[0], null);
+      assert.strictEqual(live.get('nullable:seat'), 'user-a');
     } finally {
       _clearTransport();
       live.close();

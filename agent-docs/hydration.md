@@ -2,6 +2,22 @@
 
 Subdoc of the root `AGENTS.md`. Read this when the app uses server-side rendering plus client takeover (`renderForHydration` / `registerComponents`), or when wiring `kensington/vite` for hot-module reload. **Client-only SPAs do not need any of this.** The root file does not cover this material.
 
+## Summary. Read this first
+
+### When to read which section
+
+| Task | Section |
+|---|---|
+| Basic SSR + client takeover setup | Hydration |
+| Wrap `renderForHydration` output in a full HTML document | Full page template |
+| Multiple components or multiple mounts on one page | Full page template (see multiple-mounts example) |
+| Thread transport, userId, or other env into a component | Threading external dependencies → Pattern 0. options.context |
+| HMR hot-swap during development | HMR (kensington/vite) |
+| Client-only state (localStorage, draft, random) in an SSR component | Known tradeoffs → Client-only initial state |
+| Edge runtime (Cloudflare Workers, Deno Deploy) — no per-request module state | Known tradeoffs → Stateless edge runtimes |
+| Server and client render visually-identical but structurally-different subtrees | Known tradeoffs → Asymmetric server / client renderers |
+| `fn.name` is empty or minified, component not found on client | Known tradeoffs → fn.name fragility |
+
 ## Hydration
 
 Hydration is the SSR-then-take-over story: the server renders HTML with `renderForHydration`, the client takes over with `registerComponents`. **Client-only SPAs do not need any of this.** If the server only serves a static shell (or you have no server at all, e.g. a PWA loaded from a service worker cache), build the page in the browser with `tagInstance.toElement()` and append it to `document.body`. `renderForHydration` and `registerComponents` are for the SSR-plus-takeover case only. The Hash router recipe in `agent-docs/examples.md` is the canonical client-only routing pattern.
@@ -41,6 +57,37 @@ import { commentCount } from './components/comment-count.js';
 
 registerComponents({ commentCount });
 ```
+
+### Full page template
+
+`renderForHydration` returns a fragment — the component's HTML plus a `<script>` state block — not a full document. The server route must wrap it in a complete HTML document and include the client bundle as a `<script type="module">`.
+
+```javascript
+// server.js — complete route handler
+import { renderForHydration, t } from 'kensington';
+import { myComponent } from './shared/my-component.js';
+
+app.get('/', (req, res) => {
+  const component = renderForHydration(myComponent, { /* state */ }, 'myComponent');
+
+  const page = t.htmlWithDocType({ lang: 'en' }, [
+    t.head([
+      t.meta({ charset: 'utf-8' }),
+      t.meta({ name: 'viewport', content: 'width=device-width, initial-scale=1' }),
+      t.title('My App'),
+      t.link({ rel: 'stylesheet', href: '/style.css' }),
+    ]),
+    t.body([
+      component,
+      t.script({ type: 'module', src: '/client.js' }),
+    ]),
+  ]);
+
+  res.type('html').send(page.toString());
+});
+```
+
+`registerComponents` runs when `client.js` loads. It walks the page, finds the mount marker the server embedded, and hands off to the client component. Without the `<script type="module">` tag, no takeover happens and the page stays static.
 
 The key in `registerComponents` must match the name passed to `renderForHydration`. Pass an explicit third argument whenever the call site may be reached by the browser (component functions are renamed by minifiers) or when using anonymous functions or aliased imports: `renderForHydration(fn, state, 'myName')`. Server-side calls where the code is never minified can rely on `fn.name`, but the explicit form is always safe.
 

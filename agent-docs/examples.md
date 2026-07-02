@@ -2,6 +2,38 @@
 
 Subdoc of the root AGENTS.md. Read this for runnable patterns: forms, data-driven components, pagination, fragments, caching, inline styles, Alpine.js, SVG, MathML, htmx, hydration forms, TypeScript design system, and ten reactive-data worked examples (counter, live filter, keyed todo, form validation, hydrated like button, sortable table, static-element reactivity, accordion, context, hash router).
 
+### Section index
+
+| Example | Section heading |
+|---|---|
+| Form with POST and field-level errors | Form with validation errors |
+| Data-driven list from a server array | Data-driven component |
+| Paginated list with prev/next | Pagination |
+| Return multiple sibling elements from one function | Returning fragments |
+| Share a tag instance across renders | Caching and reuse |
+| Dynamic class list and inline style object | Inline styles and dynamic classes |
+| Alpine.js sprinkled on static HTML | Alpine.js |
+| SVG chart or icon | SVG |
+| Embed server-fetched JSON in a `<script>` block | Embedding server data in the page |
+| htmx-powered live search | htmx live search |
+| SSR form with server-side validation that re-renders with errors | Hydration. Form with server-side validation |
+| Direct DOM manipulation alongside kensington | Browser DOM usage |
+| TypeScript. Reactive prop types with `Reactive<T>` | TypeScript. Reactive prop types |
+| Return a signal from a component and share across components | Returning a signal from a component function |
+| TypeScript. Fully typed component signature | TypeScript. Typed components |
+| TypeScript design system with custom elements, htmx, and module augmentation | TypeScript. Design system with custom elements, htmx, and module augmentation |
+| MathML formula rendering | MathML |
+| Reactive counter (the "hello world" of signals) | Reactive data. Counter |
+| Live filter input that narrows a list on keystrokes | Reactive data. Live filter |
+| Keyed todo list with add/remove | Reactive data. Keyed todo list |
+| Form with inline validation messages that appear on blur | Reactive data. Form with live validation |
+| SSR component that hydrates and accepts client-side clicks | Reactive data. Hydrated like button |
+| Sortable table with click-to-sort-by-column | Reactive data. Sortable table |
+| Make pre-existing static DOM nodes reactive | Reactive data. Making static HTML elements reactive |
+| Accordion with per-panel open/close signal | Reactive data. Accordion with per-element signals |
+| createContext provider/consumer pattern | Reactive data. Context |
+| Hash-router SPA with signal-driven route | Reactive data. Hash router as signals |
+
 ### Form with validation errors
 
 ```javascript

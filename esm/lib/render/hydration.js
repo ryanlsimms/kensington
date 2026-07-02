@@ -142,7 +142,15 @@ function withMountTarget(el, id, name) {
   const html = el.toString();
   const injected = html.replace(/^(<[\w-]+)/, `$1 data-k-mount-target="${id}"`);
   if (injected === html) {
-    throw new Error(`renderForHydration "${name}": component returned a value that is not an HTML element`);
+    const doctypeHint = ' The component returned a full HTML document (htmlWithDocType or similar).'
+      + ' Components passed to renderForHydration must return a fragment'
+      + ' (t.div, t.main, t.section, etc.).'
+      + ' Build the full document in the server route and pass renderForHydration\'s'
+      + ' LiteralTag output into t.body(...).';
+    const hint = html.startsWith('<!DOCTYPE') || html.startsWith('<!doctype')
+      ? doctypeHint
+      : ' The component\'s serialized output does not start with an opening tag.';
+    throw new Error(`renderForHydration "${name}": component returned a value that is not an HTML element.${hint}`);
   }
   return injected;
 }
