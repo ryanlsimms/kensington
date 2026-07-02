@@ -1993,7 +1993,7 @@ test('converging two-effect loop does not trigger the loop counter', async ({ pa
 
 test('inComputedFn flag is correctly restored after a nested computed inside a computed', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { signal, computed } = await import(src);
+    const { signal, computed, effect } = await import(src);
     const errors = [];
     const warns = [];
     const origError = console.error;
@@ -2002,11 +2002,15 @@ test('inComputedFn flag is correctly restored after a nested computed inside a c
     console.warn = msg => warns.push(msg);
     const x = signal(0);
     const y = signal(0);
-    computed(() => {
-      computed(() => x.get() * 2);
+    let capturedInner;
+    const outer = computed(() => {
+      capturedInner = computed(() => x.get() * 2);
       y.set(1);
       return x.get();
     });
+    outer.get();
+    const e = effect(() => capturedInner.get());
+    e.stop();
     console.error = origError;
     console.warn = origWarn;
     return { errors, warns };
