@@ -1,6 +1,9 @@
 // kensington/live client transport. Manages one WebSocket per tab, multiplexed
 // across all liveSignal subscriptions. Reconnects with exponential backoff.
-// Buffers outbound writes while disconnected; replays on (re)connect.
+// Buffers outbound writes while disconnected; replays on (re)connect. Also
+// retries immediately on window focus / tab visibility regain, so a
+// connection dropped for a long time (laptop sleep, internet outage) does
+// not leave the user waiting out the remaining backoff delay.
 
 import { signal } from '../lib/reactive/signal.js';
 import { DEFAULT_LIVE_PATH } from './constants.js';
@@ -105,12 +108,19 @@ class ClientTransport {
       url = DEFAULT_LIVE_PATH,
       reconnect = { initialDelay: 250, maxDelay: 30000 },
       onStatus,
-      onFrame,
     } = options;
+    // Internal test/diagnostics hooks. Not part of the public ConnectLiveOptions
+    // type. `onFrame` observes decoded wire frames; frame shapes carry no
+    // cross-version stability guarantee. Kept off the supported surface.
+    const internal = options._internal ?? {};
     this.url = url;
     this.reconnectOpts = reconnect;
+    // reconnect.onFocus (default true) retries immediately when the window
+    // regains focus or the tab becomes visible again, skipping the remaining
+    // backoff delay.
+    this.reconnectOnFocus = reconnect.onFocus !== false;
     this.onStatus = onStatus ?? (() => {});
-    this.onFrame = onFrame ?? null;
+    this.onFrame = internal.onFrame ?? null;
     this.signals = new Map(); // name → Signal
     this.initialValues = new Map(); // name → first-call initial, for duplicate-name detection
     this.persistFlags = new Map(); // name → boolean. First-declaration-wins; sent on every SUBSCRIBE.
@@ -138,13 +148,15 @@ class ClientTransport {
     // manual reconnect().
     this.resetReconnectState();
     this.closed = false;
-    // disconnect() flips this to true; reconnect() clears it. While set, the
-    // close-event auto-reconnect path bails out so the transport stays in
-    // `'disconnected'` indefinitely until the caller invokes reconnect().
-    this.manuallyDisconnected = false;
-    // pauseSend() flips this to true; outgoing writes accumulate in `outbound`
-    // alongside the existing while-disconnected buffer. resumeSend() flushes.
+    // _pauseSend() flips this to true; outgoing writes accumulate in `outbound`
+    // alongside the existing while-disconnected buffer. _resumeSend() flushes.
+    // Internal test hook only.
     this.sendPaused = false;
+    // Set by attachFocusListeners() when running in a browser with
+    // reconnect.onFocus enabled. Tracked so close() knows whether there is
+    // anything to remove.
+    this.focusListenersAttached = false;
+    this.attachFocusListeners();
   }
 
   // Send a single message on an open WebSocket and notify onFrame. Used by
@@ -209,7 +221,6 @@ class ClientTransport {
 
   scheduleReconnect() {
     if (this.closed) { return; }
-    if (this.manuallyDisconnected) { return; }
     const maxRetries = this.reconnectOpts.maxRetries ?? Infinity;
     if (this.reconnectAttempts >= maxRetries) {
       // Exhausted. Stay disconnected until the caller explicitly resets via
@@ -559,22 +570,57 @@ class ClientTransport {
 
   close() {
     this.closed = true;
+    this.detachFocusListeners();
     this.dropSocket();
     // The setStatus('disconnected') transition rejects any in-flight write
     // promises via failPendingWrites, so awaiters don't hang.
     this.setStatus('disconnected');
   }
 
-  // Drop the current WebSocket and stay disconnected. The transport handle
-  // stays alive; subscriptions and the outbound buffer survive, but no
-  // automatic reconnect is scheduled. Call `transport.reconnect()` to come
-  // back. Different from `close()` (terminal) and from `reconnect()` (drops
-  // and immediately re-opens). Use for diagnostic UIs that want to observe
-  // the disconnected state for an unbounded interval, or for paths that
-  // intentionally suspend live traffic without tearing the transport down.
+  // Attach `visibilitychange` and `focus` listeners so a connection dropped
+  // for a long time retries immediately once the user comes back to the
+  // tab, instead of waiting out the remaining backoff delay. No-op outside
+  // a browser (SSR, Node) or when disabled via `reconnect: { onFocus: false }`.
+  attachFocusListeners() {
+    if (!this.reconnectOnFocus) { return; }
+    if (typeof window === 'undefined' || typeof document === 'undefined') { return; }
+    this.onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') { this.retryNowIfStale(); }
+    };
+    this.onWindowFocus = () => { this.retryNowIfStale(); };
+    document.addEventListener('visibilitychange', this.onVisibilityChange);
+    window.addEventListener('focus', this.onWindowFocus);
+    this.focusListenersAttached = true;
+  }
+
+  // Remove the listeners installed by attachFocusListeners(). Called from
+  // close() so a terminal transport doesn't leak listeners on the shared
+  // window/document objects.
+  detachFocusListeners() {
+    if (!this.focusListenersAttached) { return; }
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
+    window.removeEventListener('focus', this.onWindowFocus);
+    this.focusListenersAttached = false;
+  }
+
+  // Called on tab focus/visibility regain. Skips the remaining scheduled
+  // backoff delay and retries right away when the transport is currently
+  // disconnected or waiting on a scheduled retry, including the case where
+  // maxRetries was already exhausted (a returning user is a fresh signal
+  // worth one more attempt). No-op while already connected or mid-handshake.
+  retryNowIfStale() {
+    if (this.closed) { return; }
+    if (this.status.value !== 'disconnected' && this.status.value !== 'reconnecting') { return; }
+    if (this.reconnectTimer !== null) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    this.connect();
+  }
+
   // Close the current WebSocket (if any) and clear any pending reconnect
-  // timer. Shared by disconnect()/reconnect()/close(); each adds its own
-  // status transition and bookkeeping on top.
+  // timer. Shared by reconnect()/close(); each adds its own status transition
+  // and bookkeeping on top.
   dropSocket() {
     if (this.reconnectTimer !== null) {
       clearTimeout(this.reconnectTimer);
@@ -586,24 +632,15 @@ class ClientTransport {
     }
   }
 
-  disconnect() {
-    if (this.closed) { return; }
-    this.manuallyDisconnected = true;
-    this.dropSocket();
-    this.setStatus('disconnected');
-  }
-
   // Drop the current WebSocket and immediately re-open. The transport handle
   // stays alive; subscriptions, pending CAS, and the outbound buffer all
-  // survive. Resets backoff so the reconnect attempts start fast. Clears the
-  // manually-disconnected flag so a prior `disconnect()` is reversed. Useful
-  // for diagnostic UIs ("reconnect now") and for paths that explicitly want
-  // to force a fresh snapshot from the server.
+  // survive. Resets backoff so the reconnect attempts start fast. Useful for
+  // "reconnect now" buttons and for paths that explicitly want to force a
+  // fresh snapshot from the server.
   reconnect() {
     if (this.closed) { return; }
     this.dropSocket();
     this.resetReconnectState();
-    this.manuallyDisconnected = false;
     this.setStatus('reconnecting');
     // Use a microtask so any caller-side state changes in the same tick land
     // before connect() reads them (e.g. updating env.userName before triggering
@@ -611,18 +648,18 @@ class ClientTransport {
     queueMicrotask(() => { if (!this.closed) { this.connect(); } });
   }
 
-  // Buffer outgoing writes until resumeSend() is called. Already-flushed
+  // Buffer outgoing writes until _resumeSend() is called. Already-flushed
   // messages are not retracted; only future send() calls accumulate in the
   // outbound queue. Reads (incoming MSG_UPDATE, MSG_SNAPSHOT) still apply.
-  // Intended for diagnostic harnesses that want to force CAS contention or
-  // observe optimistic-local-apply behavior. The status signal is unchanged
-  // (the socket is still connected); the buffer is application-level.
-  pauseSend() {
+  // Internal test hook to force CAS contention or observe optimistic-local-
+  // apply behavior. The status signal is unchanged (the socket is still
+  // connected); the buffer is application-level.
+  _pauseSend() {
     this.sendPaused = true;
   }
 
   // Resume sending. Flushes the accumulated outbound buffer in FIFO order.
-  resumeSend() {
+  _resumeSend() {
     if (!this.sendPaused) { return; }
     this.sendPaused = false;
     if (this.ws === null || this.ws.readyState !== 1) { return; }

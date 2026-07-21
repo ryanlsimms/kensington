@@ -155,28 +155,6 @@ export interface LiveServer<Ctx = unknown> {
   set(name: string, value: unknown, options?: LiveSetOptions): void;
   /** Return all `[name, value]` pairs whose name starts with the prefix. Useful for SSR state pull-down. */
   list(prefix: string): Array<[string, unknown]>;
-  /**
-   * Resolved persist policy for a name. Returns `true` if the name was
-   * declared persisted, `false` if declared transient, `undefined` if the
-   * name has never been declared. Pair with `list()` to classify entries in
-   * diagnostic UIs without reimplementing the persist convention.
-   */
-  policyOf(name: string): boolean | undefined;
-  /**
-   * Return the context object returned by `onConnect` for a connected socket.
-   * Returns `undefined` if the socket is not tracked (not connected via
-   * `attach()`, or already closed). Use to correlate `wss.clients` entries
-   * with the per-socket identity established during connection without casting
-   * to `any`.
-   *
-   * ```ts
-   * for (const ws of wss.clients) {
-   *   const ctx = live.contextFor(ws);  // typed as Ctx | undefined
-   *   if (ctx) { ... }
-   * }
-   * ```
-   */
-  contextFor(ws: unknown): Ctx | undefined;
   /** Remove a name from the registry, persistence, and any subscribers. */
   delete(name: string): void;
   /** Shut down the live server. Flushes pending persistence writes and closes the database. */

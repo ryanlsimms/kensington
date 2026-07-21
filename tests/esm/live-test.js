@@ -764,38 +764,6 @@ describe('kensington/live server-side subscriptions', () => {
   });
 });
 
-describe('kensington/live policyOf accessor', () => {
-  it('returns true for names declared with persist:true', async () => {
-    const live = await liveServer({ persistence: { kind: 'memory' } });
-    try {
-      live.set('policy:keep', 1, { persist: true });
-      assert.strictEqual(live.policyOf('policy:keep'), true);
-    } finally {
-      _clearTransport();
-      live.close();
-    }
-  });
-  it('returns false for names declared with persist:false (the default)', async () => {
-    const live = await liveServer({ persistence: { kind: 'memory' } });
-    try {
-      liveSignal(0, 'policy:drop'); // default persist:false
-      assert.strictEqual(live.policyOf('policy:drop'), false);
-    } finally {
-      _clearTransport();
-      live.close();
-    }
-  });
-  it('returns undefined for names that have never been declared', async () => {
-    const live = await liveServer({ persistence: { kind: 'memory' } });
-    try {
-      assert.strictEqual(live.policyOf('policy:never-seen'), undefined);
-    } finally {
-      _clearTransport();
-      live.close();
-    }
-  });
-});
-
 describe('kensington/live heartbeatInterval handle property', () => {
   it('exposes the configured interval on the handle', async () => {
     const live = await liveServer({
@@ -857,15 +825,15 @@ describe('kensington/live persist-mismatch warning behavior', () => {
     try {
       // Server declares persist:true.
       live.set('mismatch:check', 42, { persist: true });
-      assert.strictEqual(live.policyOf('mismatch:check'), true);
+      assert.strictEqual(live.get('mismatch:check'), 42);
       // Client subscribe message without persist field (the new client wire format).
       const { handlers, fakeWs } = makeFakeSocket(live);
       await handlers.open(fakeWs);
       handlers.message(fakeWs, JSON.stringify({ type: 'subscribe', name: 'mismatch:check' }));
-      // Should not have warned. The persist policy remains true.
+      // Should not have warned. The persisted value remains intact.
       const mismatchWarning = warns.find(w => w.includes('persist'));
       assert.strictEqual(mismatchWarning, undefined, `unexpected persist warning: ${mismatchWarning}`);
-      assert.strictEqual(live.policyOf('mismatch:check'), true);
+      assert.strictEqual(live.get('mismatch:check'), 42);
     } finally {
       console.warn = orig;
       _clearTransport();
@@ -1284,10 +1252,9 @@ describe('kensington/live liveServer.attach lifecycle', () => {
 });
 
 // End-to-end coverage of ClientTransport's lifecycle methods (reconnect,
-// disconnect, pauseSend, resumeSend, unsubscribe) and the onFrame callback.
-// These tests use connectLive against a real attached liveServer so the
-// full subscribe / message / status pipeline is exercised, not just the
-// in-process registry.
+// unsubscribe) and the internal onFrame hook. These tests use connectLive
+// against a real attached liveServer so the full subscribe / message /
+// status pipeline is exercised, not just the in-process registry.
 describe('kensington/live ClientTransport lifecycle methods', () => {
   async function listen(httpServer) {
     await new Promise(resolve => { httpServer.listen(0, resolve); });
@@ -1330,33 +1297,7 @@ describe('kensington/live ClientTransport lifecycle methods', () => {
     }
   });
 
-  it('disconnect() drops the WebSocket and stays disconnected until reconnect() is called', async () => {
-    const http = await import('node:http');
-    const { connectLive } = await import('kensington/live');
-    const httpServer = http.createServer((_req, res) => res.end('ok'));
-    const live = await liveServer({ persistence: { kind: 'memory' }, heartbeatInterval: false });
-    await live.attach(httpServer);
-    const port = await listen(httpServer);
-    const transport = connectLive({ url: `ws://127.0.0.1:${port}/__kensington/live`, reconnect: { initialDelay: 30, maxDelay: 200 } });
-    try {
-      await waitForStatus(transport, 'connected');
-      transport.disconnect();
-      assert.strictEqual(transport.status.value, 'disconnected');
-      // Wait a few backoff cycles and verify it stays disconnected (no auto-reconnect).
-      await new Promise(resolve => { setTimeout(resolve, 200); });
-      assert.strictEqual(transport.status.value, 'disconnected', 'disconnect() must NOT auto-reconnect');
-      // reconnect() resumes.
-      transport.reconnect();
-      await waitForStatus(transport, 'connected');
-    } finally {
-      transport.close();
-      _clearTransport();
-      live.close();
-      await new Promise(resolve => { httpServer.close(resolve); });
-    }
-  });
-
-  it('pauseSend buffers outgoing writes; resumeSend flushes in FIFO order', async () => {
+  it('_pauseSend buffers outgoing writes; _resumeSend flushes in FIFO order', async () => {
     const http = await import('node:http');
     const { connectLive } = await import('kensington/live');
     const httpServer = http.createServer((_req, res) => res.end('ok'));
@@ -1369,7 +1310,7 @@ describe('kensington/live ClientTransport lifecycle methods', () => {
       // Subscribe to a name; the initial subscribe should flush during connect.
       const sig = liveSignal(0, 'pause:test');
       // Pause sends. Subsequent .set() calls accumulate in the outbound buffer.
-      transport.pauseSend();
+      transport._pauseSend();
       sig.set(1);
       sig.set(2);
       sig.set(3);
@@ -1378,7 +1319,7 @@ describe('kensington/live ClientTransport lifecycle methods', () => {
       // Server hasn't seen 1/2/3 because the client buffered them.
       // (We can't directly read the server's "have I received" without instrumentation;
       // resume and then verify the final value lands.)
-      transport.resumeSend();
+      transport._resumeSend();
       await new Promise(resolve => { setTimeout(resolve, 100); });
       assert.strictEqual(live.get('pause:test'), 3);
     } finally {
@@ -1467,6 +1408,216 @@ describe('kensington/live ClientTransport lifecycle methods', () => {
     }
   });
 
+  // Minimal stand-ins for `window` and `document`. Each records its listeners
+  // per event type so a test can fire them directly, and mirrors the
+  // add/removeEventListener contract attachFocusListeners()/detachFocusListeners()
+  // rely on.
+  function stubFocusGlobals() {
+    const windowListeners = {};
+    const documentListeners = {};
+    const window = {
+      addEventListener(type, fn) { windowListeners[type] = fn; },
+      removeEventListener(type, fn) { if (windowListeners[type] === fn) { delete windowListeners[type]; } },
+    };
+    const document = {
+      visibilityState: 'visible',
+      addEventListener(type, fn) { documentListeners[type] = fn; },
+      removeEventListener(type, fn) { if (documentListeners[type] === fn) { delete documentListeners[type]; } },
+    };
+    return { window, document, windowListeners, documentListeners };
+  }
+
+  // A WebSocket stub that never opens; it fires `close` on the next microtask,
+  // every time. Used to keep a transport stuck cycling scheduleReconnect()
+  // without any real network I/O, and counts constructions so tests can tell
+  // whether a fresh connect() attempt happened.
+  function makeNeverOpensWebSocket(onConstruct) {
+    return class FakeWebSocket {
+      constructor() {
+        onConstruct();
+        this.readyState = 0;
+        this.listeners = { open: [], close: [], message: [], error: [] };
+        queueMicrotask(() => {
+          for (const fn of this.listeners.close) { fn({}); }
+        });
+      }
+
+      addEventListener(type, fn) { this.listeners[type].push(fn); }
+
+      close() {}
+    };
+  }
+
+  it('retries immediately on window focus, skipping the remaining backoff delay', async () => {
+    const { connectLive } = await import('kensington/live');
+    const origWebSocket = globalThis.WebSocket;
+    const origWindow = globalThis.window;
+    const origDocument = globalThis.document;
+    let constructCount = 0;
+    globalThis.WebSocket = makeNeverOpensWebSocket(() => { constructCount += 1; });
+    const { window, document, windowListeners } = stubFocusGlobals();
+    globalThis.window = window;
+    globalThis.document = document;
+    const transport = connectLive({
+      url: 'ws://127.0.0.1:0/__kensington/live',
+      reconnect: { initialDelay: 10_000, maxDelay: 10_000 },
+    });
+    try {
+      await waitForStatus(transport, 'reconnecting', 5_000);
+      const countBeforeFocus = constructCount;
+      assert.ok(typeof windowListeners.focus === 'function', 'a focus listener must be registered');
+      windowListeners.focus({});
+      // The scheduled backoff is 10s; a fresh attempt within 100ms can only be
+      // the focus-triggered retry, not the regular timer.
+      await new Promise(resolve => { setTimeout(resolve, 100); });
+      assert.ok(constructCount > countBeforeFocus, 'focus should trigger an immediate reconnect attempt');
+    } finally {
+      transport.close();
+      _clearTransport();
+      globalThis.WebSocket = origWebSocket;
+      globalThis.window = origWindow;
+      globalThis.document = origDocument;
+    }
+  });
+
+  it('retries immediately on document visibilitychange to visible', async () => {
+    const { connectLive } = await import('kensington/live');
+    const origWebSocket = globalThis.WebSocket;
+    const origWindow = globalThis.window;
+    const origDocument = globalThis.document;
+    let constructCount = 0;
+    globalThis.WebSocket = makeNeverOpensWebSocket(() => { constructCount += 1; });
+    const { window, document, documentListeners } = stubFocusGlobals();
+    globalThis.window = window;
+    globalThis.document = document;
+    const transport = connectLive({
+      url: 'ws://127.0.0.1:0/__kensington/live',
+      reconnect: { initialDelay: 10_000, maxDelay: 10_000 },
+    });
+    try {
+      await waitForStatus(transport, 'reconnecting', 5_000);
+      const countBeforeFocus = constructCount;
+      document.visibilityState = 'visible';
+      documentListeners.visibilitychange({});
+      await new Promise(resolve => { setTimeout(resolve, 100); });
+      assert.ok(constructCount > countBeforeFocus, 'visibilitychange to visible should trigger a reconnect attempt');
+    } finally {
+      transport.close();
+      _clearTransport();
+      globalThis.WebSocket = origWebSocket;
+      globalThis.window = origWindow;
+      globalThis.document = origDocument;
+    }
+  });
+
+  it('visibilitychange while hidden does not trigger a reconnect attempt', async () => {
+    const { connectLive } = await import('kensington/live');
+    const origWebSocket = globalThis.WebSocket;
+    const origWindow = globalThis.window;
+    const origDocument = globalThis.document;
+    let constructCount = 0;
+    globalThis.WebSocket = makeNeverOpensWebSocket(() => { constructCount += 1; });
+    const { window, document, documentListeners } = stubFocusGlobals();
+    globalThis.window = window;
+    globalThis.document = document;
+    const transport = connectLive({
+      url: 'ws://127.0.0.1:0/__kensington/live',
+      reconnect: { initialDelay: 10_000, maxDelay: 10_000 },
+    });
+    try {
+      await waitForStatus(transport, 'reconnecting', 5_000);
+      const countBeforeFocus = constructCount;
+      document.visibilityState = 'hidden';
+      documentListeners.visibilitychange({});
+      await new Promise(resolve => { setTimeout(resolve, 100); });
+      assert.strictEqual(constructCount, countBeforeFocus, 'a hidden tab must not trigger a reconnect attempt');
+    } finally {
+      transport.close();
+      _clearTransport();
+      globalThis.WebSocket = origWebSocket;
+      globalThis.window = origWindow;
+      globalThis.document = origDocument;
+    }
+  });
+
+  it('retries on focus even after maxRetries is exhausted', async () => {
+    const { connectLive } = await import('kensington/live');
+    const origWebSocket = globalThis.WebSocket;
+    const origWindow = globalThis.window;
+    const origDocument = globalThis.document;
+    let constructCount = 0;
+    globalThis.WebSocket = makeNeverOpensWebSocket(() => { constructCount += 1; });
+    const { window, document, windowListeners } = stubFocusGlobals();
+    globalThis.window = window;
+    globalThis.document = document;
+    const transport = connectLive({
+      url: 'ws://127.0.0.1:0/__kensington/live',
+      reconnect: { initialDelay: 5, maxDelay: 10, maxRetries: 2 },
+    });
+    try {
+      await waitForStatus(transport, 'disconnected', 5_000);
+      const countBeforeFocus = constructCount;
+      windowListeners.focus({});
+      await new Promise(resolve => { setTimeout(resolve, 50); });
+      assert.ok(constructCount > countBeforeFocus, 'a returning user should get one more attempt past the cap');
+    } finally {
+      transport.close();
+      _clearTransport();
+      globalThis.WebSocket = origWebSocket;
+      globalThis.window = origWindow;
+      globalThis.document = origDocument;
+    }
+  });
+
+  it('does not attach focus/visibility listeners when reconnect.onFocus is false', async () => {
+    const { connectLive } = await import('kensington/live');
+    const origWebSocket = globalThis.WebSocket;
+    globalThis.WebSocket = makeNeverOpensWebSocket(() => {});
+    const { window, document, windowListeners, documentListeners } = stubFocusGlobals();
+    const origWindow = globalThis.window;
+    const origDocument = globalThis.document;
+    globalThis.window = window;
+    globalThis.document = document;
+    const transport = connectLive({
+      url: 'ws://127.0.0.1:0/__kensington/live',
+      reconnect: { onFocus: false },
+    });
+    try {
+      assert.strictEqual(windowListeners.focus, undefined, 'no focus listener should be registered');
+      assert.strictEqual(documentListeners.visibilitychange, undefined, 'no visibilitychange listener should attach');
+    } finally {
+      transport.close();
+      _clearTransport();
+      globalThis.WebSocket = origWebSocket;
+      globalThis.window = origWindow;
+      globalThis.document = origDocument;
+    }
+  });
+
+  it('close() detaches the focus/visibility listeners', async () => {
+    const { connectLive } = await import('kensington/live');
+    const origWebSocket = globalThis.WebSocket;
+    globalThis.WebSocket = makeNeverOpensWebSocket(() => {});
+    const { window, document, windowListeners, documentListeners } = stubFocusGlobals();
+    const origWindow = globalThis.window;
+    const origDocument = globalThis.document;
+    globalThis.window = window;
+    globalThis.document = document;
+    const transport = connectLive({ url: 'ws://127.0.0.1:0/__kensington/live' });
+    try {
+      assert.ok(typeof windowListeners.focus === 'function');
+      assert.ok(typeof documentListeners.visibilitychange === 'function');
+      transport.close();
+      assert.strictEqual(windowListeners.focus, undefined, 'close() must remove the focus listener');
+      assert.strictEqual(documentListeners.visibilitychange, undefined, 'close() must remove the visibilitychange one');
+    } finally {
+      _clearTransport();
+      globalThis.WebSocket = origWebSocket;
+      globalThis.window = origWindow;
+      globalThis.document = origDocument;
+    }
+  });
+
   it('onFrame fires for both outbound and inbound frames', async () => {
     const http = await import('node:http');
     const { connectLive } = await import('kensington/live');
@@ -1478,7 +1629,7 @@ describe('kensington/live ClientTransport lifecycle methods', () => {
     const transport = connectLive({
       url: `ws://127.0.0.1:${port}/__kensington/live`,
       reconnect: { initialDelay: 30, maxDelay: 200 },
-      onFrame: (dir, frame) => { frames.push({ dir, type: frame.type, name: frame.name }); },
+      _internal: { onFrame: (dir, frame) => { frames.push({ dir, type: frame.type, name: frame.name }); } },
     });
     try {
       await waitForStatus(transport, 'connected');
@@ -1511,7 +1662,7 @@ describe('kensington/live ClientTransport lifecycle methods', () => {
     const transport = connectLive({
       url: `ws://127.0.0.1:${port}/__kensington/live`,
       reconnect: { initialDelay: 30, maxDelay: 200 },
-      onFrame: (dir, frame) => { if (dir === 'in') { inbound.push(frame); } },
+      _internal: { onFrame: (dir, frame) => { if (dir === 'in') { inbound.push(frame); } } },
     });
     try {
       await waitForStatus(transport, 'connected');
@@ -1554,7 +1705,7 @@ describe('kensington/live ClientTransport lifecycle methods', () => {
     const transport = connectLive({
       url: `ws://127.0.0.1:${port}/__kensington/live`,
       reconnect: { initialDelay: 30, maxDelay: 200 },
-      onFrame: (dir, frame) => { if (dir === 'out') { outbound.push(frame); } },
+      _internal: { onFrame: (dir, frame) => { if (dir === 'out') { outbound.push(frame); } } },
     });
     try {
       await waitForStatus(transport, 'connected');

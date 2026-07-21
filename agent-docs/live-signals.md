@@ -41,7 +41,7 @@ The runtime accepts any value. Only the static type is narrow.
 
 - Component file: `liveSignal(initial, name)`. Works in both server and client.
 - Server entry: `liveServer({ persistence, canRead, canWrite, onConnect, onSocketClose, heartbeatInterval })`, then `.attach(httpServer)` (Node) or spread `.bunWebsocket()` into the Bun default-export's `websocket` slot. `.attach()` returns the underlying `ws` `WebSocketServer` so you can iterate `clients` or call `terminate()` directly when implementing admin or diagnostic features.
-- Client entry: `connectLive({ url, reconnect, onStatus, onFrame })` before the first render that touches a live signal. `onFrame(dir, frame)` fires on every WebSocket frame (`'out'` or `'in'`) for debug overlays, frame logs, and audit trails.
+- Client entry: `connectLive({ url, reconnect, onStatus })` before the first render that touches a live signal.
 
 **One import path. `kensington/live`.** Everything you need is here. `liveSignal`, `connectLive`, `liveServer`, types. Safe to import on both server and client. Works for bundler users (esbuild, Vite, etc.) AND for no-bundler importmap deployments. All node-only dependencies (`ws`, `better-sqlite3`, `node:http`) are loaded via lazy dynamic import inside `liveServer()` and `attach()`, so a browser that fetches `/lib/kensington/esm/live/index.js` from a static-served `node_modules` never resolves them. For bundlers (esbuild `--platform=browser`, Vite browser build), the package exports map includes a `browser` condition on `kensington/live` that automatically resolves to the client-only subpath, so server deps are never bundled. The narrower subpaths `kensington/live/client` and `kensington/live/server` exist for users who want environment boundaries enforced at the import level; the unified path is the default.
 
@@ -68,8 +68,7 @@ Connection status is not a separate export. It is a `.status` field on the handl
 | Keep a live signal subscribed during conditional rendering or tab-swap | The auto-unsubscribe trap |
 | Group per-entity signals (auction, document, room) | Organizing per-entity signals with a domain factory |
 | React to live signal changes on the server (aggregation, logging) | Server-side liveSignal as a reactive subscription |
-| Wire reconnect, pauseSend, resumeSend buttons | Transport lifecycle control |
-| Log or audit WebSocket frames | Inspecting WebSocket frames |
+| Wire a "reconnect now" button | Transport lifecycle control |
 | Mixing live and local signals in one component | Mixing live and local signals |
 | `.stop()` a live signal or prevent auto-disposal | .stop() and auto-disposal |
 
@@ -281,32 +280,6 @@ const vote = liveSignal(null, `vote:poll:${pollId}:user:${userId}`, {
 
 `onSocketClose(ctx, ws) => void`. Called once per WebSocket close, with the `ctx` from `onConnect`. Use it to clean up per-user state instantly on disconnect (presence slots, locks, in-flight writes) without waiting for transient-drop TTLs. Closes the "abrupt-tab-close leaves stale data" window. Throws inside the callback are caught and logged.
 
-`live.contextFor(ws)`. Returns the `ctx` object that `onConnect` returned for a given socket, or `undefined` if the socket is not tracked. Use this to correlate `wss.clients` entries with the per-socket identity without casting to `any`.
-
-```js
-const wss = await live.attach(server);
-
-// Admin endpoint: broadcast a server message to a specific user's socket.
-for (const ws of wss.clients) {
-  const ctx = live.contextFor(ws);   // typed as Ctx | undefined
-  if (ctx?.userId === targetId) {
-    ws.send(JSON.stringify({ type: 'notify', message }));
-  }
-}
-```
-
-`liveServer` is generic on its context type. If you annotate `onConnect`'s return type, `contextFor` carries that type through without a cast:
-
-```ts
-type SocketCtx = { userId: string; role: 'admin' | 'user' };
-
-const live = await liveServer<SocketCtx>({
-  onConnect: (_ws, req) => parseSession(req),  // must return SocketCtx
-});
-
-const ctx = live.contextFor(ws);  // SocketCtx | undefined
-```
-
 `heartbeatInterval` (default `30_000` ms, `false` to disable). The `attach()` path pings every connected socket on the interval; any socket that does not pong before the next tick is terminated, which fires `onSocketClose`. Without this, silent drops (NAT timeouts, suspended laptops, dead Wi-Fi) leave the socket open from the server's perspective. Locks and presence held by the dead user never release until the OS eventually surfaces the close (minutes to hours, depending on TCP keepalive config). With this, the heartbeat surfaces the dead connection in ~one interval. No effect on `bunWebsocket()`. Configure Bun's `idleTimeout` and `sendPings` in your `Bun.serve` config for the same behavior on that path.
 
 ```js
@@ -440,7 +413,7 @@ import { counter } from './shared/counter.js';
 // liveServer's default path. Override only when your server mounts elsewhere
 // or the WebSocket lives on a different host (e.g. wss://api.example.com/...).
 connectLive({
-  reconnect: { initialDelay: 250, maxDelay: 30_000, maxRetries: Infinity },
+  reconnect: { initialDelay: 250, maxDelay: 30_000, maxRetries: Infinity, onFocus: true },
   onStatus: status => { document.documentElement.dataset.live = status; },
 });
 
@@ -449,11 +422,13 @@ registerComponents({ counter });
 
 The default path (`'/__kensington/live'`) is deliberately namespaced so it can't collide with user-defined routes (`/live`, `/ws`, `/api/...` etc). Override on both ends if you need a different shape: pass `path` to `liveServer` and `url` to `connectLive`.
 
-`onStatus` receives one of `'connecting'`, `'connected'`, `'reconnecting'`, `'disconnected'`. Render a connection pill from it in your UI. `'disconnected'` is reachable two ways. Either `transport.close()` (terminal until app restart) or `reconnect.maxRetries` exhausted by repeated failed attempts. The latter stops scheduling further attempts; call `transport.reconnect()` to reset the counter and try again.
+`onStatus` receives one of `'connecting'`, `'connected'`, `'reconnecting'`, `'disconnected'`. Render a connection pill from it in your UI. `'disconnected'` is reachable two ways. Either `transport.close()` (terminal until app restart) or `reconnect.maxRetries` exhausted by repeated failed attempts. The latter stops scheduling further attempts; call `transport.reconnect()` to reset the counter and try again, or wait for the window-focus retry described below.
 
 `connectLive` is fire-and-forget. The transport is a singleton, registered globally. `liveSignal` finds it automatically. There's no per-component wiring.
 
 The transport reconnects with exponential backoff. Writes attempted while disconnected are buffered and replayed on reconnect. Inbound updates missed during the disconnect window are caught up by the snapshot the server sends on (re)connect.
+
+The transport also retries immediately when the window regains focus or the tab becomes visible again (`visibilitychange` and `focus` listeners), skipping the remaining backoff delay. This covers a connection dropped for a long time, such as a laptop sleep or an internet outage while the tab was in the background, so a returning user does not sit on the last scheduled retry. It fires even after `reconnect.maxRetries` is exhausted, since a returning user is a fresh signal worth one more attempt. Pass `reconnect: { onFocus: false }` to `connectLive` to disable it; it is also a no-op outside a browser.
 
 ## Bundler setup (esbuild)
 
@@ -990,42 +965,11 @@ The `onStatus` callback option on `connectLive` still fires for imperative consu
 
 ## Transport lifecycle control
 
-The `ClientTransport` returned by `connectLive` exposes four methods beyond the reactive `status` signal. All four are safe to call repeatedly.
+The `ClientTransport` returned by `connectLive` exposes three methods beyond the reactive `status` signal. All three are safe to call repeatedly.
 
 - `transport.close()`. Terminal. Stops reconnect attempts, closes the WebSocket. After this, `liveSignal` calls still return a local Signal but no traffic flows. Use on full app teardown (single-page-app route swap, test cleanup).
-- `transport.disconnect()`. Drop the current WebSocket and stay disconnected. The transport handle stays alive; subscriptions and the outbound buffer survive. No reconnect is scheduled; status becomes `'disconnected'` indefinitely. Call `transport.reconnect()` to come back. Different from `close()` (terminal, no way back) and from `reconnect()` (drops and immediately re-opens). Use for diagnostic UIs that want to observe the disconnected state for an unbounded interval, or for paths that intentionally suspend live traffic without tearing the transport down.
-- `transport.reconnect()`. Drop the current WebSocket and immediately re-open. The transport handle stays alive; subscriptions, pending CAS, and the outbound buffer all survive. Resets backoff so the first attempt is fast. Clears any prior `disconnect()`. Use for diagnostic "reconnect now" buttons and for paths that need a fresh snapshot (e.g. after the user's identity changes and you want the new ctx applied server-side).
-- `transport.pauseSend()` / `transport.resumeSend()`. Buffer outgoing writes locally. Reads (snapshots, updates) still apply. The status signal stays at `'connected'`; the socket is still open, the buffer is application-level. Use to force CAS contention against another client, to observe optimistic-local-apply behavior, or to slow-flush a burst of writes. `resumeSend()` flushes the queue in FIFO order.
+- `transport.reconnect()`. Drop the current WebSocket and immediately re-open. The transport handle stays alive; subscriptions, pending CAS, and the outbound buffer all survive. Resets backoff so the first attempt is fast. Use for "reconnect now" buttons and for paths that need a fresh snapshot (e.g. after the user's identity changes and you want the new ctx applied server-side).
 - `transport.unsubscribe(name)`. Stop subscribing to a specific name. The local Signal stays valid; it just stops receiving server pushes. Less common than `signal.stop()`, which is the documented way to wind a single live signal down.
-
-## Inspecting WebSocket frames
-
-`connectLive({ onFrame })` fires `onFrame(direction, frame)` on every message the transport sends or receives. `direction` is `'out'` for client → server and `'in'` for server → client. `frame` is the decoded JSON payload (the same shape kensington/live sends on the wire). Use this for debug overlays, audit trails, or to record protocol traffic for replay. The transport behavior is unaffected; throws inside `onFrame` are swallowed.
-
-```js
-const transport = connectLive({
-  url: '/__kensington/live',
-  onFrame: (dir, frame) => {
-    console.log(dir === 'out' ? '↑' : '↓', frame.type, frame.name ?? '');
-  },
-});
-```
-
-The frame shapes kensington/live emits (the `type` discriminator is the stable surface; other fields may evolve):
-
-| `type` | Direction | Payload (additional fields) | Purpose |
-| ------ | --------- | --------------------------- | ------- |
-| `subscribe` | out | `name`, `persist?` | Add this client to a name's subscriber set. |
-| `unsubscribe` | out | `name` | Remove this client from a name's subscriber set. |
-| `set` | out | `name`, `value`, `lamport`, `ifLamport?`, `opId?` | Client-initiated write. `opId` + `ifLamport` mark a CAS attempt. |
-| `snapshot` | in | `values: { [name]: value }`, `lamport` | Sent on `subscribe` (and on reconnect for every previously-subscribed name) with the current value. |
-| `update` | in | `name`, `value`, `lamport` | Broadcast of a single name's new value. |
-| `batch-update` | in | `updates: Array<{ name, value, lamport }>` | Coalesced broadcast of multiple names that changed in the same server microtask. |
-| `set-ok` | in | `name`, `lamport`, `opId` | Acknowledges a write succeeded. Sent for both `.set(value)` and `.set(fn)`. |
-| `set-fail` | in | `name`, `reason: 'conflict' \| 'forbidden' \| 'unserializable'`, `lamport`, `value`, `opId` | Rejects a write. `value` always carries the server's authoritative value so the client can roll back the optimistic local apply. |
-| `error` | in | `name?`, `reason` | `canRead` subscribe rejection. Logged via `console.error`. Not used for write failures. |
-
-`onFrame` is the only sanctioned hook into the protocol layer. Reading fields beyond `type` is at your own risk across kensington versions.
 
 ## Values must be JSON-serializable
 

@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- `kensington/live` client transport retries immediately when the window regains focus or the tab becomes visible again, instead of waiting out the remaining backoff delay. Controlled by the `reconnect.onFocus` option (default true).
+
+### Removed
+- BREAKING. `kensington/live` trimmed its transport surface. Removed `transport.disconnect()`, `transport.pauseSend()` / `transport.resumeSend()`, the `connectLive({ onFrame })` callback, and the server's `live.policyOf(name)` and `live.contextFor(ws)` accessors. Use `transport.close()` / `transport.reconnect()` for lifecycle control.
+
 ## [2.0.0-signals.22] - 2026-07-02
 
 ### Added

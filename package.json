@@ -20,7 +20,8 @@
     "types.d.ts",
     "attributes.d.ts",
     "devtools.d.ts",
-    "AGENTS.md"
+    "AGENTS.md",
+    "agent-docs"
   ],
   "typesVersions": {
     "*": {

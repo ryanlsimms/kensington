@@ -79,43 +79,7 @@ test('liveSignal value broadcasts between two browser contexts', async ({ browse
   }
 });
 
-test('transport.disconnect() holds status at disconnected; reconnect() recovers', async ({ page, bundle }) => {
-  const transcript = await page.evaluate(async ({ src, liveSrc }) => {
-    const { effect } = await import(src);
-    const { connectLive } = await import(liveSrc);
-    const transport = connectLive({
-      url: 'ws://localhost:3847/__kensington/live',
-      reconnect: { initialDelay: 30, maxDelay: 100 },
-    });
-    const seen = [];
-    effect(() => { seen.push(transport.status.get()); });
-
-    function waitFor(target) {
-      return new Promise(resolve => {
-        const stop = effect(() => {
-          if (transport.status.get() === target) {
-            queueMicrotask(() => { stop.stop(); resolve(); });
-          }
-        });
-      });
-    }
-
-    await waitFor('connected');
-    transport.disconnect();
-    // Wait a few backoff windows; status must remain disconnected.
-    await new Promise(r => { setTimeout(r, 250); });
-    const stuck = transport.status.value;
-    transport.reconnect();
-    await waitFor('connected');
-    return { stuck, finalStatus: transport.status.value, seen };
-  }, { src: bundle, liveSrc: LIVE_BUNDLE });
-
-  expect(transcript.stuck).toBe('disconnected');
-  expect(transcript.finalStatus).toBe('connected');
-  expect(transcript.seen).toContain('disconnected');
-});
-
-test('onFrame callback fires for outbound subscribe and inbound snapshot', async ({ page, bundle }) => {
+test('onFrame internal hook fires for outbound subscribe and inbound snapshot', async ({ page, bundle }) => {
   const name = `browser:onframe:${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const result = await page.evaluate(async ({ src, liveSrc, name: liveName }) => {
     const { effect } = await import(src);
@@ -123,7 +87,7 @@ test('onFrame callback fires for outbound subscribe and inbound snapshot', async
     const frames = [];
     const transport = connectLive({
       url: 'ws://localhost:3847/__kensington/live',
-      onFrame: (dir, frame) => { frames.push({ dir, type: frame.type, name: frame.name }); },
+      _internal: { onFrame: (dir, frame) => { frames.push({ dir, type: frame.type, name: frame.name }); } },
     });
     await new Promise(resolve => {
       effect(() => { if (transport.status.get() === 'connected') { resolve(); } });

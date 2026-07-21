@@ -16,6 +16,14 @@ export interface ReconnectOptions {
    * the counter). Default `Infinity` (retry forever, the historical behavior).
    */
   maxRetries?: number;
+  /**
+   * Retry immediately when the window regains focus or the tab becomes
+   * visible again, skipping the remaining backoff delay. Covers a connection
+   * dropped for a long time, e.g. a laptop sleep or an internet outage while
+   * the tab was in the background. Default true. No-op outside a browser
+   * (SSR, Node) regardless of this setting.
+   */
+  onFocus?: boolean;
 }
 
 export interface ConnectLiveOptions {
@@ -30,18 +38,6 @@ export interface ConnectLiveOptions {
   reconnect?: ReconnectOptions;
   /** Called on every status transition. Same value is available via `transport.status`. */
   onStatus?: (status: ConnectionStatus) => void;
-  /**
-   * Called on every WebSocket frame the transport sends or receives. Direction
-   * `'out'` for client → server, `'in'` for server → client. `frame` is the
-   * already-decoded JSON value (the same shape kensington/live's protocol
-   * sends on the wire). Throws inside the callback are swallowed.
-   *
-   * Use for debug overlays, frame logs, or audit trails. The transport's
-   * normal behavior is unaffected. No public surface guarantees the frame
-   * shapes beyond the `type` field; reading specific fields is at the
-   * caller's risk across kensington versions.
-   */
-  onFrame?: (direction: 'out' | 'in', frame: unknown) => void;
 }
 
 export interface ClientTransport {
@@ -54,34 +50,12 @@ export interface ClientTransport {
   /** Tear down the transport. Stops reconnect attempts, closes the WebSocket. Terminal. */
   close(): void;
   /**
-   * Drop the current WebSocket and stay disconnected. The transport handle
-   * stays alive; subscriptions and the outbound buffer survive. No reconnect
-   * is scheduled. Status becomes `'disconnected'` until `reconnect()` is
-   * called. Different from `close()` (terminal) and from `reconnect()` (drops
-   * and immediately re-opens). For diagnostic UIs that want to observe the
-   * disconnected state indefinitely, or for paths that suspend live traffic
-   * without tearing the transport down.
-   */
-  disconnect(): void;
-  /**
    * Drop the current WebSocket and immediately re-open. The transport handle
    * stays alive; subscriptions, pending CAS, and the outbound buffer all
-   * survive. Resets backoff so reconnect attempts start fast. Clears any
-   * prior `disconnect()` so the transport returns to active. Use for "reconnect
+   * survive. Resets backoff so reconnect attempts start fast. Use for "reconnect
    * now" buttons or for paths that want to force a fresh snapshot.
    */
   reconnect(): void;
-  /**
-   * Buffer outgoing writes until `resumeSend()` is called. Reads (snapshots,
-   * updates) still apply. Already-flushed messages are not retracted; only
-   * future `send` calls accumulate. Status signal stays at `'connected'` (the
-   * socket is still open; this buffer is application-level). Intended for
-   * diagnostic harnesses that want to force CAS contention or observe
-   * optimistic-local-apply behavior.
-   */
-  pauseSend(): void;
-  /** Resume sending. Flushes the accumulated outbound buffer in FIFO order. */
-  resumeSend(): void;
   /** Stop subscribing to a specific name. The Signal returned by liveSignal stays valid locally. */
   unsubscribe(name: string): void;
 }

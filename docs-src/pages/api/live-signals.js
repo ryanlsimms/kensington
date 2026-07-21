@@ -167,18 +167,15 @@ interface ConnectLiveOptions {
     initialDelay?: number;            // default 250
     maxDelay?: number;                // default 30_000
     maxRetries?: number;              // default Infinity
+    onFocus?: boolean;                // default true
   };
   onStatus?: (status: ConnectionStatus) => void;
-  onFrame?: (direction: 'out' | 'in', frame: unknown) => void;
 }
 
 interface ClientTransport {
   status: Signal<ConnectionStatus>;
   close(): void;                      // terminal
-  disconnect(): void;                 // drop + stay disconnected
   reconnect(): void;                  // drop + immediately re-open
-  pauseSend(): void;                  // buffer outgoing writes
-  resumeSend(): void;                 // flush buffer in FIFO
   unsubscribe(name: string): void;
 }`),
     t.p([
@@ -186,7 +183,7 @@ interface ClientTransport {
       t.strong('before'),
       ' any ',
       t.code('liveSignal'),
-      ' call. Reconnect is automatic with exponential backoff. See the ',
+      ' call. Reconnect is automatic with exponential backoff, plus an immediate retry on window focus or tab visibility regain. See the ',
       t.a({ href: '?page=reactivity#live-signals' }, 'live signals guide'),
       ' for setup.',
     ]),
@@ -221,27 +218,24 @@ interface ClientTransport {
         ],
       ],
       [
+        t.code('reconnect.onFocus'),
+        [
+          'Retry immediately when the window regains focus or the tab becomes visible again, ',
+          'skipping the remaining backoff delay. Covers a connection dropped for a long time, ',
+          'such as a laptop sleep or an internet outage while the tab was in the background. ',
+          'Fires even after ',
+          t.code('maxRetries'),
+          ' is exhausted. Default ',
+          t.code('true'),
+          '. No-op outside a browser.',
+        ],
+      ],
+      [
         t.code('onStatus(status)'),
         [
           'Called each time the connection status changes. Same values as the reactive ',
           t.code('transport.status'),
           ' signal; use the callback form when you need the change outside a reactive context.',
-        ],
-      ],
-      [
-        t.code('onFrame(direction, frame)'),
-        [
-          'Fires per WebSocket frame. ',
-          t.code('direction'),
-          ' is ',
-          t.code("'out'"),
-          ' or ',
-          t.code("'in'"),
-          '. The ',
-          t.code('type'),
-          ' field on ',
-          t.code('frame'),
-          ' is the stable surface for inspection. Useful for protocol-level debugging.',
         ],
       ],
     ]),
@@ -264,24 +258,8 @@ interface ClientTransport {
         ],
       ],
       [
-        t.code('disconnect()'),
-        [
-          'Drop the WebSocket and stay disconnected. Call ',
-          t.code('reconnect()'),
-          ' to come back.',
-        ],
-      ],
-      [
         t.code('reconnect()'),
         'Drop and immediately re-open. Subscriptions survive. Backoff resets.',
-      ],
-      [
-        [t.code('pauseSend()'), ' / ', t.code('resumeSend()')],
-        [
-          'Buffer outgoing writes locally; reads still apply. Status stays at ',
-          t.code("'connected'"),
-          '.',
-        ],
       ],
       [
         t.code('unsubscribe(name)'),
@@ -314,8 +292,6 @@ interface LiveServer<Ctx = unknown> {
   get<T = unknown>(name: string): T | undefined;
   set(name: string, value: unknown, options?: { persist?: boolean }): void;
   list(prefix: string): Array<[string, unknown]>;
-  policyOf(name: string): boolean | undefined;
-  contextFor(ws: unknown): Ctx | undefined;
   delete(name: string): void;
   close(): void;
   attach(httpServer: HTTPServer): Promise<AttachedWebSocketServer>;
@@ -382,10 +358,8 @@ interface LiveServer<Ctx = unknown> {
           t.code('canRead'),
           ', ',
           t.code('canWrite'),
-          ', ',
-          t.code('onSocketClose'),
           ', and ',
-          t.code('contextFor()'),
+          t.code('onSocketClose'),
           '. Use it to read cookies, validate tokens, and attach a user id.',
         ],
       ],
@@ -472,40 +446,6 @@ interface LiveServer<Ctx = unknown> {
           ' is registry cleanup only — does NOT notify subscribers. Use ',
           t.code('set(name, null)'),
           ' when subscribers should observe the removal.',
-        ],
-      ],
-      [
-        t.code('policyOf(name)'),
-        [
-          'Resolved persist policy: ',
-          t.code('true'),
-          ' / ',
-          t.code('false'),
-          ' / ',
-          t.code('undefined'),
-          '. Pair with ',
-          t.code('list()'),
-          ' to classify entries in diagnostic UIs.',
-        ],
-      ],
-      [
-        t.code('contextFor(ws)'),
-        [
-          'Returns the ',
-          t.code('ctx'),
-          ' object that ',
-          t.code('onConnect'),
-          ' returned for a given socket, or ',
-          t.code('undefined'),
-          ' if the socket is not tracked. Use to correlate ',
-          t.code('wss.clients'),
-          ' entries with per-socket identity without casting to ',
-          t.code('any'),
-          '. Typed as ',
-          t.code('Ctx | undefined'),
-          ' when ',
-          t.code('liveServer<Ctx>'),
-          ' is called with an explicit type parameter.',
         ],
       ],
       [

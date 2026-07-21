@@ -561,22 +561,6 @@ export async function liveServer({
       }
       return out;
     },
-    // Resolved persist policy for a name. Returns true if the name was
-    // declared persisted (via `liveSignal({ persist: true })` or via
-    // `live.set(name, value, { persist: true })`), false if declared
-    // transient, undefined if the name has never been declared. Use for
-    // diagnostic UIs and admin endpoints that want to classify entries
-    // returned by `list()` without reimplementing the convention.
-    policyOf(name) {
-      return persistPolicy.get(name);
-    },
-    // Return the context object returned by onConnect for this socket.
-    // Returns undefined if the socket is not tracked (not connected via
-    // attach(), or already closed). Use to correlate wss.clients entries
-    // with the per-socket identity set during connection.
-    contextFor(ws) {
-      return socketState.get(ws)?.ctx;
-    },
     delete(name) {
       cancelTransientDrop(name);
       registry.delete(name);
