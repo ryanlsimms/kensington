@@ -66,8 +66,28 @@ function attributesType({ attributes = [], globalTypes, tag }) {
 }`, ...globalTypes].join(' & ');
 }
 
-function svgAttributesType({ attributes = [], globalTypes, tag }) {
-  const propField = `prop?: PropFor<'${tag}'> | null; persist?: boolean;`;
+function sharedAttributesType(attributes) {
+  return attributes.flatMap(a => {
+    const type = attrType(a.name, a.type);
+    const lines = [`'${a.name}'?: ${type};`];
+    const camelName = kebabToCamel(a.name);
+    if (a.name !== camelName) {
+      lines.push(`'${camelName}'?: ${type};`);
+    }
+    return lines;
+  }).join('\n  ');
+}
+
+function svgAttributesType({
+  attributes = [],
+  globalTypes,
+  includeSvgConditionalAttributes,
+  includeSvgXLinkAttributes,
+  svgContextual,
+  tag,
+}) {
+  const propType = svgContextual ? 'ContextualPropFor' : 'PropFor';
+  const propField = `prop?: ${propType}<'${tag}'> | null; persist?: boolean;`;
   const ownTypes = attributes.length
     ? [`{\n  ${attributes.flatMap(a => {
       const lines = [`'${a.name}'?: ${attrType(a.name, a.type)};`];
@@ -78,10 +98,22 @@ function svgAttributesType({ attributes = [], globalTypes, tag }) {
       return lines;
     }).join('\n  ')}\n  ${propField}\n}`]
     : [`{ ${propField} }`];
-  return [...ownTypes, 'SvgPresentationAttributes', ...globalTypes].join(' & ');
+  const sharedTypes = ['SvgPresentationAttributes'];
+  if (includeSvgConditionalAttributes) { sharedTypes.push('SvgConditionalAttributes'); }
+  if (includeSvgXLinkAttributes) { sharedTypes.push('SvgXLinkAttributes'); }
+  return [...ownTypes, ...sharedTypes, ...globalTypes].join(' & ');
 }
 
-export default function buildDeclarations({ elements, globalAttributes, globalEvents, svgPresentationAttrTypes }) {
+export default function buildDeclarations({
+  elements,
+  globalAttributes,
+  globalEvents,
+  svgConditionalAttributes,
+  svgGlobalAttributes,
+  svgGlobalEvents,
+  svgPresentationAttrTypes,
+  svgXLinkAttributes,
+}) {
   const tagLookup = new Map(elements.map(el => [el.tag, el]));
 
   function childTypeRef(tag) {
@@ -139,7 +171,8 @@ export class VoidTag extends ContentTag {
 
 /**
  * Returned by \`.literal()\` and \`.unsafeLiteral()\`.
- * Embeds a raw HTML string into the output without further processing.
+ * Embeds a raw markup string into the output without further processing.
+ * Live DOM fragments are parsed in the surrounding HTML, SVG, or MathML context.
  */
 export class LiteralTag {
   toString(): string;
@@ -251,9 +284,13 @@ type ElementInterface<Tag extends string> =
   Tag extends keyof HTMLElementTagNameMap ? HTMLElementTagNameMap[Tag] :
   Tag extends keyof SVGElementTagNameMap ? SVGElementTagNameMap[Tag] :
   HTMLElement;
-type PropFor<Tag extends string> = {
-  [K in keyof ElementInterface<Tag>]?: ElementInterface<Tag>[K] | ReadonlySignal<ElementInterface<Tag>[K]>
+type ElementProps<ElementType> = {
+  [K in keyof ElementType]?: ElementType[K] | ReadonlySignal<ElementType[K]>
 } & { [key: string]: unknown };
+type PropFor<Tag extends string> = ElementProps<ElementInterface<Tag>>;
+type ContextualPropFor<Tag extends string> =
+  | (Tag extends keyof HTMLElementTagNameMap ? ElementProps<HTMLElementTagNameMap[Tag]> : never)
+  | (Tag extends keyof SVGElementTagNameMap ? ElementProps<SVGElementTagNameMap[Tag]> : never);
 
 /**
  * Extend this interface via module augmentation to allow additional attribute namespaces.
@@ -279,6 +316,21 @@ export type GlobalEvents = {
   ${globalEvents.map(e => `${e}?: string | ((event: ${EVENT_TYPES[e] ?? 'Event'}) => void);`).join('\n  ')}
   on?: Record<string, (event: any) => void>;
 }
+type SvgGlobalAttributes = {
+  ${sharedAttributesType(svgGlobalAttributes)}
+}
+
+type SvgGlobalEvents = {
+  ${sharedAttributesType(svgGlobalEvents)}
+}
+
+type SvgConditionalAttributes = {
+  ${sharedAttributesType(svgConditionalAttributes)}
+}
+
+type SvgXLinkAttributes = {
+  ${sharedAttributesType(svgXLinkAttributes)}
+}
 ${svgPresentationAttrTypes?.length ? `
 type SvgPresentationAttributes = {
   ${svgPresentationAttrTypes.flatMap(a => {
@@ -291,7 +343,7 @@ type SvgPresentationAttributes = {
   }).join('\n  ')}
 }
 ` : ''}
-${elements.map(e => `type ${e.attributesTypeName} = ${e.tagType === 'SvgContent' ? svgAttributesType(e) : attributesType(e)};`).join('\n\n')}
+${elements.map(e => `type ${e.attributesTypeName} = ${e.tagType === 'SvgContent' || e.svgContextual ? svgAttributesType(e) : attributesType(e)};`).join('\n\n')}
 
 ${strictContainers.map(el => {
   const extras = ['LiteralTag', 'CommentTag', 'ReadonlySignal<any>', 'null', 'undefined', 'boolean'];
@@ -363,7 +415,7 @@ type KebabCase<S extends string> = S extends \`\${infer H}\${infer T}\` ? H exte
  *     t.main({ class: 'container' }, [
  *       t.h1('Hello'),
  *       t.input({ type: 'checkbox', checked: true }),
- *       t.literal('<p>raw html</p>'),
+ *       t.literal('<p>raw markup</p>'),
  *     ])
  *   ),
  * ]).toString();
@@ -403,16 +455,17 @@ export class Kensington {
   ): ContentMethod<{ [K in keyof A as K | CamelCase<K & string> | KebabCase<K & string>]?: Reactive<ResolveAttrValue<A[K]>> }>
 
   /**
-   * Embeds a raw HTML string verbatim into the output.
-   * Use \`.unsafeLiteral()\` for trusted HTML that includes \`<script>\` tags.
+   * Embeds a raw markup string verbatim into the output. Live DOM fragments are
+   * parsed in the surrounding HTML, SVG, or MathML context.
+   * Use \`.unsafeLiteral()\` for trusted markup that includes \`<script>\` tags.
    *
    * @example
-   * t.ul([t.li('typed'), t.literal('<li>raw html</li>')]).toString();
+   * t.ul([t.li('typed'), t.literal('<li>raw markup</li>')]).toString();
    */
   literal(str: string | ReadonlySignal<string>): LiteralTag
 
   /**
-   * Like \`.literal()\` but skips HTML encoding. Use only for trusted HTML.
+   * Like \`.literal()\` but skips the script-tag check. Use only for trusted markup.
    */
   unsafeLiteral(str: string | ReadonlySignal<string>): LiteralTag
 
@@ -524,7 +577,7 @@ export const isBrowser: boolean;
 export function registerComponents(
   components: Record<string, (state: any, context?: any) => ContentTag | ContentTag[] | null>,
   options?: { context?: unknown }
-): void;
+): { stop(): void };
 
 /**
  * Renders a component to an HTML string and embeds the state as a JSON script block for
@@ -541,7 +594,7 @@ export function registerComponents(
  * registerComponents({ counter }, { context: clientEnv })
  */
 export function renderForHydration<S>(
-  fn: (state: S, context?: any) => ContentTag | ContentTag[] | null,
+  fn: (state: S, context?: any) => ContentTag | ContentTag[] | null | undefined,
   state: S,
   name?: string,
   options?: { context?: unknown }

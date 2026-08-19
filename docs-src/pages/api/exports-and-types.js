@@ -18,9 +18,9 @@ import { t } from 'https://cdn.jsdelivr.net/npm/kensington/dist/kensington.min.j
 
       t.h3('kensington/attributes'),
       t.p([
-        'Every element has a named export containing its allowed-attribute validator object. Useful for extending built-in elements via ',
+        'Every element has a named export containing its allowed attribute definitions. Useful for extending built-in elements via ',
         t.code('createCustomTag'),
-        '.',
+        '. SVG-capable maps include their applicable shared definitions; the shared groups are exported individually too.',
       ]),
       code('javascript', `import {
   divAttributes,
@@ -28,6 +28,8 @@ import { t } from 'https://cdn.jsdelivr.net/npm/kensington/dist/kensington.min.j
   formAttributes,
   buttonAttributes,
   aAttributes,
+  svgGlobalAttributes,
+  svgPresentationAttributes,
   // ... one export per element
 } from 'kensington/attributes';`),
 
@@ -85,7 +87,7 @@ export default defineConfig({
 
       t.h3('Slim build'),
       t.p([
-        'Proxy-based class with no per-element attribute spec data. About 5× smaller minified (~148 KB to ~27 KB). For signal-only consumers tree-shaking drops the bundle to ~1.5 KB. Throws if ',
+        'Proxy-based class with no per-element attribute spec data, making it smaller than the full build. Signal-only consumers tree-shake away the tag implementation. Throws if ',
         t.code('validationLevel'),
         ' is anything other than ',
         t.code("'off'"),

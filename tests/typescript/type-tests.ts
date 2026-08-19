@@ -21,7 +21,15 @@ import Kensington, {
   registerComponents,
   signal,
 } from 'kensington';
-import type { globalAttributes, formAttributes } from 'kensington/attributes';
+import type {
+  formAttributes,
+  globalAttributes,
+  svgConditionalAttributes,
+  svgGlobalAttributes,
+  svgGlobalEvents,
+  svgPresentationAttributes,
+  svgXLinkAttributes,
+} from 'kensington/attributes';
 
 // ─── module augmentation ────────────────────────────────────────────────────
 
@@ -119,6 +127,36 @@ t.div({ class: ['foo', 'bar'] });
 t.span({ id: 'my-id', title: 'tooltip', tabindex: 0 });
 t.p({ contenteditable: 'true' });
 t.p({ contenteditable: 'false' });
+
+// Shared HTML/SVG tag names accept both vocabularies, including reactive values.
+t.title({ fill: signal('red'), 'xml:space': 'preserve' });
+t.a({ href: '#target', requiredExtensions: 'svg' });
+t.script({ href: '/app.js', 'xml:space': 'preserve' });
+t.style({ type: 'text/css' });
+t.title({ prop: { text: 'HTML title' } });
+t.title({ prop: { ownerSVGElement: null } });
+t.feBlend({ 'xml:space': 'preserve', onshow: () => {} });
+t.rect({ requiredExtensions: 'svg', systemLanguage: 'en' });
+t.use({ 'xlink:href': signal('#shape'), 'xlink:title': 'Shape' });
+t.animate({ fill: 'remove' });
+t.animateMotion({ fill: 'freeze' });
+t.animateTransform({ fill: 'remove' });
+t.set({ fill: 'freeze' });
+
+// @ts-expect-error - SVG script narrows xml:space to preserve
+t.script({ 'xml:space': 'default' });
+// @ts-expect-error - SVG animation fill only accepts its timing values
+t.animate({ fill: 'bogus' });
+
+type ExportedSvgAttributeGroups = [
+  typeof svgConditionalAttributes,
+  typeof svgGlobalAttributes,
+  typeof svgGlobalEvents,
+  typeof svgPresentationAttributes,
+  typeof svgXLinkAttributes,
+];
+const exportedSvgAttributeGroups: ExportedSvgAttributeGroups | undefined = undefined;
+void exportedSvgAttributeGroups;
 
 // @ts-expect-error - contenteditable doesn't accept arbitrary strings
 t.p({ contenteditable: 'yes' });
@@ -350,7 +388,8 @@ renderForHydration(pair, {});
 renderForHydration(clientOnly, {}, 'myComp');
 
 // registerComponents accepts a map of name -> component function
-registerComponents({ counter: s => t.div(String(s['count'])) });
+const registrationHandle: { stop(): void } = registerComponents({ counter: s => t.div(String(s['count'])) });
+registrationHandle.stop();
 registerComponents({ clientOnly: () => null });
 registerComponents({ pair: () => [t.p('a'), t.p('b')] });
 

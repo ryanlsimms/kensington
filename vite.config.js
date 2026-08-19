@@ -58,7 +58,9 @@ function docsPlugin() {
 export default defineConfig(({ command }) => ({
   root: 'docs-src',
   resolve: {
-    alias: command === 'build' ? { 'kensington': join(__dirname, 'dist/kensington.slim.min.js') } : {},
+    alias: command === 'build'
+      ? [{ find: /^kensington$/, replacement: join(__dirname, 'dist/kensington.slim.min.js') }]
+      : [],
   },
   server: {
     host: true,

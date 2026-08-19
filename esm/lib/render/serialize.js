@@ -45,8 +45,10 @@ export function attributeArray(tag) {
   return attributesArrayFromObject(tag.attributes, { attrsSet: tag.allowedAttributeMap, encode: false }); // encode: false. setAttribute handles its own encoding. encode: true is only needed for toString()
 }
 
-export function renderToString(tag) {
+export function renderToString(tag, parentContext) {
   tag.validateContent();
+  const namespace = tag._resolveNamespace(parentContext);
+  const childContext = tag._childRenderContext(namespace);
 
   let str = '<'; // chained += instead of a template literal. V8 rope optimization makes many short += faster than one large interpolation
   str += tag.tagName;
@@ -74,7 +76,13 @@ export function renderToString(tag) {
       const val = isKensingtonSignal(c) ? c.get() : c;
       return Array.isArray(val) ? val : [val];
     });
-    let content = stringifyContentArray(resolved);
+    let content = stringifyContentArray(resolved, node => {
+      if (node !== null && typeof node === 'object'
+        && node._isKensingtonTag === true && typeof node._toString === 'function') {
+        return node._toString(childContext);
+      }
+      return String(node);
+    });
 
     if (tag.indentationLevel) { // falsy (0) means no indentation. Skip the pass entirely rather than calling indent with level 0
       content = indent(content, tag.indentationLevel);

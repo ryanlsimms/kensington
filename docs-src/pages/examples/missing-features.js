@@ -31,7 +31,7 @@ export function examplesMissingFeatures() {
       code('javascript', `// create-context.js
 import { signal } from 'kensington';
 
-function createContext(defaultValue) {
+export function createContext(defaultValue) {
   // each nested .provide call pushes a new value onto the stack at the beginning of the content block
   // and pops it off at the end of the content block
   const _stack = [signal(defaultValue)];
@@ -119,7 +119,7 @@ document.body.append(app.toElement());`),
       code('javascript', `// use-reducer.js
 import { signal } from 'kensington';
 
-function useReducer(reducer, initialState) {
+export function useReducer(reducer, initialState) {
   const state = signal(initialState);
   function dispatch(action) {
     state.set(s => reducer(s, action)); // updater form: reducer always sees the latest state
@@ -181,19 +181,21 @@ document.body.append(
         t.code('localStorage'),
         ' and writes back on every change. The ',
         t.code('effect'),
-        ' handles the sync. The rest of your code just reads and sets the signal normally. Guard the initial read with ',
+        ' handles the sync. The rest of your code just reads and sets the signal normally. Guard both storage operations with ',
         t.code('isBrowser'),
-        ' so server-rendered components do not throw.',
+        ' so server-side calls do not throw.',
       ]),
       code('javascript', `// use-local-storage.js
 import { signal, effect, isBrowser } from 'kensington';
 
-function useLocalStorage(key, defaultValue) {
+export function useLocalStorage(key, defaultValue) {
   const stored = isBrowser ? localStorage.getItem(key) : null;
   const s = signal(stored !== null ? JSON.parse(stored) : defaultValue); // !== null: stored could be '0', 'false', etc.
-  effect(() => {
-    localStorage.setItem(key, JSON.stringify(s.get()));
-  });
+  if (isBrowser) {
+    effect(() => {
+      localStorage.setItem(key, JSON.stringify(s.get()));
+    });
+  }
   return s;
 }`),
       code('javascript', `import { t } from 'kensington';
@@ -224,7 +226,7 @@ document.body.append(
       code('javascript', `// use-debounce.js
 import { signal, effect } from 'kensington';
 
-function useDebounce(source, delay) {
+export function useDebounce(source, delay) {
   const debounced = signal(source.get());
   let id;
   effect(() => {
@@ -276,7 +278,7 @@ document.body.append(
       code('javascript', `// use-fetch.js
 import { signal, effect } from 'kensington';
 
-function useFetch(urlSignal) {
+export function useFetch(urlSignal) {
   const data    = signal(null);
   const loading = signal(true);
   const error   = signal(null);
@@ -334,7 +336,7 @@ document.body.append(
         ' to tie the mount/unmount lifecycle to a signal.',
       ]),
       code('javascript', `// portal.js
-function portal(target, fn) {
+export function portal(target, fn) {
   const node = fn().toElement();
   target.append(node);
   return () => node.remove();
@@ -511,16 +513,17 @@ Alert({ class: level }, level.transform(l => \`Status: \${l}\`));`),
     t.section({ id: 'use-id' }, [
       t.h3('useId'),
       t.p([
-        'Generates a unique, stable ID for pairing form labels with inputs. A module-level counter increments once per call. On the server it produces the same sequence on every request, so IDs in SSR output and client hydration match as long as components are called in the same order.',
+        'Generates unique IDs for pairing form labels with inputs. Keep the counter in a factory instead of module scope: a client-only app can create one factory for its lifetime, while an SSR app should create a fresh factory for each request and another fresh factory before hydrating that response. Server and client IDs match when components are constructed in the same order.',
       ]),
       code('javascript', `// use-id.js
-let _id = 0;
-
-function useId(prefix = 'k') {
-  return \`\${prefix}-\${++_id}\`;
+export function createIdFactory(prefix = 'k') {
+  let id = 0;
+  return () => \`\${prefix}-\${++id}\`;
 }`),
       code('javascript', `import { t } from 'kensington';
-import { useId } from './use-id.js';
+import { createIdFactory } from './use-id.js';
+
+const useId = createIdFactory();
 
 function labeledInput(label, type = 'text') {
   const id = useId();

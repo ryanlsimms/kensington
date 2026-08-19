@@ -35,7 +35,11 @@ const {
   elements,
   globalAttributes,
   globalEvents,
+  svgConditionalAttributes,
+  svgGlobalAttributes,
+  svgGlobalEvents,
   svgPresentationAttrTypes,
+  svgXLinkAttributes,
 } = parseData(htmlData, svgData, mathData, { cssPropertyTypes, cssPropertyNames, idlTypes });
 
 const declarationsContent = buildDeclarations({
@@ -43,7 +47,11 @@ const declarationsContent = buildDeclarations({
   elements,
   globalAttributes,
   globalEvents,
+  svgConditionalAttributes,
+  svgGlobalAttributes,
+  svgGlobalEvents,
   svgPresentationAttrTypes,
+  svgXLinkAttributes,
 });
 
 const attributesDeclarationsContent = buildAttributesDeclarations({ elements });
@@ -54,7 +62,11 @@ const attributesContent = buildAttributes({
   elements,
   globalAttributes,
   globalEvents,
+  svgConditionalAttributes,
+  svgGlobalAttributes,
+  svgGlobalEvents,
   svgPresentationAttrTypes,
+  svgXLinkAttributes,
 });
 
 const svgElementCaseContent = buildSvgElementCase({ svgElements: svgData.svgElements });

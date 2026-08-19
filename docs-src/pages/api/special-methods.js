@@ -19,19 +19,29 @@ export function apiSpecialMethods() {
 t.htmlWithDocType(content?: HtmlContent): ContentTag`),
 
     t.h3({ id: 'literal' }, 'literal / unsafeLiteral'),
-    code('typescript', `t.literal(str: string): LiteralTag
-t.unsafeLiteral(str: string): LiteralTag`),
+    code('typescript', `t.literal(str: string | ReadonlySignal<string>): LiteralTag
+t.unsafeLiteral(str: string | ReadonlySignal<string>): LiteralTag`),
     t.p([
       t.code('literal'),
-      ' embeds a raw HTML string into the output. ',
+      ' embeds a raw markup string into the output. Live DOM fragments are parsed in their surrounding HTML, SVG, or MathML context, including after reactive updates. ',
       t.code('<script>'),
       ' tags trigger a validation warning or error. ',
       t.code('unsafeLiteral'),
-      ' skips that check and should only be used for trusted HTML.',
+      ' skips that check and should only be used for trusted markup. HTML-context scripts execute or load when inserted into a document; foreign-content scripts retain browser-defined behavior.',
+    ]),
+    t.p([
+      t.strong('Cross-browser SVG/MathML warning: '),
+      'do not rely on scripts inside foreign-content literals for portable execution. A Range-created inline SVG script currently executes in Firefox but remains inert in Chromium and WebKit. Put initialization in an HTML-context script or normal application JavaScript.',
+    ]),
+    t.p([
+      t.code('literal'),
+      ' is not a sanitizer. Its script check does not remove event handlers, dangerous URLs, or other active content, so both methods require trusted input.',
     ]),
 
     t.h3({ id: 'inline-comment' }, 'inlineComment'),
-    code('typescript', 't.inlineComment(str: string | number): CommentTag'),
+    code('typescript', `t.inlineComment(
+  str: string | number | ReadonlySignal<string> | ReadonlySignal<number>
+): CommentTag`),
     t.p([
       'Single-line strings produce ',
       t.code('<!-- text -->'),

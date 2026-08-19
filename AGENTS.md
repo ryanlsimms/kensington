@@ -677,11 +677,11 @@ t.label([t.span('Email'), t.input({ type: 'email' })]);
 t.label({ class: 'field' }, [t.span('Email'), t.input({ type: 'email' })]);
 ```
 
-## Raw HTML
+## Raw markup
 
 ```javascript
-t.literal('<p>trusted raw html</p>');    // outputs raw HTML; blocks <script> tags
-t.unsafeLiteral('<script>...</script>'); // outputs raw HTML; no script-tag check
+t.literal('<p>trusted raw markup</p>');  // emitted verbatim; blocks <script> tags
+t.unsafeLiteral('<script>...</script>'); // skips the script check — trusted markup only
 
 // Both accept a Signal. When the signal changes, the rendered HTML is re-parsed
 // and the element is replaced live.
@@ -689,6 +689,12 @@ const html = signal('<p>initial</p>');
 t.literal(html);                          // <p>initial</p>, updates on html.set(...)
 t.literal(computed(() => marked.parse(text.get()))); // common markdown-preview pattern
 ```
+
+In `.toElement()`, nested literal fragments are parsed in their actual HTML, SVG, or MathML parent context. Reactive literal updates retain that context. In an HTML context, inline scripts produced by `unsafeLiteral().toElement()` execute, and external scripts load, when the returned fragment or containing tree is inserted into a document. Foreign-content scripts retain their native namespace and browser-defined execution behavior.
+
+Do not rely on scripts inside SVG or MathML literals for portable execution. In current browsers, a Range-created inline SVG script executes in Firefox but remains inert in Chromium and WebKit. Keep foreign-content literals for markup and place initialization in an HTML-context `t.script()` element or normal application JavaScript.
+
+`literal()` is not an HTML sanitizer. Its script-tag check does not remove event-handler attributes, dangerous URLs, embedded active content, or other potentially unsafe markup. Pass trusted markup to both methods.
 
 ## inlineComment()
 

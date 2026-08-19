@@ -2,7 +2,15 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 const { default: Kensington, t } = require('kensington');
-const { divAttributes, inputAttributes, formAttributes } = require('kensington/attributes');
+const {
+  circleAttributes,
+  divAttributes,
+  formAttributes,
+  globalEvents,
+  inputAttributes,
+  rectAttributes,
+  svgGlobalAttributes,
+} = require('kensington/attributes');
 
 // ─── require syntax ────────────────────────────────────────────────────────
 
@@ -198,5 +206,15 @@ describe('attributes exports', () => {
   it('inputAttributes contains expected keys', () => {
     assert.ok('type' in inputAttributes);
     assert.ok('checked' in inputAttributes);
+  });
+
+  it('SVG element maps include globals with isolated array validators', () => {
+    const engine = new Kensington({ validationLevel: 'error' });
+    const chartRect = engine.createCustomTag('chart-rect', rectAttributes);
+    assert.doesNotThrow(() => chartRect({ 'xml:space': 'preserve', onshow: 'show()' }).toString());
+    assert.notStrictEqual(rectAttributes.onclick, globalEvents.onclick);
+    assert.deepStrictEqual(rectAttributes.onclick, globalEvents.onclick);
+    assert.notStrictEqual(rectAttributes.onclick, circleAttributes.onclick);
+    assert.notStrictEqual(rectAttributes['xml:space'], svgGlobalAttributes['xml:space']);
   });
 });

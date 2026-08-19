@@ -16,11 +16,11 @@ export function basicsQuickStart() {
         content: code('javascript', `import { t } from 'kensington';
 
 function profileCard(name, title) {
-  return t.article({ class: 'profile' },
+  return t.article({ class: 'profile' }, [
     t.h2(name),
     t.p({ class: 'title' }, title),
     t.a({ href: \`/users/\${name.toLowerCase()}\` }, 'View profile'),
-  );
+  ]);
 }
 
 profileCard('Alice', 'Senior Engineer').toString();`),

@@ -131,18 +131,15 @@ export function architectureDomOutput() {
 
     t.section({ id: 'render-element' }, [
       t.h3('Element creation'),
-      code('javascript', `const element = this.namespace ? document.createElementNS(this.namespace, this.tagName) : document.createElement(this.tagName);
+      code('javascript', `const namespace = this._resolveNamespace(parentContext);
+const element = namespace === HTML_NAMESPACE
+  ? document.createElement(this.tagName)
+  : document.createElementNS(namespace, this.tagName);
 
 const lifecycle = createLifecycle({ element, persist });
 let hasSignalContent = false;`),
       t.p([
-        'SVG and MathML tags carry their namespace through the ',
-        t.code('createSvgContentTag'),
-        ' and ',
-        t.code('createMathTag'),
-        ' factories. For HTML tags, namespace is undefined and ',
-        t.code('createElement'),
-        ' is used.',
+        'Each factory supplies a namespace policy. Shared a, script, style, and title tags inherit HTML or SVG from their effective parent. SVG and MathML integration points change the context inherited by their children. A cached contextual node is rebuilt if it was first created in a different namespace.',
       ]),
     ]),
 

@@ -1,9 +1,11 @@
 import { trackForStop } from '../lib/reactive/dom-tracker.js';
 import { _internalEffect, isKensingtonSignal } from '../lib/reactive/signal.js';
+import { HTML_NAMESPACE } from '../lib/render/namespaces.js';
 import showInvalid from '../lib/util/show-invalid.js';
 
 const TYPE_ERROR = 'literal() only accepts a string';
-const SCRIPT_ERROR = '<script> tags are not allowed in literal html. Use unsafeLiteral if you can vouch for the string';
+const SCRIPT_ERROR = '<script> tags are not allowed in literal markup. '
+  + 'Use unsafeLiteral if you can vouch for the string';
 
 export default class LiteralTag {
   #reactiveStopped = false;
@@ -28,15 +30,41 @@ export default class LiteralTag {
     return value;
   }
 
-  toElement() {
+  toElement({ _parentContext, _parentElement } = {}) {
     if (typeof document === 'undefined') {
       throw new Error('toElement only supported in browser');
     }
+    const contextElement = _parentElement;
+    const ownerDocument = contextElement?.ownerDocument ?? document;
+    let standaloneRange;
+    const createFragment = value => {
+      const cachedRange = _parentContext?.literalRange;
+      if (cachedRange) {
+        return cachedRange.createContextualFragment(value);
+      }
+
+      let rangeContext = contextElement;
+      if (rangeContext?.localName === 'annotation-xml'
+        && _parentContext?.namespace === HTML_NAMESPACE) {
+        rangeContext = ownerDocument.createElement('div');
+      }
+      rangeContext ??= ownerDocument.createElement('div');
+
+      const range = standaloneRange ?? ownerDocument.createRange();
+      range.selectNodeContents(rangeContext);
+      if (_parentContext === undefined) {
+        standaloneRange = range;
+      } else {
+        _parentContext.literalRange = range;
+      }
+      return range.createContextualFragment(value);
+    };
+
     if (isKensingtonSignal(this.str)) {
       this.#reactiveStopped = false;
-      const startAnchor = document.createComment('');
-      const endAnchor = document.createComment('');
-      const frag = document.createDocumentFragment();
+      const startAnchor = ownerDocument.createComment('');
+      const endAnchor = ownerDocument.createComment('');
+      const frag = ownerDocument.createDocumentFragment();
       frag.append(startAnchor, endAnchor);
       const sig = this.str;
       const startRef = new WeakRef(startAnchor);
@@ -60,9 +88,7 @@ export default class LiteralTag {
           node.remove();
           node = next;
         }
-        const template = document.createElement('template');
-        template.innerHTML = val;
-        start.after(...[...template.content.childNodes]);
+        start.after(createFragment(val));
       });
       // Register against the start anchor so dom-tracker stops the effect when the anchor
       // (or any ancestor of it) is removed from the DOM. Without this the effect would
@@ -76,15 +102,13 @@ export default class LiteralTag {
 
     if (typeof this.str !== 'string') {
       showInvalid(TYPE_ERROR, this.validationLevel, this.logger);
-      return document.createDocumentFragment();
+      return ownerDocument.createDocumentFragment();
     }
     if (this.safe && /<script/i.test(this.str)) {
       showInvalid(SCRIPT_ERROR, this.validationLevel, this.logger);
-      return document.createDocumentFragment();
+      return ownerDocument.createDocumentFragment();
     }
-    const template = document.createElement('template');
-    template.innerHTML = this.str;
-    return template.content;
+    return createFragment(this.str);
   }
 
   // Reports whether the most recent toElement() created a signal-driven effect that

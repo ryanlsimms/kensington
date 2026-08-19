@@ -12,7 +12,7 @@ export function architectureTooling() {
         t.code('Kensington'),
         ' class, which declares a method for every HTML, SVG, and MathML element along with that element\'s attribute spec data. The slim build replaces that generated class with a hand-written Proxy in ',
         loc('esm/kensington-slim.js'),
-        '. It carries no per-element attribute spec data, so it is about 5x smaller minified (roughly 148 KB down to roughly 27 KB), and signal-only consumers tree-shake it down to about 1.5 KB.',
+        '. It carries no per-element attribute spec data, making it smaller than the full build. Signal-only consumers tree-shake away the class and tag-rendering code; the tree-shaking test enforces a 13 KB minified budget.',
       ]),
 
       t.h3('Why a Proxy'),

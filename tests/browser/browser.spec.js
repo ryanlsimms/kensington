@@ -330,6 +330,105 @@ test('creates MathML elements in the MathML namespace', async ({ page, bundle })
   expect(ns).toBe('http://www.w3.org/1998/Math/MathML');
 });
 
+test('shared names and integration-point children use their actual parent namespace', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const cachedTitle = t.title('cached');
+    cachedTitle.toElement();
+    const mglyph = t.createMathTag('mglyph');
+    const svg = t.svg([
+      cachedTitle,
+      t.a('link'),
+      t.script('void 0'),
+      t.style('circle {}'),
+      t.foreignObject(t.div('html')),
+    ]).toElement();
+    const math = t.math([
+      t.mi([mglyph(), t.span('html')]),
+      t.annotationXml({ encoding: 'text/html' }, t.div('html')),
+      t.annotationXml(t.svg()),
+    ]).toElement();
+    return {
+      svg: Array.from(svg.children, el => el.namespaceURI),
+      foreignChild: svg.lastElementChild.firstElementChild.namespaceURI,
+      mathTextChildren: Array.from(math.firstElementChild.children, el => el.namespaceURI),
+      annotationHtml: math.children[1].firstElementChild.namespaceURI,
+      annotationSvg: math.children[2].firstElementChild.namespaceURI,
+    };
+  }, bundle);
+  expect(result.svg.slice(0, 4)).toEqual(Array(4).fill('http://www.w3.org/2000/svg'));
+  expect(result.foreignChild).toBe('http://www.w3.org/1999/xhtml');
+  expect(result.mathTextChildren).toEqual([
+    'http://www.w3.org/1998/Math/MathML',
+    'http://www.w3.org/1999/xhtml',
+  ]);
+  expect(result.annotationHtml).toBe('http://www.w3.org/1999/xhtml');
+  expect(result.annotationSvg).toBe('http://www.w3.org/2000/svg');
+});
+
+test('literal fragments parse in HTML, SVG, and MathML parent contexts', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const table = t.table(t.tbody(t.literal('<tr><td>cell</td></tr>'))).toElement();
+    const svg = t.svg(t.literal('<circle r="4"/>')).toElement();
+    const math = t.math(t.literal('<mrow><mi>x</mi></mrow>')).toElement();
+    const foreignObject = t.svg(t.foreignObject(t.literal('<div>html</div>'))).toElement();
+    const mathText = t.math(t.mi(t.literal('<span>html</span>'))).toElement();
+    const annotation = t.math(t.annotationXml(
+      { encoding: 'text/html' },
+      t.literal('<div>html</div>'),
+    )).toElement();
+    return {
+      tableTag: table.querySelector('tbody').firstElementChild.localName,
+      svgNamespace: svg.firstElementChild.namespaceURI,
+      mathNamespace: math.firstElementChild.namespaceURI,
+      foreignObjectNamespace: foreignObject.querySelector('foreignObject').firstElementChild.namespaceURI,
+      mathTextNamespace: mathText.querySelector('mi').firstElementChild.namespaceURI,
+      annotationNamespace: annotation.querySelector('annotation-xml').firstElementChild.namespaceURI,
+    };
+  }, bundle);
+  expect(result.tableTag).toBe('tr');
+  expect(result.svgNamespace).toBe('http://www.w3.org/2000/svg');
+  expect(result.mathNamespace).toBe('http://www.w3.org/1998/Math/MathML');
+  expect(result.foreignObjectNamespace).toBe('http://www.w3.org/1999/xhtml');
+  expect(result.mathTextNamespace).toBe('http://www.w3.org/1999/xhtml');
+  expect(result.annotationNamespace).toBe('http://www.w3.org/1999/xhtml');
+});
+
+test('namespaced attributes receive their standard namespace URIs', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    const use = t.use({
+      'xlink:href': '#shape',
+      'xml:space': 'preserve',
+      'xmlns:xlink': 'http://www.w3.org/1999/xlink',
+    }).toElement();
+    return {
+      href: use.getAttributeNS('http://www.w3.org/1999/xlink', 'href'),
+      space: use.getAttributeNS('http://www.w3.org/XML/1998/namespace', 'space'),
+      xmlns: use.getAttributeNS('http://www.w3.org/2000/xmlns/', 'xlink'),
+    };
+  }, bundle);
+  expect(result).toEqual({
+    href: '#shape',
+    space: 'preserve',
+    xmlns: 'http://www.w3.org/1999/xlink',
+  });
+});
+
+test('standalone and nested unsafe literal scripts execute on insertion', async ({ page, bundle }) => {
+  const count = await page.evaluate(async src => {
+    const { t } = await import(src);
+    window.__literalRuns = 0;
+    document.body.append(t.unsafeLiteral('<script>window.__literalRuns += 1</script>').toElement());
+    document.body.append(t.div(
+      t.unsafeLiteral('<script>window.__literalRuns += 1</script>'),
+    ).toElement());
+    return window.__literalRuns;
+  }, bundle);
+  expect(count).toBe(2);
+});
+
 // ─── toElement() reuse guard ───────────────────────────────────────────────
 
 test('toElement() warns when tag is already in the DOM', async ({ page, bundle }) => {

@@ -152,7 +152,7 @@ t.div({ unknownAttr: 'x' });     // throws. Not a known attribute`),
 
       t.h3({ id: 'prod-slim' }, 'Slim build for production'),
       t.p([
-        'The slim build is a separate bundle that ships without per-element attribute spec data. The minified output drops from ~148 KB to ~27 KB, about 5× smaller. The public API is identical. Tags, attributes, signals, and hydration all work the same.',
+        'The slim build is a separate, smaller bundle that ships without per-element attribute spec data. Tags, attributes, signals, and hydration work the same; runtime attribute validation is the exception.',
       ]),
       t.p([
         'Since the slim build has no spec data, runtime validation is unavailable. The constructor throws if you set ',
@@ -176,9 +176,18 @@ t.div({ class: 'card' }, t.p('Hello'));`),
 import { defineConfig } from 'vite';
 
 export default defineConfig(({ mode }) => {
-  const alias = mode === 'production' ? { kensington: 'kensington/dist/slim' } : {};
+  const alias = mode === 'production'
+    ? [{ find: /^kensington$/, replacement: 'kensington/dist/slim' }]
+    : [];
   return { resolve: { alias } };
 });`),
+      t.p([
+        'The exact-match pattern leaves subpath imports such as ',
+        t.code("'kensington/live'"),
+        ' and ',
+        t.code("'kensington/attributes'"),
+        ' unchanged.',
+      ]),
       t.p(`Pick the validation level from Vite's build environment so dev gets runtime checks and prod gets the no-op fast path.`),
       code('javascript', `// src/t.js
 import Kensington from 'kensington';
@@ -404,12 +413,21 @@ const item = t.li({ class: statusClass, persist: true }, [
     ]),
 
     t.section({ id: 'raw-html' }, [
-      t.h2('Raw HTML & comments'),
-      code('javascript', `t.literal('<li>verbatim, HTML-encoded</li>');    // <script> tags flagged via validationLevel
-t.unsafeLiteral('<li>trusted HTML, no encoding</li>');
+      t.h2('Raw markup & comments'),
+      code('javascript', `t.literal('<li>verbatim markup</li>');          // <script> tags flagged via validationLevel
+t.unsafeLiteral('<script>trusted();</script>'); // skips the script-tag check
 
 t.inlineComment('hello world');          // <!-- hello world -->
 t.inlineComment('line 1\\nline 2');       // <!--\\n  line 1\\n  line 2\\n-->`),
+      t.p([
+        'Nested literal fragments are parsed in their actual HTML, SVG, or MathML parent context. ',
+        'Reactive updates retain that context.',
+      ]),
+      t.p([
+        t.strong('Cross-browser warning: '),
+        'scripts inside SVG or MathML literals are not portable. Firefox currently executes Range-created inline SVG scripts, while Chromium and WebKit leave them inert. Use an HTML-context script or normal application JavaScript for initialization.',
+      ]),
+      t.p('literal() is not a sanitizer. Both literal methods require trusted input.'),
       t.p(exLink('?page=examples#preformatted', 'Preformatted text example')),
     ]),
 

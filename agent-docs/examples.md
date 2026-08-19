@@ -72,7 +72,7 @@ app.post('/contact', async (req, res) => {
 ### Data-driven component
 
 ```javascript
-function productCard({ name, price, image, inStock }) {
+function productCard({ id, name, price, image, inStock }) {
   return t.div({ class: ['card', !inStock && 'card--out-of-stock'] }, [
     t.img({ src: image, alt: name, class: 'card-image' }),
     t.div({ class: 'card-body' }, [
@@ -335,10 +335,14 @@ t.div({ class: 'chart-container' }, [
 
 ### Embedding server data in the page
 
-Pass data from the server to the browser using a `<script type="application/json">` tag. `script` and `style` content is not HTML-encoded, so JSON is safe to embed directly.
+Pass data from the server to the browser using a `<script type="application/json">` tag. Script content is raw text, so escape `<` in serialized JSON to prevent a string containing `</script>` from ending the element early.
 
 ```javascript
 import { t } from 'kensington';
+
+function jsonForHtml(data) {
+  return JSON.stringify(data).replace(/</g, '\\u003c');
+}
 
 function pageWithData(title, data, content) {
   return t.htmlWithDocType({ lang: 'en' }, [
@@ -351,7 +355,7 @@ function pageWithData(title, data, content) {
       t.main({ class: 'container' }, content),
       // Embed server data for client-side JS to read
       t.script({ type: 'application/json', id: 'page-data' },
-        JSON.stringify(data)
+        jsonForHtml(data)
       ),
       t.script({ src: '/app.js', defer: true }),
     ]),

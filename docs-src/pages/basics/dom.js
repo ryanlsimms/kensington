@@ -16,7 +16,7 @@ export function basicsDom() {
       t.code('setAttribute'),
       '). For custom events, use the ',
       t.code('on'),
-      ' key with a plain object mapping event names verbatim to handlers. SVG and MathML elements get the correct namespace automatically.',
+      ' key with a plain object mapping event names verbatim to handlers. SVG and MathML elements get the correct namespace automatically. The shared a, script, style, and title methods select HTML or SVG from their parent context, and xlink, xml, and xmlns attributes receive their standard namespace URI.',
     ]),
     code('javascript', `import { t } from 'kensington';
 

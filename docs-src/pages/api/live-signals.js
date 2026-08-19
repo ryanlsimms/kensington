@@ -21,7 +21,7 @@ export function apiLiveSignals() {
     t.h3({ id: 'api-live-signal' }, 'liveSignal'),
     code('typescript', `import { liveSignal } from 'kensington/live';
 
-liveSignal<T>(initial: T, name: string, options?: LiveSignalOptions): Signal<T>
+liveSignal<T>(initial: T, name: string, options?: LiveSignalOptions): LiveSignal<T>
 
 interface LiveSignalOptions {
   persist?: boolean;                    // default false
@@ -34,7 +34,7 @@ type CanWrite =
   | ((name: string, ctx: any, transition: { prev, next }) => boolean);`),
     t.p([
       'Returns a ',
-      t.code('Signal<T>'),
+      t.code('LiveSignal<T>'),
       ' shared by name across connected clients. Subsequent calls with the same name in the same process return the same instance. Values must round-trip through ',
       t.code('JSON.stringify'),
       ' (no circular references, BigInts, Maps, Sets, Dates, class instances, functions, or Symbols). Unserializable writes are rejected with a once-per-name warning so local state stays in sync with the broadcast.',

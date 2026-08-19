@@ -316,11 +316,7 @@ function notFound() {
         t.code('toElement()'),
         ' in ',
         t.code('connectedCallback'),
-        ' and let the signal effects keep it up to date. Use ',
-        t.code('persist: true'),
-        ' on ',
-        t.code('toElement()'),
-        ' so effects pause on removal and resume on re-insertion rather than being destroyed.',
+        ' and let the signal effects keep it up to date. This example rebuilds the subtree each time the custom element reconnects; Kensington automatically cleans up the old subtree\'s effects when it is removed.',
       ]),
       code('javascript', `import { t, signal, computed } from 'kensington';
 

@@ -18,9 +18,16 @@ function itemKey(item) {
   return null;
 }
 
-function itemToNode(item) {
+function itemToNode(item, renderOptions) {
   if (item !== null && item !== undefined && typeof item.toElement === 'function') {
-    return item.getDomElement?.() ?? item.toElement();
+    const cached = item.getDomElement?.();
+    if (cached && typeof item._resolveNamespace === 'function') {
+      const namespace = item._resolveNamespace(renderOptions?._parentContext);
+      if (cached.namespaceURI !== namespace) {
+        return item.toElement(renderOptions);
+      }
+    }
+    return cached ?? item.toElement(renderOptions);
   }
   if (item === null || item === undefined || item === false) {
     return document.createTextNode('');
@@ -42,8 +49,8 @@ function tagNeedsRebuild(item, node) {
 // Build the new DOM for `item`, capture user-visible state from `oldNode`, swap in place,
 // restore state. Returns the fresh DOM node. dom-tracker stops the old node's effects when
 // the removal mutation fires.
-function rebuildNode(parent, oldNode, item, key) {
-  const fresh = item.toElement();
+function rebuildNode(parent, oldNode, item, key, renderOptions) {
+  const fresh = item.toElement(renderOptions);
   if (key !== undefined && key !== null) { nodeKeys.set(fresh, key); }
   const state = captureState(oldNode);
   parent.insertBefore(fresh, oldNode);
@@ -103,7 +110,7 @@ function filterRenderable(items) {
 // common shapes with at most one DOM mutation each. Anything that falls through hits the
 // keymap path at the bottom. Hot paths (no change, swap, contiguous insert, contiguous
 // remove, head-to-tail move) finish without building the keymap.
-export function reconcile(parent, startAnchor, endAnchor, newItems) {
+export function reconcile(parent, startAnchor, endAnchor, newItems, renderOptions) {
   const items = filterRenderable(flattenIfNeeded(newItems));
 
   // Clear fast path. One TreeWalker plus Range.deleteContents beats a per-row remove loop
@@ -140,14 +147,14 @@ export function reconcile(parent, startAnchor, endAnchor, newItems) {
     if (oldStartKey === newStartKey && oldStartKey !== undefined) {
       // Prefix match. Rebuild only when the new tag is a fresh instance for the key.
       if (tagNeedsRebuild(items[newStart], oldStartNode)) {
-        oldChildren[oldStart] = rebuildNode(parent, oldStartNode, items[newStart], oldStartKey);
+        oldChildren[oldStart] = rebuildNode(parent, oldStartNode, items[newStart], oldStartKey, renderOptions);
       }
       oldStart++;
       newStart++;
     } else if (oldEndKey === newEndKey && oldEndKey !== undefined) {
       // Suffix match.
       if (tagNeedsRebuild(items[newEnd], oldEndNode)) {
-        oldChildren[oldEnd] = rebuildNode(parent, oldEndNode, items[newEnd], oldEndKey);
+        oldChildren[oldEnd] = rebuildNode(parent, oldEndNode, items[newEnd], oldEndKey, renderOptions);
       }
       oldEnd--;
       newEnd--;
@@ -155,7 +162,7 @@ export function reconcile(parent, startAnchor, endAnchor, newItems) {
       // Head moved to tail.
       let node = oldStartNode;
       if (tagNeedsRebuild(items[newEnd], oldStartNode)) {
-        node = rebuildNode(parent, oldStartNode, items[newEnd], oldStartKey);
+        node = rebuildNode(parent, oldStartNode, items[newEnd], oldStartKey, renderOptions);
         oldChildren[oldStart] = node;
       }
       parent.insertBefore(node, oldEndNode.nextSibling);
@@ -165,7 +172,7 @@ export function reconcile(parent, startAnchor, endAnchor, newItems) {
       // Tail moved to head. The js-framework-benchmark swap test lives here.
       let node = oldEndNode;
       if (tagNeedsRebuild(items[newStart], oldEndNode)) {
-        node = rebuildNode(parent, oldEndNode, items[newStart], oldEndKey);
+        node = rebuildNode(parent, oldEndNode, items[newStart], oldEndKey, renderOptions);
         oldChildren[oldEnd] = node;
       }
       parent.insertBefore(node, oldStartNode);
@@ -185,7 +192,7 @@ export function reconcile(parent, startAnchor, endAnchor, newItems) {
     // Pure inserts. Append every remaining new item before the trailing fence.
     while (newStart <= newEnd) {
       const item = items[newStart++];
-      const node = itemToNode(item);
+      const node = itemToNode(item, renderOptions);
       const key = itemKey(item);
       if (key !== null) { nodeKeys.set(node, key); }
       parent.insertBefore(node, trailingFence);
@@ -220,14 +227,14 @@ export function reconcile(parent, startAnchor, endAnchor, newItems) {
     const oldIndex = key === null ? undefined : keymap.get(key);
     let node;
     if (oldIndex === undefined) {
-      node = itemToNode(item);
+      node = itemToNode(item, renderOptions);
       if (key !== null) { nodeKeys.set(node, key); }
     } else {
       node = oldChildren[oldIndex];
       oldChildren[oldIndex] = null;
       keymap.delete(key);
       if (tagNeedsRebuild(item, node)) {
-        node = rebuildNode(parent, node, item, key);
+        node = rebuildNode(parent, node, item, key, renderOptions);
       }
     }
     parent.insertBefore(node, insertRef);

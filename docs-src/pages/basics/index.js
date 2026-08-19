@@ -59,7 +59,7 @@ export function basicsSidebar() {
       t.li(t.a({ href: '#validation' }, 'Validation')),
       t.li(t.a({ href: '#custom-elements' }, 'Custom elements')),
       t.li(t.a({ href: '#persist' }, 'Persist effects')),
-      t.li(t.a({ href: '#raw-html' }, 'Raw HTML & comments')),
+      t.li(t.a({ href: '#raw-html' }, 'Raw markup & comments')),
     ]),
     githubLink(),
   ];

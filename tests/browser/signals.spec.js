@@ -15,6 +15,73 @@ test('signal as literal updates the DOM element live', async ({ page, bundle }) 
   await expect(page.locator('#lit-a')).toHaveCount(0);
 });
 
+test('reactive literal updates retain the parent SVG parsing context', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { signal, t } = await import(src);
+    const markup = signal('<circle id="literal-shape"/>');
+    const svg = t.svg(t.literal(markup)).toElement();
+    document.body.append(svg);
+    const initial = svg.querySelector('#literal-shape').namespaceURI;
+    markup.set('<title id="literal-shape">updated</title>');
+    await Promise.resolve();
+    return {
+      initial,
+      updated: svg.querySelector('#literal-shape').namespaceURI,
+      localName: svg.querySelector('#literal-shape').localName,
+    };
+  }, bundle);
+  expect(result.initial).toBe('http://www.w3.org/2000/svg');
+  expect(result.updated).toBe('http://www.w3.org/2000/svg');
+  expect(result.localName).toBe('title');
+});
+
+test('reactive namespaced attributes update through their namespace URI', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { signal, t } = await import(src);
+    const href = signal('#one');
+    const use = t.use({ 'xlink:href': href }).toElement();
+    href.set('#two');
+    await Promise.resolve();
+    return use.getAttributeNS('http://www.w3.org/1999/xlink', 'href');
+  }, bundle);
+  expect(result).toBe('#two');
+});
+
+test('reactive tag content inherits an SVG parent context', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { signal, t } = await import(src);
+    const child = signal(t.title('first'));
+    const svg = t.svg(child).toElement();
+    child.set(t.a('second'));
+    await Promise.resolve();
+    return {
+      localName: svg.firstElementChild.localName,
+      namespace: svg.firstElementChild.namespaceURI,
+    };
+  }, bundle);
+  expect(result.localName).toBe('a');
+  expect(result.namespace).toBe('http://www.w3.org/2000/svg');
+});
+
+test('reactive SVG content rebuilds a contextual tag previously mounted as HTML', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { signal, t } = await import(src);
+    const title = t.title('shared');
+    document.head.append(title.toElement());
+    const child = signal(null);
+    const svg = t.svg(child).toElement();
+    document.body.append(svg);
+    child.set(title);
+    await Promise.resolve();
+    return {
+      htmlTitleStillMounted: document.head.querySelector('title') !== null,
+      svgNamespace: svg.firstElementChild.namespaceURI,
+    };
+  }, bundle);
+  expect(result.htmlTitleStillMounted).toBe(true);
+  expect(result.svgNamespace).toBe('http://www.w3.org/2000/svg');
+});
+
 test('literal() blocks script tag injection when signal value changes', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
     const { t, signal } = await import(src);

@@ -8,6 +8,17 @@ import HtmlWithDoctypeTag from './tag-classes/html-with-doctype-tag.js';
 import LiteralTag from './tag-classes/literal-tag.js';
 import VoidTag from './tag-classes/void-tag.js';
 
+const HTML_NAMESPACE = 'http://www.w3.org/1999/xhtml';
+const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
+
+function addAttributeDefaults(target, defaults) {
+  for (const [name, validator] of Object.entries(defaults ?? {})) {
+    if (!target.has(name)) {
+      target.set(name, validator);
+    }
+  }
+}
+
 /**
  * HTML/SVG/MathML template library. Every tag is a method that accepts optional attributes
  * and/or content, returning a tag object with `.toString()` (HTML string) and `.toElement()` (DOM node).
@@ -104,6 +115,15 @@ export default class Kensington {
     });
   }
 
+  createContextualContentTag(tagName, allowedAttributes = {}) {
+    return this.createTag(tagName, allowedAttributes, ContentTag, {
+      includeGlobalAttributes: true,
+      includeGlobalEvents: true,
+      includeSvgGlobalAttributes: true,
+      supportedNamespaces: [HTML_NAMESPACE, SVG_NAMESPACE],
+    });
+  }
+
   createMathTag(tagName, allowedAttributes = {}) {
     return this.createTag(tagName, allowedAttributes, ContentTag, {
       includeGlobalAttributes: false,
@@ -121,10 +141,22 @@ export default class Kensington {
     });
   }
 
+  createContextualLiteralContentTag(tagName, allowedAttributes = {}) {
+    return this.createTag(tagName, allowedAttributes, ContentTag, {
+      contentIsLiteral: true,
+      encodeContent: !['script', 'style'].includes(tagName),
+      includeGlobalAttributes: true,
+      includeGlobalEvents: true,
+      includeSvgGlobalAttributes: true,
+      supportedNamespaces: [HTML_NAMESPACE, SVG_NAMESPACE],
+    });
+  }
+
   createSvgContentTag(tagName, allowedAttributes = {}) {
     return this.createTag(tagName, allowedAttributes, ContentTag, {
       includeGlobalAttributes: false,
       includeGlobalEvents: true,
+      includeSvgGlobalAttributes: true,
       namespace: 'http://www.w3.org/2000/svg',
     });
   }
@@ -142,15 +174,17 @@ export default class Kensington {
       encodeContent = true,
       includeGlobalAttributes,
       includeGlobalEvents,
+      includeSvgGlobalAttributes = false,
       namespace,
       skipElementAttributeValidation = false,
+      supportedNamespaces,
     } = options;
+    const defaultNamespace = namespace ?? HTML_NAMESPACE;
+    const namespacePolicy = {
+      defaultNamespace,
+      supportedNamespaces: supportedNamespaces ?? [defaultNamespace],
+    };
     const allowedAttributeMap = new Map(Object.entries(allowedAttributes));
-    for (const name of (allAttributes.camelCaseNames ?? [])) {
-      if (!allowedAttributeMap.has(name)) {
-        allowedAttributeMap.set(name, null);
-      }
-    }
     const invalidTypes = [...allowedAttributeMap.entries()].filter(([, type]) => {
       if ([String, Number, Boolean].includes(type) || Array.isArray(type)) {
         return false;
@@ -163,14 +197,19 @@ export default class Kensington {
 
     if (this.validationLevel !== 'off') {
       if (includeGlobalAttributes) {
-        for (const [k, v] of Object.entries(allAttributes.globalAttributes ?? {})) {
-          allowedAttributeMap.set(k, v);
-        }
+        addAttributeDefaults(allowedAttributeMap, allAttributes.globalAttributes);
       }
       if (includeGlobalEvents) {
-        for (const [k, v] of Object.entries(allAttributes.globalEvents ?? {})) {
-          allowedAttributeMap.set(k, v);
-        }
+        addAttributeDefaults(allowedAttributeMap, allAttributes.globalEvents);
+      }
+      if (includeSvgGlobalAttributes) {
+        addAttributeDefaults(allowedAttributeMap, allAttributes.svgGlobalAttributes);
+        addAttributeDefaults(allowedAttributeMap, allAttributes.svgGlobalEvents);
+      }
+    }
+    for (const name of (allAttributes.camelCaseNames ?? [])) {
+      if (!allowedAttributeMap.has(name)) {
+        allowedAttributeMap.set(name, null);
       }
     }
 
@@ -205,7 +244,7 @@ export default class Kensington {
         encodeContent,
         indentationLevel: this.indentationLevel,
         logger: this.logger,
-        namespace,
+        namespacePolicy,
         namespaces: this.namespaces,
         skipElementAttributeValidation,
         tagName,
@@ -220,18 +259,21 @@ export default class Kensington {
   }
 
   /**
-   * Embeds a raw HTML string verbatim in the output. Use `.unsafeLiteral()` for HTML that includes script tags.
+   * Embeds a raw markup string verbatim in the output. Live DOM fragments are parsed in the surrounding context.
+   * This only blocks script tags; it is not an HTML sanitizer. Use trusted markup.
+   * Use `.unsafeLiteral()` for trusted markup that includes script tags.
    * @param {string} str
    * @returns {LiteralTag}
    * @example
-   * t.ul([t.li('typed'), t.literal('<li>raw html</li>')]);
+   * t.ul([t.li('typed'), t.literal('<li>raw markup</li>')]);
    */
   literal(str) {
     return new LiteralTag(str, true, this.validationLevel, this.logger);
   }
 
   /**
-   * Like `.literal()` but skips the script-tag check. Use only for trusted HTML.
+   * Like `.literal()` but skips the script-tag check. Use only for trusted markup.
+   * HTML-context scripts execute on document insertion. Foreign-content script execution is browser-dependent.
    * @param {string} str
    * @returns {LiteralTag}
    */
@@ -264,7 +306,7 @@ export default class Kensington {
   );
 
   /** @returns {ContentTag} */
-  a = this.createContentTag('a', allAttributes.aAttributes);
+  a = this.createContextualContentTag('a', allAttributes.aAttributes);
   /** @returns {ContentTag} */
   abbr = this.createContentTag('abbr', allAttributes.abbrAttributes);
   /** @returns {ContentTag} */
@@ -584,7 +626,7 @@ export default class Kensington {
   /** @returns {ContentTag} */
   samp = this.createContentTag('samp', allAttributes.sampAttributes);
   /** @returns {ContentTag} */
-  script = this.createLiteralContentTag('script', allAttributes.scriptAttributes);
+  script = this.createContextualLiteralContentTag('script', allAttributes.scriptAttributes);
   /** @returns {ContentTag} */
   search = this.createContentTag('search', allAttributes.searchAttributes);
   /** @returns {ContentTag} */
@@ -610,7 +652,7 @@ export default class Kensington {
   /** @returns {ContentTag} */
   strong = this.createContentTag('strong', allAttributes.strongAttributes);
   /** @returns {ContentTag} */
-  style = this.createLiteralContentTag('style', allAttributes.styleAttributes);
+  style = this.createContextualLiteralContentTag('style', allAttributes.styleAttributes);
   /** @returns {ContentTag} */
   sub = this.createContentTag('sub', allAttributes.subAttributes);
   /** @returns {ContentTag} */
@@ -646,7 +688,7 @@ export default class Kensington {
   /** @returns {ContentTag} */
   time = this.createContentTag('time', allAttributes.timeAttributes);
   /** @returns {ContentTag} */
-  title = this.createContentTag('title', allAttributes.titleAttributes);
+  title = this.createContextualContentTag('title', allAttributes.titleAttributes);
   /** @returns {ContentTag} */
   tr = this.createContentTag('tr', allAttributes.trAttributes);
   /** @returns {VoidTag} */

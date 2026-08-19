@@ -22,8 +22,12 @@ t.div();                           // empty`),
 t.br();
 t.meta({ charset: 'utf-8' });`),
     t.p('Content can be strings, numbers, tags, arrays, or any mix. Arrays are flattened:'),
-    code('javascript', `t.p(['Count: ', 42, t.strong(' items')]).toString();
-// <p>Count: 42<strong> items</strong></p>`),
+    code('javascript', `t.p(['Count:', 42, t.strong('items')]).toString();
+// <p>
+//   Count:
+//   42
+//   <strong>items</strong>
+// </p>`),
     t.p([
       'Attributes accept camelCase keys (converted to kebab-case), class as an array, and style as a plain object. Boolean attributes are included when ',
       t.code('true'),

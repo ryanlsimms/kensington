@@ -10,6 +10,8 @@ const TYPE_CODES = {
   SvgContent: 'S',
   Math: 'M',
   LiteralContent: 'L',
+  ContextualContent: 'X',
+  ContextualLiteralContent: 'Y',
   DocType: 'D',
 };
 
@@ -18,7 +20,10 @@ function asKey(name) {
 }
 
 function entryValue(el) {
-  const code = TYPE_CODES[el.tagType];
+  const type = el.svgContextual
+    ? (el.tagType === 'LiteralContent' ? 'ContextualLiteralContent' : 'ContextualContent')
+    : el.tagType;
+  const code = TYPE_CODES[type];
   // Omit the tag name when it equals the method name (the common case). Most HTML and many
   // SVG/MathML entries share the same identifier on both sides; this avoids repeating it.
   if (el.methodName === el.tag) {

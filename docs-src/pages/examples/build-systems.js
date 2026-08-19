@@ -39,13 +39,13 @@ export default {
   input: 'src/main.js',
   output: { file: 'dist/bundle.js', format: 'es' },
   plugins: [
+    production && alias({
+      entries: [{ find: /^kensington$/, replacement: 'kensington/dist/slim' }],
+    }),
     nodeResolve(),
     replace({
       preventAssignment: true,
       'process.env.NODE_ENV': JSON.stringify(production ? 'production' : 'development'),
-    }),
-    production && alias({
-      entries: [{ find: 'kensington', replacement: 'kensington/dist/slim' }],
     }),
   ].filter(Boolean),
 };`),
@@ -67,17 +67,29 @@ export const t = new Kensington({
     t.section({ id: 'esbuild' }, [
       t.h3('esbuild'),
       t.p([
-        'esbuild has built-in support for both aliasing and environment-variable replacement via ',
-        t.code('alias'),
-        ' and ',
+        'Use a small exact-match resolver plugin for the production import swap. This leaves subpath imports such as ',
+        t.code("'kensington/live'"),
+        ' unchanged. esbuild handles environment-variable replacement through ',
         t.code('define'),
-        '. No plugins required.',
+        '.',
       ]),
       code('javascript', `// build.js
 import esbuild from 'esbuild';
 
 const production = process.env.NODE_ENV === 'production';
-const alias = production ? { kensington: 'kensington/dist/slim' } : {};
+
+const kensingtonSlim = {
+  name: 'kensington-slim',
+  setup(build) {
+    build.onResolve({ filter: /^kensington$/ }, args =>
+      build.resolve('kensington/dist/slim', {
+        importer: args.importer,
+        kind: args.kind,
+        resolveDir: args.resolveDir,
+      })
+    );
+  },
+};
 
 await esbuild.build({
   entryPoints: ['src/main.js'],
@@ -87,7 +99,7 @@ await esbuild.build({
   define: {
     'process.env.NODE_ENV': JSON.stringify(production ? 'production' : 'development'),
   },
-  alias,
+  plugins: production ? [kensingtonSlim] : [],
 });`),
       code('javascript', `// src/t.js
 import Kensington from 'kensington';
@@ -119,7 +131,7 @@ export const t = new Kensington({
 const path = require('path');
 
 module.exports = (env, argv) => {
-  const alias = argv.mode === 'production' ? { kensington: 'kensington/dist/slim' } : {};
+  const alias = argv.mode === 'production' ? { 'kensington$': 'kensington/dist/slim' } : {};
   return {
     entry: './src/main.js',
     output: {

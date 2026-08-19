@@ -3,6 +3,12 @@ import fs from 'node:fs';
 import { before, beforeEach, describe, it } from 'node:test';
 
 import Kensington, { computed, effect, isBrowser, renderForHydration, signal, t } from 'kensington';
+import {
+  circleAttributes,
+  globalEvents,
+  rectAttributes,
+  svgGlobalAttributes,
+} from 'kensington/attributes';
 
 import {
   _disposeHydrationScope,
@@ -1016,6 +1022,46 @@ describe('namespaces', () => {
   });
 });
 
+describe('context-aware element namespaces', () => {
+  it('accepts the HTML and SVG attribute vocabularies on shared tag names', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.doesNotThrow(() => tt.title({ fill: 'red', 'xml:space': 'preserve' }, 'title'));
+    assert.doesNotThrow(() => tt.a({ href: '#target', requiredExtensions: 'svg' }, 'link'));
+    assert.doesNotThrow(() => tt.script({ href: '/app.js', 'xml:space': 'preserve' }, ''));
+  });
+
+  it('propagates SVG, MathML, and integration-point context during string rendering', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.doesNotThrow(() => tt.svg([
+      tt.title('svg title'),
+      tt.foreignObject(tt.div('html child')),
+    ]).toString());
+    const mglyph = tt.createMathTag('mglyph');
+    assert.doesNotThrow(() => tt.math(tt.mi([
+      mglyph(),
+      tt.span('html child'),
+    ])).toString());
+    assert.doesNotThrow(() => tt.math(
+      tt.annotationXml({ encoding: 'text/html' }, tt.div('html child')),
+    ).toString());
+  });
+
+  it('rejects unsupported namespace crossings at error level', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => tt.svg(tt.div('invalid')).toString(), /namespace mismatch/);
+    assert.throws(() => tt.math(tt.circle()).toString(), /namespace mismatch/);
+  });
+
+  it('keeps public SVG attribute maps complete and their array validators isolated', () => {
+    assert.ok('xml:space' in rectAttributes);
+    assert.ok('onclick' in rectAttributes);
+    assert.notStrictEqual(rectAttributes.onclick, globalEvents.onclick);
+    assert.deepStrictEqual(rectAttributes.onclick, globalEvents.onclick);
+    assert.notStrictEqual(rectAttributes.onclick, circleAttributes.onclick);
+    assert.notStrictEqual(rectAttributes['xml:space'], svgGlobalAttributes['xml:space']);
+  });
+});
+
 // ─── additionalGlobalAttributes ────────────────────────────────────────────
 
 describe('additionalGlobalAttributes', () => {
@@ -1473,7 +1519,7 @@ describe('slim build', () => {
 describe('bundle sizes', () => {
   const BUDGETS = [
     { path: '../../dist/kensington.min.js', maxKb: 200 },
-    { path: '../../dist/kensington.slim.min.js', maxKb: 50 },
+    { path: '../../dist/kensington.slim.min.js', maxKb: 55 },
   ];
   for (const { path, maxKb } of BUDGETS) {
     it(`${path.replace('../../dist/', '')} stays under ${maxKb} KB`, () => {

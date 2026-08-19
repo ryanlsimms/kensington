@@ -719,21 +719,27 @@ function PriceTicker({ symbol }) {
       t.p([
         t.code('effect()'),
         ' returns an object with ',
-        t.code('stop()'),
-        ' and ',
+        t.code('pause()'),
+        ', ',
         t.code('resume()'),
+        ', and ',
+        t.code('stop()'),
         '. ',
-        t.code('stop()'),
-        ' unsubscribes the effect from all signals so it stops reacting to changes. ',
+        t.code('pause()'),
+        ' temporarily unsubscribes the effect from its signals. ',
         t.code('resume()'),
-        ' re-runs the callback and re-establishes subscriptions. Together they let you pause and restart a single effect object without creating a new one on every cycle.',
+        ' re-runs the callback and re-establishes subscriptions. ',
+        t.code('stop()'),
+        ' permanently destroys the effect, so a later ',
+        t.code('resume()'),
+        ' is a no-op.',
       ]),
       t.p([
-        'The natural home for this is a hand-written web component. The render effect is created once in the constructor and started stopped. ',
+        'The natural home for this is a hand-written web component. The render effect is created once in the constructor and started paused. ',
         t.code('connectedCallback'),
         ' resumes it; ',
         t.code('disconnectedCallback'),
-        ' stops it again so signal updates do not fire against a detached element.',
+        ' pauses it again so signal updates do not fire against a detached element.',
       ]),
       code('javascript', `import { signal, effect } from 'kensington';
 
@@ -791,7 +797,7 @@ customElements.define('live-clock', LiveClock);`),
       code('javascript', `import { t, signal, effect } from 'kensington';
 
 function parseRoute() {
-  const [path, search] = window.location.pathname.split('?');
+  const { pathname: path, search } = window.location;
   const params = Object.fromEntries(new URLSearchParams(search));
   const segments = path.split('/').filter(Boolean);
   return { path, segments, params };
@@ -809,7 +815,12 @@ window.addEventListener('popstate', () => route.set(parseRoute()));
 // Intercept same-origin <a> clicks so internal links do not cause full reloads.
 document.addEventListener('click', e => {
   const a = e.target.closest('a[href]');
-  if (!a || a.origin !== location.origin || a.hasAttribute('download')) return;
+  if (
+    !a || e.defaultPrevented || e.button !== 0 ||
+    e.metaKey || e.ctrlKey || e.shiftKey || e.altKey ||
+    a.origin !== location.origin || a.hasAttribute('download') ||
+    (a.target && a.target !== '_self')
+  ) return;
   e.preventDefault();
   navigate(a.pathname + a.search);
 });
@@ -860,7 +871,9 @@ function notFound() {
         t.code('pushState'),
         ' in place. The ',
         t.code('a.origin !== location.origin'),
-        ' check lets external links and ',
+        ' and ',
+        t.code('a.target'),
+        ' checks let external links and ',
         t.code('target="_blank"'),
         ' links through unmodified.',
       ]),

@@ -66,7 +66,7 @@ signal<T>(initialValue: T, key: SignalKey): Signal<T>  // keyed form`),
         ],
       ],
       [
-        t.code('.transform<U>(fn, key?): Signal<U>'),
+        t.code('.transform<U>(fn, key?): ReadonlySignal<U>'),
         [
           'Returns a read-only derived signal, equivalent to ',
           t.code('computed(() => fn(this.get()), key)'),
@@ -94,8 +94,8 @@ signal<T>(initialValue: T, key: SignalKey): Signal<T>  // keyed form`),
     t.h3({ id: 'api-computed' }, 'computed'),
     code('typescript', `import { computed } from 'kensington';
 
-computed<T>(fn: () => T): Signal<T>
-computed<T>(fn: () => T, key: SignalKey): Signal<T>  // keyed form`),
+computed<T>(fn: () => T): ReadonlySignal<T>
+computed<T>(fn: () => T, key: SignalKey): ReadonlySignal<T>  // keyed form`),
     t.p([
       'Creates a read-only signal derived from other signals. Re-evaluates ',
       t.code('fn'),
@@ -194,11 +194,11 @@ t.div({ prop: { _instance: component } });       // expando: accepted as unknown
     t.h3({ id: 'render-for-hydration' }, 'renderForHydration'),
     code('typescript', `import { renderForHydration } from 'kensington';
 
-renderForHydration<S, C = unknown>(
-  fn: (state: S, context: C) => ContentTag | ContentTag[] | null | undefined,
+renderForHydration<S>(
+  fn: (state: S, context?: any) => ContentTag | ContentTag[] | null | undefined,
   state: S,
   name?: string,
-  options?: { context?: C },
+  options?: { context?: unknown },
 ): LiteralTag`),
     t.p([
       'Renders a synchronous component to an HTML string and embeds ',
@@ -248,9 +248,9 @@ renderForHydration<S, C = unknown>(
     t.h3({ id: 'register-components' }, 'registerComponents'),
     code('typescript', `import { registerComponents } from 'kensington';
 
-registerComponents<C = unknown>(
-  components: Record<string, (state: any, context: C) => ContentTag | ContentTag[] | null>,
-  options?: { context?: C },
+registerComponents(
+  components: Record<string, (state: any, context?: any) => ContentTag | ContentTag[] | null>,
+  options?: { context?: unknown },
 ): { stop(): void }`),
     t.p([
       'Hydrates all server-rendered instances in the page, replacing each matching ',

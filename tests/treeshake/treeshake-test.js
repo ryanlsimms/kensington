@@ -55,7 +55,8 @@ describe('tree-shaking', () => {
     // registries, the mapWithKey list mapper, and the keyed-computed external-subscriber
     // warning machinery, plus Signal.prototype.toElement / .mount and its small dom-tracker
     // dependency. The 13 KB budget gives headroom for normal evolution. A regression that
-    // pulls in the Kensington class would balloon this to ~27 KB, well past the budget.
+    // pulls in the Kensington class would balloon this to roughly the full slim build size,
+    // well past the budget.
     assert.ok(
       sizeKb < 13,
       `signal-only slim bundle is ${sizeKb.toFixed(2)} KB, budget is 13 KB. Tree-shaking may have regressed.`,

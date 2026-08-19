@@ -38,11 +38,11 @@ Components are plain functions. Nest tags by passing them as content, then call 
 import { t } from 'kensington';
 
 function profileCard(name, title) {
-  return t.article({ class: 'profile' },
+  return t.article({ class: 'profile' }, [
     t.h2(name),
     t.p({ class: 'title' }, title),
     t.a({ href: `/users/${name.toLowerCase()}` }, 'View profile'),
-  );
+  ]);
 }
 
 profileCard('Alice', 'Senior Engineer').toString();
@@ -109,7 +109,7 @@ registerComponents({ counter });
 
 ## Dev vs production
 
-In development, set `validationLevel` to `'warn'` or `'error'` to catch invalid attributes at runtime. In production, import from `kensington/dist/slim` for a bundle about 5× smaller (~148 KB to ~27 KB minified). See [Dev vs production](https://ryanlsimms.github.io/kensington#dev-vs-prod) for the Vite, Rollup, esbuild, and Webpack setups that switch builds automatically.
+In development, set `validationLevel` to `'warn'` or `'error'` to catch invalid attributes at runtime. In production, import from `kensington/dist/slim` to omit per-element validation data and reduce bundle size. See [Dev vs production](https://ryanlsimms.github.io/kensington#dev-vs-prod) for the Vite, Rollup, esbuild, and Webpack setups that switch builds automatically.
 
 ## AI assistants
 

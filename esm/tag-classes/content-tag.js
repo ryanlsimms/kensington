@@ -4,6 +4,14 @@ import { reconcile } from '../lib/reactive/reconcile.js';
 import { isKensingtonSignal } from '../lib/reactive/signal.js';
 import { attributesArrayFromObject, SUBTREE_SIGNAL_KEY } from '../lib/render/attributes.js';
 import {
+  HTML_NAMESPACE,
+  MATH_NAMESPACE,
+  namespaceName,
+  removeDomAttribute,
+  setDomAttribute,
+  SVG_NAMESPACE,
+} from '../lib/render/namespaces.js';
+import {
   attributeArray,
   attributeString,
   contentIsShort,
@@ -18,6 +26,23 @@ import {
 } from '../lib/render/validate.js';
 import showInvalid from '../lib/util/show-invalid.js';
 import { camelToKebab, preserveSpaces } from '../lib/util/text-utils.js';
+
+const SVG_HTML_INTEGRATION_POINTS = new Set(['desc', 'foreignObject', 'title']);
+const MATH_TEXT_INTEGRATION_POINTS = new Set(['mi', 'mo', 'mn', 'ms', 'mtext']);
+const MATH_TEXT_EXCEPTIONS = Object.freeze({
+  malignmark: MATH_NAMESPACE,
+  mglyph: MATH_NAMESPACE,
+});
+const ANNOTATION_XML_EXCEPTIONS = Object.freeze({ svg: HTML_NAMESPACE });
+
+function ownEnumerableValue(obj, key) {
+  try {
+    return Object.prototype.propertyIsEnumerable.call(obj, key) ? obj[key] : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function isKensingtonTag(c) {
   return c !== null && typeof c === 'object' && c._isKensingtonTag === true;
 }
@@ -115,8 +140,60 @@ export default class ContentTag {
     this.validationLevel = options.validationLevel;
     this.logger = options.logger;
     this.content = collectContent(options.content);
-    this.namespace = options.namespace;
+    this.namespacePolicy = options.namespacePolicy ?? {
+      defaultNamespace: HTML_NAMESPACE,
+      supportedNamespaces: [HTML_NAMESPACE],
+    };
     this.encodeContent = options.encodeContent;
+  }
+
+  _resolveNamespace(parentContext) {
+    const { defaultNamespace, supportedNamespaces } = this.namespacePolicy;
+    if (parentContext === undefined) {
+      return defaultNamespace;
+    }
+
+    const parentNamespace = parentContext.namespaceExceptions?.[this.tagName]
+      ?? parentContext.namespace;
+
+    if (supportedNamespaces.length > 1 && supportedNamespaces.includes(parentNamespace)) {
+      return parentNamespace;
+    }
+
+    const startsForeignNamespaceFromHtml = parentNamespace === HTML_NAMESPACE && (
+      (this.tagName === 'svg' && defaultNamespace === SVG_NAMESPACE)
+      || (this.tagName === 'math' && defaultNamespace === MATH_NAMESPACE)
+    );
+    if (parentNamespace === defaultNamespace || startsForeignNamespaceFromHtml) {
+      return defaultNamespace;
+    }
+
+    showInvalid(
+      `namespace mismatch: <${this.tagName}> does not support the ${namespaceName(parentNamespace)} namespace in this tree`,
+      this.validationLevel,
+      this.logger,
+    );
+    return defaultNamespace;
+  }
+
+  _childRenderContext(namespace) {
+    if (namespace === SVG_NAMESPACE && SVG_HTML_INTEGRATION_POINTS.has(this.tagName)) {
+      return { namespace: HTML_NAMESPACE };
+    }
+    if (namespace === MATH_NAMESPACE && MATH_TEXT_INTEGRATION_POINTS.has(this.tagName)) {
+      return { namespace: HTML_NAMESPACE, namespaceExceptions: MATH_TEXT_EXCEPTIONS };
+    }
+    if (namespace === MATH_NAMESPACE && this.tagName === 'annotation-xml') {
+      const encoding = ownEnumerableValue(this.attributes, 'encoding');
+      if (
+        typeof encoding === 'string'
+        && ['application/xhtml+xml', 'text/html'].includes(encoding.toLowerCase())
+      ) {
+        return { namespace: HTML_NAMESPACE };
+      }
+      return { namespace: MATH_NAMESPACE, namespaceExceptions: ANNOTATION_XML_EXCEPTIONS };
+    }
+    return { namespace };
   }
 
   addConnectedCallback(fn) {
@@ -159,7 +236,9 @@ export default class ContentTag {
 
   attributeArray() { return attributeArray(this); }
 
-  toString() { return renderToString(this); }
+  toString() { return this._toString(); }
+
+  _toString(parentContext) { return renderToString(this, parentContext); }
 
   mount(target) {
     if (typeof document === 'undefined') {
@@ -172,8 +251,12 @@ export default class ContentTag {
     el.replaceWith(this.toElement());
   }
 
-  toElement({ _inheritPersist = false } = {}) {
+  toElement({ _inheritPersist = false, _parentContext, _parentElement } = {}) {
     const persist = this.persist || _inheritPersist;
+    const namespace = this._resolveNamespace(_parentContext);
+    if (this.#domElement && this.#domElement.namespaceURI !== namespace) {
+      this.#domElement = null;
+    }
     if (this.#domElement) {
       if (this.#domElement.isConnected) {
         showInvalid(`toElement() called on a tag instance already in the DOM. The same node will be moved. Call the tag as a function to create a new independent node.`, this.validationLevel, this.logger);
@@ -195,9 +278,10 @@ export default class ContentTag {
       throw new Error('toElement only supported in browser');
     }
     this.validateContent();
-    const element = this.namespace
-      ? document.createElementNS(this.namespace, this.tagName)
-      : document.createElement(this.tagName);
+    const ownerDocument = _parentElement?.ownerDocument ?? document;
+    const element = namespace === HTML_NAMESPACE
+      ? ownerDocument.createElement(this.tagName)
+      : ownerDocument.createElementNS(namespace, this.tagName);
 
     // Lifecycle is built lazily on first signal binding (or finalize, if persist or a
     // connect/disconnect callback forces it). Most tags in a typical tree are static and
@@ -261,12 +345,12 @@ export default class ContentTag {
             }
             for (const [n, v] of next) {
               if (prevAttrs.get(n) !== v) {
-                el.setAttribute(n, v);
+                setDomAttribute(el, n, v);
               }
             }
             for (const old of prevAttrs.keys()) {
               if (!next.has(old)) {
-                el.removeAttribute(old);
+                removeDomAttribute(el, old);
               }
             }
             prevAttrs.clear();
@@ -278,15 +362,15 @@ export default class ContentTag {
       } else if (isKensingtonSignal(attrValue)) {
         ensureLifecycle().signalEffect(attrValue, (el, val) => {
           if (val === false || val === null || val === undefined) {
-            el.removeAttribute(attrName);
+            removeDomAttribute(el, attrName);
           } else if (val === true) {
-            el.setAttribute(attrName, '');
+            setDomAttribute(el, attrName, '');
           } else {
-            el.setAttribute(attrName, String(val));
+            setDomAttribute(el, attrName, String(val));
           }
         }, attrName);
       } else {
-        element.setAttribute(attrName, attrValue);
+        setDomAttribute(element, attrName, attrValue);
       }
     }
 
@@ -315,13 +399,15 @@ export default class ContentTag {
       }
     }
 
-    // Children only need the inherited-persist options when this tag is itself in a persist
-    // branch. In the common case (no persist anywhere), passing undefined hits toElement()'s
-    // default and avoids allocating a fresh options object per child.
-    const childOpts = persist ? { _inheritPersist: true } : undefined;
+    const childContext = this._childRenderContext(namespace);
+    const childOpts = {
+      _inheritPersist: persist,
+      _parentContext: childContext,
+      _parentElement: element,
+    };
     for (let node of this.content) { // let, not const. node is reassigned to preserveSpaces(node) below
       if (isKensingtonTag(node)) {
-        element.append(node.toElement(node._isKensingtonContentTag ? childOpts : undefined));
+        element.append(node.toElement(childOpts));
         continue;
       }
       if (isKensingtonSignal(node)) {
@@ -330,7 +416,7 @@ export default class ContentTag {
         const endAnchor = document.createComment('');
         element.append(startAnchor, endAnchor);
         ensureLifecycle().signalEffect(node, (el, val) => {
-          reconcile(el, startAnchor, endAnchor, Array.isArray(val) ? val : [val]);
+          reconcile(el, startAnchor, endAnchor, Array.isArray(val) ? val : [val], childOpts);
         }, '(content)');
         continue;
       }

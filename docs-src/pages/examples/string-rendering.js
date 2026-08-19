@@ -341,7 +341,15 @@ t.form({ action: '/login', method: 'post' }, [
         t.code('pre'),
         ', and ',
         t.code('textarea'),
-        ' join content arrays with newlines and skip indentation, so string content is inserted without modification.',
+        ' join content arrays with newlines and skip indentation. ',
+        t.code('script'),
+        ' and ',
+        t.code('style'),
+        ' preserve raw text; ',
+        t.code('pre'),
+        ' and ',
+        t.code('textarea'),
+        ' still HTML-encode their text content.',
       ]),
       panels([
         {
@@ -358,10 +366,8 @@ t.script(\`
         },
         {
           label: 'HTML output',
-          content: code('html', `<style>
-body { margin: 0; }
-h1 { color: steelblue; }
-</style>
+          content: code('html', `<style>body { margin: 0; }
+h1 { color: steelblue; }</style>
 
 <script>
   const el = document.getElementById("app");
