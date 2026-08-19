@@ -39,6 +39,27 @@
   },
   {
     "attributes": [
+      "actiontype",
+      "autofocus",
+      "class",
+      "dir",
+      "displaystyle",
+      "href",
+      "id",
+      "mathbackground",
+      "mathcolor",
+      "mathsize",
+      "nonce",
+      "scriptlevel",
+      "selection",
+      "style",
+      "tabindex"
+    ],
+    "children": [],
+    "tag": "maction"
+  },
+  {
+    "attributes": [
       "autofocus",
       "class",
       "dir",
@@ -101,6 +122,29 @@
     "attributes": [
       "autofocus",
       "class",
+      "close",
+      "dir",
+      "displaystyle",
+      "href",
+      "id",
+      "mathbackground",
+      "mathcolor",
+      "mathsize",
+      "nonce",
+      "open",
+      "scriptlevel",
+      "separators",
+      "style",
+      "tabindex"
+    ],
+    "children": [],
+    "tag": "mfenced"
+  },
+  {
+    "attributes": [
+      "autofocus",
+      "class",
+      "denomalign",
       "dir",
       "displaystyle",
       "href",
@@ -110,6 +154,7 @@
       "mathcolor",
       "mathsize",
       "nonce",
+      "numalign",
       "scriptlevel",
       "style",
       "tabindex"
@@ -150,6 +195,8 @@
       "nonce",
       "scriptlevel",
       "style",
+      "subscriptshift",
+      "superscriptshift",
       "tabindex"
     ],
     "children": [],
@@ -331,10 +378,12 @@
       "displaystyle",
       "href",
       "id",
+      "lquote",
       "mathbackground",
       "mathcolor",
       "mathsize",
       "nonce",
+      "rquote",
       "scriptlevel",
       "style",
       "tabindex"
@@ -385,9 +434,15 @@
   {
     "attributes": [
       "autofocus",
+      "background",
       "class",
+      "color",
       "dir",
       "displaystyle",
+      "fontfamily",
+      "fontsize",
+      "fontstyle",
+      "fontweight",
       "href",
       "id",
       "mathbackground",
@@ -395,6 +450,8 @@
       "mathsize",
       "nonce",
       "scriptlevel",
+      "scriptminsize",
+      "scriptsizemultiplier",
       "style",
       "tabindex"
     ],
@@ -415,6 +472,7 @@
       "nonce",
       "scriptlevel",
       "style",
+      "subscriptshift",
       "tabindex"
     ],
     "children": [],
@@ -434,6 +492,8 @@
       "nonce",
       "scriptlevel",
       "style",
+      "subscriptshift",
+      "superscriptshift",
       "tabindex"
     ],
     "children": [],
@@ -453,6 +513,7 @@
       "nonce",
       "scriptlevel",
       "style",
+      "superscriptshift",
       "tabindex"
     ],
     "children": [],

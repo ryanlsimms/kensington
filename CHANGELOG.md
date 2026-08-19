@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 - Reusable SVG attribute-definition maps are now exported from `kensington/attributes`.
+- `maction` and `mfenced` MathML tags
+- new MathMl attributes added
 
 ### Fixed
 - `toString()` and `toElement()` now preserve the correct HTML, SVG, or MathML namespace for nested elements and literal fragments. Invalid namespace nesting is reported through `validationLevel`.

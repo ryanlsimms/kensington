@@ -506,6 +506,8 @@ export default class Kensington {
   /** @returns {VoidTag} */
   link = this.createVoidTag('link', allAttributes.linkAttributes);
   /** @returns {ContentTag} */
+  maction = this.createMathTag('maction', allAttributes.mactionAttributes);
+  /** @returns {ContentTag} */
   main = this.createContentTag('main', allAttributes.mainAttributes);
   /** @returns {ContentTag} */
   map = this.createContentTag('map', allAttributes.mapAttributes);
@@ -529,6 +531,8 @@ export default class Kensington {
   metadata = this.createSvgContentTag('metadata', allAttributes.metadataAttributes);
   /** @returns {ContentTag} */
   meter = this.createContentTag('meter', allAttributes.meterAttributes);
+  /** @returns {ContentTag} */
+  mfenced = this.createMathTag('mfenced', allAttributes.mfencedAttributes);
   /** @returns {ContentTag} */
   mfrac = this.createMathTag('mfrac', allAttributes.mfracAttributes);
   /** @returns {ContentTag} */

@@ -927,6 +927,23 @@ export const linkAttributes = {
   'sizes': String,
   'type': String,
 };
+export const mactionAttributes = {
+  'actiontype': String,
+  'autofocus': Boolean,
+  'class': String,
+  'dir': ['ltr', 'LTR', 'rtl', 'RTL', 'auto', 'AUTO'],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'scriptlevel': String,
+  'selection': String,
+  'style': String,
+  'tabindex': Number,
+};
 export const mainAttributes = {};
 export const mapAttributes = {
   'name': String,
@@ -1030,9 +1047,28 @@ export const meterAttributes = {
   'optimum': [Number, String],
   'value': [Number, String],
 };
+export const mfencedAttributes = {
+  'autofocus': Boolean,
+  'class': String,
+  'close': String,
+  'dir': ['ltr', 'LTR', 'rtl', 'RTL', 'auto', 'AUTO'],
+  'displaystyle': String,
+  'href': String,
+  'id': String,
+  'mathbackground': String,
+  'mathcolor': String,
+  'mathsize': String,
+  'nonce': String,
+  'open': Boolean,
+  'scriptlevel': String,
+  'separators': String,
+  'style': String,
+  'tabindex': Number,
+};
 export const mfracAttributes = {
   'autofocus': Boolean,
   'class': String,
+  'denomalign': String,
   'dir': ['ltr', 'LTR', 'rtl', 'RTL', 'auto', 'AUTO'],
   'displaystyle': String,
   'href': String,
@@ -1042,6 +1078,7 @@ export const mfracAttributes = {
   'mathcolor': String,
   'mathsize': String,
   'nonce': String,
+  'numalign': String,
   'scriptlevel': String,
   'style': String,
   'tabindex': Number,
@@ -1074,6 +1111,8 @@ export const mmultiscriptsAttributes = {
   'nonce': String,
   'scriptlevel': String,
   'style': String,
+  'subscriptshift': String,
+  'superscriptshift': String,
   'tabindex': Number,
 };
 export const mnAttributes = {
@@ -1228,10 +1267,12 @@ export const msAttributes = {
   'displaystyle': String,
   'href': String,
   'id': String,
+  'lquote': String,
   'mathbackground': String,
   'mathcolor': String,
   'mathsize': String,
   'nonce': String,
+  'rquote': String,
   'scriptlevel': String,
   'style': String,
   'tabindex': Number,
@@ -1270,9 +1311,15 @@ export const msqrtAttributes = {
 };
 export const mstyleAttributes = {
   'autofocus': Boolean,
+  'background': String,
   'class': String,
+  'color': String,
   'dir': ['ltr', 'LTR', 'rtl', 'RTL', 'auto', 'AUTO'],
   'displaystyle': String,
+  'fontfamily': String,
+  'fontsize': String,
+  'fontstyle': String,
+  'fontweight': String,
   'href': String,
   'id': String,
   'mathbackground': String,
@@ -1280,6 +1327,8 @@ export const mstyleAttributes = {
   'mathsize': String,
   'nonce': String,
   'scriptlevel': String,
+  'scriptminsize': String,
+  'scriptsizemultiplier': String,
   'style': String,
   'tabindex': Number,
 };
@@ -1296,6 +1345,7 @@ export const msubAttributes = {
   'nonce': String,
   'scriptlevel': String,
   'style': String,
+  'subscriptshift': String,
   'tabindex': Number,
 };
 export const msubsupAttributes = {
@@ -1311,6 +1361,8 @@ export const msubsupAttributes = {
   'nonce': String,
   'scriptlevel': String,
   'style': String,
+  'subscriptshift': String,
+  'superscriptshift': String,
   'tabindex': Number,
 };
 export const msupAttributes = {
@@ -1326,6 +1378,7 @@ export const msupAttributes = {
   'nonce': String,
   'scriptlevel': String,
   'style': String,
+  'superscriptshift': String,
   'tabindex': Number,
 };
 export const mtableAttributes = {

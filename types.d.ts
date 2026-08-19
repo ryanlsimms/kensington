@@ -1044,6 +1044,25 @@ type LinkAttributes = {
   prop?: PropFor<'link'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
+type MactionAttributes = {
+  'actiontype'?: Reactive<string>;
+  'autofocus'?: Reactive<boolean>;
+  'class'?: Reactive<string | ClassValue[]>;
+  'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
+  'displaystyle'?: Reactive<string>;
+  'href'?: Reactive<string>;
+  'id'?: Reactive<string>;
+  'mathbackground'?: Reactive<string>;
+  'mathcolor'?: Reactive<string>;
+  'mathsize'?: Reactive<string>;
+  'nonce'?: Reactive<string>;
+  'scriptlevel'?: Reactive<string>;
+  'selection'?: Reactive<string>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
+  'tabindex'?: Reactive<number | `${number}`>;
+  prop?: PropFor<'maction'> | null; persist?: boolean;
+} & NameSpaceAttributes & GlobalEvents;
+
 type MainAttributes = { prop?: PropFor<'main'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type MapAttributes = {
@@ -1148,9 +1167,30 @@ type MeterAttributes = {
   prop?: PropFor<'meter'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
+type MfencedAttributes = {
+  'autofocus'?: Reactive<boolean>;
+  'class'?: Reactive<string | ClassValue[]>;
+  'close'?: Reactive<string>;
+  'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
+  'displaystyle'?: Reactive<string>;
+  'href'?: Reactive<string>;
+  'id'?: Reactive<string>;
+  'mathbackground'?: Reactive<string>;
+  'mathcolor'?: Reactive<string>;
+  'mathsize'?: Reactive<string>;
+  'nonce'?: Reactive<string>;
+  'open'?: Reactive<boolean>;
+  'scriptlevel'?: Reactive<string>;
+  'separators'?: Reactive<string>;
+  'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
+  'tabindex'?: Reactive<number | `${number}`>;
+  prop?: PropFor<'mfenced'> | null; persist?: boolean;
+} & NameSpaceAttributes & GlobalEvents;
+
 type MfracAttributes = {
   'autofocus'?: Reactive<boolean>;
   'class'?: Reactive<string | ClassValue[]>;
+  'denomalign'?: Reactive<string>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   'displaystyle'?: Reactive<string>;
   'href'?: Reactive<string>;
@@ -1160,6 +1200,7 @@ type MfracAttributes = {
   'mathcolor'?: Reactive<string>;
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
+  'numalign'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
@@ -1196,6 +1237,8 @@ type MmultiscriptsAttributes = {
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
+  'subscriptshift'?: Reactive<string>;
+  'superscriptshift'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'mmultiscripts'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -1364,10 +1407,12 @@ type MsAttributes = {
   'displaystyle'?: Reactive<string>;
   'href'?: Reactive<string>;
   'id'?: Reactive<string>;
+  'lquote'?: Reactive<string>;
   'mathbackground'?: Reactive<string>;
   'mathcolor'?: Reactive<string>;
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
+  'rquote'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
@@ -1412,9 +1457,15 @@ type MsqrtAttributes = {
 
 type MstyleAttributes = {
   'autofocus'?: Reactive<boolean>;
+  'background'?: Reactive<string>;
   'class'?: Reactive<string | ClassValue[]>;
+  'color'?: Reactive<string>;
   'dir'?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
   'displaystyle'?: Reactive<string>;
+  'fontfamily'?: Reactive<string>;
+  'fontsize'?: Reactive<string>;
+  'fontstyle'?: Reactive<string>;
+  'fontweight'?: Reactive<string>;
   'href'?: Reactive<string>;
   'id'?: Reactive<string>;
   'mathbackground'?: Reactive<string>;
@@ -1422,6 +1473,8 @@ type MstyleAttributes = {
   'mathsize'?: Reactive<string>;
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
+  'scriptminsize'?: Reactive<string>;
+  'scriptsizemultiplier'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'mstyle'> | null; persist?: boolean;
@@ -1440,6 +1493,7 @@ type MsubAttributes = {
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
+  'subscriptshift'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'msub'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -1457,6 +1511,8 @@ type MsubsupAttributes = {
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
+  'subscriptshift'?: Reactive<string>;
+  'superscriptshift'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'msubsup'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -1474,6 +1530,7 @@ type MsupAttributes = {
   'nonce'?: Reactive<string>;
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
+  'superscriptshift'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
   prop?: PropFor<'msup'> | null; persist?: boolean;
 } & NameSpaceAttributes & GlobalEvents;
@@ -2360,6 +2417,8 @@ export class Kensington {
   linearGradient(attributes: LinearGradientAttributes, content?: Content): ContentTag;
   linearGradient(content?: Content): ContentTag;
   link(attributes?: LinkAttributes): VoidTag;
+  maction(attributes: MactionAttributes, content?: Content): ContentTag;
+  maction(content?: Content): ContentTag;
   main(attributes: MainAttributes, content?: Content): ContentTag;
   main(content?: Content): ContentTag;
   map(attributes: MapAttributes, content?: Content): ContentTag;
@@ -2383,6 +2442,8 @@ export class Kensington {
   metadata(content?: Content): ContentTag;
   meter(attributes: MeterAttributes, content?: Content): ContentTag;
   meter(content?: Content): ContentTag;
+  mfenced(attributes: MfencedAttributes, content?: Content): ContentTag;
+  mfenced(content?: Content): ContentTag;
   mfrac(attributes: MfracAttributes, content?: Content): ContentTag;
   mfrac(content?: Content): ContentTag;
   mi(attributes: MiAttributes, content?: Content): ContentTag;
