@@ -2305,9 +2305,7 @@
     {
       "tag": "div",
       "children": [
-        "flow\n         select element inner content elements*",
-        "optgroup element inner content elements*",
-        "option element inner content elements*"
+        "flow*"
       ],
       "attributes": [
         "globals"
@@ -2773,7 +2771,10 @@
     {
       "tag": "optgroup",
       "children": [
-        "optgroup element inner content elements",
+        "option*",
+        "script-supporting elements*",
+        "noscript*",
+        "div*",
         "legend*"
       ],
       "attributes": [
@@ -2786,7 +2787,8 @@
       "tag": "option",
       "children": [
         "text*",
-        "option element inner content elements*"
+        "div*",
+        "phrasing*"
       ],
       "attributes": [
         "globals",
@@ -2945,7 +2947,12 @@
     {
       "tag": "select",
       "children": [
-        "select element inner content elements",
+        "option*",
+        "optgroup*",
+        "hr*",
+        "script-supporting elements*",
+        "noscript*",
+        "div*",
         "button*"
       ],
       "attributes": [

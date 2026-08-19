@@ -931,6 +931,25 @@ type LinkAttributes = {
   'type'?: string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
+type MactionAttributes = {
+  prop?: PropFor<'maction'> | null;
+  'actiontype'?: string;
+  'autofocus'?: boolean;
+  'class'?: string | string[];
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'href'?: string;
+  'id'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'scriptlevel'?: string;
+  'selection'?: string;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
+  'tabindex'?: number | `${number}`;
+} & NameSpaceAttributes & GlobalEvents;
+
 type MainAttributes = { prop?: PropFor<'main'> | null; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type MapAttributes = {
@@ -1035,10 +1054,31 @@ type MeterAttributes = {
   'value'?: number | string;
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
+type MfencedAttributes = {
+  prop?: PropFor<'mfenced'> | null;
+  'autofocus'?: boolean;
+  'class'?: string | string[];
+  'close'?: string;
+  'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
+  'displaystyle'?: string;
+  'href'?: string;
+  'id'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
+  'nonce'?: string;
+  'open'?: boolean;
+  'scriptlevel'?: string;
+  'separators'?: string;
+  'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
+  'tabindex'?: number | `${number}`;
+} & NameSpaceAttributes & GlobalEvents;
+
 type MfracAttributes = {
   prop?: PropFor<'mfrac'> | null;
   'autofocus'?: boolean;
   'class'?: string | string[];
+  'denomalign'?: string;
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   'displaystyle'?: string;
   'href'?: string;
@@ -1048,6 +1088,7 @@ type MfracAttributes = {
   'mathcolor'?: string;
   'mathsize'?: string;
   'nonce'?: string;
+  'numalign'?: string;
   'scriptlevel'?: string;
   'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
@@ -1084,6 +1125,8 @@ type MmultiscriptsAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
+  'subscriptshift'?: string;
+  'superscriptshift'?: string;
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -1252,10 +1295,12 @@ type MsAttributes = {
   'displaystyle'?: string;
   'href'?: string;
   'id'?: string;
+  'lquote'?: string;
   'mathbackground'?: string;
   'mathcolor'?: string;
   'mathsize'?: string;
   'nonce'?: string;
+  'rquote'?: string;
   'scriptlevel'?: string;
   'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
@@ -1300,9 +1345,15 @@ type MsqrtAttributes = {
 type MstyleAttributes = {
   prop?: PropFor<'mstyle'> | null;
   'autofocus'?: boolean;
+  'background'?: string;
   'class'?: string | string[];
+  'color'?: string;
   'dir'?: "ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO";
   'displaystyle'?: string;
+  'fontfamily'?: string;
+  'fontsize'?: string;
+  'fontstyle'?: string;
+  'fontweight'?: string;
   'href'?: string;
   'id'?: string;
   'mathbackground'?: string;
@@ -1310,6 +1361,8 @@ type MstyleAttributes = {
   'mathsize'?: string;
   'nonce'?: string;
   'scriptlevel'?: string;
+  'scriptminsize'?: string;
+  'scriptsizemultiplier'?: string;
   'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
@@ -1328,6 +1381,7 @@ type MsubAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
+  'subscriptshift'?: string;
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -1345,6 +1399,8 @@ type MsubsupAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
+  'subscriptshift'?: string;
+  'superscriptshift'?: string;
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -1362,6 +1418,7 @@ type MsupAttributes = {
   'nonce'?: string;
   'scriptlevel'?: string;
   'style'?: string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>);
+  'superscriptshift'?: string;
   'tabindex'?: number | `${number}`;
 } & NameSpaceAttributes & GlobalEvents;
 
@@ -2130,6 +2187,7 @@ export default class Kensington {
   line<T extends LineAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   linearGradient<T extends LinearGradientAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   link(attributes?: LinkAttributes): VoidTag;
+  maction<T extends MactionAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   main<T extends MainAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   map<T extends MapAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   mark<T extends MarkAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
@@ -2142,6 +2200,7 @@ export default class Kensington {
   meta(attributes?: MetaAttributes): VoidTag;
   metadata<T extends MetadataAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   meter<T extends MeterAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
+  mfenced<T extends MfencedAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   mfrac<T extends MfracAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   mi<T extends MiAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
   mmultiscripts<T extends MmultiscriptsAttributes | Content>(attributesOrContent?: T, ...rest: T extends Content ? [] : [content?: Content]): ContentTag;
