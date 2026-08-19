@@ -13,6 +13,7 @@ import LiteralTag from './tag-classes/literal-tag.js';
 import VoidTag from './tag-classes/void-tag.js';
 import tagInfo from './tag-info.js';
 
+const HTML_NS = 'http://www.w3.org/1999/xhtml';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const MATH_NS = 'http://www.w3.org/1998/Math/MathML';
 
@@ -25,6 +26,8 @@ const TAG_TYPE_OPTIONS = {
   S: { Klass: ContentTag, namespace: SVG_NS, contentIsLiteral: false },
   M: { Klass: ContentTag, namespace: MATH_NS, contentIsLiteral: false },
   L: { Klass: ContentTag, namespace: undefined, contentIsLiteral: true },
+  X: { Klass: ContentTag, namespace: undefined, contentIsLiteral: false, supportedNamespaces: [HTML_NS, SVG_NS] },
+  Y: { Klass: ContentTag, namespace: undefined, contentIsLiteral: true, supportedNamespaces: [HTML_NS, SVG_NS] },
   D: { Klass: HtmlWithDoctypeTag, namespace: undefined, contentIsLiteral: false },
 };
 
@@ -97,11 +100,12 @@ export default class Kensington {
         if (opts === undefined) {
           return undefined;
         }
-        const encodeContent = !(tagType === 'L' && LITERAL_RAW_TAGS.has(tagName));
+        const encodeContent = !(opts.contentIsLiteral && LITERAL_RAW_TAGS.has(tagName));
         const fn = target.createTag(tagName, opts.Klass, {
           namespace: opts.namespace,
           contentIsLiteral: opts.contentIsLiteral,
           encodeContent,
+          supportedNamespaces: opts.supportedNamespaces,
         });
         Object.defineProperty(fn, 'name', { value: prop });
         tagCache[prop] = fn;
@@ -121,6 +125,10 @@ export default class Kensington {
     return this.createTag(tagName, ContentTag, {});
   }
 
+  createContextualContentTag(tagName) {
+    return this.createTag(tagName, ContentTag, { supportedNamespaces: [HTML_NS, SVG_NS] });
+  }
+
   createMathTag(tagName) {
     return this.createTag(tagName, ContentTag, { namespace: MATH_NS });
   }
@@ -129,6 +137,14 @@ export default class Kensington {
     return this.createTag(tagName, ContentTag, {
       contentIsLiteral: true,
       encodeContent: !LITERAL_RAW_TAGS.has(tagName),
+    });
+  }
+
+  createContextualLiteralContentTag(tagName) {
+    return this.createTag(tagName, ContentTag, {
+      contentIsLiteral: true,
+      encodeContent: !LITERAL_RAW_TAGS.has(tagName),
+      supportedNamespaces: [HTML_NS, SVG_NS],
     });
   }
 
@@ -141,7 +157,17 @@ export default class Kensington {
   }
 
   createTag(tagName, Klass, options) {
-    const { contentIsLiteral = false, encodeContent = true, namespace } = options;
+    const {
+      contentIsLiteral = false,
+      encodeContent = true,
+      namespace,
+      supportedNamespaces,
+    } = options;
+    const defaultNamespace = namespace ?? HTML_NS;
+    const namespacePolicy = {
+      defaultNamespace,
+      supportedNamespaces: supportedNamespaces ?? [defaultNamespace],
+    };
     // Slim build ships no per-tag attribute spec, but it does ship the set of camelCase
     // attribute names so getAttrName preserves case for SVG attributes (viewBox, etc.)
     // rather than kebab-casing them.
@@ -177,7 +203,7 @@ export default class Kensington {
         encodeContent,
         indentationLevel: this.indentationLevel,
         logger: this.logger,
-        namespace,
+        namespacePolicy,
         namespaces: this.namespaces,
         tagName,
         validationLevel: 'off',

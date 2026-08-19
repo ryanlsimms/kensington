@@ -18,6 +18,9 @@ export default [
     'ignores': [
       'cjs/**',
       'dist/**',
+      'eval/**',
+      'local-notes/**',
+      'docs-src/**',
       '**/node_modules/**',
     ],
   },

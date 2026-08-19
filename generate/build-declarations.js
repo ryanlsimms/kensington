@@ -59,8 +59,30 @@ function attributesType({ tag, attributes = [], globalTypes }) {
 }`, ...globalTypes].join(' & ');
 }
 
-function svgAttributesType({ tag, attributes = [], globalTypes }) {
-  const propField = `prop?: PropFor<'${tag}'> | null;`;
+function sharedAttributesType(attributes) {
+  const styleType = 'string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)';
+  const classType = 'string | string[]';
+  return attributes.flatMap(a => {
+    const attrType = a.name === 'style' ? styleType : a.name === 'class' ? classType : a.type;
+    const lines = [`'${a.name}'?: ${attrType};`];
+    const camelName = kebabToCamel(a.name);
+    if (a.name !== camelName) {
+      lines.push(`'${camelName}'?: ${attrType};`);
+    }
+    return lines;
+  }).join('\n  ');
+}
+
+function svgAttributesType({
+  tag,
+  attributes = [],
+  globalTypes,
+  includeSvgConditionalAttributes,
+  includeSvgXLinkAttributes,
+  svgContextual,
+}) {
+  const propType = svgContextual ? 'ContextualPropFor' : 'PropFor';
+  const propField = `prop?: ${propType}<'${tag}'> | null;`;
   const styleType = 'string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)';
   const classType = 'string | string[]';
   const ownTypes = attributes.length
@@ -74,10 +96,26 @@ function svgAttributesType({ tag, attributes = [], globalTypes }) {
       return lines;
     }).join('\n  ')}\n}`]
     : [`{ ${propField} }`];
-  return [...ownTypes, 'SvgPresentationAttributes', ...globalTypes].join(' & ');
+  const sharedTypes = ['SvgPresentationAttributes'];
+  if (includeSvgConditionalAttributes) {
+    sharedTypes.push('SvgConditionalAttributes');
+  }
+  if (includeSvgXLinkAttributes) {
+    sharedTypes.push('SvgXLinkAttributes');
+  }
+  return [...ownTypes, ...sharedTypes, ...globalTypes].join(' & ');
 }
 
-export default function buildDeclarations({ elements, globalAttributes, globalEvents, svgPresentationAttrTypes }) {
+export default function buildDeclarations({
+  elements,
+  globalAttributes,
+  globalEvents,
+  svgConditionalAttributes,
+  svgGlobalAttributes,
+  svgGlobalEvents,
+  svgPresentationAttrTypes,
+  svgXLinkAttributes,
+}) {
   const tagLookup = new Map(elements.map(el => [el.tag, el]));
 
   function childTypeRef(tag) {
@@ -113,7 +151,8 @@ export class VoidTag extends ContentTag {
 
 /**
  * Returned by \`.literal()\` and \`.unsafeLiteral()\`.
- * Embeds a raw HTML string into the output without further processing.
+ * Embeds a raw markup string into the output without further processing.
+ * Live DOM fragments are parsed in the surrounding HTML, SVG, or MathML context.
  */
 export class LiteralTag {
   toString(): string;
@@ -150,9 +189,13 @@ type ElementInterface<Tag extends string> =
   Tag extends keyof HTMLElementTagNameMap ? HTMLElementTagNameMap[Tag] :
   Tag extends keyof SVGElementTagNameMap ? SVGElementTagNameMap[Tag] :
   HTMLElement;
-type PropFor<Tag extends string> = {
-  [K in keyof ElementInterface<Tag>]?: ElementInterface<Tag>[K]
+type ElementProps<ElementType> = {
+  [K in keyof ElementType]?: ElementType[K]
 } & { [key: string]: unknown };
+type PropFor<Tag extends string> = ElementProps<ElementInterface<Tag>>;
+type ContextualPropFor<Tag extends string> =
+  | (Tag extends keyof HTMLElementTagNameMap ? ElementProps<HTMLElementTagNameMap[Tag]> : never)
+  | (Tag extends keyof SVGElementTagNameMap ? ElementProps<SVGElementTagNameMap[Tag]> : never);
 
 export type GlobalAttributes = {
   ${globalAttributes.map(a => `${a.name}?: ${a.name === 'style' ? 'string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number>)' : a.name === 'class' ? 'string | string[]' : a.type};`).join('\n  ')}
@@ -161,6 +204,21 @@ export type GlobalAttributes = {
 export type GlobalEvents = {
   ${globalEvents.map(e => `${e}?: string | ((event: ${EVENT_TYPES[e] ?? 'Event'}) => void);`).join('\n  ')}
   on?: Record<string, (event: Event) => void>;
+}
+type SvgGlobalAttributes = {
+  ${sharedAttributesType(svgGlobalAttributes)}
+}
+
+type SvgGlobalEvents = {
+  ${sharedAttributesType(svgGlobalEvents)}
+}
+
+type SvgConditionalAttributes = {
+  ${sharedAttributesType(svgConditionalAttributes)}
+}
+
+type SvgXLinkAttributes = {
+  ${sharedAttributesType(svgXLinkAttributes)}
 }
 ${svgPresentationAttrTypes?.length ? `
 type SvgPresentationAttributes = {
@@ -174,7 +232,7 @@ type SvgPresentationAttributes = {
   }).join('\n  ')}
 }
 ` : ''}
-${elements.map(e => `type ${e.attributesTypeName} = ${e.tagType === 'SvgContent' ? svgAttributesType(e) : attributesType(e)};`).join('\n\n')}
+${elements.map(e => `type ${e.attributesTypeName} = ${e.tagType === 'SvgContent' || e.svgContextual ? svgAttributesType(e) : attributesType(e)};`).join('\n\n')}
 
 ${strictContainers.map(el => {
   const extras = ['LiteralTag', 'CommentTag', 'null', 'undefined', 'boolean'];
@@ -236,7 +294,7 @@ type KebabCase<S extends string> = S extends \`\${infer H}\${infer T}\` ? H exte
  *     t.main({ class: 'container' }, [
  *       t.h1('Hello'),
  *       t.input({ type: 'checkbox', checked: true }),
- *       t.literal('<p>raw html</p>'),
+ *       t.literal('<p>raw markup</p>'),
  *     ])
  *   ),
  * ]).toString();
@@ -276,16 +334,17 @@ export default class Kensington {
   ): ContentMethod<{ [K in keyof A as K | CamelCase<K & string> | KebabCase<K & string>]?: unknown }>
 
   /**
-   * Embeds a raw HTML string verbatim into the output.
-   * Use \`.unsafeLiteral()\` for trusted HTML that includes \`<script>\` tags.
+   * Embeds a raw markup string verbatim into the output. Live DOM fragments are
+   * parsed in the surrounding HTML, SVG, or MathML context.
+   * Use \`.unsafeLiteral()\` for trusted markup that includes \`<script>\` tags.
    *
    * @example
-   * t.ul([t.li('typed'), t.literal('<li>raw html</li>')]).toString();
+   * t.ul([t.li('typed'), t.literal('<li>raw markup</li>')]).toString();
    */
   literal(str: string): LiteralTag
 
   /**
-   * Like \`.literal()\` but skips HTML encoding — use only for trusted HTML.
+   * Like \`.literal()\` but skips the script-tag check — use only for trusted markup.
    */
   unsafeLiteral(str: string): LiteralTag
 

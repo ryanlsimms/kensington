@@ -2,7 +2,15 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 const { default: Kensington, t } = require('kensington');
-const { divAttributes, inputAttributes, formAttributes } = require('kensington/attributes');
+const {
+  circleAttributes,
+  divAttributes,
+  formAttributes,
+  globalEvents,
+  inputAttributes,
+  rectAttributes,
+  svgGlobalAttributes,
+} = require('kensington/attributes');
 
 // ─── require syntax ────────────────────────────────────────────────────────
 
@@ -51,7 +59,7 @@ describe('core output', () => {
     assert.ok(t.htmlWithDocType(t.body('hi')).toString().startsWith('<!DOCTYPE html>'));
   });
 
-  it('literal embeds raw html', () => {
+  it('literal embeds raw markup', () => {
     assert.strictEqual(t.literal('<hr>').toString(), '<hr>');
   });
 
@@ -198,5 +206,23 @@ describe('attributes exports', () => {
   it('inputAttributes contains expected keys', () => {
     assert.ok('type' in inputAttributes);
     assert.ok('checked' in inputAttributes);
+  });
+
+  it('SVG element maps include globals for the documented custom-tag workflow', () => {
+    const engine = new Kensington({ validationLevel: 'error' });
+    const chartRect = engine.createCustomTag('chart-rect', rectAttributes);
+    assert.doesNotThrow(() => chartRect({
+      'xml:space': 'preserve',
+      onshow: 'show()',
+    }).toString());
+  });
+
+  it('SVG element maps isolate array validators from shared groups and sibling maps', () => {
+    assert.notStrictEqual(rectAttributes.onclick, globalEvents.onclick);
+    assert.deepStrictEqual(rectAttributes.onclick, globalEvents.onclick);
+    assert.notStrictEqual(rectAttributes.onclick, circleAttributes.onclick);
+    assert.notStrictEqual(rectAttributes['xml:space'], svgGlobalAttributes['xml:space']);
+    assert.deepStrictEqual(rectAttributes['xml:space'], svgGlobalAttributes['xml:space']);
+    assert.notStrictEqual(rectAttributes['xml:space'], circleAttributes['xml:space']);
   });
 });

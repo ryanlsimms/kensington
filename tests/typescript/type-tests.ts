@@ -12,7 +12,15 @@ import Kensington, {
   type TableTag,
   type ImgTag,
 } from 'kensington';
-import type { globalAttributes, formAttributes } from 'kensington/attributes';
+import type {
+  formAttributes,
+  globalAttributes,
+  svgConditionalAttributes,
+  svgGlobalAttributes,
+  svgGlobalEvents,
+  svgPresentationAttributes,
+  svgXLinkAttributes,
+} from 'kensington/attributes';
 
 // ─── module augmentation ────────────────────────────────────────────────────
 
@@ -110,6 +118,36 @@ t.div({ class: ['foo', 'bar'] });
 t.span({ id: 'my-id', title: 'tooltip', tabindex: 0 });
 t.p({ contenteditable: 'true' });
 t.p({ contenteditable: 'false' });
+
+// HTML/SVG shared tag names accept the union of both vocabularies' attributes.
+t.title({ fill: 'red', 'xml:space': 'preserve' });
+t.a({ href: '#target', requiredExtensions: 'svg' });
+t.script({ href: '/app.js' });
+t.script({ 'xml:space': 'preserve' });
+t.style({ type: 'text/css' });
+t.title({ prop: { text: 'HTML title' } });
+t.title({ prop: { ownerSVGElement: null } });
+t.feBlend({ 'xml:space': 'preserve', onshow: () => {} });
+t.rect({ requiredExtensions: 'svg', systemLanguage: 'en' });
+t.use({ 'xlink:href': '#shape', 'xlink:title': 'Shape' });
+t.animate({ fill: 'remove' });
+t.animateMotion({ fill: 'freeze' });
+t.animateTransform({ fill: 'remove' });
+t.set({ fill: 'freeze' });
+t.circle({ fill: 'red' });
+t.g({ 'xml:space': 'default' });
+
+// @ts-expect-error - SVG script narrows xml:space to preserve
+t.script({ 'xml:space': 'default' });
+
+// @ts-expect-error - SVG animation fill only accepts its timing values
+t.animate({ fill: 'bogus' });
+// @ts-expect-error - SVG animation fill only accepts its timing values
+t.animateMotion({ fill: 'red' });
+// @ts-expect-error - SVG animation fill only accepts its timing values
+t.animateTransform({ fill: 'inherit' });
+// @ts-expect-error - SVG animation fill only accepts its timing values
+t.set({ fill: 'bogus' });
 
 // @ts-expect-error - contenteditable doesn't accept arbitrary strings
 t.p({ contenteditable: 'yes' });

@@ -1,12 +1,12 @@
 import he from './he.js';
 import { LINE_BREAK_REGEX, preserveSpaces } from './text-utils.js';
 
-export default function stringifyContentArray(arr) {
+export default function stringifyContentArray(arr, stringifyNode = String) {
   let result = '';
   for (const node of arr) {
     if (result) { result += '\n'; } // guarded increment avoids an intermediate array just to .join('\n')
     if (typeof node !== 'string') {
-      result += String(node);
+      result += stringifyNode(node);
       continue;
     }
 

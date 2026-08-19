@@ -10,6 +10,11 @@ export default class VoidTag extends ContentTag {
   }
 
   toString() {
+    return this._toString();
+  }
+
+  _toString(parentContext) {
+    this._resolveNamespace(parentContext);
     return `<${this.tagName}${this.attributeString()}>`;
   }
 }

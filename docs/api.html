@@ -170,7 +170,11 @@ t.htmlWithDocType(content?: HtmlContent): ContentTag</code></pre>
     <pre><code class="language-typescript">t.literal(str: string): LiteralTag
 t.unsafeLiteral(str: string): LiteralTag</code></pre>
 
-    <p><code>literal</code> embeds a raw HTML string into the output. <code>&lt;script&gt;</code> tags trigger a validation warning or error. <code>unsafeLiteral</code> skips that check and should only be used for trusted HTML.</p>
+    <p><code>literal</code> embeds a raw markup string into the output. When creating live DOM nodes, the fragment is parsed in its surrounding HTML, SVG, or MathML context. <code>&lt;script&gt;</code> tags trigger a validation warning or error. <code>unsafeLiteral</code> skips that check and should only be used for trusted markup. In an HTML context, its inline scripts execute and external scripts load when the returned fragment or containing tree is inserted into a document. Foreign-content scripts retain their native namespace and browser-defined execution behavior rather than being coerced into HTML scripts.</p>
+
+    <aside aria-label="Foreign-content script warning"><p><strong>Cross-browser SVG/MathML warning:</strong> do not rely on scripts inside SVG or MathML literals for portable execution. In current browsers, a Range-created inline SVG script executes in Firefox but remains inert in Chromium and WebKit. Keep foreign-content literals for markup and place initialization in an HTML-context <code>t.script()</code> element or normal application JavaScript.</p></aside>
+
+    <p><code>literal</code> is not an HTML sanitizer: its script check does not remove event-handler attributes, dangerous URLs, embedded active content, or other potentially unsafe markup, so both methods require trusted input.</p>
 
     <h3 id="inline-comment">inlineComment</h3>
 
@@ -240,12 +244,16 @@ import { t } from 'https://cdn.jsdelivr.net/npm/kensington/dist/kensington.min.j
 
     <p>Every element has a named export containing its allowed-attribute validator object. Useful for extending built-in elements via <code>createCustomTag</code>.</p>
 
+    <p>SVG-capable element maps include their applicable shared validators. The shared groups are also exported individually as <code>svgGlobalAttributes</code>, <code>svgGlobalEvents</code>, <code>svgPresentationAttributes</code>, <code>svgConditionalAttributes</code>, and <code>svgXLinkAttributes</code>.</p>
+
     <pre><code class="language-javascript">import {
   divAttributes,
   inputAttributes,
   formAttributes,
   buttonAttributes,
   aAttributes,
+  svgGlobalAttributes,
+  svgPresentationAttributes,
   // ... one export per element
 } from 'kensington/attributes';</code></pre>
 

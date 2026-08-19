@@ -53,7 +53,7 @@
         <li><a href="#constructor">Constructor options</a></li>
         <li><a href="#validation">Validation</a></li>
         <li><a href="#custom-elements">Custom elements</a></li>
-        <li><a href="#raw-html">Raw HTML &amp; comments</a></li>
+        <li><a href="#raw-html">Raw markup &amp; comments</a></li>
       </ul>
     </li>
     <li><a href="#imports">Imports &amp; Types</a></li>
@@ -303,7 +303,7 @@ div({ class: 'card' }, [
   <section id="dom">
     <h2>Browser DOM</h2>
 
-    <p>Standard event handler attributes (<code>onclick</code>, <code>oninput</code>, etc.) accept a function (wired via <code>addEventListener</code>) or a string (set via <code>setAttribute</code>). For custom events, use the <code>on</code> key with a plain object mapping event names verbatim to handlers. SVG and MathML elements get the correct namespace automatically.</p>
+    <p>Standard event handler attributes (<code>onclick</code>, <code>oninput</code>, etc.) accept a function (wired via <code>addEventListener</code>) or a string (set via <code>setAttribute</code>). For custom events, use the <code>on</code> key with a plain object mapping event names verbatim to handlers. SVG and MathML elements get the correct namespace automatically. The shared <code>a</code>, <code>script</code>, <code>style</code>, and <code>title</code> methods select HTML or SVG from their parent context, and namespaced attributes such as <code>xlink:href</code> receive their standard namespace URI.</p>
 
     <pre><code class="language-javascript">import { t } from 'kensington';
 
@@ -496,7 +496,7 @@ const t = new Kensington({
   logger: msg =&gt; myLogger(msg),              // receives validation warnings, default console.log
 });</code></pre>
 
-    <aside>
+    <aside aria-label="XML namespace note">
       <p>For standalone <code>.svg</code> files or XML contexts that need <code>xmlns:xlink</code> or other XML namespace declarations, pass <code>'xmlns'</code> as an additional namespace. The root <code>svg</code> element already accepts <code>xmlns</code> itself without any extra configuration.</p>
       <pre><code class="language-javascript">const t = new Kensington({ additionalNamespaces: 'xmlns' });
 t.svg({ xmlns: 'http://www.w3.org/2000/svg', 'xmlns:xlink': 'http://www.w3.org/1999/xlink' });</code></pre>
@@ -519,7 +519,12 @@ t.svg({ xmlns: 'http://www.w3.org/2000/svg', 'xmlns:xlink': 'http://www.w3.org/1
       <li><strong>Attribute names:</strong> checked against the HTML/SVG/MathML spec. <code>data-*</code>, <code>aria-*</code>, <code>additionalNamespaces</code>, and <code>additionalGlobalAttributes</code> are always allowed.</li>
       <li><strong>Attribute values:</strong> checked against allowed types/literals (e.g. <code>type</code> on <code>input</code> only accepts known values; <code>id</code> must not start with a digit).</li>
       <li><strong>Style object values:</strong> non-string/number values (other than <code>undefined</code>) are flagged.</li>
+      <li><strong>Namespaces:</strong> unsupported HTML/SVG/MathML crossings are reported when the tree is rendered. If rendering continues, non-contextual methods retain their intrinsic namespace. String/live-DOM parity applies to valid namespace trees, not browser repairs of malformed foreign content.</li>
     </ul>
+
+    <aside aria-label="Contextual validation note">
+      <p>The shared <code>a</code>, <code>script</code>, <code>style</code>, and <code>title</code> methods intentionally validate against the union of their HTML and SVG attributes. A standalone tag object has no parent context when it is constructed, so runtime validation cannot narrow those attributes to one vocabulary.</p>
+    </aside>
 
     <pre><code class="language-javascript">const t = new Kensington({ validationLevel: 'error' });
 
@@ -562,12 +567,18 @@ class MyEngine extends Kensington {
 const t = new MyEngine({ validationLevel: 'error' });
 t.button({ type: 'button', popovertarget: 'my-popover' }, 'Open').toString();</code></pre>
 
-    <p>Every element in the spec has a corresponding named export (<code>divAttributes</code>, <code>inputAttributes</code>, &hellip;) available from <code>kensington/attributes</code>.</p>
+    <p>Every element in the spec has a corresponding named export (<code>divAttributes</code>, <code>inputAttributes</code>, &hellip;) available from <code>kensington/attributes</code>. SVG-capable element maps include their applicable shared validators; the shared <code>svgGlobalAttributes</code>, <code>svgGlobalEvents</code>, <code>svgPresentationAttributes</code>, <code>svgConditionalAttributes</code>, and <code>svgXLinkAttributes</code> groups are also exported individually.</p>
 
-    <h3 id="raw-html">Raw HTML &amp; comments</h3>
+    <h3 id="raw-html">Raw markup &amp; comments</h3>
 
-    <pre><code class="language-javascript">t.literal('&lt;li&gt;verbatim, HTML-encoded&lt;/li&gt;');    // &lt;script&gt; tags flagged via validationLevel
-t.unsafeLiteral('&lt;li&gt;trusted HTML, no encoding&lt;/li&gt;');
+    <p>Literal fragments are emitted verbatim by <code>toString()</code> and parsed in their actual HTML, SVG, or MathML parent context by <code>toElement()</code>. In an HTML context, inline scripts produced by <code>unsafeLiteral().toElement()</code> execute, and external scripts load, when the returned fragment or containing tree is inserted into a document. Foreign-content scripts retain their native namespace and browser-defined execution behavior rather than being coerced into HTML scripts.</p>
+
+    <aside aria-label="Foreign-content script warning"><p><strong>Cross-browser SVG/MathML warning:</strong> do not rely on scripts inside SVG or MathML literals for portable execution. In current browsers, a Range-created inline SVG script executes in Firefox but remains inert in Chromium and WebKit. Keep foreign-content literals for markup and place initialization in an HTML-context <code>t.script()</code> element or normal application JavaScript.</p></aside>
+
+    <p><code>literal()</code> is not an HTML sanitizer: its script check does not remove event-handler attributes, dangerous URLs, embedded active content, or other potentially unsafe markup, so both literal methods require trusted input.</p>
+
+    <pre><code class="language-javascript">t.literal('&lt;li&gt;verbatim markup&lt;/li&gt;');          // &lt;script&gt; tags flagged via validationLevel
+t.unsafeLiteral('&lt;script&gt;trusted();&lt;/script&gt;'); // skips the script-tag check
 
 t.inlineComment('hello world');          // &lt;!-- hello world --&gt;
 t.inlineComment('line 1\nline 2');       // &lt;!--\n  line 1\n  line 2\n--&gt;</code></pre>

@@ -2,7 +2,7 @@ import { expect,test } from '@playwright/test';
 
 export function registerTests(bundle) {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:3000/');
+    await page.goto('/');
   });
 
   // ─── element creation ──────────────────────────────────────────────────────
@@ -121,7 +121,7 @@ export function registerTests(bundle) {
     await expect(page.locator('ul li').nth(1)).toHaveText('two');
   });
 
-  test('literal creates element from raw HTML string', async ({ page }) => {
+  test('literal creates element from a raw markup string', async ({ page }) => {
     await page.evaluate(async src => {
       const { t } = await import(src);
       document.body.append(t.literal('<p id="from-literal">hello</p>').toElement());
@@ -136,6 +136,120 @@ export function registerTests(bundle) {
     }, bundle);
     await expect(page.locator('#lit-a')).toHaveText('a');
     await expect(page.locator('#lit-b')).toHaveText('b');
+  });
+
+  test('standalone and nested unsafe literal scripts execute when inserted', async ({ page }) => {
+    const result = await page.evaluate(async src => {
+      const { t } = await import(src);
+      globalThis.__kensingtonUnsafeLiteralRuns = 0;
+
+      const direct = t.unsafeLiteral(
+        '<script>globalThis.__kensingtonUnsafeLiteralRuns += 1;</script>',
+      ).toElement();
+      const beforeDirectInsertion = globalThis.__kensingtonUnsafeLiteralRuns;
+      document.body.append(direct);
+      const afterDirectInsertion = globalThis.__kensingtonUnsafeLiteralRuns;
+
+      const nested = t.div(t.unsafeLiteral(
+        '<script>globalThis.__kensingtonUnsafeLiteralRuns += 1;</script>',
+      )).toElement();
+      const beforeNestedInsertion = globalThis.__kensingtonUnsafeLiteralRuns;
+      document.body.append(nested);
+      const afterNestedInsertion = globalThis.__kensingtonUnsafeLiteralRuns;
+      nested.remove();
+      document.body.append(nested);
+      const afterNestedReinsertion = globalThis.__kensingtonUnsafeLiteralRuns;
+
+      document.body.append(t.literal(
+        '<script>globalThis.__kensingtonUnsafeLiteralRuns += 1;</script>',
+      ).toElement());
+      const afterSafeLiteralInsertion = globalThis.__kensingtonUnsafeLiteralRuns;
+
+      delete globalThis.__kensingtonUnsafeLiteralRuns;
+      return {
+        beforeDirectInsertion,
+        afterDirectInsertion,
+        beforeNestedInsertion,
+        afterNestedInsertion,
+        afterNestedReinsertion,
+        afterSafeLiteralInsertion,
+      };
+    }, bundle);
+
+    expect(result).toEqual({
+      beforeDirectInsertion: 0,
+      afterDirectInsertion: 1,
+      beforeNestedInsertion: 1,
+      afterNestedInsertion: 2,
+      afterNestedReinsertion: 2,
+      afterSafeLiteralInsertion: 2,
+    });
+  });
+
+  test('standalone and nested unsafe literal external scripts load when inserted', async ({ page }) => {
+    const result = await page.evaluate(async src => {
+      const { t } = await import(src);
+      globalThis.__kensingtonUnsafeLiteralExternalRuns = 0;
+      const scriptSource = encodeURIComponent(
+        'globalThis.__kensingtonUnsafeLiteralExternalRuns += 1;',
+      );
+      const markup = `<script src="data:text/javascript,${scriptSource}"></script>`;
+
+      const direct = t.unsafeLiteral(markup).toElement();
+      const directScript = direct.querySelector('script');
+      const directLoaded = new Promise((resolve, reject) => {
+        directScript.addEventListener('load', resolve, { once: true });
+        directScript.addEventListener('error', reject, { once: true });
+      });
+
+      const nested = t.div(t.unsafeLiteral(markup)).toElement();
+      const nestedScript = nested.querySelector('script');
+      const nestedLoaded = new Promise((resolve, reject) => {
+        nestedScript.addEventListener('load', resolve, { once: true });
+        nestedScript.addEventListener('error', reject, { once: true });
+      });
+
+      document.body.append(direct, nested);
+      await Promise.all([directLoaded, nestedLoaded]);
+      const runs = globalThis.__kensingtonUnsafeLiteralExternalRuns;
+      delete globalThis.__kensingtonUnsafeLiteralExternalRuns;
+      return runs;
+    }, bundle);
+
+    expect(result).toBe(2);
+  });
+
+  test('SVG unsafe literal scripts retain native context and do not execute twice', async ({ page }) => {
+    const result = await page.evaluate(async src => {
+      const { t } = await import(src);
+      globalThis.__kensingtonSvgUnsafeLiteralRuns = 0;
+
+      const svg = t.svg(t.unsafeLiteral(
+        '<script id="svg-unsafe-script">globalThis.__kensingtonSvgUnsafeLiteralRuns += 1;</script>',
+      )).toElement();
+      const script = svg.querySelector('#svg-unsafe-script');
+      const beforeInsertion = globalThis.__kensingtonSvgUnsafeLiteralRuns;
+      document.body.append(svg);
+      const afterInsertion = globalThis.__kensingtonSvgUnsafeLiteralRuns;
+      svg.remove();
+      document.body.append(svg);
+      const afterReinsertion = globalThis.__kensingtonSvgUnsafeLiteralRuns;
+
+      delete globalThis.__kensingtonSvgUnsafeLiteralRuns;
+      return {
+        namespace: script.namespaceURI,
+        beforeInsertion,
+        afterInsertion,
+        afterReinsertion,
+      };
+    }, bundle);
+
+    expect(result.namespace).toBe('http://www.w3.org/2000/svg');
+    expect(result.beforeInsertion).toBe(0);
+    // Native SVG script execution differs by engine. Kensington preserves the
+    // SVG context instead of coercing the element into executable HTML script.
+    expect([0, 1]).toContain(result.afterInsertion);
+    expect(result.afterReinsertion).toBe(result.afterInsertion);
   });
 
   test('inlineComment renders as a comment node between nested elements', async ({ page }) => {
@@ -257,6 +371,311 @@ export function registerTests(bundle) {
       return circle.namespaceURI;
     }, bundle);
     expect(ns).toBe('http://www.w3.org/2000/svg');
+  });
+
+  test('creates shared elements in the namespace of their parent context', async ({ page }) => {
+    const namespaces = await page.evaluate(async src => {
+      const { t } = await import(src);
+      const htmlTitle = t.title('HTML title').toElement();
+      const tree = t.div([
+        t.svg([
+          t.g(t.title({ id: 'svg-title' }, 'SVG title')),
+          t.a({ id: 'svg-a', href: '#target' }, t.circle()),
+          t.script({ id: 'svg-script', href: '/app.js' }),
+          t.style({ id: 'svg-style', type: 'text/css' }, '.x {}'),
+          t.foreignObject([
+            t.title({ id: 'foreign-title' }, 'HTML title'),
+            t.div({ id: 'foreign-div' }, 'HTML content'),
+            t.svg(t.title({ id: 'nested-svg-title' }, 'Nested SVG title')),
+          ]),
+        ]),
+      ]).toElement();
+      const byId = id => tree.querySelector(`#${id}`).namespaceURI;
+      return {
+        html: htmlTitle.namespaceURI,
+        svgTitle: byId('svg-title'),
+        svgA: byId('svg-a'),
+        svgScript: byId('svg-script'),
+        svgStyle: byId('svg-style'),
+        foreignTitle: byId('foreign-title'),
+        foreignDiv: byId('foreign-div'),
+        nestedSvgTitle: byId('nested-svg-title'),
+      };
+    }, bundle);
+    expect(namespaces).toEqual({
+      html: 'http://www.w3.org/1999/xhtml',
+      svgTitle: 'http://www.w3.org/2000/svg',
+      svgA: 'http://www.w3.org/2000/svg',
+      svgScript: 'http://www.w3.org/2000/svg',
+      svgStyle: 'http://www.w3.org/2000/svg',
+      foreignTitle: 'http://www.w3.org/1999/xhtml',
+      foreignDiv: 'http://www.w3.org/1999/xhtml',
+      nestedSvgTitle: 'http://www.w3.org/2000/svg',
+    });
+  });
+
+  test('unsupported crossings preserve each method\'s intrinsic namespace', async ({ page }) => {
+    const namespaces = await page.evaluate(async src => {
+      const { t } = await import(src);
+      const tree = t.div([
+        t.svg(t.div({ id: 'html-div' }, 'x')),
+        t.svg(t.math({ id: 'math-in-svg' }, t.mi('x'))),
+        t.math(t.svg({ id: 'svg-in-math' }, t.circle())),
+      ]).toElement();
+      const byId = id => tree.querySelector(`#${id}`).namespaceURI;
+      return {
+        htmlDiv: byId('html-div'),
+        mathInSvg: byId('math-in-svg'),
+        svgInMath: byId('svg-in-math'),
+      };
+    }, bundle);
+    expect(namespaces).toEqual({
+      htmlDiv: 'http://www.w3.org/1999/xhtml',
+      mathInSvg: 'http://www.w3.org/1998/Math/MathML',
+      svgInMath: 'http://www.w3.org/2000/svg',
+    });
+  });
+
+  test('toString and toElement agree for valid namespace trees', async ({ page }) => {
+    const result = await page.evaluate(async src => {
+      const { t } = await import(src);
+      const tag = t.div([
+        t.svg([
+          t.title({ id: 'svg-title-parity' }, 'SVG title'),
+          t.foreignObject(t.div({ id: 'foreign-div-parity' }, 'HTML content')),
+        ]),
+        t.math([
+          t.mtext(t.span({ id: 'math-text-parity' }, 'HTML phrasing content')),
+          t.annotationXml(t.svg({ id: 'annotation-svg-parity' }, t.circle())),
+        ]),
+      ]);
+      const live = tag.toElement();
+      const template = document.createElement('template');
+      template.innerHTML = tag.toString();
+      return [
+        'svg-title-parity',
+        'foreign-div-parity',
+        'math-text-parity',
+        'annotation-svg-parity',
+      ].map(id => ({
+        id,
+        live: live.querySelector(`#${id}`).namespaceURI,
+        parsed: template.content.querySelector(`#${id}`).namespaceURI,
+      }));
+    }, bundle);
+    expect(result).toEqual([
+      {
+        id: 'svg-title-parity',
+        live: 'http://www.w3.org/2000/svg',
+        parsed: 'http://www.w3.org/2000/svg',
+      },
+      {
+        id: 'foreign-div-parity',
+        live: 'http://www.w3.org/1999/xhtml',
+        parsed: 'http://www.w3.org/1999/xhtml',
+      },
+      {
+        id: 'math-text-parity',
+        live: 'http://www.w3.org/1999/xhtml',
+        parsed: 'http://www.w3.org/1999/xhtml',
+      },
+      {
+        id: 'annotation-svg-parity',
+        live: 'http://www.w3.org/2000/svg',
+        parsed: 'http://www.w3.org/2000/svg',
+      },
+    ]);
+  });
+
+  test('literal fragments use their actual HTML, SVG, and MathML parent contexts', async ({ page }) => {
+    const result = await page.evaluate(async src => {
+      const { t } = await import(src);
+      const tag = t.div([
+        t.svg([
+          t.literal('<circle id="literal-svg-circle"></circle><text id="literal-svg-text">x</text>'),
+          t.foreignObject(t.literal('<section id="literal-svg-html">HTML</section>')),
+        ]),
+        t.math([
+          t.unsafeLiteral('<mrow id="literal-math-row"><mi id="literal-math-mi">x</mi></mrow>'),
+          t.mtext(t.literal('<span id="literal-math-html">HTML</span>')),
+          t.annotationXml(
+            { encoding: 'text/html' },
+            t.literal('<section id="literal-annotation-html">HTML</section>'),
+          ),
+          t.annotationXml(t.literal(
+            '<svg id="literal-annotation-svg"><circle id="literal-annotation-circle"></circle></svg>',
+          )),
+        ]),
+      ]);
+      const live = tag.toElement();
+      const template = document.createElement('template');
+      template.innerHTML = tag.toString();
+      return [
+        'literal-svg-circle',
+        'literal-svg-text',
+        'literal-svg-html',
+        'literal-math-row',
+        'literal-math-mi',
+        'literal-math-html',
+        'literal-annotation-html',
+        'literal-annotation-svg',
+        'literal-annotation-circle',
+      ].map(id => ({
+        id,
+        live: live.querySelector(`#${id}`)?.namespaceURI,
+        parsed: template.content.querySelector(`#${id}`)?.namespaceURI,
+      }));
+    }, bundle);
+    expect(result).toEqual([
+      { id: 'literal-svg-circle', live: 'http://www.w3.org/2000/svg', parsed: 'http://www.w3.org/2000/svg' },
+      { id: 'literal-svg-text', live: 'http://www.w3.org/2000/svg', parsed: 'http://www.w3.org/2000/svg' },
+      { id: 'literal-svg-html', live: 'http://www.w3.org/1999/xhtml', parsed: 'http://www.w3.org/1999/xhtml' },
+      {
+        id: 'literal-math-row',
+        live: 'http://www.w3.org/1998/Math/MathML',
+        parsed: 'http://www.w3.org/1998/Math/MathML',
+      },
+      {
+        id: 'literal-math-mi',
+        live: 'http://www.w3.org/1998/Math/MathML',
+        parsed: 'http://www.w3.org/1998/Math/MathML',
+      },
+      { id: 'literal-math-html', live: 'http://www.w3.org/1999/xhtml', parsed: 'http://www.w3.org/1999/xhtml' },
+      {
+        id: 'literal-annotation-html',
+        live: 'http://www.w3.org/1999/xhtml',
+        parsed: 'http://www.w3.org/1999/xhtml',
+      },
+      {
+        id: 'literal-annotation-svg',
+        live: 'http://www.w3.org/2000/svg',
+        parsed: 'http://www.w3.org/2000/svg',
+      },
+      {
+        id: 'literal-annotation-circle',
+        live: 'http://www.w3.org/2000/svg',
+        parsed: 'http://www.w3.org/2000/svg',
+      },
+    ]);
+  });
+
+  test('literal fragments reuse a contextual range only within their actual parent', async ({ page }) => {
+    const result = await page.evaluate(async src => {
+      const { t } = await import(src);
+      const originalCreateRange = Document.prototype.createRange;
+      let rangeCalls = 0;
+      Document.prototype.createRange = function createRange() {
+        rangeCalls += 1;
+        return originalCreateRange.call(this);
+      };
+
+      try {
+        const live = t.div([
+          t.literal('<span id="html-a"></span>'),
+          t.em({ id: 'html-middle' }),
+          t.literal('<span id="html-b"></span>'),
+          t.svg([
+            t.literal('<circle id="svg-a"></circle>'),
+            t.g({ id: 'svg-middle' }),
+            t.literal('<circle id="svg-b"></circle>'),
+          ]),
+          t.math([
+            t.mtext([
+              t.literal('<span id="mtext-a"></span>'),
+              t.strong({ id: 'mtext-middle' }),
+              t.literal('<span id="mtext-b"></span>'),
+            ]),
+            t.annotationXml({ encoding: 'text/html' }, [
+              t.literal('<section id="annotation-a"></section>'),
+              t.em({ id: 'annotation-middle' }),
+              t.literal('<section id="annotation-b"></section>'),
+            ]),
+          ]),
+          t.section([
+            t.literal('<i id="section-a-1"></i>'),
+            t.literal('<i id="section-a-2"></i>'),
+          ]),
+          t.section([
+            t.literal('<i id="section-b-1"></i>'),
+            t.literal('<i id="section-b-2"></i>'),
+          ]),
+        ]).toElement();
+
+        const childIds = selector => Array.from(live.querySelector(selector).children, child => child.id);
+        return {
+          rangeCalls,
+          rootOrder: Array.from(live.children, child => child.id || child.localName),
+          svgOrder: childIds('svg'),
+          mtextOrder: childIds('mtext'),
+          annotationOrder: childIds('annotation-xml'),
+          sectionOrders: Array.from(live.querySelectorAll(':scope > section'), section => (
+            Array.from(section.children, child => child.id)
+          )),
+          namespaces: [
+            'html-a',
+            'html-b',
+            'svg-a',
+            'svg-b',
+            'mtext-a',
+            'mtext-b',
+            'annotation-a',
+            'annotation-b',
+          ].map(id => [id, live.querySelector(`#${id}`).namespaceURI]),
+        };
+      } finally {
+        Document.prototype.createRange = originalCreateRange;
+      }
+    }, bundle);
+
+    expect(result).toEqual({
+      rangeCalls: 6,
+      rootOrder: ['html-a', 'html-middle', 'html-b', 'svg', 'math', 'section', 'section'],
+      svgOrder: ['svg-a', 'svg-middle', 'svg-b'],
+      mtextOrder: ['mtext-a', 'mtext-middle', 'mtext-b'],
+      annotationOrder: ['annotation-a', 'annotation-middle', 'annotation-b'],
+      sectionOrders: [
+        ['section-a-1', 'section-a-2'],
+        ['section-b-1', 'section-b-2'],
+      ],
+      namespaces: [
+        ['html-a', 'http://www.w3.org/1999/xhtml'],
+        ['html-b', 'http://www.w3.org/1999/xhtml'],
+        ['svg-a', 'http://www.w3.org/2000/svg'],
+        ['svg-b', 'http://www.w3.org/2000/svg'],
+        ['mtext-a', 'http://www.w3.org/1999/xhtml'],
+        ['mtext-b', 'http://www.w3.org/1999/xhtml'],
+        ['annotation-a', 'http://www.w3.org/1999/xhtml'],
+        ['annotation-b', 'http://www.w3.org/1999/xhtml'],
+      ],
+    });
+  });
+
+  test('assigns namespace URIs to namespaced attributes', async ({ page }) => {
+    const result = await page.evaluate(async src => {
+      const { t } = await import(src);
+      const svg = t.svg({
+        xmlns: 'http://www.w3.org/2000/svg',
+        'xmlns:xlink': 'http://www.w3.org/1999/xlink',
+      }, t.use({
+        'xlink:href': '#shape',
+        'xml:space': 'preserve',
+      })).toElement();
+      const use = svg.firstElementChild;
+      return {
+        xmlns: svg.getAttributeNode('xmlns').namespaceURI,
+        xmlnsXlink: svg.getAttributeNode('xmlns:xlink').namespaceURI,
+        xlinkHref: use.getAttributeNode('xlink:href').namespaceURI,
+        xmlSpace: use.getAttributeNode('xml:space').namespaceURI,
+        href: use.getAttributeNS('http://www.w3.org/1999/xlink', 'href'),
+      };
+    }, bundle);
+    expect(result).toEqual({
+      xmlns: 'http://www.w3.org/2000/xmlns/',
+      xmlnsXlink: 'http://www.w3.org/2000/xmlns/',
+      xlinkHref: 'http://www.w3.org/1999/xlink',
+      xmlSpace: 'http://www.w3.org/XML/1998/namespace',
+      href: '#shape',
+    });
   });
 
   test('creates MathML elements in the MathML namespace', async ({ page }) => {

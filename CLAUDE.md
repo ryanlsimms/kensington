@@ -72,7 +72,7 @@ Kensington is an HTML template library that generates HTML strings (or DOM eleme
 
 - `esm/tag-classes/content-tag.js` — base class for all HTML/SVG/MathML elements; handles attribute validation, content normalization, indentation, string serialization (`toString()`), and DOM creation (`toElement()`). The `prop` key is extracted from `options.attributes` in the constructor and stored in `this.prop`; `attributeIsValid` and `attributeValueIsValid` both accept `prop` so it is not flagged as an unknown attribute when validation runs. `toElement()` processes `this.prop` via direct property assignment (`el[name] = value`), validating existence and writability on the live element before assigning. `attributesArrayFromObject` skips `prop` so it never appears in the HTML attribute pipeline.
 - `esm/tag-classes/void-tag.js` — subclass for void elements (no closing tag, no content)
-- `esm/tag-classes/literal-tag.js` — wraps raw HTML strings passed via `.literal()` / `.unsafeLiteral()`
+- `esm/tag-classes/literal-tag.js` — wraps raw markup strings passed via `.literal()` / `.unsafeLiteral()`
 - `esm/tag-classes/comment-tag.js` — wraps HTML comments created via `.inlineComment()`; `toString()` formats single/multi-line, `toElement()` uses `document.createComment()`
 - `esm/tag-classes/html-with-doctype-tag.js` — subclass for `.htmlWithDocType()` that prepends `<!DOCTYPE html>`
 - `esm/lib/` — utilities: attribute string/array builders, indentation, content stringification, `he` encoder wrapper, camelCase↔kebab-case conversion

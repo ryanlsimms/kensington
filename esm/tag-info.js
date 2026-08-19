@@ -6,10 +6,12 @@ const V = 'V';
 const S = 'S';
 const M = 'M';
 const L = 'L';
+const X = 'X';
+const Y = 'Y';
 const D = 'D';
 
 export default {
-  a: C,
+  a: X,
   abbr: C,
   address: C,
   animate: S,
@@ -169,7 +171,7 @@ export default {
   ruby: C,
   s: C,
   samp: C,
-  script: L,
+  script: Y,
   search: C,
   section: C,
   select: C,
@@ -182,7 +184,7 @@ export default {
   span: C,
   stop: S,
   strong: C,
-  style: L,
+  style: Y,
   sub: C,
   summary: C,
   sup: C,
@@ -200,7 +202,7 @@ export default {
   th: C,
   thead: C,
   time: C,
-  title: C,
+  title: X,
   tr: C,
   track: V,
   tspan: S,

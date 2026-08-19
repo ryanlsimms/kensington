@@ -2,6 +2,10 @@ import ContentTag from './content-tag.js';
 
 export default class HtmlWithDoctypeTag extends ContentTag {
   toString() {
-    return `<!DOCTYPE html>\n${super.toString()}`;
+    return this._toString();
+  }
+
+  _toString(parentContext) {
+    return `<!DOCTYPE html>\n${super._toString(parentContext)}`;
   }
 }

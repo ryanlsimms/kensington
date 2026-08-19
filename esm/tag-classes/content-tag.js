@@ -7,6 +7,42 @@ import stringifyContentArray from '../lib/stringify-content-array.js';
 import { styleObjectToCss } from '../lib/style-utils.js';
 import { camelToKebab, LINE_BREAK_TEST_REGEX, preserveSpaces } from '../lib/text-utils.js';
 
+const HTML_NAMESPACE = 'http://www.w3.org/1999/xhtml';
+const MATH_NAMESPACE = 'http://www.w3.org/1998/Math/MathML';
+const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
+const XLINK_NAMESPACE = 'http://www.w3.org/1999/xlink';
+const XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace';
+const XMLNS_NAMESPACE = 'http://www.w3.org/2000/xmlns/';
+const SVG_HTML_INTEGRATION_POINTS = new Set(['desc', 'foreignObject', 'title']);
+const MATH_TEXT_INTEGRATION_POINTS = new Set(['mi', 'mo', 'mn', 'ms', 'mtext']);
+const MATH_TEXT_EXCEPTIONS = Object.freeze({
+  malignmark: MATH_NAMESPACE,
+  mglyph: MATH_NAMESPACE,
+});
+const ANNOTATION_XML_EXCEPTIONS = Object.freeze({ svg: HTML_NAMESPACE });
+
+function namespaceName(namespace) {
+  if (namespace === HTML_NAMESPACE) { return 'HTML'; }
+  if (namespace === SVG_NAMESPACE) { return 'SVG'; }
+  if (namespace === MATH_NAMESPACE) { return 'MathML'; }
+  return namespace;
+}
+
+function attributeNamespace(attrName) {
+  if (attrName === 'xmlns' || attrName.startsWith('xmlns:')) { return XMLNS_NAMESPACE; }
+  if (attrName.startsWith('xlink:')) { return XLINK_NAMESPACE; }
+  if (attrName.startsWith('xml:')) { return XML_NAMESPACE; }
+  return null;
+}
+
+function ownEnumerableValue(obj, key) {
+  try {
+    return Object.prototype.propertyIsEnumerable.call(obj, key) ? obj[key] : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function isValidStyleValue(v) {
   return [null, undefined, false].includes(v) || ['string', 'number'].includes(typeof v); // null/undefined/false are valid. They're silently omitted at render time, not errors
 }
@@ -80,8 +116,68 @@ export default class ContentTag {
     this.validationLevel = options.validationLevel;
     this.logger = options.logger;
     this.content = collectContent(options.content);
-    this.namespace = options.namespace;
+    this.namespacePolicy = options.namespacePolicy ?? {
+      defaultNamespace: HTML_NAMESPACE,
+      supportedNamespaces: [HTML_NAMESPACE],
+    };
     this.encodeContent = options.encodeContent;
+  }
+
+  _resolveNamespace(parentContext) {
+    const { defaultNamespace, supportedNamespaces } = this.namespacePolicy;
+    if (parentContext === undefined) {
+      return defaultNamespace;
+    }
+
+    const parentNamespace = parentContext.namespaceExceptions?.[this.tagName]
+      ?? parentContext.namespace;
+
+    // Only names shared by HTML and SVG inherit their effective parent namespace.
+    if (supportedNamespaces.length > 1 && supportedNamespaces.includes(parentNamespace)) {
+      return parentNamespace;
+    }
+
+    // Non-contextual methods always retain their intrinsic namespace. HTML parsing
+    // permits <svg> and <math> to enter foreign content from an effective HTML context.
+    const startsForeignNamespaceFromHtml = parentNamespace === HTML_NAMESPACE && (
+      (this.tagName === 'svg' && defaultNamespace === SVG_NAMESPACE) ||
+      (this.tagName === 'math' && defaultNamespace === MATH_NAMESPACE)
+    );
+    if (parentNamespace === defaultNamespace || startsForeignNamespaceFromHtml) {
+      return defaultNamespace;
+    }
+
+    showInvalid(
+      `namespace mismatch: <${this.tagName}> does not support the ${namespaceName(parentNamespace)} namespace in this tree`,
+      this.validationLevel,
+      this.logger,
+    );
+    // Malformed foreign-content markup may be repaired and reparented by an HTML
+    // parser. Kensington preserves the namespace represented by the called method
+    // instead of attempting to reproduce that parser repair in the live DOM path.
+    return defaultNamespace;
+  }
+
+  _childRenderContext(namespace) {
+    if (namespace === SVG_NAMESPACE && SVG_HTML_INTEGRATION_POINTS.has(this.tagName)) {
+      return { namespace: HTML_NAMESPACE };
+    }
+    if (namespace === MATH_NAMESPACE && MATH_TEXT_INTEGRATION_POINTS.has(this.tagName)) {
+      return { namespace: HTML_NAMESPACE, namespaceExceptions: MATH_TEXT_EXCEPTIONS };
+    }
+    if (namespace === MATH_NAMESPACE && this.tagName === 'annotation-xml') {
+      const encoding = ownEnumerableValue(this.attributes, 'encoding');
+      if (
+        typeof encoding === 'string' &&
+        ['application/xhtml+xml', 'text/html'].includes(encoding.toLowerCase())
+      ) {
+        return { namespace: HTML_NAMESPACE };
+      }
+      // The HTML parser permits an SVG start tag directly inside annotation-xml
+      // even when the element is not otherwise an HTML integration point.
+      return { namespace: MATH_NAMESPACE, namespaceExceptions: ANNOTATION_XML_EXCEPTIONS };
+    }
+    return { namespace };
   }
 
   validate() {
@@ -249,9 +345,15 @@ export default class ContentTag {
   }
 
   toString() {
+    return this._toString();
+  }
+
+  _toString(parentContext) {
     if (this.validationLevel !== 'off') {
       this.validateContent();
     }
+    const namespace = this._resolveNamespace(parentContext);
+    const childContext = this._childRenderContext(namespace);
 
     let str = '<'; // chained += instead of a template literal: V8 rope optimization makes many short += faster than one large interpolation
     str += this.tagName;
@@ -274,7 +376,12 @@ export default class ContentTag {
         }
       }
     } else {
-      let content = stringifyContentArray(this.content);
+      let content = stringifyContentArray(this.content, node => {
+        if (isKensingtonTag(node) && typeof node._toString === 'function') {
+          return node._toString(childContext);
+        }
+        return String(node);
+      });
 
       if (this.indentationLevel) { // falsy (0) means no indentation. Skip the pass entirely rather than calling indent with level 0
         content = indent(content, this.indentationLevel);
@@ -292,21 +399,31 @@ export default class ContentTag {
   }
 
   toElement() {
+    return this._toElement();
+  }
+
+  _toElement(parentContext) {
     if (typeof document === 'undefined') {
       throw new Error('toElement only supported in browser');
     }
+    const namespace = this._resolveNamespace(parentContext);
     let element;
-    if (this.namespace) {
-      element = document.createElementNS(this.namespace, this.tagName);
-    } else {
+    if (namespace === HTML_NAMESPACE) {
       element = document.createElement(this.tagName);
+    } else {
+      element = document.createElementNS(namespace, this.tagName);
     }
 
     for (const [attrName, attrValue] of this.attributeArray()) {
       if (/^on[a-z]/.test(attrName) && typeof attrValue === 'function') {
         element.addEventListener(attrName.slice(2), attrValue);
       } else {
-        element.setAttribute(attrName, attrValue);
+        const attrNamespace = attributeNamespace(attrName);
+        if (attrNamespace === null) {
+          element.setAttribute(attrName, attrValue);
+        } else {
+          element.setAttributeNS(attrNamespace, attrName, attrValue);
+        }
       }
     }
 
@@ -329,9 +446,13 @@ export default class ContentTag {
       }
     }
 
+    const childContext = this._childRenderContext(namespace);
     for (let node of this.content) { // let, not const: node is reassigned to preserveSpaces(node) below
       if (isKensingtonTag(node)) {
-        element.append(node.toElement());
+        const child = typeof node._toElement === 'function'
+          ? node._toElement(childContext, element)
+          : node.toElement();
+        element.append(child);
         continue;
       }
       if (!this.contentIsLiteral && typeof node === 'string') { // literal tags (script/style) need exact spacing preserved. Only convert for regular tags

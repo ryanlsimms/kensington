@@ -5,6 +5,11 @@ type AttributeValidator =
 
 export const globalAttributes: Record<string, AttributeValidator>;
 export const globalEvents: Record<string, AttributeValidator>;
+export const svgGlobalAttributes: Record<string, AttributeValidator>;
+export const svgGlobalEvents: Record<string, AttributeValidator>;
+export const svgConditionalAttributes: Record<string, AttributeValidator>;
+export const svgPresentationAttributes: Record<string, AttributeValidator>;
+export const svgXLinkAttributes: Record<string, AttributeValidator>;
 export const aAttributes: Record<string, AttributeValidator>;
 export const abbrAttributes: Record<string, AttributeValidator>;
 export const addressAttributes: Record<string, AttributeValidator>;

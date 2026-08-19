@@ -52,8 +52,9 @@ t.meta({ charset: 'utf-8' });
 - **class as array**: `{ class: ['foo', 'bar'] }` → `class="foo bar"`
 - **style as object**: `{ style: { backgroundColor: 'red', zIndex: 2 } }` → `style="background-color: red; z-index: 2"`. camelCase and kebab-case keys are both accepted. Values of `undefined` or empty string are silently omitted. Other non-string/number values are flagged when validation is enabled. In TypeScript, the style object is typed with `csstype.Properties` and `csstype.PropertiesHyphen`, providing autocomplete for both camelCase and kebab-case CSS property names.
 - **Always allowed**: `data-*`, `aria-*`, and all [global HTML attributes](https://html.spec.whatwg.org/multipage/dom.html#global-attributes)
-- **SVG presentation attributes**: all CSS properties are valid on SVG elements (per the SVG spec). Types are derived from `@webref/css` syntax — numeric properties yield `number | string`, keyword-only properties yield a union of string literals.
+- **SVG presentation attributes**: properties designated as presentation attributes by the SVG spec are accepted. Types are derived from `@webref/css` syntax — numeric properties yield `number | string`, keyword-only properties yield a union of string literals.
 - **Attribute validation** is checked against the HTML/SVG/MathML spec at `'warn'` or `'error'` level
+- **Shared HTML/SVG names**: `a`, `script`, `style`, and `title` select HTML or SVG when rendered inside a tree. Their TypeScript and runtime attribute validation intentionally accept the union of both vocabularies because a standalone tag object has no parent context when it is constructed.
 
 ## Content rules
 
@@ -68,15 +69,21 @@ t.ul([
 ]);
 ```
 
-## Raw HTML — literal()
+## Raw markup — literal()
 
 ```javascript
 t.ul([
   t.li('typed item'),
-  t.literal('<li>raw html item</li>'),  // verbatim, HTML-encoded
+  t.literal('<li>raw markup item</li>'),  // emitted verbatim
 ]);
-t.unsafeLiteral('<script>alert(1)</script>');  // skips encoding, trusted HTML only
+t.unsafeLiteral('<script>alert(1)</script>');  // skips the script-tag check; trusted markup only
 ```
+
+In `.toElement()`, nested literal fragments are parsed using their actual HTML, SVG, or MathML parent element. In an HTML context, inline scripts produced by `unsafeLiteral().toElement()` execute, and external scripts load, when the returned fragment or containing tree is inserted into a document. Foreign-content scripts retain their native namespace and browser-defined execution behavior; Kensington does not coerce them into HTML scripts.
+
+Do not rely on scripts inside SVG or MathML literals for portable execution. In current browsers, a Range-created inline SVG script executes in Firefox but remains inert in Chromium and WebKit. Keep the SVG/MathML literal for markup and place initialization in an HTML-context `t.script()` element or normal application JavaScript.
+
+`literal()` is not an HTML sanitizer. Its script-tag check does not remove event-handler attributes, dangerous URLs, embedded active content, or other potentially unsafe markup. Pass trusted markup to both methods, and use `unsafeLiteral()` only when that trusted markup must include scripts.
 
 ## HTML comments — inlineComment()
 
@@ -169,11 +176,14 @@ const button = t.button({
 
 document.body.append(button);
 
-// SVG and MathML elements get the correct namespace via createElementNS automatically
+// SVG and MathML elements get the correct namespace via createElementNS automatically.
+// Shared a/script/style/title tags select HTML or SVG from their parent context.
 const svg = t.svg({ viewBox: '0 0 100 100' }, [
   t.circle({ cx: 50, cy: 50, r: 40, fill: 'blue' }),
 ]).toElement();
 ```
+
+`toElement()` also assigns standard namespace URIs to `xlink:*`, `xml:*`, `xmlns`, and `xmlns:*` attributes. Unsupported crossings between HTML, SVG, and MathML are reported through `validationLevel`. If warning/off mode continues rendering malformed foreign content, non-contextual methods retain their intrinsic namespace; string/live-DOM parity is guaranteed for valid namespace trees rather than for browser parser repairs of malformed markup.
 
 ## htmlWithDocType
 
@@ -222,7 +232,11 @@ res.send(t.html(t.body('page')).toString());        // explicit — res.send won
 ```javascript
 import Kensington from 'kensington';           // class for subclassing / custom config
 import { t } from 'kensington';               // shared default instance
-import { formAttributes } from 'kensington/attributes';  // attribute objects for each element
+import {
+  formAttributes,              // complete per-element validator object
+  svgGlobalAttributes,         // shared SVG validator groups are also public
+  svgPresentationAttributes,
+} from 'kensington/attributes';
 ```
 
 ```typescript

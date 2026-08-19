@@ -4,10 +4,15 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
+const port = Number(process.env.KENSINGTON_BROWSER_TEST_PORT ?? 4178);
 
 http.createServer((req, res) => {
-  res.status = 200;
+  res.statusCode = 200;
   try {
+    if (req.url === '/__kensington_test_health') {
+      res.setHeader('Content-Type', 'text/plain');
+      return res.end('kensington-browser-tests');
+    }
     if (req.url === '/') {
       res.setHeader('Content-Type', 'text/html');
       return res.end('<!DOCTYPE html><html><head></head><body></body></html>');
@@ -22,10 +27,11 @@ http.createServer((req, res) => {
       res.setHeader('Content-Type', 'text/javascript');
       return res.end(file);
     }
+    res.statusCode = 404;
     return res.end('');
   } catch (err) {
     console.error(err);
-    res.status = 404;
+    res.statusCode = 404;
     return res.end('');
   }
-}).listen(3000);
+}).listen(port, '127.0.0.1');

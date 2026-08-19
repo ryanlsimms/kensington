@@ -2,8 +2,25 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { before, describe, it } from 'node:test';
 
+import { JSDOM } from 'jsdom';
 import Kensington, { t } from 'kensington';
 
+import {
+  aAttributes,
+  animateAttributes,
+  animateMotionAttributes,
+  animateTransformAttributes,
+  circleAttributes,
+  defsAttributes,
+  globalEvents,
+  rectAttributes,
+  scriptAttributes,
+  setAttributes,
+  svgConditionalAttributes,
+  svgGlobalAttributes,
+  svgGlobalEvents,
+  svgXLinkAttributes,
+} from '../../esm/attributes.js';
 import attributesArrayFromObject from '../../esm/lib/attributes-array-from-object.js';
 
 // ─── content tag ───────────────────────────────────────────────────────────
@@ -916,6 +933,378 @@ describe('namespaces', () => {
     const tt = new Kensington({ validationLevel: 'error' });
     assert.throws(() => tt.div({ ABC: 'value' }), /not allowed/);
   });
+  it('accepts the union of HTML and SVG attributes on contextual tags', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.doesNotThrow(() => tt.title({ fill: 'red', 'xml:space': 'preserve' }).toString());
+    assert.doesNotThrow(() => tt.a({ href: '#target', requiredExtensions: 'svg' }).toString());
+    assert.doesNotThrow(() => tt.script({ href: '/app.js' }).toString());
+    assert.doesNotThrow(() => tt.style({ type: 'text/css' }).toString());
+  });
+  it('preserves element-specific validators when factory defaults are added', () => {
+    assert.deepStrictEqual(scriptAttributes['xml:space'], ['preserve']);
+
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.doesNotThrow(() => tt.svg(tt.script({ 'xml:space': 'preserve' }, 'void 0')).toString());
+    assert.throws(() => tt.script({ 'xml:space': 'default' }, 'void 0'), /invalid attribute.*xml:space/);
+    assert.doesNotThrow(() => tt.svg(tt.g({ 'xml:space': 'default' })).toString());
+
+    const numericTitle = tt.createContentTag('numeric-title', { title: Number });
+    assert.doesNotThrow(() => numericTitle({ title: 1 }).toString());
+    assert.throws(() => numericTitle({ title: 'one' }), /invalid attribute.*title/);
+  });
+  it('keeps public SVG element maps complete with isolated array validators', () => {
+    assert.strictEqual(aAttributes.id, svgGlobalAttributes.id);
+    assert.notStrictEqual(aAttributes.onclick, globalEvents.onclick);
+    assert.deepStrictEqual(aAttributes.onclick, globalEvents.onclick);
+    assert.notStrictEqual(aAttributes.onshow, svgGlobalEvents.onshow);
+    assert.deepStrictEqual(aAttributes.onshow, svgGlobalEvents.onshow);
+    assert.strictEqual(aAttributes.requiredExtensions, svgConditionalAttributes.requiredExtensions);
+    assert.strictEqual(aAttributes['xlink:href'], svgXLinkAttributes['xlink:href']);
+
+    const tt = new Kensington({ validationLevel: 'error' });
+    const chartRect = tt.createCustomTag('chart-rect', rectAttributes);
+    assert.doesNotThrow(() => chartRect({
+      'xml:space': 'preserve',
+      onclick: 'click()',
+      ondragexit: 'dragExit()',
+      onshow: 'show()',
+    }).toString());
+
+    assert.strictEqual(Object.hasOwn(rectAttributes, 'xlink:href'), false);
+    assert.strictEqual(Object.hasOwn(defsAttributes, 'requiredExtensions'), false);
+  });
+  it('isolates mutations to array validators in one public element map', () => {
+    assert.notStrictEqual(rectAttributes.onclick, globalEvents.onclick);
+    assert.notStrictEqual(rectAttributes.onclick, circleAttributes.onclick);
+    assert.notStrictEqual(rectAttributes['xml:space'], svgGlobalAttributes['xml:space']);
+    assert.notStrictEqual(rectAttributes['xml:space'], circleAttributes['xml:space']);
+
+    const originalOnclickLength = rectAttributes.onclick.length;
+    const originalXmlSpaceLength = rectAttributes['xml:space'].length;
+    try {
+      rectAttributes.onclick.push(Boolean);
+      rectAttributes['xml:space'].push('rect-only');
+
+      assert.deepStrictEqual(globalEvents.onclick, [String, Function]);
+      assert.strictEqual(circleAttributes.onclick.includes(Boolean), false);
+      assert.deepStrictEqual(svgGlobalAttributes['xml:space'], ['default', 'preserve']);
+      assert.strictEqual(circleAttributes['xml:space'].includes('rect-only'), false);
+
+      const tt = new Kensington({ validationLevel: 'error' });
+      assert.doesNotThrow(() => tt.rect({ onclick: true, 'xml:space': 'rect-only' }).toString());
+      assert.throws(() => tt.circle({ onclick: true }), /invalid attribute.*onclick/);
+      assert.throws(() => tt.circle({ 'xml:space': 'rect-only' }), /invalid attribute.*xml:space/);
+      assert.throws(() => tt.div({ onclick: true }), /invalid attribute.*onclick/);
+    } finally {
+      rectAttributes.onclick.length = originalOnclickLength;
+      rectAttributes['xml:space'].length = originalXmlSpaceLength;
+    }
+  });
+  it('merges SVG globals while keeping conditional and XLink groups element-specific', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.doesNotThrow(() => tt.feBlend({ 'xml:space': 'preserve', onshow: 'show()' }).toString());
+    assert.doesNotThrow(() => tt.rect({ requiredExtensions: 'svg' }).toString());
+    assert.doesNotThrow(() => tt.use({ 'xlink:href': '#shape' }).toString());
+    assert.throws(() => tt.defs({ requiredExtensions: 'svg' }).toString(), /not allowed/);
+    assert.throws(() => tt.rect({ 'xlink:href': '#shape' }).toString(), /not allowed/);
+  });
+  it('preserves SVG animation fill validators over the shared presentation validator', () => {
+    const expected = ['remove', 'freeze'];
+    for (const attributes of [
+      animateAttributes,
+      animateMotionAttributes,
+      animateTransformAttributes,
+      setAttributes,
+    ]) {
+      assert.deepStrictEqual(attributes.fill, expected);
+    }
+
+    const tt = new Kensington({ validationLevel: 'error' });
+    for (const method of ['animate', 'animateMotion', 'animateTransform', 'set']) {
+      assert.doesNotThrow(() => tt[method]({ fill: 'remove' }).toString());
+      assert.doesNotThrow(() => tt[method]({ fill: 'freeze' }).toString());
+      assert.throws(() => tt[method]({ fill: 'bogus' }), /invalid attribute.*fill/);
+    }
+    assert.doesNotThrow(() => tt.circle({ fill: 'red' }).toString());
+  });
+  it('allows contextual tags in nested HTML and SVG trees', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.doesNotThrow(() => tt.head(tt.title('HTML title')).toString());
+    assert.doesNotThrow(() => tt.svg(tt.g(tt.title('SVG title'))).toString());
+    assert.doesNotThrow(() => tt.svg(tt.a({ href: '#target' }, tt.circle())).toString());
+    assert.doesNotThrow(() => tt.svg(tt.foreignObject(tt.title('HTML title'))).toString());
+  });
+  it('throws on unsupported namespace transitions at error level', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => tt.div(tt.circle()).toString(), /namespace mismatch.*circle.*HTML/);
+    assert.throws(() => tt.svg(tt.foreignObject(tt.circle())).toString(), /namespace mismatch.*circle.*HTML/);
+    assert.throws(() => tt.math(tt.title('not MathML')).toString(), /namespace mismatch.*title.*MathML/);
+    assert.throws(() => tt.svg(tt.math(tt.mi('x'))).toString(), /namespace mismatch.*math.*SVG/);
+    assert.throws(() => tt.math(tt.svg(tt.circle())).toString(), /namespace mismatch.*svg.*MathML/);
+  });
+  it('warns and preserves intrinsic namespaces for unsupported transitions', () => {
+    const messages = [];
+    const tt = new Kensington({ validationLevel: 'warn', logger: message => messages.push(message) });
+    assert.match(tt.div(tt.circle()).toString(), /<circle><\/circle>/);
+    assert.ok(messages.some(message => /namespace mismatch.*circle.*HTML/.test(message)));
+
+    const dom = new JSDOM('<!doctype html>');
+    const previousDocument = globalThis.document;
+    globalThis.document = dom.window.document;
+    try {
+      const tree = tt.div([
+        tt.svg(tt.div({ id: 'html-div' }, 'x')),
+        tt.svg(tt.math({ id: 'math-in-svg' }, tt.mi('x'))),
+        tt.math(tt.svg({ id: 'svg-in-math' }, tt.circle())),
+      ]).toElement();
+      assert.strictEqual(tree.querySelector('#html-div').namespaceURI, 'http://www.w3.org/1999/xhtml');
+      assert.strictEqual(tree.querySelector('#math-in-svg').namespaceURI, 'http://www.w3.org/1998/Math/MathML');
+      assert.strictEqual(tree.querySelector('#svg-in-math').namespaceURI, 'http://www.w3.org/2000/svg');
+    } finally {
+      if (previousDocument === undefined) {
+        delete globalThis.document;
+      } else {
+        globalThis.document = previousDocument;
+      }
+      dom.window.close();
+    }
+  });
+  it('handles MathML text and annotation HTML integration points', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    const mglyph = tt.createMathTag('mglyph');
+    assert.doesNotThrow(() => tt.math(tt.mtext(tt.span('HTML phrasing content'))).toString());
+    assert.doesNotThrow(() => tt.math(tt.mtext(mglyph())).toString());
+    assert.doesNotThrow(() => {
+      tt.math(tt.annotationXml({ encoding: 'text/html' }, tt.div('HTML flow content'))).toString();
+    });
+    assert.doesNotThrow(() => {
+      tt.math(tt.annotationXml(tt.svg(tt.circle()))).toString();
+    });
+  });
+  it('treats an unreadable annotation-xml encoding attribute as absent', () => {
+    const attributes = Object.defineProperty({}, 'encoding', {
+      enumerable: true,
+      get() { throw new Error('encoding getter exploded'); },
+    });
+    const tag = t.math(t.annotationXml(attributes, t.mi({ id: 'unreadable-encoding-child' }, 'x')));
+    assert.doesNotMatch(tag.toString(), /encoding=/);
+
+    const dom = new JSDOM('<!doctype html>');
+    const previousDocument = globalThis.document;
+    globalThis.document = dom.window.document;
+    try {
+      const child = tag.toElement().querySelector('#unreadable-encoding-child');
+      assert.strictEqual(child.namespaceURI, 'http://www.w3.org/1998/Math/MathML');
+    } finally {
+      if (previousDocument === undefined) {
+        delete globalThis.document;
+      } else {
+        globalThis.document = previousDocument;
+      }
+      dom.window.close();
+    }
+  });
+  it('keeps live DOM and parsed-string namespaces aligned for valid namespace trees', () => {
+    const dom = new JSDOM('<!doctype html>');
+    const previousDocument = globalThis.document;
+    globalThis.document = dom.window.document;
+    try {
+      const tag = t.div([
+        t.svg([
+          t.title({ id: 'svg-title-parity' }, 'SVG title'),
+          t.foreignObject(t.div({ id: 'foreign-div-parity' }, 'HTML content')),
+        ]),
+        t.math([
+          t.mtext(t.span({ id: 'math-text-parity' }, 'HTML phrasing content')),
+          t.annotationXml(t.svg({ id: 'annotation-svg-parity' }, t.circle())),
+        ]),
+      ]);
+      const live = tag.toElement();
+      const template = document.createElement('template');
+      template.innerHTML = tag.toString();
+      for (const id of [
+        'svg-title-parity',
+        'foreign-div-parity',
+        'math-text-parity',
+        'annotation-svg-parity',
+      ]) {
+        assert.strictEqual(
+          live.querySelector(`#${id}`).namespaceURI,
+          template.content.querySelector(`#${id}`).namespaceURI,
+        );
+      }
+    } finally {
+      if (previousDocument === undefined) {
+        delete globalThis.document;
+      } else {
+        globalThis.document = previousDocument;
+      }
+      dom.window.close();
+    }
+  });
+  it('parses literal fragments in their actual HTML, SVG, and MathML parent contexts', () => {
+    const dom = new JSDOM('<!doctype html>');
+    const previousDocument = globalThis.document;
+    globalThis.document = dom.window.document;
+    try {
+      const tag = t.div([
+        t.svg([
+          t.literal('<circle id="literal-svg-circle"></circle><text id="literal-svg-text">x</text>'),
+          t.foreignObject(t.literal('<section id="literal-svg-html">HTML</section>')),
+        ]),
+        t.math([
+          t.unsafeLiteral('<mrow id="literal-math-row"><mi id="literal-math-mi">x</mi></mrow>'),
+          t.mtext(t.literal('<span id="literal-math-html">HTML</span>')),
+          t.annotationXml(
+            { encoding: 'text/html' },
+            t.literal('<section id="literal-annotation-html">HTML</section>'),
+          ),
+          t.annotationXml(t.literal(
+            '<svg id="literal-annotation-svg"><circle id="literal-annotation-circle"></circle></svg>',
+          )),
+        ]),
+      ]);
+      const live = tag.toElement();
+      const template = document.createElement('template');
+      template.innerHTML = tag.toString();
+      for (const id of [
+        'literal-svg-circle',
+        'literal-svg-text',
+        'literal-svg-html',
+        'literal-math-row',
+        'literal-math-mi',
+        'literal-math-html',
+        'literal-annotation-html',
+        'literal-annotation-svg',
+        'literal-annotation-circle',
+      ]) {
+        const liveNode = live.querySelector(`#${id}`);
+        const parsedNode = template.content.querySelector(`#${id}`);
+        assert.ok(liveNode, `missing live #${id}`);
+        assert.ok(parsedNode, `missing parsed #${id}`);
+        assert.strictEqual(liveNode.namespaceURI, parsedNode.namespaceURI, `namespace mismatch for #${id}`);
+      }
+      assert.strictEqual(live.querySelector('#literal-svg-circle').namespaceURI, 'http://www.w3.org/2000/svg');
+      assert.strictEqual(live.querySelector('#literal-svg-html').namespaceURI, 'http://www.w3.org/1999/xhtml');
+      assert.strictEqual(live.querySelector('#literal-math-mi').namespaceURI, 'http://www.w3.org/1998/Math/MathML');
+      assert.strictEqual(live.querySelector('#literal-math-html').namespaceURI, 'http://www.w3.org/1999/xhtml');
+      assert.strictEqual(live.querySelector('#literal-annotation-html').namespaceURI, 'http://www.w3.org/1999/xhtml');
+      assert.strictEqual(live.querySelector('#literal-annotation-circle').namespaceURI, 'http://www.w3.org/2000/svg');
+    } finally {
+      if (previousDocument === undefined) {
+        delete globalThis.document;
+      } else {
+        globalThis.document = previousDocument;
+      }
+      dom.window.close();
+    }
+  });
+  it('parses standalone literal fragments with an HTML contextual range', () => {
+    const dom = new JSDOM('<!doctype html>');
+    const previousDocument = globalThis.document;
+    globalThis.document = dom.window.document;
+    const originalCreateRange = dom.window.Document.prototype.createRange;
+    let rangeCalls = 0;
+    dom.window.Document.prototype.createRange = function createRange() {
+      rangeCalls += 1;
+      return originalCreateRange.call(this);
+    };
+    try {
+      const fragment = t.literal('<span id="standalone-literal">x</span>').toElement();
+      assert.strictEqual(rangeCalls, 1);
+      assert.strictEqual(fragment.nodeType, dom.window.Node.DOCUMENT_FRAGMENT_NODE);
+      assert.strictEqual(
+        fragment.querySelector('#standalone-literal').namespaceURI,
+        'http://www.w3.org/1999/xhtml',
+      );
+    } finally {
+      dom.window.Document.prototype.createRange = originalCreateRange;
+      if (previousDocument === undefined) {
+        delete globalThis.document;
+      } else {
+        globalThis.document = previousDocument;
+      }
+      dom.window.close();
+    }
+  });
+  it('reuses a contextual literal range within one parent but not across parents', () => {
+    const dom = new JSDOM('<!doctype html>');
+    const previousDocument = globalThis.document;
+    globalThis.document = dom.window.document;
+    const originalCreateRange = dom.window.Document.prototype.createRange;
+    let rangeCalls = 0;
+    dom.window.Document.prototype.createRange = function createRange() {
+      rangeCalls += 1;
+      return originalCreateRange.call(this);
+    };
+    try {
+      const live = t.div([
+        t.literal('<span id="range-html-a"></span>'),
+        t.em({ id: 'range-html-middle' }),
+        t.literal('<span id="range-html-b"></span>'),
+        t.svg([
+          t.literal('<circle id="range-svg-a"></circle>'),
+          t.g({ id: 'range-svg-middle' }),
+          t.literal('<circle id="range-svg-b"></circle>'),
+        ]),
+        t.section([
+          t.literal('<i id="range-section-a-1"></i>'),
+          t.literal('<i id="range-section-a-2"></i>'),
+        ]),
+        t.section([
+          t.literal('<i id="range-section-b-1"></i>'),
+          t.literal('<i id="range-section-b-2"></i>'),
+        ]),
+      ]).toElement();
+
+      assert.strictEqual(rangeCalls, 4);
+      assert.deepStrictEqual(
+        Array.from(live.children, child => child.id || child.localName),
+        ['range-html-a', 'range-html-middle', 'range-html-b', 'svg', 'section', 'section'],
+      );
+      assert.deepStrictEqual(
+        Array.from(live.querySelector('svg').children, child => child.id),
+        ['range-svg-a', 'range-svg-middle', 'range-svg-b'],
+      );
+      assert.strictEqual(live.querySelector('#range-html-a').namespaceURI, 'http://www.w3.org/1999/xhtml');
+      assert.strictEqual(live.querySelector('#range-svg-a').namespaceURI, 'http://www.w3.org/2000/svg');
+    } finally {
+      dom.window.Document.prototype.createRange = originalCreateRange;
+      if (previousDocument === undefined) {
+        delete globalThis.document;
+      } else {
+        globalThis.document = previousDocument;
+      }
+      dom.window.close();
+    }
+  });
+  it('assigns standard namespace URIs to namespaced DOM attributes', () => {
+    const dom = new JSDOM('<!doctype html>');
+    const previousDocument = globalThis.document;
+    globalThis.document = dom.window.document;
+    try {
+      const svg = t.svg({
+        xmlns: 'http://www.w3.org/2000/svg',
+        'xmlns:xlink': 'http://www.w3.org/1999/xlink',
+      }, t.use({
+        'xlink:href': '#shape',
+        'xml:space': 'preserve',
+      })).toElement();
+      const use = svg.firstElementChild;
+      assert.strictEqual(svg.getAttributeNode('xmlns').namespaceURI, 'http://www.w3.org/2000/xmlns/');
+      assert.strictEqual(svg.getAttributeNode('xmlns:xlink').namespaceURI, 'http://www.w3.org/2000/xmlns/');
+      assert.strictEqual(use.getAttributeNode('xlink:href').namespaceURI, 'http://www.w3.org/1999/xlink');
+      assert.strictEqual(use.getAttributeNode('xml:space').namespaceURI, 'http://www.w3.org/XML/1998/namespace');
+      assert.strictEqual(use.getAttributeNS('http://www.w3.org/1999/xlink', 'href'), '#shape');
+    } finally {
+      if (previousDocument === undefined) {
+        delete globalThis.document;
+      } else {
+        globalThis.document = previousDocument;
+      }
+      dom.window.close();
+    }
+  });
 });
 
 // ─── additionalGlobalAttributes ────────────────────────────────────────────
@@ -1256,7 +1645,7 @@ describe('slim build', () => {
   // ─── helper methods ───────────────────────────────────────────────────
 
   describe('helpers', () => {
-    it('literal() embeds raw HTML', () => {
+    it('literal() embeds raw markup', () => {
       assert.strictEqual(
         tt.div([tt.literal('<span>raw</span>')]).toString(),
         '<div>\n  <span>raw</span>\n</div>',

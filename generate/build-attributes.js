@@ -4,32 +4,78 @@ function attributesObject(attributes) {
 }`;
 }
 
-function svgElementObject(ownAttributes) {
-  if (!ownAttributes.length) {
-    return '{ ...svgPresentationAttributes }';
+function svgElementObject(el, hasSvgPresentation) {
+  // Per-element maps are public API and are documented for use with object
+  // spread/createCustomTag. Keep them complete while referencing the shared
+  // groups here so their generated source is not duplicated for every tag.
+  const spreads = [
+    'svgGlobalAttributes',
+    'globalEvents',
+    'svgGlobalEvents',
+  ];
+  if (hasSvgPresentation) {
+    spreads.push('svgPresentationAttributes');
   }
+  if (el.includeSvgConditionalAttributes) {
+    spreads.push('svgConditionalAttributes');
+  }
+  if (el.includeSvgXLinkAttributes) {
+    spreads.push('svgXLinkAttributes');
+  }
+  if (!spreads.length && !el.attributes.length) {
+    return '{}';
+  }
+  const clonedSpreads = `...cloneAttributeValidators(
+    ${spreads.join(',\n    ')},
+  ),`;
+  const lines = [
+    clonedSpreads,
+    ...el.attributes.map(a => `'${a.name}': ${a.value},`),
+  ];
   return `{
-  ...svgPresentationAttributes,
-  ${ownAttributes.map(a => `'${a.name}': ${a.value},`).join('\n  ')}
+  ${lines.join('\n  ')}
 }`;
 }
 
-export default function buildAttributes({ elements, globalAttributes, globalEvents, svgPresentationAttrTypes }) {
+export default function buildAttributes({
+  elements,
+  globalAttributes,
+  globalEvents,
+  svgConditionalAttributes,
+  svgGlobalAttributes,
+  svgGlobalEvents,
+  svgPresentationAttrTypes,
+  svgXLinkAttributes,
+}) {
   const hasSvgPresentation = svgPresentationAttrTypes?.length > 0;
 
-  return `export const globalAttributes = {
+  return `function cloneAttributeValidators(...attributeMaps) {
+  const cloned = {};
+  for (const attributeMap of attributeMaps) {
+    for (const [name, validator] of Object.entries(attributeMap)) {
+      cloned[name] = Array.isArray(validator) ? [...validator] : validator;
+    }
+  }
+  return cloned;
+}
+
+export const globalAttributes = {
   ${globalAttributes.map(a => `'${a.name}': ${a.value},`).join('\n  ')}
 };
 
 export const globalEvents = {
   ${globalEvents.map(a => `'${a}': [String, Function],`).join('\n  ')}
 };
+export const svgGlobalAttributes = ${attributesObject(svgGlobalAttributes)};
+export const svgGlobalEvents = ${attributesObject(svgGlobalEvents)};
+export const svgConditionalAttributes = ${attributesObject(svgConditionalAttributes)};
+export const svgXLinkAttributes = ${attributesObject(svgXLinkAttributes)};
 ${hasSvgPresentation ? `
 export const svgPresentationAttributes = ${attributesObject(svgPresentationAttrTypes)};
 ` : ''}
 ${elements.map(el => {
-  if (hasSvgPresentation && el.tagType === 'SvgContent') {
-    return `export const ${el.attributesName} = ${svgElementObject(el.attributes)};`;
+  if (el.tagType === 'SvgContent' || el.svgContextual) {
+    return `export const ${el.attributesName} = ${svgElementObject(el, hasSvgPresentation)};`;
   }
   return `export const ${el.attributesName} = ${el.attributes.length ? attributesObject(el.attributes) : '{}'};`;
 }).join('\n')}

@@ -7,6 +7,25 @@ const tagsToSkip = [
   'SVG svg',
 ];
 
+// SVG element tables repeat these groups on every element that supports them.
+// Keep the groups explicit so generated attribute maps and declarations can
+// reference them once instead of restating the same validators per element.
+const SVG_GLOBAL_ATTRIBUTE_NAMES = [
+  'autofocus',
+  'class',
+  'id',
+  'lang',
+  'role',
+  'style',
+  'tabindex',
+  'xml:base',
+  'xml:lang',
+  'xml:space',
+];
+const SVG_GLOBAL_EVENT_NAMES = ['ondragexit', 'onshow'];
+const SVG_CONDITIONAL_ATTRIBUTE_NAMES = ['requiredExtensions', 'systemLanguage'];
+const SVG_XLINK_ATTRIBUTE_NAMES = ['xlink:href', 'xlink:title'];
+
 // Named content group references in the HTML spec's children column, resolved to concrete tag names.
 // script-supporting elements and the select/optgroup inner content lists are defined as footnotes
 // in the spec table; these are the resolved memberships.
@@ -72,18 +91,25 @@ export default function parseData(htmlData, svgData, mathData, { cssPropertyType
   });
 
   svgElements.forEach(svgEl => {
-    if (!htmlElements.find(el => el.tag === svgEl.tag)) {
-      if (cssPropertyNames) {
-        htmlElements.push({ ...svgEl, tagType: 'SvgContent' });
-      } else {
-        const presentationAttrNames = new Set(svgData.svgPresentationAttributes ?? []);
-        const elAttrSet = new Set(svgEl.attributes);
-        const filteredPresentation = [...presentationAttrNames].filter(n => {
-          return !elAttrSet.has(n) && !elAttrSet.has(kebabToCamel(n));
-        });
-        const merged = [...new Set([...svgEl.attributes, ...filteredPresentation])];
-        htmlElements.push({ ...svgEl, attributes: merged, tagType: 'SvgContent' });
-      }
+    const htmlEl = htmlElements.find(el => el.tag === svgEl.tag);
+    if (htmlEl) {
+      // A handful of names (currently a, script, style, and title) exist in
+      // both HTML and SVG. Their namespace is determined by where they are
+      // mounted, rather than by the method name alone. Validation happens
+      // when a tag object is constructed, before its parent is known, so use
+      // the union of both vocabularies' attributes for these shared names.
+      htmlEl.svgContextual = true;
+      htmlEl.attributes = [...new Set([...htmlEl.attributes, ...svgEl.attributes])];
+    } else if (cssPropertyNames) {
+      htmlElements.push({ ...svgEl, tagType: 'SvgContent' });
+    } else {
+      const presentationAttrNames = new Set(svgData.svgPresentationAttributes ?? []);
+      const elAttrSet = new Set(svgEl.attributes);
+      const filteredPresentation = [...presentationAttrNames].filter(n => {
+        return !elAttrSet.has(n) && !elAttrSet.has(kebabToCamel(n));
+      });
+      const merged = [...new Set([...svgEl.attributes, ...filteredPresentation])];
+      htmlElements.push({ ...svgEl, attributes: merged, tagType: 'SvgContent' });
     }
   });
 
@@ -95,6 +121,11 @@ export default function parseData(htmlData, svgData, mathData, { cssPropertyType
     : null;
 
   mathData.forEach(mathEl => {
+    if (mathEl.tag === 'annotation-xml' && !mathEl.attributes.includes('encoding')) {
+      // The HTML parser uses this attribute to decide whether annotation-xml
+      // is an HTML integration point. The fetched MathML table omits it.
+      mathEl.attributes.push('encoding');
+    }
     if (!htmlElements.find(el => el.tag === mathEl.tag)) {
       htmlElements.push({ ...mathEl, tagType: 'Math' });
       mathEl.attributes.forEach(mathAttr => {
@@ -187,10 +218,53 @@ export default function parseData(htmlData, svgData, mathData, { cssPropertyType
     .sort((a, b) => a.attribute.localeCompare(b.attribute))
     .map(mapAttr);
 
-  function getGlobalsByTagType(tagType) {
+  function sharedAttributes(names) {
+    return names.map(name => {
+      const match = attributes.find(a => a.attribute === name);
+      return match ? mapAttr(match) : attrFallback(name);
+    });
+  }
+
+  const svgGlobalAttributes = sharedAttributes(SVG_GLOBAL_ATTRIBUTE_NAMES);
+  const svgGlobalEvents = sharedAttributes(SVG_GLOBAL_EVENT_NAMES);
+  const svgConditionalAttributes = sharedAttributes(SVG_CONDITIONAL_ATTRIBUTE_NAMES);
+  const svgXLinkAttributes = sharedAttributes(SVG_XLINK_ATTRIBUTE_NAMES);
+  const globalAttributeNames = new Set(globalAttributes.map(a => a.name));
+  const globalEventNames = new Set(globalEvents);
+  const svgGlobalAttributeNames = new Set(SVG_GLOBAL_ATTRIBUTE_NAMES);
+  const svgGlobalEventNames = new Set(SVG_GLOBAL_EVENT_NAMES);
+  const svgConditionalAttributeNames = new Set(SVG_CONDITIONAL_ATTRIBUTE_NAMES);
+  const svgXLinkAttributeNames = new Set(SVG_XLINK_ATTRIBUTE_NAMES);
+  const svgPresentationAttributeNames = new Set(svgPresentationAttrTypes?.map(a => a.name) ?? []);
+  const sharedSvgAttributeDefinitions = new Map([
+    ...globalAttributes,
+    ...svgGlobalAttributes,
+    ...svgGlobalEvents,
+    ...svgConditionalAttributes,
+    ...svgXLinkAttributes,
+    ...(svgPresentationAttrTypes ?? []),
+  ].map(attr => [attr.name, attr]));
+  for (const event of globalEvents) {
+    sharedSvgAttributeDefinitions.set(event, {
+      name: event,
+      type: 'string | ((event: Event) => void)',
+      value: '[String, Function]',
+    });
+  }
+
+  function getGlobalsByTagType(tagType, svgContextual) {
+    if (svgContextual) {
+      return [
+        'NameSpaceAttributes',
+        'GlobalAttributes',
+        'SvgGlobalAttributes',
+        'GlobalEvents',
+        'SvgGlobalEvents',
+      ];
+    }
     switch (tagType) {
-      case 'Svg':
-        return ['NameSpaceAttributes'];
+      case 'SvgContent':
+        return ['NameSpaceAttributes', 'SvgGlobalAttributes', 'GlobalEvents', 'SvgGlobalEvents'];
       case 'Math':
         return ['NameSpaceAttributes', 'GlobalEvents'];
       default:
@@ -199,16 +273,55 @@ export default function parseData(htmlData, svgData, mathData, { cssPropertyType
   }
 
   elements.forEach(el => {
-    el.attributes = el.attributes
+    const svgCapable = el.tagType === 'SvgContent' || el.svgContextual;
+    const normalizedAttributes = el.attributes
       .filter(a => !['any*'].includes(a))
-      .map(attr => attr.replace(/\*/g, ''))
+      .map(attr => attr.replace(/\*/g, ''));
+    const elementSpecificAttributes = new Map();
+    for (const attr of normalizedAttributes) {
+      const match = attributes.find(a => {
+        return a.attribute === attr && a.elements.some(e => e.trim().split(/\s+/).includes(el.tag));
+      });
+      if (match) {
+        elementSpecificAttributes.set(attr, mapAttr(match));
+      }
+    }
+    el.includeSvgConditionalAttributes = svgCapable
+      && normalizedAttributes.some(attr => svgConditionalAttributeNames.has(attr));
+    el.includeSvgXLinkAttributes = svgCapable
+      && normalizedAttributes.some(attr => svgXLinkAttributeNames.has(attr));
+    el.attributes = normalizedAttributes
+      .filter(attr => {
+        if (!svgCapable) { return true; }
+        const elementSpecificValidator = elementSpecificAttributes.get(attr);
+        const sharedValidator = sharedSvgAttributeDefinitions.get(attr);
+        const hasElementSpecificOverride = elementSpecificValidator !== undefined
+          && sharedValidator !== undefined
+          && (
+            elementSpecificValidator.type !== sharedValidator.type ||
+            elementSpecificValidator.value !== sharedValidator.value
+          );
+        if (
+          svgGlobalAttributeNames.has(attr) ||
+          svgGlobalEventNames.has(attr) ||
+          globalEventNames.has(attr) ||
+          svgPresentationAttributeNames.has(attr)
+        ) {
+          return hasElementSpecificOverride;
+        }
+        if (el.includeSvgConditionalAttributes && svgConditionalAttributeNames.has(attr)) {
+          return hasElementSpecificOverride;
+        }
+        if (el.includeSvgXLinkAttributes && svgXLinkAttributeNames.has(attr)) {
+          return hasElementSpecificOverride;
+        }
+        return !el.svgContextual || !globalAttributeNames.has(attr) || hasElementSpecificOverride;
+      })
       .sort()
       .map(attr => {
-        const match = attributes.find(a => {
-          return a.attribute === attr && a.elements.some(e => e.trim().split(/\s+/).includes(el.tag));
-        });
+        const match = elementSpecificAttributes.get(attr);
         if (match) {
-          return mapAttr(match);
+          return match;
         }
         const globalMatch = attributes.find(a => a.attribute === attr && a.elements.includes('HTML elements'));
         if (globalMatch) {
@@ -229,7 +342,7 @@ export default function parseData(htmlData, svgData, mathData, { cssPropertyType
     el.attributesName = `${el.methodName}Attributes`;
     el.attributesTypeName = `${el.pascalTag}Attributes`;
     el.returnTagType = el.tagType === 'Void' ? el.tagType : 'Content';
-    el.globalTypes = getGlobalsByTagType(el.tagType);
+    el.globalTypes = getGlobalsByTagType(el.tagType, el.svgContextual);
     if (el.children && el.tagType !== 'Void') {
       const { strict, resolved } = resolveChildren(el.children);
       if (strict && resolved.length > 0) {
@@ -250,6 +363,10 @@ export default function parseData(htmlData, svgData, mathData, { cssPropertyType
     elements,
     globalAttributes,
     globalEvents,
+    svgConditionalAttributes,
+    svgGlobalAttributes,
+    svgGlobalEvents,
     svgPresentationAttrTypes,
+    svgXLinkAttributes,
   };
 }

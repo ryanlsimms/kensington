@@ -1,5 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const port = process.env.KENSINGTON_BROWSER_TEST_PORT ?? '4178';
+const baseURL = `http://127.0.0.1:${port}`;
+
 export default defineConfig({
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: Boolean(process.env.CI),
@@ -51,14 +54,15 @@ export default defineConfig({
   testDir: './',
   timeout: 8000,
   use: {
+    baseURL,
     trace: 'on-first-retry',
   },
 
   /* Run your local dev server before starting the tests */
   webServer: {
     command: 'node ./server/html-server.js',
-    reuseExistingServer: !process.env.CI,
-    url: 'http://localhost:3000',
+    reuseExistingServer: false,
+    url: `${baseURL}/__kensington_test_health`,
   },
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,

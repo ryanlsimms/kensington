@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 export function registerSignalTests(bundle) {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:3000/');
+    await page.goto('/');
   });
 
   test('signal as literal updates the DOM element live', async ({ page }) => {

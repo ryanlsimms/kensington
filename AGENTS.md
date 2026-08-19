@@ -95,12 +95,18 @@ Arrays anywhere in content are flattened — `items.map(i => t.li(i))` works dir
 t.ul(items.map(item => t.li(item.name)));
 ```
 
-## Raw HTML
+## Raw markup
 
 ```javascript
-t.literal('<p>trusted raw html</p>');    // HTML-encodes content, blocks script tags
-t.unsafeLiteral('<script>...</script>'); // no encoding — trusted HTML only
+t.literal('<p>trusted raw markup</p>');  // emitted verbatim; blocks script tags
+t.unsafeLiteral('<script>...</script>'); // skips the script check — trusted markup only
 ```
+
+In `.toElement()`, nested literal fragments are parsed in their actual HTML, SVG, or MathML parent context. In an HTML context, inline scripts produced by `unsafeLiteral().toElement()` execute, and external scripts load, when the returned fragment or containing tree is inserted into a document. Foreign-content scripts retain their native namespace and browser-defined execution behavior; Kensington does not coerce them into HTML scripts.
+
+Do not rely on scripts inside SVG or MathML literals for portable execution. In current browsers, a Range-created inline SVG script executes in Firefox but remains inert in Chromium and WebKit. Keep the SVG/MathML literal for markup and place initialization in an HTML-context `t.script()` element or normal application JavaScript.
+
+`literal()` is not an HTML sanitizer. Its script-tag check does not remove event-handler attributes, dangerous URLs, embedded active content, or other potentially unsafe markup. Pass trusted markup to both methods, and use `unsafeLiteral()` only when that trusted markup must include scripts.
 
 ## Full documents
 
