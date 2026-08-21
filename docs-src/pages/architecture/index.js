@@ -95,8 +95,9 @@ export function architectureSidebar() {
       t.li([
         t.a({ href: '#map-with-key' }, 'mapWithKey internals'),
         t.ul([
-          t.li(t.a({ href: '#map-with-key-probe' }, 'The probe')),
-          t.li(t.a({ href: '#map-with-key-entries' }, 'Static vs reactive')),
+          t.li(t.a({ href: '#map-with-key-per-key-signal' }, 'Per-key itemSignal')),
+          t.li(t.a({ href: '#map-with-key-shallow-diff' }, 'Shallow-content gate')),
+          t.li(t.a({ href: '#map-with-key-write-guard-bypass' }, 'Bypassing the set-in-computed guard')),
           t.li(t.a({ href: '#map-with-key-render' }, 'Render and sweeping')),
           t.li(t.a({ href: '#map-with-key-warnings' }, 'Misuse warnings')),
         ]),

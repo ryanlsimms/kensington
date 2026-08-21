@@ -42,8 +42,6 @@ let inFlush = false;
 // reactive primitives. A keyed signal/computed creation during the probe forces an upgrade
 // to the reactive path (mapFn re-runs under a full per-key inner computed) so the keyed
 // primitive lives in a stable per-row scope.
-let inMapWithKeyProbe = false;
-let mapWithKeyProbeNeedsReactive = false;
 // Depth counter set true while a mapWithKey mapFn body is executing (either under the probe
 // or inside the real per-key inner computed). Recursive mapWithKey calls (a row component
 // that maps its own children) are safe because the inner mapFn only runs once per key, so
@@ -480,13 +478,7 @@ function createEffect(fn, isInternal = false) {
 }
 
 export function effect(fn) {
-  if (inMapWithKeyProbe) {
-    // The probe sets currentEffect to a sentinel and turns on suppressReactiveCheck
-    // to silence the signal()/computed() in-computed warnings. effect() is the one
-    // case where we still want a diagnostic, because the call cannot be valid here
-    // (a fresh effect leaks on every probe re-run). Emit a mapWithKey-specific
-    // message so the user is not sent looking for an outer effect that does not
-    // exist.
+  if (mapWithKeyInnerDepth > 0) {
     throttledError(
       'effect-in-computed',
       'kensington: effect() called inside a mapWithKey mapFn (a computed-like callback). ' +
@@ -601,9 +593,6 @@ export function _bindingEffect(sig, fn) {
  * ));
  */
 export function computed(fn, key) {
-  if (inMapWithKeyProbe && key !== undefined) {
-    mapWithKeyProbeNeedsReactive = true;
-  }
   // Keyed path: inside an outer computed with a stable key → reuse the same inner computed
   // across outer re-runs, updating the fn closure each time so captured variables stay fresh.
   if (key !== undefined && currentComputed !== null) {
@@ -853,9 +842,6 @@ export function computed(fn, key) {
  * });
  */
 export function signal(initial, key) {
-  if (inMapWithKeyProbe && key !== undefined) {
-    mapWithKeyProbeNeedsReactive = true;
-  }
   const hydrationScope = getCurrentHydrationScope();
   if (key !== undefined && currentComputed === null && hydrationScope !== null) {
     const scope = hydrationScope;
@@ -924,55 +910,6 @@ Signal.prototype.transform = function transform(fn, key) {
     computedCallSite = prev;
   }
 };
-
-// Helpers used by map-with-key.js. The probe state lives here because signal() and
-// computed() need to inspect it on entry (mapWithKey's probe detects keyed signal/computed
-// creation by having them flip mapWithKeyProbeNeedsReactive). Centralizing the swap here
-// keeps map-with-key.js free of direct references to the module's mutable context.
-export function _runMapWithKeyProbe(fn) {
-  function probe() {}
-  probe._cleanups = [];
-  probe._reads = new Set();
-
-  const prevCurrentEffect = currentEffect;
-  const prevCurrentComputed = currentComputed;
-  const prevInComputedFn = inComputedFn;
-  const prevInProbe = inMapWithKeyProbe;
-  const prevProbeReactive = mapWithKeyProbeNeedsReactive;
-  const prevSuppress = suppressReactiveCheck;
-  currentEffect = probe;
-  currentComputed = null;
-  inComputedFn = false;
-  inMapWithKeyProbe = true;
-  mapWithKeyProbeNeedsReactive = false;
-  // The probe is a fake tracking context. Any warning that fires from inside mapFn during
-  // the probe will fire again from the real per-key inner if the upgrade happens. Silence
-  // them here so the probe is a pure detection pass.
-  suppressReactiveCheck = true;
-
-  let result;
-  mapWithKeyInnerDepth++;
-  try {
-    result = fn();
-  } finally {
-    mapWithKeyInnerDepth--;
-    currentEffect = prevCurrentEffect;
-    currentComputed = prevCurrentComputed;
-    inComputedFn = prevInComputedFn;
-    inMapWithKeyProbe = prevInProbe;
-    suppressReactiveCheck = prevSuppress;
-  }
-  const needsReactive = probe._cleanups.length > 0 || mapWithKeyProbeNeedsReactive;
-  mapWithKeyProbeNeedsReactive = prevProbeReactive;
-
-  if (needsReactive) {
-    // Tear down the probe's subscriptions so the signals don't hold a dangling subscriber.
-    for (let j = 0; j < probe._cleanups.length; j++) {
-      probe._cleanups[j]._unsubscribeFromRun(probe);
-    }
-  }
-  return { result, needsReactive };
-}
 
 // Library-internal computed creator. Pairs with `_internalEffect`. Clears the outer reactive
 // context around the `computed()` call so the "computed-in-computed without key" entry warning

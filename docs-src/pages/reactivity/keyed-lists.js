@@ -29,9 +29,11 @@ t.ul(items.transform(arr => arr.map(item => t.li(item.name)))).toElement();`),
     ]),
     t.p([
       t.code('signal.mapWithKey(keyOrProp, mapFn)'),
-      ' is the optimized form. It runs ',
+      ' is the optimized form. Each key owns a stable tag instance whose DOM node the reconciler reuses across reorderings, adds, and removes. When the outer array delivers a new object for a key, ',
       t.code('mapFn'),
-      ' once per key the first time the key is seen and caches the resulting tag. Subsequent renders return the same tag instance, so Kensington reuses the existing DOM node. Reordering, adding, and removing items reorder existing nodes rather than rebuilding them.',
+      ' re-runs only if that row\'s own enumerable fields actually changed (shallow diff by ',
+      t.code('Object.is'),
+      '). A fresh object literal with identical content is a no-op — same tag instance, same DOM node, same focus/scroll/input state.',
     ]),
     code('javascript', `const items = signal([
   { id: 1, name: 'Apple' },
@@ -115,7 +117,13 @@ const list = items.mapWithKey('id', item => {
 
 t.ul(list).toElement();`),
     t.p([
-      'Because mapFn only runs the first time a key is seen, these per-item primitives are created once and live for the life of the row. Removing the item drops it from the list and its primitives are stopped automatically. See the ',
+      'Keyed primitives (',
+      t.code('signal(v, item.id)'),
+      ', ',
+      t.code('computed(fn, item.id)'),
+      ', ',
+      t.code('transform(fn, item.id)'),
+      ') are created the first time each key is seen and live for the life of the row. If mapFn re-runs on a later render (e.g. one of its fields changed), the same keyed instances are reused — kensington\'s keyed registry dedupes by key, so the local state survives the re-run. Removing the item drops it from the list and its primitives are stopped automatically. See the ',
       exLink('?page=examples#editable-rows', 'editable rows example'),
       ' for a realistic use of these patterns together.',
     ]),

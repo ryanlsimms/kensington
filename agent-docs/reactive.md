@@ -20,7 +20,7 @@ import type { Signal, ReadonlySignal, Reactive } from 'kensington';
 - `signal(initial, key?)` — writable state. **Read with `.get()`** (subscribes the current reactive context if one is active; equivalent to a plain read otherwise). Write with `.set(v)` or `.set(prev => next)`. `.stop()` tears down subscribers. `.transform(fn, key?)` chains a derivation. `.value` exists as a non-subscribing peek; it is the exception, not a peer of `.get()`. See [Always use `.get()`](#always-use-get).
 - `computed(fn, key?)` — derived state. Auto-disposes when it has no subscribers, re-runs when its tracked signals change.
 - `effect(fn)` — side effect (DOM updates, fetches, timers). Returns `{ pause, resume, stop }`. Re-runs when tracked signals change.
-- `signal.mapWithKey(keyOrProp, mapFn)` — keyed list rendering. mapFn runs once per key; the resulting tag is cached and reused across renders.
+- `signal.mapWithKey(keyOrProp, mapFn)` — keyed list rendering. Each key owns a stable tag instance. mapFn re-runs for a row when the outer array delivers a new object whose own enumerable fields actually differ (shallow diff). Reorderings with fresh literals of identical content are no-ops, so DOM node identity is preserved.
 - `tag.addConnectedCallback(el => …)` / `addDisconnectedCallback(() => …)` — lifecycle hooks tied to the live DOM element.
 
 ### The one rule that bites: pass a key when inside a reactive callback
@@ -502,7 +502,7 @@ t.tbody(rows);
 
 `signal.mapWithKey(keyOrProp, mapFn)` is a method on `Signal<Item[]>` (and `ReadonlySignal<Item[]>`). The receiver MUST hold the array directly. For an envelope shape like `Signal<{ tabs: Tab[] }>`, project the array first: `presence.transform(p => p.tabs, 'presence-tabs').mapWithKey('id', tab => ...)`. See the "envelope around a list" note below.
 
-`signal.mapWithKey(keyOrProp, mapFn)` returns a `ReadonlySignal<Tag[]>`. The first argument is either a property name string (the common case) or a function that extracts the key. The mapFn runs once per key the first time it is seen. The resulting tag is cached and reused on every subsequent render where the same key reappears, so the user never pays to rebuild thousands of unchanged tag subtrees only to discard them after a reconciler diff. Keys live on the tag instance via a Kensington-internal property and are read by the reconciler via a `WeakMap`. They do not appear in the rendered DOM.
+`signal.mapWithKey(keyOrProp, mapFn)` returns a `ReadonlySignal<Tag[]>`. The first argument is either a property name string (the common case) or a function that extracts the key. Each key owns a stable tag instance that the reconciler reuses across renders. mapFn re-runs for a row when the outer array delivers a new object AND that row's own enumerable fields actually differ (shallow diff by `Object.is`). A fresh literal with identical content is a no-op — same tag, same DOM node, same focus/scroll/input state. Keys live on the tag instance via a Kensington-internal property and are read by the reconciler via a `WeakMap`. They do not appear in the rendered DOM.
 
 Both forms of the first argument:
 
@@ -555,43 +555,27 @@ For drag-and-drop sortable lists where DOM nodes are moved via `insertBefore`, a
 
 When the `mapFn` body creates per-row signals or computeds, those calls need a key. See [Reactive primitives inside a computed need a key](#reactive-primitives-inside-a-computed-need-a-key). To address per-row state from outside the row (for example, a search handler that expands ancestors of a hit), see [Addressing per-row state from outside the row](#addressing-per-row-state-from-outside-the-row).
 
-## Updating a row after it's been cached
+## Updating a row after it's been rendered
 
-`mapWithKey` caches the tag instance per key. If something outside the row mutates a ticket and you do `items.set(list => list.map(t => t.id === id ? { ...t, comments: [...t.comments, c] } : t))`, the new object reference flows through but `mapWithKey` returns the **cached tag** for that key, whose content was built from the original object. The UI does not update.
-
-The fix is to put mutable per-row data in per-row signals on the item object itself. The cached tag binds those signals reactively, so external updates land via `.set()` on the signal rather than via array-replacement.
+The natural pattern works: replace the row in the outer array with a new object that has the updated fields, and `mapWithKey` re-runs `mapFn` for that row only. The wrapper shallow-diffs the new item against the previous one; any field that fails `Object.is` (including a nested-object ref change) fires the row.
 
 ```javascript
-// Each item carries signals for the fields that change after the row is built.
-function wrapTicket(t) {
-  return {
-    id: t.id, title: t.title, body: t.body,
-    status: signal(t.status),
-    comments: signal(t.comments ?? []),
-  };
-}
+const items = signal(initialTickets);
 
-const items = signal(plainTickets.map(wrapTicket));
-
-// ticketCard reads ticket.status and ticket.comments reactively (they're signals).
-const rows = items.mapWithKey('id', ticket => t.article({
-  class: ticket.status.transform(s => `card status-${s}`, `${ticket.id}-cls`),
-}, [
+const rows = items.mapWithKey('id', ticket => t.article({ class: `card status-${ticket.status}` }, [
   t.span(ticket.title),
-  t.ul(ticket.comments.mapWithKey('id', c => t.li(c.body))),
+  t.ul(ticket.comments.map(c => t.li(c.body))),
 ]));
 
-// Mutating a row from outside: find it, mutate its signals. This function
-// runs in imperative code (an SSE handler, a WebSocket message handler), not
-// inside a computed/effect — so .get() here is a plain read with no tracking.
+// SSE / WebSocket / polling handler. Immutable-update pattern.
 function applyServerUpdate(ticketId, patch) {
-  const row = items.get().find(t => t.id === ticketId);
-  if (row && 'status' in patch) row.status.set(patch.status);
-  if (row && 'newComment' in patch) row.comments.set([...row.comments.get(), patch.newComment]);
+  items.set(list => list.map(t => t.id === ticketId ? { ...t, ...patch } : t));
 }
 ```
 
-This is the canonical pattern for any list whose row contents change after mount — SSE pushes, WebSocket messages, polling intervals, animation timers. The `items` signal holds identity (the set of rows); per-row signals hold field-level reactivity.
+The shallow diff is field-level by `Object.is`. If a patch touches only a nested-object field (`comments`, for example), splat the parent and the nested field together: `{ ...t, comments: [...t.comments, newComment] }`. The top-level `comments` ref changes → shallow-diff detects it → row re-runs.
+
+Prefer this shape over "wrap each row in per-row signals." The per-row-signal pattern still works if you have separate reasons to hold field-level signal identity (e.g. you want a `.transform()` chained off a specific field), but it is no longer required for row updates to be visible.
 
 ### Addressing per-row state from outside the row
 
@@ -1059,7 +1043,7 @@ const rows = tasks.mapWithKey('id', ({ id, text, done }) => {
 });
 
 // Correct (option 2). Create itemClass once when the task is created and store it on
-// the object. mapWithKey reuses the cached tag instance per id, so the same signal
+// the object. mapWithKey keeps the same tag instance per id, so the same signal
 // reference drives the same live element across every re-render.
 function makeTask(text) {
   const done = signal(false);

@@ -1933,13 +1933,14 @@ describe('signal.mapWithKey', () => {
     assert.strictEqual(tags[0]._kensingtonKey, 'a');
     assert.strictEqual(tags[1]._kensingtonKey, 'b');
   });
-  it('reuses the same tag instance across renders when the key is unchanged', () => {
-    const rows = signal([{ id: 1, label: 'one' }]);
+  it('reuses the same tag instance across renders when the key and object ref are unchanged', () => {
+    const row1 = { id: 1, label: 'one' };
+    const rows = signal([row1]);
     const tags = rows.mapWithKey(r => r.id, r => t.li(r.label));
     const first = tags.get()[0];
-    rows.set([{ id: 1, label: 'one' }, { id: 2, label: 'two' }]);
+    rows.set([row1, { id: 2, label: 'two' }]);
     const second = tags.get();
-    assert.strictEqual(second[0], first); // same JS object
+    assert.strictEqual(second[0], first); // same JS object — row1 ref unchanged
   });
   it('evicts cache entries whose keys are not present in the next render', () => {
     const callCount = { n: 0 };
@@ -1954,15 +1955,43 @@ describe('signal.mapWithKey', () => {
     tags.get(); // id 1 is back; mapFn runs again because the eviction was permanent
     assert.strictEqual(callCount.n, 3);
   });
-  it('does not call mapFn for unchanged keys on re-render', () => {
+  it('does not call mapFn for unchanged keys AND unchanged object refs on re-render', () => {
+    let calls = 0;
+    const r1 = { id: 1 };
+    const r2 = { id: 2 };
+    const rows = signal([r1, r2]);
+    const tags = rows.mapWithKey(r => r.id, r => { calls++; return t.li(String(r.id)); });
+    tags.get();
+    assert.strictEqual(calls, 2);
+    rows.set([r2, r1]); // reordered, same object refs
+    tags.get();
+    assert.strictEqual(calls, 2); // no new calls: refs unchanged
+  });
+  it('does not re-run mapFn when a fresh object ref is shallow-equal to the prior item', () => {
+    // Content-equality gate: reordering with fresh object literals whose
+    // own enumerable fields match the prior item is a no-op at the
+    // reactive layer. Keeps DOM node identity across reorderings.
     let calls = 0;
     const rows = signal([{ id: 1 }, { id: 2 }]);
     const tags = rows.mapWithKey(r => r.id, r => { calls++; return t.li(String(r.id)); });
     tags.get();
     assert.strictEqual(calls, 2);
-    rows.set([{ id: 2 }, { id: 1 }]); // reordered, same keys
+    rows.set([{ id: 2 }, { id: 1 }]); // fresh refs, identical content
     tags.get();
-    assert.strictEqual(calls, 2); // no new calls
+    assert.strictEqual(calls, 2); // no re-runs; content matches
+  });
+  it('re-runs mapFn for a row when a shallow field on that row changes', async () => {
+    // The load-bearing case: the app updates one field via an immutable
+    // update. Only that row's mapFn re-runs; the other rows keep their tags.
+    const rows = signal([{ id: 1, label: 'a' }, { id: 2, label: 'b' }]);
+    const calls = { 1: 0, 2: 0 };
+    const tags = rows.mapWithKey('id', r => { calls[r.id]++; return t.li(r.label); });
+    tags.get();
+    assert.deepStrictEqual(calls, { 1: 1, 2: 1 });
+    rows.set(prev => prev.map(r => r.id === 2 ? { ...r, label: 'B!' } : r));
+    await Promise.resolve();
+    tags.get();
+    assert.deepStrictEqual(calls, { 1: 1, 2: 2 }); // only row 2 re-ran
   });
   it('treats two items with the same key as a single entry (warns)', () => {
     _resetWarningThrottle();
@@ -1993,31 +2022,66 @@ describe('signal.mapWithKey', () => {
     let calls = 0;
     const tags = rows.mapWithKey('id', item => { calls++; return t.li(`${item.id}-${flag.get()}`); });
     const first = tags.get();
-    // mapFn runs twice on first sight for reactive rows: once in the probe, once in the
-    // real per-key inner computed. Two rows × two calls = 4.
-    assert.strictEqual(calls, 4);
+    // Each row's per-key inner runs mapFn once on first sight. Two rows = 2 calls.
+    assert.strictEqual(calls, 2);
     assert.strictEqual(first[0].toString(), '<li>1-A</li>');
 
     flag.set('B');
     await Promise.resolve();
     const second = tags.get();
-    assert.strictEqual(calls, 6); // each row's inner re-ran once
+    assert.strictEqual(calls, 4); // each row's inner re-ran once
     assert.notStrictEqual(second[0], first[0]); // fresh tag for key 1
     assert.strictEqual(second[0].toString(), '<li>1-B</li>');
   });
-  it('static mapFn (no signal reads) runs exactly once per key, no extra calls', () => {
-    const rows = signal([{ id: 1 }, { id: 2 }]);
+  it('mapFn runs exactly once per key on initial render regardless of what it reads', () => {
+    const r1 = { id: 1 };
+    const r2 = { id: 2 };
+    const rows = signal([r1, r2]);
     let calls = 0;
     const tags = rows.mapWithKey('id', item => { calls++; return t.li(String(item.id)); });
     tags.get();
-    // No signals were read inside mapFn, so the probe is the only run. One call per row.
+    // Single per-key inner run per row.
     assert.strictEqual(calls, 2);
-    rows.set([{ id: 2 }, { id: 1 }]); // reordered
+    rows.set([r2, r1]); // reordered, same object refs
     tags.get();
     assert.strictEqual(calls, 2); // cache hit for both
-    rows.set([{ id: 1 }, { id: 2 }, { id: 3 }]); // add id 3
+    rows.set([r1, r2, { id: 3 }]); // add id 3 with a new ref; existing refs unchanged
     tags.get();
     assert.strictEqual(calls, 3); // only id 3 ran mapFn
+  });
+  it('re-runs a row\'s mapFn when the outer array delivers a new object ref for that row', async () => {
+    // The load-bearing case: the app holds one signal(array) and updates a
+    // row by producing a new object at that row's position. Only that key's
+    // mapFn should re-run. This is what "silent breakage" of the old naive
+    // shape looked like before the unified mapWithKey change.
+    const rows = signal([
+      { id: 1, label: 'a' },
+      { id: 2, label: 'b' },
+      { id: 3, label: 'c' },
+    ]);
+    const calls = { 1: 0, 2: 0, 3: 0 };
+    const tags = rows.mapWithKey('id', item => { calls[item.id]++; return t.li(item.label); });
+    tags.get();
+    assert.deepStrictEqual(calls, { 1: 1, 2: 1, 3: 1 });
+    rows.set(prev => prev.map(r => r.id === 2 ? { ...r, label: 'B!' } : r));
+    await Promise.resolve();
+    const after = tags.get();
+    assert.deepStrictEqual(calls, { 1: 1, 2: 2, 3: 1 });
+    assert.strictEqual(after[1].toString(), '<li>B!</li>');
+  });
+  it('skips a row\'s mapFn when the outer array is replaced but the row\'s object ref is unchanged', async () => {
+    const a = { id: 1, label: 'a' };
+    const b = { id: 2, label: 'b' };
+    const rows = signal([a, b]);
+    let calls = 0;
+    const tags = rows.mapWithKey('id', item => { calls++; return t.li(item.label); });
+    tags.get();
+    assert.strictEqual(calls, 2);
+    // Same object refs, new outer array.
+    rows.set([a, b]);
+    await Promise.resolve();
+    tags.get();
+    assert.strictEqual(calls, 2); // no per-row re-run: refs were unchanged
   });
   it('only the rows whose mapFn read the changed signal rebuild', async () => {
     const colorA = signal('red');
@@ -2039,8 +2103,10 @@ describe('signal.mapWithKey', () => {
     assert.strictEqual(second[1], first[1]); // unchanged tag instance for the other row
     assert.strictEqual(second[0].toString(), '<li>green</li>');
   });
-  it('keyed signal inside mapFn forces the reactive path and lives in a stable per-row scope', () => {
-    const rows = signal([{ id: 1 }, { id: 2 }]);
+  it('keyed signal inside mapFn lives in a stable per-row scope', () => {
+    const r1 = { id: 1 };
+    const r2 = { id: 2 };
+    const rows = signal([r1, r2]);
     let mapCalls = 0;
     const localRefs = [];
     const tags = rows.mapWithKey('id', item => {
@@ -2050,20 +2116,18 @@ describe('signal.mapWithKey', () => {
       return t.li(`${item.id}:${local.get()}`);
     });
     tags.get();
-    // Probe + inner: 4 calls total for 2 rows. mapFn ran twice on first sight per row.
-    assert.strictEqual(mapCalls, 4);
-    // Mutating the inner's keyed signal triggers a re-run of the inner (mapFn re-runs).
-    // localRefs[1] was created during the probe (unkeyed). localRefs[3] was created during
-    // the inner's run (keyed). The latter is what the live tag is bound to.
-    const innerLocal = localRefs[3];
+    // One inner run per row on first sight. Two rows = 2 calls.
+    assert.strictEqual(mapCalls, 2);
+    // Mutating a row's keyed signal triggers only that row's inner to re-run.
+    const innerLocal = localRefs[1];
     innerLocal.set(5);
     tags.get();
-    assert.strictEqual(mapCalls, 5); // only one row re-ran
-    // Cache hit on next render does not call mapFn again.
-    rows.set([{ id: 1 }, { id: 2 }, { id: 3 }]);
+    assert.strictEqual(mapCalls, 3); // only one row re-ran
+    // Adding a new row runs mapFn once for the new key only. Existing refs
+    // are unchanged, so their mapFns don't re-run.
+    rows.set([r1, r2, { id: 3 }]);
     tags.get();
-    // Only id 3 runs mapFn (probe + inner).
-    assert.strictEqual(mapCalls, 7);
+    assert.strictEqual(mapCalls, 4);
   });
   it('removing a key stops its inner and keep-alive (no resource leak)', () => {
     const flag = signal('A');
@@ -2081,29 +2145,183 @@ describe('signal.mapWithKey', () => {
     rows.set([]); // sweep
     tracked.get();
     observer.set(1); // no remaining rows; firing this should not trigger any mapFn re-runs
-    assert.strictEqual(observedCalls, 2); // initial probe + initial inner for id 1; id 2 swept before observer changed
+    assert.strictEqual(observedCalls, 1); // one inner run for id 1 before it was swept
   });
-  it('mapFn that conditionally reads a signal upgrades when the signal is read on first sight', async () => {
+  // ─── regression tests for the unified mapWithKey (structural per-row reactivity) ─────
+
+  it('reuses the tag instance across renders when a fresh item ref is shallow-equal', () => {
+    // Reconciler contract: reordering with fresh literals whose fields
+    // match must reuse tag instances so DOM nodes survive. Without the
+    // shallow-content gate, every reordering with a `.map(r => ({...r}))`
+    // pattern would rebuild every DOM node.
+    const rows = signal([{ id: 1, label: 'a' }, { id: 2, label: 'b' }]);
+    const tags = rows.mapWithKey('id', r => t.li(r.label));
+    const first = tags.get();
+    rows.set([{ id: 2, label: 'b' }, { id: 1, label: 'a' }]); // fresh refs, same content
+    const after = tags.get();
+    // Same tag instance for each key. Reconciler will just reorder the DOM.
+    assert.strictEqual(after[0], first[1]);
+    assert.strictEqual(after[1], first[0]);
+  });
+  it('re-uses tag when only nested-object ref changes but shallow fields match by ref', () => {
+    // Shallow gate treats nested objects as opaque: the top-level field
+    // matches by reference iff the exact same nested object is reused. Two
+    // shallow-equal nested objects with different refs count as "changed".
+    const nested = { color: 'red' };
+    const rows = signal([{ id: 1, meta: nested }]);
+    let calls = 0;
+    const tags = rows.mapWithKey('id', r => { calls++; return t.li(r.meta.color); });
+    tags.get();
+    assert.strictEqual(calls, 1);
+    // Same nested ref reused → no re-run.
+    rows.set([{ id: 1, meta: nested }]);
+    tags.get();
+    assert.strictEqual(calls, 1);
+    // Fresh nested with same content but new ref → re-run (shallow-diff sees
+    // the top-level `meta` ref changed).
+    rows.set([{ id: 1, meta: { color: 'red' } }]);
+    tags.get();
+    assert.strictEqual(calls, 2);
+  });
+  it('handles items that are primitives (strict-equality path)', () => {
+    // Not the common case, but the keyFn extractor can key by identity.
+    const rows = signal([1, 2, 3]);
+    let calls = 0;
+    const tags = rows.mapWithKey(x => x, x => { calls++; return t.li(String(x)); });
+    tags.get();
+    assert.strictEqual(calls, 3);
+    rows.set([1, 2, 3]); // same primitives
+    tags.get();
+    assert.strictEqual(calls, 3);
+    rows.set([3, 2, 1]); // reorder same primitives
+    tags.get();
+    assert.strictEqual(calls, 3);
+  });
+  it('handles items that are null in one render (would fail if itemsEqual crashed)', () => {
+    // Regression: itemsEqual has to short-circuit on null; a `typeof null === 'object'`
+    // followed by Object.keys(null) would throw.
+    const rows = signal([{ id: 1, meta: null }]);
+    let error = null;
+    try {
+      const tags = rows.mapWithKey('id', r => t.li(String(r.meta)));
+      tags.get();
+      rows.set([{ id: 1, meta: null }]);
+      tags.get();
+    } catch (e) { error = e; }
+    assert.strictEqual(error, null);
+  });
+  it('re-runs mapFn on the same tag when a nested field changes via fresh top-level ref', async () => {
+    const rows = signal([{ id: 1, count: 0 }, { id: 2, count: 0 }]);
+    const tags = rows.mapWithKey('id', r => t.li(`${r.id}:${r.count}`));
+    const first = tags.get();
+    // Edit row 1 only via immutable-update pattern.
+    rows.set(prev => prev.map(r => r.id === 1 ? { ...r, count: 5 } : r));
+    await Promise.resolve();
+    const after = tags.get();
+    assert.notStrictEqual(after[0], first[0]); // row 1 re-rendered
+    assert.strictEqual(after[1], first[1]); // row 2 tag unchanged
+    assert.strictEqual(after[0].toString(), '<li>1:5</li>');
+  });
+  it('combined add + edit + remove in one set applies each independently', async () => {
+    const r1 = { id: 1, label: 'a' };
+    const r2 = { id: 2, label: 'b' };
+    const r3 = { id: 3, label: 'c' };
+    const rows = signal([r1, r2, r3]);
+    const calls = { 1: 0, 2: 0, 3: 0, 4: 0 };
+    const tags = rows.mapWithKey('id', r => { calls[r.id]++; return t.li(r.label); });
+    tags.get();
+    assert.deepStrictEqual(calls, { 1: 1, 2: 1, 3: 1, 4: 0 });
+    // Remove r2, edit r1's label, keep r3 unchanged, add r4.
+    rows.set([{ ...r1, label: 'A!' }, r3, { id: 4, label: 'd' }]);
+    await Promise.resolve();
+    tags.get();
+    assert.deepStrictEqual(calls, { 1: 2, 2: 1, 3: 1, 4: 1 });
+  });
+  it('mapFn re-runs when it also reads an external signal (deps are additive)', async () => {
+    const debug = signal(false);
+    const rows = signal([{ id: 1, label: 'a' }]);
+    let calls = 0;
+    const tags = rows.mapWithKey('id', r => {
+      calls++;
+      return t.li(`${r.label}${debug.get() ? '*' : ''}`);
+    });
+    tags.get();
+    assert.strictEqual(calls, 1);
+    // External signal change triggers re-run of every row that reads it.
+    debug.set(true);
+    await Promise.resolve();
+    tags.get();
+    assert.strictEqual(calls, 2);
+    // Row edit also triggers re-run.
+    rows.set([{ id: 1, label: 'A!' }]);
+    await Promise.resolve();
+    tags.get();
+    assert.strictEqual(calls, 3);
+  });
+  it('re-add of a previously-removed key rebuilds the entry (does not resurrect)', () => {
+    const rows = signal([{ id: 1, v: 'a' }, { id: 2, v: 'b' }]);
+    let calls = 0;
+    const tags = rows.mapWithKey('id', r => { calls++; return t.li(r.v); });
+    tags.get();
+    assert.strictEqual(calls, 2);
+    // Remove id 1.
+    rows.set([{ id: 2, v: 'b' }]);
+    tags.get();
+    assert.strictEqual(calls, 2);
+    // Re-add id 1 with different content: mapFn runs again for the fresh entry.
+    rows.set([{ id: 1, v: 'A!' }, { id: 2, v: 'b' }]);
+    tags.get();
+    assert.strictEqual(calls, 3);
+  });
+  it('empty then non-empty then empty renders without leaking runs', () => {
+    const rows = signal([]);
+    let calls = 0;
+    const tags = rows.mapWithKey('id', r => { calls++; return t.li(String(r.id)); });
+    tags.get();
+    assert.strictEqual(calls, 0);
+    rows.set([{ id: 1 }, { id: 2 }]);
+    tags.get();
+    assert.strictEqual(calls, 2);
+    rows.set([]);
+    tags.get();
+    assert.strictEqual(calls, 2); // no re-runs on removal
+  });
+  it('preserves stable tag identity for unchanged rows when other rows edit', async () => {
+    // The load-bearing DOM-reuse property, expressed at the reactivity layer.
+    const r1 = { id: 1, v: 'a' };
+    const r2 = { id: 2, v: 'b' };
+    const r3 = { id: 3, v: 'c' };
+    const rows = signal([r1, r2, r3]);
+    const tags = rows.mapWithKey('id', r => t.li(r.v));
+    const first = tags.get();
+    rows.set([r1, { ...r2, v: 'B!' }, r3]); // only r2 changed
+    await Promise.resolve();
+    const after = tags.get();
+    assert.strictEqual(after[0], first[0]);
+    assert.notStrictEqual(after[1], first[1]);
+    assert.strictEqual(after[2], first[2]);
+  });
+
+  it('subscribes only to signals mapFn reads via .get() (not .value)', async () => {
     const debug = signal(false);
     const showInfo = signal('hi');
     const rows = signal([{ id: 1 }]);
     let calls = 0;
     const tags = rows.mapWithKey('id', item => {
       calls++;
-      // showInfo is read unconditionally, so upgrade fires.
       return t.li(`${item.id}: ${showInfo.get()}${debug.value ? ' (debug)' : ''}`);
     });
     tags.get();
-    assert.strictEqual(calls, 2); // probe + inner
+    assert.strictEqual(calls, 1); // one inner run
     showInfo.set('hello');
     await Promise.resolve();
     tags.get();
-    assert.strictEqual(calls, 3); // one rebuild
+    assert.strictEqual(calls, 2); // one rebuild
     // debug was read via .value (untracked), so flipping it does not trigger a rebuild.
     debug.set(true);
     await Promise.resolve();
     tags.get();
-    assert.strictEqual(calls, 3);
+    assert.strictEqual(calls, 2);
   });
 });
 
@@ -3728,16 +3946,13 @@ describe('sibling keyed computed first-run owner registration', () => {
 });
 
 describe('suppressReactiveCheck save/restore around inner Signal creation', () => {
-  // Regression. The `computed()` factory used to do:
-  //   suppressReactiveCheck = true;
-  //   const s = new Signal(undefined);
-  //   suppressReactiveCheck = false;
-  // The unconditional clear poisoned the surrounding suppression context. When several
-  // keyed `computed(fn, key)` calls happened inside a single `_runMapWithKeyProbe` (which
-  // sets suppress=true so probe-time signal-construction is silent), the first call's
-  // internal clear flipped suppress to false, and the second call's entry warning
-  // ("computed-in-effect", because the probe has currentEffect=probe and inComputedFn=false)
-  // would fire spuriously. The fix saves and restores the prior value.
+  // Regression. The `computed()` factory used to unconditionally clear
+  // suppressReactiveCheck at the end of its inner Signal construction,
+  // poisoning any surrounding suppression context. When several keyed
+  // `computed(fn, key)` calls happened inside one library-suppressed
+  // section, the first call's clear flipped suppress to false and later
+  // calls' entry warnings would fire spuriously. The fix saves and
+  // restores the prior value.
   beforeEach(() => { _resetWarningThrottle(); });
 
   it('multiple keyed computeds inside one mapWithKey mapFn do not fire spurious warnings', () => {

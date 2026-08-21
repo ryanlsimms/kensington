@@ -171,8 +171,10 @@ items.set(prev => prev.map(it =>
 
       t.h3({ id: 'per-row-signals' }, 'Per-row signals for fine-grained updates'),
       t.p([
-        'For lists where individual rows change often, store a signal on each item ',
-        'rather than reactively re-rendering the entire array.',
+        'For lists where individual rows change often, one option is to store a signal on each item ',
+        'so a row update writes to a signal directly, without going through the outer array. ',
+        t.code('mapWithKey'),
+        ' also handles the plain-object case via a shallow-diff gate, so the per-row-signal pattern is optional. Choose it when you want per-field update granularity or when the update site is far from the array.',
       ]),
       code('javascript', `// The whole \`items\` array doesn't need to re-render when one row's done flag flips.
 const items = signal([
@@ -193,7 +195,7 @@ const list = t.ul(items.mapWithKey('id', row)).toElement();
 // class attribute is rewritten. Adding or removing a row still uses items.set() with a
 // fresh array.
 items.get()[0].done.set(true);`),
-      t.p(`mapWithKey is built for the array-set path (adding, removing, reordering rows). Per-row signals are the right tool when only a row's contents change.`),
+      t.p(`Either shape works. mapWithKey re-runs a row when its outer-array entry has an actually-changed field (shallow diff), so items.set(list => list.map(r => r.id === id ? { ...r, done: true } : r)) also updates just that row. Reach for per-row signals when you want independent update granularity on individual fields, or when the update site is far from the array (an SSE handler that doesn't have the list in scope).`),
     ]),
   ];
 }

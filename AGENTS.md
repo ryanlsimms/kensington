@@ -319,7 +319,7 @@ items.set(prev => [...prev, { id: 3, name: 'Carol' }]);
 items.set(prev => prev.filter(i => i.id !== 2));
 ```
 
-`mapWithKey` caches the tag per key. Unchanged rows are not rebuilt; the reconciler reuses their DOM. If the signal holds an envelope shape like `{ tabs: [...] }` rather than a plain array, project first: `presence.transform(p => p.tabs, 'tabs').mapWithKey('id', ...)`. See `agent-docs/reactive.md` → Keyed lists for the full rule, per-row local state, and how to drive rows from outside the list.
+Each `mapWithKey` key owns a stable tag instance. `mapFn` re-runs for a row only when the outer array delivers a new object whose own enumerable fields actually differ (shallow diff by `Object.is`). Reorderings and edits both work through the natural immutable-update pattern (`prev.map(r => r.id === x ? { ...r, foo: v } : r)`). If the signal holds an envelope shape like `{ tabs: [...] }` rather than a plain array, project first: `presence.transform(p => p.tabs, 'tabs').mapWithKey('id', ...)`. See `agent-docs/reactive.md` → Keyed lists for the full rule, per-row local state, and how to drive rows from outside the list.
 
 ### Effect with cleanup
 

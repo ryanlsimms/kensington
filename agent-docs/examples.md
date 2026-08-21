@@ -569,7 +569,7 @@ document.body.append(view.toElement());
 
 This is the canonical pattern for inline conditional subtree swap. The transform returns a different tag per value of the signal; the returned tag is rendered between two anchor comment nodes; subsequent value changes replace the inner tree. Use it for "name display vs rename input", "loading spinner vs loaded content", "expanded panel body vs collapsed", and similar one-of-N selections where each branch is its own subtree.
 
-Inside a `mapWithKey` `mapFn` (recursive trees, list rows), this pattern composes safely. The outer `mapWithKey` caches the row tag per key. The inner `transform` lives on that cached tag and runs only when its signal changes, regardless of how often the outer keyed registry is consulted. Pass a key to `transform` (the row id, plus a suffix if the row has more than one inline transform) so the inner derivation is reused across outer re-runs:
+Inside a `mapWithKey` `mapFn` (recursive trees, list rows), this pattern composes safely. Each `mapWithKey` key owns a stable tag instance, and the inner `transform` lives on that tag and runs only when its signal changes. Pass a key to `transform` (the row id, plus a suffix if the row has more than one inline transform) so the inner derivation is reused across `mapFn` re-runs:
 
 ```typescript
 const rows = items.mapWithKey('id', item => {

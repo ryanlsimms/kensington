@@ -30,68 +30,83 @@ export function architectureMapWithKey() {
       ' (the documented recursive-tree pattern) from tripping the computed-in-computed warning, and keeps the wrapper\'s own reads of user-keyed signals inside each row from tripping the out-of-scope warning.',
     ]),
 
-    t.section({ id: 'map-with-key-probe' }, [
-      t.h3('The probe'),
+    t.section({ id: 'map-with-key-per-key-signal' }, [
+      t.h3('Per-key itemSignal'),
       t.p([
-        'The first time a key is seen, ',
-        t.code('buildEntry(item, mapFn)'),
-        ' runs ',
-        t.code('mapFn'),
-        ' under ',
-        t.code('_runMapWithKeyProbe'),
-        ' (',
+        'Every row gets an internal item signal, created with ',
+        t.code('signal(item, key)'),
+        ' inside the outer computed. This goes through kensington\'s keyed-signal path in ',
         loc('esm/lib/reactive/signal.js'),
-        '). The probe swaps ',
-        t.code('currentEffect'),
-        ' to a throwaway probe object, clears ',
-        t.code('currentComputed'),
-        ' and ',
-        t.code('inComputedFn'),
-        ', and runs ',
-        t.code('mapFn'),
-        ' once to discover whether the row is reactive.',
+        ', so the signal is registered in the outer\'s keyed-signal registry — kensington auto-suppresses the signal-in-computed warning for it AND auto-sweeps it when the key stops being touched on a later outer run.',
       ]),
-      code('javascript', `const { result, needsReactive } = _runMapWithKeyProbe(() => mapFn(item));
-// needsReactive is true if mapFn read any signal (probe._cleanups non-empty)
-// or created any signal(initial, key) / computed(fn, key).`),
       t.p([
-        t.code('needsReactive'),
-        ' is true when ',
         t.code('mapFn'),
-        ' read at least one signal (the probe collected a subscription) or created a keyed primitive. On a positive result the probe\'s subscriptions are unwound before returning, so the probe never leaves a dangling subscriber.',
+        ' runs inside a per-key inner computed whose body reads ',
+        t.code('itemSignal.get()'),
+        ' before passing the value on. That read is what establishes the row\'s reactive dependency, and it is set up by the wrapper — nothing about ',
+        t.code('mapFn'),
+        '\'s body is probed. A row updates iff the wrapper writes a new item into its itemSignal.',
+      ]),
+      code('javascript', `const itemSignal = signal(item, key);           // keyed-signal registry
+if (!itemsEqual(itemSignal.value, item)) {
+  itemSignal._setFromRemote(item);              // library-internal write
+}
+// on first sight, build the inner:
+const inner = _internalComputed(() =>
+  mapFn(itemSignal.get(), key)                  // structural dep
+);
+const keepAwake = _internalEffect(() => { inner.get(); });`),
+    ]),
+
+    t.section({ id: 'map-with-key-shallow-diff' }, [
+      t.h3('Shallow-content gate'),
+      t.p([
+        'The wrapper does NOT fire on every new object ref. Before writing to ',
+        t.code('itemSignal'),
+        ', ',
+        t.code('itemsEqual(a, b)'),
+        ' does a React-style shallow diff by own enumerable keys. A fresh object literal whose fields are all reference-equal to the previous item is a no-op — the inner does not re-run, ',
+        t.code('mapFn'),
+        ' does not run, and the cached tag stays live. This is what preserves DOM node identity when a list is reordered with fresh literals that carry the same content.',
+      ]),
+      t.p([
+        'Any single field that fails ',
+        t.code('Object.is'),
+        ' — including a nested-object ref change — is enough to fire the itemSignal. The gate is deliberately shallow so the app\'s existing immutable-update pattern (',
+        t.code('{ ...row, foo: v }'),
+        ') stays the source of truth for "this row changed".',
       ]),
     ]),
 
-    t.section({ id: 'map-with-key-entries' }, [
-      t.h3('Static versus reactive entries'),
+    t.section({ id: 'map-with-key-write-guard-bypass' }, [
+      t.h3('Bypassing the set-in-computed guard'),
       t.p([
-        'The probe result decides the shape of the cache entry. The cache is a plain ',
-        t.code('Map'),
-        ' keyed by the user key.',
+        'The ref-change write happens inside the outer computed\'s body, which would normally trip the ',
+        t.code('set-in-computed'),
+        ' warning. The wrapper uses ',
+        t.code('itemSignal._setFromRemote(item)'),
+        ' — the same internal setter kensington/live uses for network-origin updates — to bypass the guard for this library-managed write. The guard stays active for user code. It can\'t cause a reactive loop here because the outer never reads any itemSignal directly, only transitively via ',
+        t.code('inner.get()'),
+        '.',
       ]),
-      t.ul([
-        t.li([
-          t.strong('Static. '),
-          'When ',
-          t.code('needsReactive'),
-          ' is false, the entry is ',
-          t.code('{ tag, inner: null, keepAwake: null }'),
-          '. The same tag is returned on every later render. The cost is identical to a plain ',
-          t.code('Map'),
-          ' lookup.',
-        ]),
-        t.li([
-          t.strong('Reactive. '),
-          'When ',
-          t.code('needsReactive'),
-          ' is true, the entry is upgraded to ',
-          t.code('{ tag: null, inner, keepAwake }'),
-          ' where ',
-          t.code('inner = _internalComputed(() => mapFn(item))'),
-          ' and ',
-          t.code('keepAwake = _internalEffect(() => { inner.get(); })'),
-          '.',
-        ]),
+    ]),
+
+    t.section({ id: 'map-with-key-render' }, [
+      t.h3('The render pass and sweeping'),
+      t.p([
+        'On each render the outer iterates the source array, resolves each key, ensures its itemSignal is up to date, builds the entry on first sight, and reads the tag through ',
+        t.code('entry.inner.get()'),
+        '. Each tag is stamped with its key via ',
+        t.code('stampKey(tag, key)'),
+        ', which writes the internal ',
+        t.code('KENSINGTON_KEY'),
+        ' property (',
+        t.code("'_kensingtonKey'"),
+        ') that the reconciler reads back. Keys whose items disappeared are swept: the wrapper stops the ',
+        t.code('inner'),
+        ' and ',
+        t.code('keepAwake'),
+        ' it owns; kensington sweeps the itemSignal automatically via the keyed-signal registry.',
       ]),
       callout('key', 'Why the keep-alive exists',
         t.p([
@@ -109,7 +124,11 @@ export function architectureMapWithKey() {
         ]),
       ),
       t.p([
-        'When a tracked signal changes, the inner re-emits a fresh tag. The reconciler\'s ',
+        'When the itemSignal fires (or any signal ',
+        t.code('mapFn'),
+        ' read via ',
+        t.code('.get()'),
+        ' changes), the inner re-emits a fresh tag. The reconciler\'s ',
         t.code('tagNeedsRebuild'),
         ' sees ',
         t.code('item.getDomElement() !== oldNode'),
@@ -118,25 +137,6 @@ export function architectureMapWithKey() {
         ' swaps the row\'s DOM in place via ',
         loc('esm/lib/reactive/preserve-state.js'),
         '.',
-      ]),
-    ]),
-
-    t.section({ id: 'map-with-key-render' }, [
-      t.h3('The render pass and sweeping'),
-      t.p([
-        'On each render the outer wrapper iterates the source array, looks up each key, and returns the current tag with ',
-        t.code('entry.tag === null ? entry.inner.get() : entry.tag'),
-        '. Each tag is stamped with its key via ',
-        t.code('stampKey(tag, key)'),
-        ', which writes the internal ',
-        t.code('KENSINGTON_KEY'),
-        ' property (',
-        t.code("'_kensingtonKey'"),
-        ') that the reconciler reads back. Keys whose items disappeared from the array are swept. Their ',
-        t.code('inner'),
-        ' and ',
-        t.code('keepAwake'),
-        ' are stopped so per-row signals and computeds tear down.',
       ]),
     ]),
 

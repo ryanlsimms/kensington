@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+## Changed
+- `mapWithKey` now passes the key as a second argument to the mapping function
+
+### Fixed
+- `mapWithKey` now re-runs when the outer array delivers a new object for that key. The old behavior only re-ran rows whose mapping function happened to read a signal, which meant the natural `signal([{...}, {...}])` shape silently produced stale rows.
+
 ## [2.0.0-signals.24] - 2026-08-19
 
 ### Added

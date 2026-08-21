@@ -5,63 +5,50 @@ import {
   _internalEffect,
   _isInMapWithKeyInner,
   _isInReactiveContext,
-  _runMapWithKeyProbe,
+  signal,
 } from './signal.js';
 import { throttledError, throttledWarn } from './warnings.js';
 
-// Internal property name used by mapWithKey to stamp a key onto each cached tag, and read
-// by reconcile.js to identify the matching DOM node. The string starts with an underscore
-// so it's recognizable as Kensington-internal. Storing the key as a JS value (not a DOM
-// attribute) keeps the rendered HTML clean of bookkeeping.
 export const KENSINGTON_KEY = '_kensingtonKey';
 
-// Stamps the key onto a tag returned from mapWithKey's mapFn. Only applies to Kensington
-// tag instances. Non-tag values (e.g. plain strings used as content) ignore the key, which
-// is fine since the reconciler treats them as unkeyed.
 function stampKey(tag, key) {
   if (tag !== null && typeof tag === 'object' && tag._isKensingtonTag) {
     tag[KENSINGTON_KEY] = key;
   }
 }
 
-// Run mapFn under a tracking probe. If it touched nothing reactive (no signal reads, no
-// keyed signal/computed creation), return a static entry holding the bare tag. Otherwise,
-// unwind the probe's subscriptions, then build a real per-key inner computed plus a
-// keep-alive effect that holds the inner awake across outer re-runs.
-function buildEntry(item, mapFn) {
-  const { result: firstTag, needsReactive } = _runMapWithKeyProbe(() => mapFn(item));
-  if (!needsReactive) {
-    // Static path. Identical cost to the original mapWithKey: one bare tag in the cache.
-    return { tag: firstTag, inner: null, keepAwake: null };
+// React-style shallow equality by own enumerable keys. Decides whether a
+// fresh object ref with unchanged fields triggers a per-row re-run.
+// Without this, reordering a list with fresh literals rebuilds every DOM
+// node. Nested objects/arrays compare by reference — app-level immutable
+// updates still produce a fresh nested ref when the nested value changed.
+function itemsEqual(a, b) {
+  if (Object.is(a, b)) { return true; }
+  if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object') { return false; }
+  const keys = Object.keys(a);
+  if (keys.length !== Object.keys(b).length) { return false; }
+  for (let i = 0; i < keys.length; i++) {
+    if (!Object.is(a[keys[i]], b[keys[i]])) { return false; }
   }
-  // Reactive path. mapFn runs once more inside a real inner computed so its reads/creates
-  // are scoped properly to that per-key inner. The keep-alive holds a permanent subscriber
-  // so the outer's track() cycle can't drop the inner to zero subs and re-run mapFn on the
-  // next .get(). _internalComputed clears the outer reactive context around the creation so
-  // the "computed-in-computed" warning (meant for user mistakes) doesn't fire here.
-  const inner = _internalComputed(() => {
-    _enterMapWithKeyInner();
-    try {
-      return mapFn(item);
-    } finally {
-      _exitMapWithKeyInner();
-    }
-  });
-  const keepAwake = _internalEffect(() => { inner.get(); });
-  return { tag: null, inner, keepAwake };
+  return true;
 }
 
-// Keyed list mapper for signals that hold arrays. `keyOrProp` is either a property name on
-// each item (the common case, e.g. `'id'`) or a function that extracts the key. The first
-// time a key is seen, mapFn runs and the resulting tag is cached. The cache reuses the same
-// tag instance for that key across renders, so the reconciler reuses its DOM node unchanged.
+// Keyed list mapper for signals that hold arrays. `keyOrProp` is a property
+// name on each item (e.g. `'id'`) or a key-extractor function. mapFn's
+// signature is `(item, key) => tag`.
 //
-// On first sight of a key, mapFn is run under a probe. If it touched any reactive primitive
-// (read a signal via .get(), or created a keyed signal/computed), the entry is upgraded to a
-// per-key inner computed and mapFn runs again under that inner. From then on, signal changes
-// that mapFn depends on re-run only the affected keys' mapFn, the outer wrapper emits new
-// tags for those keys, and the reconciler rebuilds those rows in place via preserve-state
-// so focus, scroll, input value, and selection survive the rebuild.
+// Reactivity model: per-key itemSignal (kensington-owned via the outer
+// computed's keyed-signal registry, auto-swept on key disappearance) + per-
+// key inner computed (owned here, kept alive by a keepAwake effect so
+// subscribers dropping to zero across outer re-runs doesn't force a re-
+// evaluation). When the outer array delivers a new object ref for an
+// existing key AND its shallow fields differ, the wrapper writes the new
+// item into that key's itemSignal, re-running that key's mapFn. New keys
+// create new entries; disappearing keys are swept.
+//
+// App-layer state shape: one `signal([{...}, {...}])`. Edit / add / remove
+// all go through `outerSignal.set(prev => …)`. The reconciler reuses DOM
+// nodes across reorderings via the KENSINGTON_KEY stamp on each tag.
 export function mapWithKey(keyOrProp, mapFn) {
   let keyFn;
   if (typeof keyOrProp === 'function') {
@@ -83,17 +70,12 @@ export function mapWithKey(keyOrProp, mapFn) {
     );
   }
   const cache = new Map();
-  // The outer wrapper is library-internal: it is a computed that iterates the
-  // source array and assembles a Tag[]. When mapWithKey is nested inside another
-  // mapWithKey's mapFn (recursive trees), a plain computed() call here would
-  // trip the computed-in-computed warning even though the nesting is legitimate
-  // and supported. Using _internalComputed also marks the wrapper's reads as
-  // internal so reading user-keyed signals from inside it does not trip the
-  // out-of-scope warning.
+
   return _internalComputed(() => {
     const items = this.get();
     const result = new Array(items.length);
     const seen = new Set();
+    let writeIdx = 0;
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       const key = keyFn(item);
@@ -105,20 +87,38 @@ export function mapWithKey(keyOrProp, mapFn) {
         continue;
       }
       seen.add(key);
+      // Keyed signal: first sight registers with the outer's keyed-signal
+      // registry; subsequent sights return the same instance. _setFromRemote
+      // bypasses the set-in-computed loop guard — the guard exists to catch
+      // user mistakes; this library-managed write can't loop (outer never
+      // reads itemSignal directly, only transitively via inner.get()).
+      const itemSignal = signal(item, key);
+      if (!itemsEqual(itemSignal.value, item)) {
+        itemSignal._setFromRemote(item);
+      }
       let entry = cache.get(key);
       if (entry === undefined) {
-        entry = buildEntry(item, mapFn);
+        const inner = _internalComputed(() => {
+          _enterMapWithKeyInner();
+          try {
+            return mapFn(itemSignal.get(), key);
+          } finally {
+            _exitMapWithKeyInner();
+          }
+        });
+        const keepAwake = _internalEffect(() => { inner.get(); });
+        entry = { inner, keepAwake };
         cache.set(key, entry);
       }
-      const tag = entry.tag === null ? entry.inner.get() : entry.tag;
+      const tag = entry.inner.get();
       stampKey(tag, key);
-      result[i] = tag;
+      result[writeIdx++] = tag;
     }
-    // Sweep entries whose keys disappeared.
+    if (writeIdx !== items.length) { result.length = writeIdx; }
     for (const [k, e] of cache) {
       if (!seen.has(k)) {
-        if (e.keepAwake !== null) { e.keepAwake.stop(); }
-        if (e.inner !== null) { e.inner.stop?.(); }
+        e.keepAwake.stop();
+        e.inner.stop();
         cache.delete(k);
       }
     }
