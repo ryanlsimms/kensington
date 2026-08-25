@@ -72,8 +72,25 @@ function visit(node, fn) {
   }
 }
 
+// Template contents are owned by a separate DocumentFragment and are not descendants of
+// the <template> node for TreeWalker or MutationObserver purposes. When a template leaves
+// the live document, explicitly stop bindings in its inert content tree as well.
+function visitTemplateContents(node, fn) {
+  if (node.nodeType !== 1) { return; }
+  if (node.localName === 'template' && node.content !== undefined) {
+    for (const child of node.content.childNodes) {
+      visit(child, fn);
+      visitTemplateContents(child, fn);
+    }
+  }
+  for (const child of node.children) {
+    visitTemplateContents(child, fn);
+  }
+}
+
 export function stopRemoved(node) {
   visit(node, stopOne);
+  visitTemplateContents(node, stopOne);
 }
 
 // Stop tracked effects across an entire sibling range in a single TreeWalker pass. The
@@ -90,6 +107,9 @@ export function stopRangeBetween(firstNode, endAnchor) {
   for (let node = firstNode; node !== null && node !== endAnchor; node = walker.nextNode()) {
     const entry = entries.get(node);
     if (entry !== undefined) { stopOne(node, entry); }
+    if (node.nodeType === 1 && node.localName === 'template') {
+      visitTemplateContents(node, stopOne);
+    }
   }
 }
 

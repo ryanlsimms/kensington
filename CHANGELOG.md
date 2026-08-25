@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Fixed
+- `renderForHydration` now accepts only element-tag roots and rejects document-shell roots (`html`, `head`, and `body`), preventing untrackable fragment mounts during hydration and HMR.
+- `t.template(...).toElement()` now stores static and reactive children in `template.content`. For example, `t.template(t.li('New task')).toElement().content.cloneNode(true)` now clones the expected `<li>` instead of an empty fragment. Effects are cleaned up when the template is removed.
+
 ## [2.0.0-signals.25] - 2026-08-21
 
 ## Changed

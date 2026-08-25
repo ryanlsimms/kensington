@@ -316,6 +316,56 @@ test('client component returning null warns and preserves SSR element', async ({
   expect(result.ssrPreserved).toBe(true);
 });
 
+test('client component returning a non-element root logs an error and preserves SSR', async ({ page: pg, bundle }) => {
+  function literalRoot() {
+    return t.div({ id: 'literal-root' }, 'server');
+  }
+
+  await inject(pg, renderForHydration(literalRoot, {}).toString());
+
+  const result = await pg.evaluate(async src => {
+    const { registerComponents, t: tg } = await import(src);
+    const errors = [];
+    const orig = console.error;
+    console.error = (...args) => errors.push(args.map(String).join(' '));
+    registerComponents({ literalRoot: () => tg.literal('<div id="literal-root">client</div>') });
+    console.error = orig;
+    return {
+      errors,
+      text: document.getElementById('literal-root')?.textContent,
+      statePreserved: document.querySelector('script[data-k-component="literalRoot"]') !== null,
+    };
+  }, bundle);
+
+  expect(result.errors.some(e => e.includes('must return ContentTag or VoidTag roots'))).toBe(true);
+  expect(result.text).toBe('server');
+  expect(result.statePreserved).toBe(true);
+});
+
+test('hydrates a template root with content stored in template.content', async ({ page: pg, bundle }) => {
+  function templateRoot({ text }) {
+    return t.template(t.span(text));
+  }
+
+  await inject(pg, renderForHydration(templateRoot, { text: 'hello' }).toString());
+
+  const result = await pg.evaluate(async src => {
+    const { registerComponents, t: tg } = await import(src);
+    function templateRootLive({ text }) {
+      return tg.template(tg.span(text));
+    }
+    registerComponents({ templateRoot: templateRootLive });
+    const template = document.querySelector('template[data-k-mount-target]');
+    return {
+      content: template?.content.querySelector('span')?.textContent,
+      lightChildren: template?.childNodes.length,
+      stateRemoved: document.querySelector('script[data-k-component="templateRoot"]') === null,
+    };
+  }, bundle);
+
+  expect(result).toEqual({ content: 'hello', lightChildren: 0, stateRemoved: true });
+});
+
 test('logs error and preserves SSR element when component throws during hydration', async ({ page: pg, bundle }) => {
   function exploder({ x }) {
     return t.div({ id: 'exploder' }, String(x));

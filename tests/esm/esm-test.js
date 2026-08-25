@@ -2969,6 +2969,62 @@ describe('renderForHydration', () => {
     );
   });
 
+  it('rejects a LiteralTag as a hydration root even when it starts with an element', () => {
+    function literalComp() {
+      return t.literal('<div>hello</div>');
+    }
+    assert.throws(
+      () => renderForHydration(literalComp, {}),
+      /must return ContentTag or VoidTag roots/,
+    );
+  });
+
+  it('rejects a Signal as a hydration root even when it contains an element', () => {
+    function signalComp() {
+      return signal(t.div('hello'));
+    }
+    assert.throws(
+      () => renderForHydration(signalComp, {}),
+      /must return ContentTag or VoidTag roots/,
+    );
+  });
+
+  it('accepts a VoidTag as a hydration root', () => {
+    function inputComp() {
+      return t.input({ type: 'text' });
+    }
+    const html = renderForHydration(inputComp, {}).toString();
+    assert.match(html, /^<input data-k-mount-target="[^"]+" type="text">/);
+  });
+
+  it('rejects htmlWithDocType as a hydration root', () => {
+    function documentComp() {
+      return t.htmlWithDocType(t.body('hello'));
+    }
+    assert.throws(
+      () => renderForHydration(documentComp, {}),
+      /must return a fragment/,
+    );
+  });
+
+  const documentShellRoots = {
+    html: () => t.html(t.body('hello')),
+    head: () => t.head(t.title('hello')),
+    body: () => t.body('hello'),
+  };
+
+  for (const [tagName, makeRoot] of Object.entries(documentShellRoots)) {
+    it(`rejects t.${tagName} as a hydration root`, () => {
+      function documentShellComp() {
+        return makeRoot();
+      }
+      assert.throws(
+        () => renderForHydration(documentShellComp, {}, `document-${tagName}`),
+        /must return a fragment/,
+      );
+    });
+  }
+
   it('suppresses effect() during SSR', () => {
     let ran = false;
     function withEffect() {

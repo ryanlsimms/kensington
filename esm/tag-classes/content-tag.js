@@ -282,6 +282,12 @@ export default class ContentTag {
     const element = namespace === HTML_NAMESPACE
       ? ownerDocument.createElement(this.tagName)
       : ownerDocument.createElementNS(namespace, this.tagName);
+    // A template's children live in its inert DocumentFragment, not in the element's
+    // ordinary child list. Appending to the element directly produces invisible light-DOM
+    // children that are omitted from template.innerHTML/outerHTML and cloning.
+    const contentParent = namespace === HTML_NAMESPACE && this.tagName === 'template'
+      ? element.content
+      : element;
 
     // Lifecycle is built lazily on first signal binding (or finalize, if persist or a
     // connect/disconnect callback forces it). Most tags in a typical tree are static and
@@ -403,27 +409,27 @@ export default class ContentTag {
     const childOpts = {
       _inheritPersist: persist,
       _parentContext: childContext,
-      _parentElement: element,
+      _parentElement: contentParent,
     };
     for (let node of this.content) { // let, not const. node is reassigned to preserveSpaces(node) below
       if (isKensingtonTag(node)) {
-        element.append(node.toElement(childOpts));
+        contentParent.append(node.toElement(childOpts));
         continue;
       }
       if (isKensingtonSignal(node)) {
         hasSignalContent = true;
-        const startAnchor = document.createComment('');
-        const endAnchor = document.createComment('');
-        element.append(startAnchor, endAnchor);
-        ensureLifecycle().signalEffect(node, (el, val) => {
-          reconcile(el, startAnchor, endAnchor, Array.isArray(val) ? val : [val], childOpts);
+        const startAnchor = ownerDocument.createComment('');
+        const endAnchor = ownerDocument.createComment('');
+        contentParent.append(startAnchor, endAnchor);
+        ensureLifecycle().signalEffect(node, (_el, val) => {
+          reconcile(contentParent, startAnchor, endAnchor, Array.isArray(val) ? val : [val], childOpts);
         }, '(content)');
         continue;
       }
       if (!this.contentIsLiteral && typeof node === 'string') { // literal tags (script/style) need exact spacing preserved. Only convert for regular tags
         node = preserveSpaces(node);
       }
-      element.append(document.createTextNode(String(node))); // String() handles Symbols. + or template literals would throw
+      contentParent.append(ownerDocument.createTextNode(String(node))); // String() handles Symbols. + or template literals would throw
     }
 
     // `prop` is applied AFTER children. Several DOM properties depend on the live child set

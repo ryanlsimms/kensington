@@ -40,6 +40,7 @@ function dropInstance(name, instance) {
 
 const NAME_UNSET = Symbol('unset');
 const SCRIPT_CLOSE_RE = /<\/script>/gi;
+const DOCUMENT_SHELL_TAGS = new Set(['html', 'head', 'body']);
 
 const LOSSY_CHECKS = [
   [v => v instanceof Date, 'Date will round-trip as a string'],
@@ -138,7 +139,17 @@ function makeId() {
   return `k${Math.random().toString(36).slice(2, 9)}`;
 }
 
+function assertHydratableRoot(el, name) {
+  if (el === null || typeof el !== 'object' || el._isKensingtonContentTag !== true) {
+    throw new Error(`renderForHydration "${name}": component returned a value that is not an HTML element. Components passed to renderForHydration must return ContentTag or VoidTag roots.`);
+  }
+  if (typeof el?.tagName === 'string' && DOCUMENT_SHELL_TAGS.has(el.tagName.toLowerCase())) {
+    throw new Error(`renderForHydration "${name}": component must return a fragment, not a document shell element (<${el.tagName}>). Build the full document in the server route and pass renderForHydration's LiteralTag output into t.body(...).`);
+  }
+}
+
 function withMountTarget(el, id, name) {
+  assertHydratableRoot(el, name);
   const html = el.toString();
   const injected = html.replace(/^(<[\w-]+)/, `$1 data-k-mount-target="${id}"`);
   if (injected === html) {
@@ -179,7 +190,10 @@ function hydrateComponent(script, fn, name) {
     }
     const newEls = Array.isArray(result) ? result : [result];
     mountEls.slice(1).forEach(el => el.remove());
-    const newNodes = newEls.map(el => el.toElement());
+    const newNodes = newEls.map(el => {
+      assertHydratableRoot(el, name);
+      return el.toElement();
+    });
     // Stamp the live nodes with the mount-target attribute so external tooling (DOM-morph
     // HMR, devtools, etc.) can identify kensington-managed regions in the rendered DOM.
     for (const node of newNodes) {
@@ -248,7 +262,10 @@ export function hmrReplaceComponent(name, newFn) {
         continue;
       }
       const newEls = Array.isArray(result) ? result : [result];
-      newNodes = newEls.map(el => el.toElement());
+      newNodes = newEls.map(el => {
+        assertHydratableRoot(el, name);
+        return el.toElement();
+      });
     } catch (err) {
       console.error(`hmrReplaceComponent: failed to render new version of "${name}"`, err);
       continue;

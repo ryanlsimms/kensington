@@ -129,6 +129,65 @@ test('sets text content as a text node', async ({ page, bundle }) => {
   await expect(page.locator('p')).toHaveText('hello world');
 });
 
+test('places template children in template.content and keeps them reactive', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { signal, t } = await import(src);
+    const label = signal('first');
+    const template = t.template(t.span({ class: label }, label)).toElement();
+    document.body.append(template);
+
+    label.set('second');
+    await Promise.resolve();
+
+    const span = template.content.querySelector('span');
+    return {
+      lightChildren: template.childNodes.length,
+      contentChildren: template.content.childNodes.length,
+      contentHtml: template.innerHTML,
+      text: span?.textContent,
+      className: span?.className,
+    };
+  }, bundle);
+
+  expect(result).toEqual({
+    lightChildren: 0,
+    contentChildren: 1,
+    contentHtml: '<span class="second"><!---->second<!----></span>',
+    text: 'second',
+    className: 'second',
+  });
+});
+
+test('stops effects in template.content when the template is removed', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { signal, t } = await import(src);
+    const source = signal(0);
+    let runs = 0;
+    const label = source.transform(value => {
+      runs++;
+      return String(value);
+    });
+    const template = t.template(t.span(label)).toElement();
+    document.body.append(template);
+
+    source.set(1);
+    await Promise.resolve();
+    const beforeRemoval = runs;
+    const textBeforeRemoval = template.content.querySelector('span')?.textContent;
+
+    template.remove();
+    await new Promise(resolve => { requestAnimationFrame(resolve); });
+    source.set(2);
+    await Promise.resolve();
+
+    return { beforeRemoval, afterRemoval: runs, textBeforeRemoval };
+  }, bundle);
+
+  expect(result.beforeRemoval).toBeGreaterThan(1);
+  expect(result.textBeforeRemoval).toBe('1');
+  expect(result.afterRemoval).toBe(result.beforeRemoval);
+});
+
 test('preserves multiple spaces as non-breaking spaces', async ({ page, bundle }) => {
   await page.evaluate(async src => {
     const { t } = await import(src);
