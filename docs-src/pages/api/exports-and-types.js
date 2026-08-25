@@ -33,6 +33,24 @@ import { t } from 'https://cdn.jsdelivr.net/npm/kensington/dist/kensington.min.j
   // ... one export per element
 } from 'kensington/attributes';`),
 
+      t.h3('kensington/reactive'),
+      t.p([
+        'The reactive core (',
+        t.code('Signal'),
+        ', ',
+        t.code('signal'),
+        ', ',
+        t.code('computed'),
+        ', ',
+        t.code('effect'),
+        ', ',
+        t.code('isKensingtonSignal'),
+        ') exported as its own subpath. Every entry point in the package — the full bundle, the slim bundle, ',
+        t.code('kensington/live'),
+        ', the source ESM — resolves the reactive core through this one file at build time, so effects registered from one entry point always fire on writes originating from another. Consumers who need only the reactive primitives can import it directly and drop the tag pipeline entirely.',
+      ]),
+      code('javascript', `import { signal, computed, effect } from 'kensington/reactive';`),
+
       t.h3('kensington/live'),
       t.p([
         'Multi-client state shared across connected browsers. See the ',
@@ -94,6 +112,17 @@ export default defineConfig({
         '. See ',
         t.a({ href: '?page=basics#dev-vs-prod' }, 'Dev vs production'),
         ' for the recommended workflow.',
+      ]),
+      t.p([
+        'The slim bundle externalizes the entire ',
+        t.code('esm/lib/reactive/'),
+        ' chain via relative paths. Consumers can safely alias ',
+        t.code('kensington -> kensington/dist/slim/min'),
+        ' alongside ',
+        t.code('kensington/live'),
+        ' (or any other subpath) — every reactive module loads exactly once and effects fire across the boundary. This is enforced by ',
+        t.code('tests/treeshake/signal-identity-test.js'),
+        '.',
       ]),
       code('javascript', `import Kensington from 'kensington/dist/slim';
 

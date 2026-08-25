@@ -10,3 +10,4 @@
 /agents-md-refinement-log.md
 /local-notes/
 /eval/
+/tests/treeshake/signal-identity-fixture.generated.mjs

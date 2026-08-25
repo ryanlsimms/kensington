@@ -49,18 +49,20 @@ describe('tree-shaking', () => {
   it('signal-only slim consumer drops the Kensington class and tag plumbing', async () => {
     const code = await bundleSignalOnly();
     const sizeKb = code.length / 1024;
-    // Current measurement is ~13.6 KB. The reactive core includes throttled development warnings
+    // Current measurement is ~14.1 KB. The reactive core includes throttled development warnings
     // (loop detection, invalid usage) that cannot be tree-shaken because they involve
     // module-level Maps and console.error calls, the keyed signal/computed/transform
     // registries, mapWithKey's per-key itemSignal + inner + keepAwake plumbing plus its
     // shallow-content equality gate, and the keyed-computed external-subscriber warning
     // machinery, plus Signal.prototype.toElement / .mount and its small dom-tracker
-    // dependency. The 14 KB budget gives headroom for normal evolution. A regression that
-    // pulls in the Kensington class would balloon this to roughly the full slim build size,
-    // well past the budget.
+    // dependency. It also carries the `esm/reactive.js` re-export shim that lets the
+    // slim bundle share signal identity with `kensington/live` (see signal-identity-test.js).
+    // The 15 KB budget gives headroom for normal evolution. A regression that pulls in the
+    // Kensington class would balloon this to roughly the full slim build size, well past
+    // the budget.
     assert.ok(
-      sizeKb < 14,
-      `signal-only slim bundle is ${sizeKb.toFixed(2)} KB, budget is 14 KB. Tree-shaking may have regressed.`,
+      sizeKb < 15,
+      `signal-only slim bundle is ${sizeKb.toFixed(2)} KB, budget is 15 KB. Tree-shaking may have regressed.`,
     );
     // Sanity check. If the Kensington class survived, the bundle would contain references
     // to identifiers that only exist in the class path. These names are deliberately

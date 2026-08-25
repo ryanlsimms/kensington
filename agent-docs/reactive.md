@@ -15,6 +15,14 @@ import { t, signal, computed, effect, isBrowser } from 'kensington';
 import type { Signal, ReadonlySignal, Reactive } from 'kensington';
 ```
 
+Reactive-only consumers can import from the `kensington/reactive` subpath instead. Same `signal` / `computed` / `effect` / `Signal` / `isKensingtonSignal` exports; no tag pipeline. Use this when a package needs only the reactive primitives, or when a downstream bundler is already dropping the tag class via tree-shaking and you want the import graph to reflect intent:
+
+```javascript
+import { signal, computed, effect } from 'kensington/reactive';
+```
+
+Bundlers that alias `kensington -> kensington/dist/slim/min` for smaller production output can safely mix that with `kensington/live` or any other subpath; every reactive module is externalized in the slim build so the reactive core loads exactly once across entry points. Effects fire correctly across the boundary.
+
 ### The five core operations
 
 - `signal(initial, key?)` — writable state. **Read with `.get()`** (subscribes the current reactive context if one is active; equivalent to a plain read otherwise). Write with `.set(v)` or `.set(prev => next)`. `.stop()` tears down subscribers. `.transform(fn, key?)` chains a derivation. `.value` exists as a non-subscribing peek; it is the exception, not a peer of `.get()`. See [Always use `.get()`](#always-use-get).

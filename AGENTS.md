@@ -463,7 +463,7 @@ import type { Signal, ReadonlySignal, Reactive, ContentTag } from 'kensington';
 
 Use `Reactive<T>` (the `T | Signal<T> | ReadonlySignal<T>` union) when typing component parameters that accept either a plain value or a signal. Use `ReadonlySignal<T>` for derived signals returned by `computed`, `transform`, or `mapWithKey`. Use `Signal<T>` only when the caller must be able to write via `.set()`. `ContentTag` is the return type of every content element method.
 
-Less common imports (use when actually needed): the `Kensington` class for custom configuration, `import { Kensington } from 'kensington'`; the `formAttributes` / `globalAttributes` objects from `'kensington/attributes'`; the `VoidTag` / `LiteralTag` / `CommentTag` / `Content` / `ContentMethod` types; the `NameSpaceAttributes` / `GlobalAttributes` / `GlobalEvents` / `UniversalAttributes` / `ClassValue` slot types. All exported from `'kensington'`.
+Less common imports (use when actually needed): the `Kensington` class for custom configuration, `import { Kensington } from 'kensington'`; the `formAttributes` / `globalAttributes` objects from `'kensington/attributes'`; the `VoidTag` / `LiteralTag` / `CommentTag` / `Content` / `ContentMethod` types; the `NameSpaceAttributes` / `GlobalAttributes` / `GlobalEvents` / `UniversalAttributes` / `ClassValue` slot types. All exported from `'kensington'`. Reactive-only consumers who want just the primitives can import them from the `'kensington/reactive'` subpath (`Signal`, `signal`, `computed`, `effect`, `isKensingtonSignal`); the tag pipeline drops out entirely.
 
 ## Recommended packages
 

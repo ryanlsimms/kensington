@@ -454,6 +454,10 @@ The quotes around `"--external:node:*"` prevent the shell from glob-expanding `n
 
 **Vite** automatically uses the `browser` export condition and handles this correctly without extra config.
 
+### Aliasing to the slim bundle
+
+A production Vite build often aliases `kensington -> kensington/dist/slim/min` to drop the tag class from the client bundle. This is safe alongside `kensington/live`: the slim bundle externalizes every `esm/lib/reactive/*.js` module (signal, hydration-scope, ssr, etc.), so it and the live subpath resolve to the same on-disk file for each reactive module. `signal.set()` from the live transport wakes `effect()` from the slim bundle without any extra config.
+
 ## Last-write-wins, Lamport ordering
 
 All writes are last-write-wins by Lamport counter, assigned server-side. For direct value writes (`sig.set(value)`), if two clients call simultaneously, both reach the server, the server applies them in arrival order, and the later value wins. This is correct for "set this to that" intent (theme changes, status flags, direct overrides) but unsafe for read-modify-write intent.

@@ -68,6 +68,9 @@
       "types": "./esm/live/server.d.ts",
       "import": "./esm/live/server.js"
     },
+    "./reactive": {
+      "import": "./esm/reactive.js"
+    },
     ".": {
       "import": {
         "types": "./types.d.ts",
@@ -113,7 +116,7 @@
     "test-cjs": "node --test \"./tests/cjs/cjs-test.js\"",
     "test-ts": "tsc --noEmit -p tests/typescript/tsconfig.json && echo 'TypeScript types OK'",
     "test-cli": "node --test \"./tests/html-to-kensington-test.js\"",
-    "test-treeshake": "node --test \"./tests/treeshake/treeshake-test.js\"",
+    "test-treeshake": "node --test \"./tests/treeshake/treeshake-test.js\" \"./tests/treeshake/signal-identity-test.js\"",
     "benchmark": "node tests/benchmark.js",
     "dom-server": "node --watch-path=./tests/browser/pages --watch-path=./esm ./tests/browser/server/html-server.js",
     "docs": "vite",

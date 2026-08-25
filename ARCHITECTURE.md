@@ -7,6 +7,7 @@ A map of the source tree for contributors. For commands and the high-level proje
 ```
 esm/                          ESM source (the authoritative one — cjs/ and dist/ are generated)
   index.js                    Package entry. Exports Kensington, t, signal, computed, effect, hydration helpers
+  reactive.js                 Public re-export of the reactive core (Signal, signal, computed, effect, isKensingtonSignal). Backing file for the `kensington/reactive` subpath. Provided so consumers who need only the reactive primitives can import them without the tag pipeline
   kensington.js               GENERATED — the Kensington class with every tag as a method
   attributes.js               GENERATED — per-element attribute spec maps
   tag-classes/                The classes that an element instance can be
@@ -58,7 +59,7 @@ generate/                     Code generation. Reads spec data, emits esm/kensin
   bin/
     write-code-files.js       The build entry point (npm run build). Fetches @webref/css and @webref/idl, parses spec data, runs every builder below, writes esm/, cjs/, dist/
     fetch-all.js              Refreshes generate/fetched-data/*.json from the HTML/SVG/MathML living standards (npm run fetch)
-    build-browser.js          Rolls up esm/ into the dist/ browser bundles (full, slim, devtools, plus minified variants) via Rollup
+    build-browser.js          Rolls up esm/ into the dist/ browser bundles (full, slim, devtools, plus minified variants) via Rollup. Slim variants externalize `esm/lib/reactive/*.js` so signal-module identity is preserved when consumers alias `kensington -> kensington/dist/slim/min` alongside `kensington/live`
     build-cjs.js              Rolls up esm/ into cjs/ via Rollup
   fetched-data/                Cached HTML/SVG/MathML spec data (committed)
   build-kensington.js          Template that emits the Kensington class body (esm/kensington.js)
@@ -167,3 +168,4 @@ Re-calling `toElement()` on a tag that already built a node reuses that node in 
 - **`mapWithKey` gives every row structural reactivity.** Each key owns an internal `itemSignal` (registered in the outer computed's keyed-signal registry, so kensington auto-suppresses the signal-in-computed warning and auto-sweeps on key removal). `mapFn(item, key)` runs inside a per-key inner computed that reads `itemSignal.get()`, so the reactive dependency is set up by the wrapper rather than inferred from what `mapFn` happens to touch. A permanent keepAwake effect prevents the inner from sleeping across outer re-runs. When the outer array delivers a new object for a key, the wrapper writes it through only when a shallow (own-enumerable-key) diff shows the fields actually changed — a fresh literal with identical content is a no-op, so reorderings preserve tag identity and DOM nodes. The library-managed write uses `itemSignal._setFromRemote(item)` to bypass the set-in-computed guard, which stays active for user code.
 - **Live signals: `delete(name)` on the server does not notify anyone.** It only clears server-side registry/store/subscriber bookkeeping; existing subscribers (client or server-side cached signals) keep their last value. Use `live.set(name, null)` if subscribers must observe a removal.
 - **`prop` values are applied via property assignment (`el[name] = value`), not `setAttribute`.** Existence and writability are checked against the live element at render time, and the key never appears in `toString()` output or the HTML attribute pipeline.
+- **Reactive-core modules load exactly once per process.** Everything in `esm/lib/reactive/*.js` carries module-scope state (`currentEffect`, `currentHydrationScope`, SSR mode counter, warning throttles). The slim rollup marks the whole directory external so `dist/kensington.slim*.js` imports them via relative paths back into `esm/lib/reactive/` rather than inlining them. Consumers that alias `kensington -> kensington/dist/slim/min` alongside `kensington/live` (or any other subpath) then share one instance of each reactive module, so a `signal.set()` from one entry point wakes an `effect()` registered from another. Regression coverage: `tests/treeshake/signal-identity-test.js`.
