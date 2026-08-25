@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [2.0.0-signals.26] - 2026-08-25
 
 ### Added
 - New public subpath `kensington/reactive` exposing the reactive core (`Signal`, `signal`, `computed`, `effect`, `isKensingtonSignal`, and internal helpers). Consumers who need only the reactive primitives can import from this subpath.
