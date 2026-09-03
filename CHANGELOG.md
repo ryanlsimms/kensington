@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Fixed
+- Hydration transition suppression is now temporary, scoped to successful replacements, and coalesced to one layout pass per frame. Missing, skipped, and failed mounts retain their SSR DOM without having their CSS animations interrupted.
+
 ## [2.0.0-signals.26] - 2026-08-25
 
 ### Added

@@ -166,17 +166,19 @@ function withMountTarget(el, id, name) {
   return injected;
 }
 
-function hydrateComponent(script, fn, name) {
+function prepareHydration(script, fn, name) {
   const mountId = script.dataset.kMount;
   const mountEls = [...document.querySelectorAll(`[data-k-mount-target="${mountId}"]`)];
   if (!mountEls.length) {
     console.warn(`renderForHydration: mount point for "${name}" not found. The component may have already been hydrated.`);
-    return;
+    return null;
   }
+  let scopeEntered = false;
   try {
     const state = JSON.parse(script.textContent);
     const context = contextRegistry.get(name);
     _enterHydrationScope(mountId);
+    scopeEntered = true;
     let result;
     try {
       result = fn(state, context);
@@ -186,10 +188,10 @@ function hydrateComponent(script, fn, name) {
     assertSync(result, name);
     if (result === null || result === undefined) {
       console.warn(`renderForHydration: "${name}" returned ${String(result)} on the client — skipping hydration, SSR element preserved`);
-      return;
+      _disposeHydrationScope(mountId);
+      return null;
     }
     const newEls = Array.isArray(result) ? result : [result];
-    mountEls.slice(1).forEach(el => el.remove());
     const newNodes = newEls.map(el => {
       assertHydratableRoot(el, name);
       return el.toElement();
@@ -201,11 +203,32 @@ function hydrateComponent(script, fn, name) {
         node.setAttribute('data-k-mount-target', mountId);
       }
     }
-    mountEls[0].replaceWith(...newNodes);
+    return { script, name, mountId, mountEls, newNodes, fn, state };
+  } catch (err) {
+    if (scopeEntered) {
+      _disposeHydrationScope(mountId);
+    }
+    console.error(`renderForHydration: failed to hydrate "${name}"`, err);
+    return null;
+  }
+}
+
+function commitHydration(prepared) {
+  const { script, name, mountId, mountEls, newNodes, fn, state } = prepared;
+  try {
+    const firstMount = mountEls[0];
+    if (!script.isConnected || !firstMount.isConnected) {
+      throw new Error('mount point was removed before hydration could commit');
+    }
+    firstMount.replaceWith(...newNodes);
+    mountEls.slice(1).forEach(el => el.remove());
     script.remove();
     recordInstance(name, { mountId, mountNodes: newNodes, fn, state });
+    return true;
   } catch (err) {
+    _disposeHydrationScope(mountId);
     console.error(`renderForHydration: failed to hydrate "${name}"`, err);
+    return false;
   }
 }
 
@@ -285,13 +308,52 @@ export function hmrReplaceComponent(name, newFn) {
   }
 }
 
-function injectSSRStyle() {
-  if (document.head.querySelector('[data-k-ssr]')) { return; }
+function ssrStyleText(mountIds) {
+  const uniqueMountIds = [...new Set(mountIds)];
+  const selectors = uniqueMountIds.flatMap(mountId => [
+    `[data-k-mount-target="${mountId}"]`,
+    `[data-k-mount-target="${mountId}"] *`,
+  ]).join(',');
+  return `${selectors}{transition:none !important;animation:none !important}`;
+}
+
+function injectSSRStyle(mountIds) {
+  if (mountIds.length === 0) { return null; }
+
   const style = document.createElement('style');
   style.setAttribute('data-k-ssr', '');
-  style.textContent = '[data-k-mount-target],[data-k-mount-target] *' +
-    '{transition:none !important;animation:none !important}';
+  style.textContent = ssrStyleText(mountIds);
   document.head.appendChild(style);
+  return style;
+}
+
+const pendingSSRStyles = new Set();
+let ssrStyleRemovalScheduled = false;
+
+function flushSSRStyles() {
+  ssrStyleRemovalScheduled = false;
+  if (pendingSSRStyles.size === 0) { return; }
+
+  // Signal effects and connected callbacks flush on the microtask queue before this frame.
+  // Commit all their final mount-time values in one layout pass with transitions still
+  // suppressed, then restore the application's CSS. Later state changes animate normally.
+  document.documentElement.getBoundingClientRect();
+  pendingSSRStyles.forEach(style => style.remove());
+  pendingSSRStyles.clear();
+}
+
+function removeSSRStyleAfterMount(style) {
+  if (style === null) { return; }
+
+  pendingSSRStyles.add(style);
+  if (ssrStyleRemovalScheduled) { return; }
+  ssrStyleRemovalScheduled = true;
+
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(flushSSRStyles);
+  } else {
+    setTimeout(flushSSRStyles, 0);
+  }
 }
 
 function hydrateAll(registry) {
@@ -299,10 +361,8 @@ function hydrateAll(registry) {
     return { stop() {} };
   }
 
-  injectSSRStyle();
-
   const warnedMissing = new Set();
-  function tryHydrate(script) {
+  function tryPrepare(script) {
     const name = script.dataset.kComponent;
     const fn = registry.get(name);
     if (!fn) {
@@ -310,28 +370,49 @@ function hydrateAll(registry) {
         warnedMissing.add(name);
         console.warn(`renderForHydration: no component registered for "${name}". Did you call registerComponents({ ${name} })?`);
       }
-      return;
+      return null;
     }
-    hydrateComponent(script, fn, name);
+    return prepareHydration(script, fn, name);
   }
 
+  const hydrateBatch = scripts => {
+    const batch = [...new Set(scripts)].filter(script => script.isConnected);
+    if (batch.length === 0) { return; }
+    const prepared = batch.map(tryPrepare).filter(result => result !== null);
+    if (prepared.length === 0) { return; }
+
+    const style = injectSSRStyle(prepared.map(result => result.mountId));
+    const committedMountIds = prepared
+      .filter(commitHydration)
+      .map(result => result.mountId);
+    if (committedMountIds.length === 0) {
+      style.remove();
+      return;
+    }
+    if (committedMountIds.length !== prepared.length) {
+      style.textContent = ssrStyleText(committedMountIds);
+    }
+    removeSSRStyleAfterMount(style);
+  };
+
   const run = () => {
-    document.querySelectorAll('script[type="application/json"][data-k-component]')
-      .forEach(tryHydrate);
+    hydrateBatch(document.querySelectorAll('script[type="application/json"][data-k-component]'));
   };
 
   const observer = new MutationObserver(mutations => {
+    const scripts = [];
     for (const mutation of mutations) {
       for (const node of mutation.addedNodes) {
         if (node.nodeType !== 1) { continue; }
         if (node.matches('script[type="application/json"][data-k-component]')) {
-          tryHydrate(node);
+          scripts.push(node);
         } else {
           node.querySelectorAll('script[type="application/json"][data-k-component]')
-            .forEach(tryHydrate);
+            .forEach(script => scripts.push(script));
         }
       }
     }
+    hydrateBatch(scripts);
   });
 
   observer.observe(document.documentElement, { childList: true, subtree: true });

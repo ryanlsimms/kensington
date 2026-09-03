@@ -77,6 +77,176 @@ test('JSON script block is removed after hydration', async ({ page: pg, bundle }
   expect(scriptCount.after).toBe(0);
 });
 
+test('transition suppression is removed after the mount-time reactive flush', async ({ page: pg, bundle }) => {
+  function panel({ opacity }) {
+    return t.div({ id: 'panel', class: 'motion', style: `opacity:${opacity}` }, 'panel');
+  }
+
+  await inject(pg, renderForHydration(panel, { opacity: 0 }).toString());
+
+  const result = await pg.evaluate(async src => {
+    const css = document.createElement('style');
+    css.textContent = '.motion{transition:opacity 2s linear;animation:k-pulse 2s linear infinite}' +
+      '@keyframes k-pulse{from{transform:scale(1)}to{transform:scale(.99)}}';
+    document.head.appendChild(css);
+
+    let transitionStarts = 0;
+    document.addEventListener('transitionstart', event => {
+      if (event.target.id === 'panel' && event.propertyName === 'opacity') {
+        transitionStarts++;
+      }
+    });
+
+    const { registerComponents, signal, t: tg } = await import(src);
+    let value;
+    function panelLive({ opacity }) {
+      value = signal(opacity);
+      queueMicrotask(() => { value.set(1); });
+      return tg.div({ id: 'panel', class: 'motion', style: { opacity: value } }, 'panel');
+    }
+    registerComponents({ panel: panelLive });
+
+    const panelEl = document.getElementById('panel');
+    const during = getComputedStyle(panelEl);
+    const whileMounting = {
+      guardCount: document.querySelectorAll('style[data-k-ssr]').length,
+      transitionProperty: during.transitionProperty,
+      animationName: during.animationName,
+    };
+
+    await new Promise(resolve => { requestAnimationFrame(resolve); });
+    await new Promise(resolve => { requestAnimationFrame(resolve); });
+    const after = getComputedStyle(panelEl);
+    const afterMount = {
+      guardCount: document.querySelectorAll('style[data-k-ssr]').length,
+      transitionProperty: after.transitionProperty,
+      animationName: after.animationName,
+      opacity: after.opacity,
+      transitionStarts,
+    };
+
+    value.set(0);
+    await Promise.resolve();
+    await new Promise(resolve => { requestAnimationFrame(resolve); });
+    await new Promise(resolve => { requestAnimationFrame(resolve); });
+
+    return {
+      whileMounting,
+      afterMount,
+      transitionStartsAfterLaterUpdate: transitionStarts,
+    };
+  }, bundle);
+
+  expect(result.whileMounting).toEqual({
+    guardCount: 1,
+    transitionProperty: 'none',
+    animationName: 'none',
+  });
+  expect(result.afterMount).toEqual({
+    guardCount: 0,
+    transitionProperty: 'opacity',
+    animationName: 'k-pulse',
+    opacity: '1',
+    transitionStarts: 0,
+  });
+  expect(result.transitionStartsAfterLaterUpdate).toBeGreaterThan(0);
+});
+
+test('transition suppression covers mount-time updates from connected callbacks', async ({ page: pg, bundle }) => {
+  function panel({ opacity }) {
+    return t.div({ id: 'connected-panel', class: 'motion', style: `opacity:${opacity}` }, 'panel');
+  }
+
+  await inject(pg, renderForHydration(panel, { opacity: 0 }).toString());
+
+  const result = await pg.evaluate(async src => {
+    const css = document.createElement('style');
+    css.textContent = '.motion{transition:opacity 2s linear}';
+    document.head.appendChild(css);
+
+    let transitionStarts = 0;
+    document.addEventListener('transitionstart', event => {
+      if (event.target.id === 'connected-panel' && event.propertyName === 'opacity') {
+        transitionStarts++;
+      }
+    });
+
+    const { registerComponents, signal, t: tg } = await import(src);
+    function panelLive({ opacity }) {
+      const value = signal(opacity);
+      const tag = tg.div({ id: 'connected-panel', class: 'motion', style: { opacity: value } }, 'panel');
+      tag.addConnectedCallback(node => {
+        node.getBoundingClientRect();
+        value.set(1);
+      });
+      return tag;
+    }
+    registerComponents({ panel: panelLive });
+
+    await new Promise(resolve => { requestAnimationFrame(resolve); });
+    await new Promise(resolve => { requestAnimationFrame(resolve); });
+    return {
+      guardCount: document.querySelectorAll('style[data-k-ssr]').length,
+      opacity: getComputedStyle(document.getElementById('connected-panel')).opacity,
+      transitionStarts,
+    };
+  }, bundle);
+
+  expect(result).toEqual({ guardCount: 0, opacity: '1', transitionStarts: 0 });
+});
+
+test('transition guard fallback remains through mount-time microtasks without requestAnimationFrame', async ({
+  page: pg,
+  bundle,
+}) => {
+  function panel({ opacity }) {
+    return t.div({ id: 'fallback-panel', class: 'motion', style: `opacity:${opacity}` }, 'panel');
+  }
+
+  await inject(pg, renderForHydration(panel, { opacity: 0 }).toString());
+
+  const result = await pg.evaluate(async src => {
+    const css = document.createElement('style');
+    css.textContent = '.motion{transition:opacity 2s linear}';
+    document.head.appendChild(css);
+
+    const originalRaf = window.requestAnimationFrame;
+    window.requestAnimationFrame = undefined;
+    try {
+      const { registerComponents, signal, t: tg } = await import(src);
+      function panelLive({ opacity }) {
+        const value = signal(opacity);
+        queueMicrotask(() => { value.set(1); });
+        return tg.div({ id: 'fallback-panel', class: 'motion', style: { opacity: value } }, 'panel');
+      }
+      registerComponents({ panel: panelLive });
+
+      await Promise.resolve();
+      await Promise.resolve();
+      const afterMicrotasks = {
+        guardCount: document.querySelectorAll('style[data-k-ssr]').length,
+        opacity: getComputedStyle(document.getElementById('fallback-panel')).opacity,
+      };
+
+      await new Promise(resolve => { setTimeout(resolve, 0); });
+      return {
+        afterMicrotasks,
+        afterTask: {
+          guardCount: document.querySelectorAll('style[data-k-ssr]').length,
+          transitionProperty: getComputedStyle(document.getElementById('fallback-panel')).transitionProperty,
+        },
+      };
+    } finally {
+      window.requestAnimationFrame = originalRaf;
+    }
+  }, bundle);
+
+  expect(result).toEqual({
+    afterMicrotasks: { guardCount: 1, opacity: '1' },
+    afterTask: { guardCount: 0, transitionProperty: 'opacity' },
+  });
+});
+
 // ─── multiple components ───────────────────────────────────────────────────
 
 test('hydrates multiple components on the same page', async ({ page: pg, bundle }) => {
@@ -130,6 +300,49 @@ test('hydrates multiple instances of the same component', async ({ page: pg, bun
 
   const texts = await pg.locator('.badge').allTextContents();
   expect(texts).toEqual(['1', '2']);
+});
+
+test('coalesces transition guard cleanup for hydration batches in the same frame', async ({ page: pg, bundle }) => {
+  function box({ id }) {
+    return t.div({ id }, id);
+  }
+
+  const html = renderForHydration(box, { id: 'first' }, 'first').toString() +
+    renderForHydration(box, { id: 'second' }, 'second').toString();
+  await inject(pg, html);
+
+  const result = await pg.evaluate(async src => {
+    const { registerComponents, t: tg } = await import(src);
+    const documentElement = document.documentElement;
+    const originalRect = documentElement.getBoundingClientRect;
+    let layoutFlushes = 0;
+    documentElement.getBoundingClientRect = function getBoundingClientRect(...args) {
+      layoutFlushes++;
+      return originalRect.apply(this, args);
+    };
+
+    try {
+      function first({ id }) {
+        return tg.div({ id }, id);
+      }
+      function second({ id }) {
+        return tg.div({ id }, id);
+      }
+      registerComponents({ first });
+      registerComponents({ second });
+      const guardsBeforeFrame = document.querySelectorAll('style[data-k-ssr]').length;
+      await new Promise(resolve => { requestAnimationFrame(resolve); });
+      return {
+        guardsBeforeFrame,
+        guardsAfterFrame: document.querySelectorAll('style[data-k-ssr]').length,
+        layoutFlushes,
+      };
+    } finally {
+      documentElement.getBoundingClientRect = originalRect;
+    }
+  }, bundle);
+
+  expect(result).toEqual({ guardsBeforeFrame: 2, guardsAfterFrame: 0, layoutFlushes: 1 });
 });
 
 // ─── array return ──────────────────────────────────────────────────────────
@@ -268,6 +481,63 @@ test('hydrates component inserted into DOM after registerComponents', async ({ p
   expect(text).toBe('7');
 });
 
+test('dynamic hydration suppresses only the newly mounted component', async ({ page: pg, bundle }) => {
+  function panel({ id }) {
+    return t.div({ id, class: 'motion' }, id);
+  }
+
+  const initialHtml = renderForHydration(panel, { id: 'existing' }).toString();
+  const dynamicHtml = renderForHydration(panel, { id: 'dynamic' }).toString();
+  await inject(pg, initialHtml);
+
+  const result = await pg.evaluate(async ({ src, html }) => {
+    const css = document.createElement('style');
+    css.textContent = '.motion{transition:opacity 2s linear}';
+    document.head.appendChild(css);
+
+    const { registerComponents, t: tg } = await import(src);
+    function panelLive({ id }) {
+      return tg.div({ id, class: 'motion' }, id);
+    }
+    registerComponents({ panel: panelLive });
+    await new Promise(resolve => { requestAnimationFrame(resolve); });
+
+    const existing = document.getElementById('existing');
+    const existingMountId = existing.dataset.kMountTarget;
+    document.body.insertAdjacentHTML('beforeend', html);
+    await Promise.resolve();
+
+    const dynamic = document.getElementById('dynamic');
+    const guard = document.querySelector('style[data-k-ssr]');
+    const whileMounting = {
+      guardCount: document.querySelectorAll('style[data-k-ssr]').length,
+      guardIncludesExistingMount: guard.textContent.includes(existingMountId),
+      existingTransition: getComputedStyle(existing).transitionProperty,
+      dynamicTransition: getComputedStyle(dynamic).transitionProperty,
+    };
+
+    await new Promise(resolve => { requestAnimationFrame(resolve); });
+    return {
+      whileMounting,
+      afterMount: {
+        guardCount: document.querySelectorAll('style[data-k-ssr]').length,
+        dynamicTransition: getComputedStyle(dynamic).transitionProperty,
+      },
+    };
+  }, { src: bundle, html: dynamicHtml });
+
+  expect(result.whileMounting).toEqual({
+    guardCount: 1,
+    guardIncludesExistingMount: false,
+    existingTransition: 'opacity',
+    dynamicTransition: 'none',
+  });
+  expect(result.afterMount).toEqual({
+    guardCount: 0,
+    dynamicTransition: 'opacity',
+  });
+});
+
 test('stop() prevents hydration of dynamically inserted components', async ({ page: pg, bundle }) => {
   function widget({ value }) {
     return t.div({ id: 'widget' }, String(value));
@@ -291,6 +561,83 @@ test('stop() prevents hydration of dynamically inserted components', async ({ pa
 });
 
 // ─── error and deferred paths ──────────────────────────────────────────────
+
+test('does not add transition guards for hydration paths that preserve SSR', async ({ page: pg, bundle }) => {
+  function serverPanel({ id }) {
+    return t.div({ id, class: 'motion' }, id);
+  }
+
+  const html = [
+    ['missing', 'missing'],
+    ['ghost', 'ghost'],
+    ['nullish', 'nullish'],
+    ['exploder', 'exploder'],
+    ['invalid', 'invalid'],
+  ].map(([name, id]) => renderForHydration(serverPanel, { id }, name).toString()).join('');
+  await inject(pg, html);
+
+  const result = await pg.evaluate(async src => {
+    document.getElementById('ghost').removeAttribute('data-k-mount-target');
+
+    let guardInsertions = 0;
+    const styleObserver = new MutationObserver(mutations => {
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if (node.nodeType === 1 && node.matches('style[data-k-ssr]')) {
+            guardInsertions++;
+          }
+        }
+      }
+    });
+    styleObserver.observe(document.head, { childList: true });
+
+    const warnings = [];
+    const errors = [];
+    const originalWarn = console.warn;
+    const originalError = console.error;
+    console.warn = (...args) => warnings.push(args.map(String).join(' '));
+    console.error = (...args) => errors.push(args.map(String).join(' '));
+    try {
+      const { registerComponents, t: tg } = await import(src);
+      registerComponents({
+        ghost: ({ id }) => tg.div({ id }, id),
+        nullish: () => null,
+        exploder: () => { throw new Error('boom'); },
+        invalid: () => tg.literal('<div id="invalid">client</div>'),
+      });
+      await Promise.resolve();
+    } finally {
+      console.warn = originalWarn;
+      console.error = originalError;
+      styleObserver.disconnect();
+    }
+
+    return {
+      guardInsertions,
+      guardCount: document.querySelectorAll('style[data-k-ssr]').length,
+      preservedIds: ['missing', 'ghost', 'nullish', 'exploder', 'invalid']
+        .filter(id => document.getElementById(id) !== null),
+      stateCount: document.querySelectorAll('script[data-k-component]').length,
+      sawMissingWarning: warnings.some(message => message.includes('no component registered for "missing"')),
+      sawMountWarning: warnings.some(message => message.includes('mount point for "ghost"')),
+      sawNullWarning: warnings.some(message => message.includes('"nullish" returned null')),
+      sawExploderError: errors.some(message => message.includes('failed to hydrate "exploder"')),
+      sawInvalidError: errors.some(message => message.includes('failed to hydrate "invalid"')),
+    };
+  }, bundle);
+
+  expect(result).toEqual({
+    guardInsertions: 0,
+    guardCount: 0,
+    preservedIds: ['missing', 'ghost', 'nullish', 'exploder', 'invalid'],
+    stateCount: 5,
+    sawMissingWarning: true,
+    sawMountWarning: true,
+    sawNullWarning: true,
+    sawExploderError: true,
+    sawInvalidError: true,
+  });
+});
 
 test('client component returning null warns and preserves SSR element', async ({ page: pg, bundle }) => {
   function nullish({ x }) {
