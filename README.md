@@ -68,10 +68,10 @@ t.input({ formenctype: 'text' });
 
 ## Reactive data
 
-In the browser, import `signal`, `computed`, and `effect` to build reactive UIs. Pass a signal as content or an option value and the DOM updates in place. 
+In the browser, import `signal`, `computed`, and `effect` to build reactive UIs. Pass a signal as content or an option value and the DOM updates synchronously in place. Use `batch()` when several writes should produce one update.
 
 ```javascript
-import { t, signal, computed, effect } from 'kensington';
+import { t, signal, computed, effect, batch } from 'kensington';
 
 const count = signal(0);
 const doubled = count.transform(n => n * 2);

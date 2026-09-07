@@ -146,8 +146,9 @@ effect(() => {
 
 if (location.hash) {
   const el = document.getElementById(location.hash.slice(1));
-  if (el) { el.scrollIntoView(); }
+  if (el) { el.scrollIntoView({ behavior: 'instant' }); }
 }
+document.documentElement.removeAttribute('data-initial-hash');
 
 // ── Sidebar nav links ─────────────────────────────────────────────
 

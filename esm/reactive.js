@@ -18,6 +18,7 @@ export {
   _bindingEffect,
   _internalComputed,
   _internalEffect,
+  batch,
   computed,
   default,
   effect,

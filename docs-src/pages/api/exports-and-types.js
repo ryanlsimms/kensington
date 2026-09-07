@@ -10,7 +10,7 @@ export function apiExportsAndTypes() {
       t.h3('kensington'),
       code('javascript', `import Kensington from 'kensington';                         // the class
 import { t } from 'kensington';                              // shared default instance (new Kensington())
-import { signal, computed, effect } from 'kensington';
+import { signal, computed, effect, batch } from 'kensington';
 import { renderForHydration, registerComponents } from 'kensington';
 import { isBrowser } from 'kensington';                      // true when window is defined`),
       code('javascript', `// browser, via CDN
@@ -44,12 +44,14 @@ import { t } from 'https://cdn.jsdelivr.net/npm/kensington/dist/kensington.min.j
         ', ',
         t.code('effect'),
         ', ',
+        t.code('batch'),
+        ', ',
         t.code('isKensingtonSignal'),
         ') exported as its own subpath. Every entry point in the package — the full bundle, the slim bundle, ',
         t.code('kensington/live'),
-        ', the source ESM — resolves the reactive core through this one file at build time, so effects registered from one entry point always fire on writes originating from another. Consumers who need only the reactive primitives can import it directly and drop the tag pipeline entirely.',
+        ', the source ESM — resolves the exact same source reactive modules at runtime when loaded from one package installation, so dependency tracking and batch state are shared when ESM entry points are mixed. Signal branding alone is not enough because batchDepth and the pending effect queue are module-scoped. Separate package copies and the generated CommonJS runtime remain separate schedulers. Consumers who need only the reactive primitives can import it directly and drop the tag pipeline entirely.',
       ]),
-      code('javascript', `import { signal, computed, effect } from 'kensington/reactive';`),
+      code('javascript', `import { signal, computed, effect, batch } from 'kensington/reactive';`),
 
       t.h3('kensington/live'),
       t.p([

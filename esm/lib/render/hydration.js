@@ -14,13 +14,12 @@ import { _enterSSRMode, _exitSSRMode, isSSRMode } from '../reactive/ssr.js';
 // roots after hydration. A pre-flight isConnected check on swap drops detached entries.
 const liveInstances = new Map();
 // Registry of component name -> latest function. Populated by registerComponents and updated
-// by hmrReplaceComponent. Used by the MutationObserver to hydrate newly inserted scripts.
+// by hmrReplaceComponent. Hydration resolves the latest function when a mount is inserted.
 const componentRegistry = new Map();
-// Per-name context bag passed as the second argument to every component invocation
-// (renderForHydration, hydrateComponent on first hydrate, hmrReplaceComponent on hot-swap).
-// Context is never serialized; it carries non-JSON runtime data like signals and transport
-// handles. Set via the options argument to renderForHydration / registerComponents.
-const contextRegistry = new Map();
+// The first registration owns each name's context and nonce for the document's lifetime.
+// Keep this separate from the function registry so HMR can replace functions independently.
+const registrations = new Map();
+let scanDocument;
 
 function recordInstance(name, instance) {
   let set = liveInstances.get(name);
@@ -176,7 +175,7 @@ function prepareHydration(script, fn, name) {
   let scopeEntered = false;
   try {
     const state = JSON.parse(script.textContent);
-    const context = contextRegistry.get(name);
+    const context = registrations.get(name)?.context;
     _enterHydrationScope(mountId);
     scopeEntered = true;
     let result;
@@ -272,7 +271,7 @@ export function hmrReplaceComponent(name, newFn) {
     let newNodes;
     try {
       _enterHydrationScope(inst.mountId);
-      const context = contextRegistry.get(name);
+      const context = registrations.get(name)?.context;
       let result;
       try {
         result = actualFn(inst.state, context);
@@ -317,11 +316,12 @@ function ssrStyleText(mountIds) {
   return `${selectors}{transition:none !important;animation:none !important}`;
 }
 
-function injectSSRStyle(mountIds) {
+function injectSSRStyle(mountIds, nonce) {
   if (mountIds.length === 0) { return null; }
 
   const style = document.createElement('style');
   style.setAttribute('data-k-ssr', '');
+  if (nonce !== undefined) { style.nonce = nonce; }
   style.textContent = ssrStyleText(mountIds);
   document.head.appendChild(style);
   return style;
@@ -334,9 +334,10 @@ function flushSSRStyles() {
   ssrStyleRemovalScheduled = false;
   if (pendingSSRStyles.size === 0) { return; }
 
-  // Signal effects and connected callbacks flush on the microtask queue before this frame.
-  // Commit all their final mount-time values in one layout pass with transitions still
-  // suppressed, then restore the application's CSS. Later state changes animate normally.
+  // Signal effects commit synchronously. Connected callbacks and application-scheduled
+  // microtasks also run before this frame. Commit their final mount-time values in one layout
+  // pass with transitions still suppressed, then restore the application's CSS. Later state
+  // changes animate normally.
   document.documentElement.getBoundingClientRect();
   pendingSSRStyles.forEach(style => style.remove());
   pendingSSRStyles.clear();
@@ -356,32 +357,40 @@ function removeSSRStyleAfterMount(style) {
   }
 }
 
-function hydrateAll(registry) {
-  if (typeof document === 'undefined') {
-    return { stop() {} };
-  }
+function hydrateAll() {
+  if (typeof document === 'undefined') { return; }
+  if (scanDocument) { scanDocument(); return; }
 
   const warnedMissing = new Set();
-  function tryPrepare(script) {
-    const name = script.dataset.kComponent;
-    const fn = registry.get(name);
-    if (!fn) {
-      if (!warnedMissing.has(name)) {
-        warnedMissing.add(name);
-        console.warn(`renderForHydration: no component registered for "${name}". Did you call registerComponents({ ${name} })?`);
-      }
-      return null;
-    }
-    return prepareHydration(script, fn, name);
+  const pendingScripts = new Set();
+  let hydrating = false;
+  function warnMissing(name) {
+    if (warnedMissing.has(name)) { return; }
+    warnedMissing.add(name);
+    console.warn(`renderForHydration: no component registered for "${name}". Did you call registerComponents({ ${name} })?`);
   }
 
-  const hydrateBatch = scripts => {
-    const batch = [...new Set(scripts)].filter(script => script.isConnected);
-    if (batch.length === 0) { return; }
-    const prepared = batch.map(tryPrepare).filter(result => result !== null);
-    if (prepared.length === 0) { return; }
+  function tryPrepare(script) {
+    const name = script.dataset.kComponent;
+    const registration = registrations.get(name);
+    if (!registration) {
+      warnMissing(name);
+      return null;
+    }
 
-    const style = injectSSRStyle(prepared.map(result => result.mountId));
+    // HMR updates functions without changing the original context or nonce.
+    const fn = componentRegistry.get(name);
+    if (!fn) {
+      warnMissing(name);
+      return null;
+    }
+    const prepared = prepareHydration(script, fn, name);
+    if (prepared) { prepared.nonce = registration.nonce; }
+    return prepared;
+  }
+
+  const commitBatch = (prepared, nonce) => {
+    const style = injectSSRStyle(prepared.map(result => result.mountId), nonce);
     const committedMountIds = prepared
       .filter(commitHydration)
       .map(result => result.mountId);
@@ -395,11 +404,39 @@ function hydrateAll(registry) {
     removeSSRStyleAfterMount(style);
   };
 
+  const hydrateBatch = scripts => {
+    for (const script of scripts) { pendingScripts.add(script); }
+    // A component may register another component while it renders. Queue that scan
+    // until the current mounts commit so the same SSR block cannot hydrate twice.
+    if (hydrating) { return; }
+    hydrating = true;
+    try {
+      while (pendingScripts.size > 0) {
+        const batch = [...pendingScripts].filter(script => script.isConnected);
+        pendingScripts.clear();
+        const groups = new Map();
+        for (const script of batch) {
+          const prepared = tryPrepare(script);
+          if (!prepared) { continue; }
+          if (!groups.has(prepared.nonce)) { groups.set(prepared.nonce, []); }
+          groups.get(prepared.nonce).push(prepared);
+        }
+        for (const [nonce, prepared] of groups) { commitBatch(prepared, nonce); }
+      }
+    } finally {
+      hydrating = false;
+    }
+  };
+
   const run = () => {
     hydrateBatch(document.querySelectorAll('script[type="application/json"][data-k-component]'));
   };
+  scanDocument = () => {
+    if (document.readyState !== 'loading') { run(); }
+  };
 
   const observer = new MutationObserver(mutations => {
+    if (document.readyState === 'loading') { return; }
     const scripts = [];
     for (const mutation of mutations) {
       for (const node of mutation.addedNodes) {
@@ -422,8 +459,6 @@ function hydrateAll(registry) {
   } else {
     run();
   }
-
-  return { stop() { observer.disconnect(); } };
 }
 
 /**
@@ -477,24 +512,33 @@ export function renderForHydration(fn, state, name = NAME_UNSET, options = undef
 }
 
 /**
- * Registers component functions and hydrates all server-rendered instances in the page.
- * A MutationObserver is installed to hydrate components inserted dynamically after this call.
+ * Registers component functions and hydrates their server-rendered instances in the page.
+ * One shared MutationObserver hydrates components inserted dynamically into the document.
+ * Registrations last for the document's lifetime. A duplicate name warns and is ignored,
+ * preserving its original function, context, and nonce. New names in the same call still register.
  *
  * @param {Record<string, function>} components - Map of component name to component function.
- * @returns {{ stop(): void }} Call stop() to disconnect the observer and halt auto-hydration.
+ * @param {{ context?: *, nonce?: string }} [options] - Runtime context and optional CSP nonce
+ *   for the transient style element used to suppress mount-time transitions.
+ * @returns {void}
  * @example
- * const { stop } = registerComponents({ counter, userCard });
+ * registerComponents({ counter, userCard });
  */
 export function registerComponents(components, options = undefined) {
-  const context = options !== undefined && options !== null ? options.context : undefined;
+  const context = options?.context;
+  const nonce = options?.nonce;
+  let added = false;
   for (const [name, fn] of Object.entries(components)) {
+    if (registrations.has(name)) {
+      console.warn(`registerComponents ignored "${name}" because it is already registered. The original registration is unchanged.`);
+      continue;
+    }
     const actualFn = fn !== null && fn !== undefined && fn.__kFn !== undefined ? fn.__kFn : fn;
     componentRegistry.set(name, actualFn);
-    if (context !== undefined) {
-      contextRegistry.set(name, context);
-    }
+    registrations.set(name, { context, nonce });
+    added = true;
   }
-  return hydrateAll(componentRegistry);
+  if (added || !scanDocument) { hydrateAll(); }
 }
 
 /**

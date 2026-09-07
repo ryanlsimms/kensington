@@ -693,9 +693,9 @@ test('snapshot fast path: reordering keyed nodes still hits the fast path', asyn
   expect(result.tags).toEqual(['c', 'a', 'b']);
 });
 
-// ─── dom update batching ───────────────────────────────────────────────────
+// ─── synchronous DOM updates and explicit batching ────────────────────────
 
-test('multiple set() calls on one signal produce one attribute write', async ({ page, bundle }) => {
+test('unbatched set() calls update an attribute synchronously', async ({ page, bundle }) => {
   const writes = await page.evaluate(async src => {
     const { t, signal } = await import(src);
     const cls = signal('initial');
@@ -711,43 +711,318 @@ test('multiple set() calls on one signal produce one attribute write', async ({ 
     };
     cls.set('intermediate');
     cls.set('final');
-    await Promise.resolve();
+    return log;
+  }, bundle);
+  expect(writes).toEqual(['intermediate', 'final']);
+});
+
+test('batch() coalesces multiple attribute writes', async ({ page, bundle }) => {
+  const writes = await page.evaluate(async src => {
+    const { batch, t, signal } = await import(src);
+    const cls = signal('initial');
+    const el = t.div({ class: cls }).toElement();
+    document.body.append(el);
+    const log = [];
+    const orig = el.setAttribute.bind(el);
+    el.setAttribute = (name, val) => {
+      if (name === 'class') {
+        log.push(val);
+      }
+      orig(name, val);
+    };
+    batch(() => {
+      cls.set('intermediate');
+      cls.set('final');
+    });
     return log;
   }, bundle);
   expect(writes).toEqual(['final']);
 });
 
-test('intermediate content value is never written to the DOM', async ({ page, bundle }) => {
+test('unbatched content updates are visible before the next line', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
     const { t, signal } = await import(src);
     const text = signal('initial');
     const el = t.p(text).toElement();
     document.body.append(el);
     text.set('intermediate');
+    const intermediate = el.textContent;
     text.set('final');
-    const before = el.textContent;
     await Promise.resolve();
-    return { before, after: el.textContent };
+    return { intermediate, final: el.textContent };
   }, bundle);
-  expect(result.before).toBe('initial');
-  expect(result.after).toBe('final');
+  expect(result.intermediate).toBe('intermediate');
+  expect(result.final).toBe('final');
 });
 
-test('two signals on one element are both deferred and update together', async ({ page, bundle }) => {
+test('batch() keeps intermediate content out of the DOM', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { batch, t, signal } = await import(src);
+    const text = signal('initial');
+    const el = t.p(text).toElement();
+    document.body.append(el);
+    let afterFirstSet;
+    let afterSecondSet;
+    batch(() => {
+      text.set('intermediate');
+      afterFirstSet = el.textContent;
+      text.set('final');
+      afterSecondSet = el.textContent;
+    });
+    return { afterFirstSet, afterSecondSet, committed: el.textContent };
+  }, bundle);
+  expect(result).toEqual({
+    afterFirstSet: 'initial',
+    afterSecondSet: 'initial',
+    committed: 'final',
+  });
+});
+
+test('batch() updates two bindings together at its boundary', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { batch, t, signal } = await import(src);
     const cls = signal('foo');
     const title = signal('hello');
     const el = t.div({ class: cls, title }).toElement();
     document.body.append(el);
-    cls.set('bar');
-    title.set('world');
-    const before = { cls: el.className, title: el.title };
-    await Promise.resolve();
+    let inside;
+    batch(() => {
+      cls.set('bar');
+      title.set('world');
+      inside = { cls: el.className, title: el.title };
+    });
+    const before = inside;
     return { before, after: { cls: el.className, title: el.title } };
   }, bundle);
   expect(result.before).toEqual({ cls: 'foo', title: 'hello' });
   expect(result.after).toEqual({ cls: 'bar', title: 'world' });
+});
+
+test('batch() rejects an async callback before it runs', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { batch } = await import(src);
+    let callbackRan = false;
+    let message = null;
+    try {
+      batch(async () => {
+        callbackRan = true;
+        await Promise.resolve();
+      });
+    } catch (error) {
+      message = error.message;
+    }
+    await Promise.resolve();
+    return { callbackRan, message };
+  }, bundle);
+  expect(result.callbackRan).toBe(false);
+  expect(result.message).toContain('batch() requires a synchronous callback');
+});
+
+test('iframe signals follow instance validation while standalone calls stay unchecked', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const local = await import(src);
+    const iframe = document.createElement('iframe');
+    const ready = new Promise((resolve, reject) => {
+      window.__kensingtonIframeReady = resolve;
+      window.__kensingtonIframeFailed = message => reject(new Error(message));
+    });
+    window.__kensingtonIframeBundle = new URL(src, location.href).href;
+    iframe.srcdoc = `<!doctype html><script type="module">
+      try {
+        const runtime = await import(parent.__kensingtonIframeBundle);
+        parent.__kensingtonIframeSignal = runtime.signal(0);
+        parent.__kensingtonIframeAsync = async function iframeAsync() {
+          parent.__kensingtonIframeAsyncRan = true;
+        };
+        parent.__kensingtonIframeReady();
+      } catch (error) {
+        parent.__kensingtonIframeFailed(error.message);
+      }
+    </script>`;
+    document.body.append(iframe);
+    await ready;
+
+    const foreignSignal = window.__kensingtonIframeSignal;
+    let effectMessage = null;
+    let batchMessage = null;
+    let asyncMessage = null;
+    let strictMessage = null;
+    const warnings = [];
+    const elements = [];
+    let standalone;
+    try {
+      standalone = local.effect(() => foreignSignal.get());
+    } catch (error) {
+      effectMessage = error.message;
+    }
+    try {
+      local.batch(() => foreignSignal.set(1));
+    } catch (error) {
+      batchMessage = error.message;
+    }
+    try {
+      local.batch(window.__kensingtonIframeAsync);
+    } catch (error) {
+      asyncMessage = error.message;
+    }
+
+    elements.push(local.t.div(foreignSignal).toElement());
+    if (!src.includes('.slim')) {
+      const warn = new local.Kensington({ validationLevel: 'warn', logger: msg => warnings.push(msg) });
+      const strict = new local.Kensington({ validationLevel: 'error' });
+      elements.push(warn.div(foreignSignal).toElement());
+      try { strict.div(foreignSignal).toElement(); } catch (error) { strictMessage = error.message; }
+    }
+    document.body.append(...elements);
+    foreignSignal.set(2);
+    const values = elements.map(element => element.textContent);
+    standalone?.stop();
+    elements.forEach(element => element.remove());
+
+    foreignSignal.stop();
+    iframe.remove();
+    delete window.__kensingtonIframeReady;
+    delete window.__kensingtonIframeFailed;
+    delete window.__kensingtonIframeBundle;
+    delete window.__kensingtonIframeSignal;
+    delete window.__kensingtonIframeAsync;
+    const asyncRan = window.__kensingtonIframeAsyncRan === true;
+    delete window.__kensingtonIframeAsyncRan;
+    return { effectMessage, batchMessage, asyncMessage, asyncRan, strictMessage, warnings, values };
+  }, bundle);
+  expect(result.effectMessage).toBeNull();
+  expect(result.batchMessage).toBeNull();
+  expect(result.values.every(value => value === '2')).toBe(true);
+  if (!bundle.includes('.slim')) {
+    expect(result.strictMessage).toContain('crossed reactive runtimes');
+    expect(result.warnings).toHaveLength(1);
+    expect(result.warnings[0]).toContain('crossed reactive runtimes');
+  }
+  expect(result.asyncMessage).toContain('batch() requires a synchronous callback');
+  expect(result.asyncRan).toBe(false);
+});
+
+// The test server uses request paths verbatim. Serve a query-suffixed module URL
+// from the same source so the browser evaluates a separate reactive scheduler.
+async function serveForeignRuntime(page) {
+  await page.route('**/esm/lib/reactive/signal.js?*', async route => {
+    const response = await route.fetch({ url: route.request().url().split('?')[0] });
+    await route.fulfill({ response });
+  });
+}
+
+test('instance validation remains scoped across DOM bindings and later updates', async ({ page, bundle }) => {
+  test.skip(bundle.includes('.slim'), 'slim only supports validation off');
+  await serveForeignRuntime(page);
+  const result = await page.evaluate(async src => {
+    const { Kensington, signal } = await import(src);
+    const foreign = await import('/esm/lib/reactive/signal.js?instance-validation');
+    const foreignValue = foreign.signal('foreign');
+    const source = signal('initial');
+    const warnings = [];
+    const warn = new Kensington({ validationLevel: 'warn', logger: msg => warnings.push(msg) });
+    const strict = new Kensington({ validationLevel: 'error' });
+    const off = new Kensington({ validationLevel: 'off' });
+    const child = off.p(foreignValue);
+    const parent = strict.div(child).toElement();
+    const attribute = warn.div({ title: source }).toElement();
+    const classes = warn.div({ class: [source] }).toElement();
+    document.body.append(parent, attribute, classes);
+    const initialWarnings = warnings.length;
+    source.set({ toString() { return foreignValue.get(); } });
+    const updatedTitle = attribute.title;
+    const updatedClass = classes.className;
+    const afterUpdateWarnings = warnings.length;
+    off.div({ title: source }).toElement();
+    const afterOffWarnings = warnings.length;
+    let strictMessage = null;
+    try { strict.div(foreignValue).toElement(); } catch (error) { strictMessage = error.message; }
+    foreignValue.set('outside');
+    const childText = parent.textContent;
+    parent.remove();
+    attribute.remove();
+    classes.remove();
+    source.stop();
+    foreignValue.stop();
+    return {
+      initialWarnings,
+      afterUpdateWarnings,
+      afterOffWarnings,
+      updatedTitle,
+      updatedClass,
+      strictMessage,
+      childText,
+    };
+  }, bundle);
+  expect(result.initialWarnings).toBe(0);
+  expect(result.afterUpdateWarnings).toBe(2);
+  expect(result.afterOffWarnings).toBe(2);
+  expect(result.updatedTitle).toBe('foreign');
+  expect(result.updatedClass).toBe('foreign');
+  expect(result.strictMessage).toContain('crossed reactive runtimes');
+  expect(result.childText).toBe('outside');
+});
+
+for (const level of ['off', 'warn', 'error']) {
+  test(`runtime validation ${level} covers content, attributes, properties, literals, and comments`, async ({ page, bundle }) => {
+    test.skip(level !== 'off' && bundle.includes('.slim'), 'slim only supports validation off');
+    await serveForeignRuntime(page);
+    const result = await page.evaluate(async ({ src, level: validationLevel }) => {
+      const { Kensington } = await import(src);
+      const foreign = await import('/esm/lib/reactive/signal.js?binding-kinds');
+      const value = foreign.signal('foreign');
+      const warnings = [];
+      const renderer = new Kensington({ validationLevel, logger: msg => warnings.push(msg) });
+      const tags = [
+        renderer.div(value),
+        renderer.div({ title: value }),
+        renderer.div({ style: { color: value } }),
+        renderer.input({ prop: { value } }),
+        renderer.literal(value),
+        renderer.unsafeLiteral(value),
+        renderer.inlineComment(value),
+      ];
+      const failures = [];
+      const parent = document.createElement('div');
+      for (const tag of tags) {
+        try { parent.append(tag.toElement()); } catch (error) { failures.push(error.message); }
+      }
+      document.body.append(parent);
+      value.set('updated');
+      const text = parent.textContent;
+      const input = parent.querySelector('input')?.value;
+      parent.remove();
+      value.stop();
+      return { warnings, failures, text, input, count: tags.length };
+    }, { src: bundle, level });
+    expect(result.failures).toHaveLength(level === 'error' ? result.count : 0);
+    expect(result.warnings).toHaveLength(level === 'warn' ? result.count : 0);
+    expect([...result.failures, ...result.warnings].every(msg => msg.includes('crossed reactive runtimes'))).toBe(true);
+    if (level !== 'error') { expect(result.input).toBe('updated'); }
+  });
+}
+
+test('large synchronous write bursts keep DOM bindings current', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const value = signal(0);
+    const el = t.div({ dataValue: value }).toElement();
+    document.body.append(el);
+    const errors = [];
+    const originalError = console.error;
+    console.error = message => errors.push(String(message));
+    try {
+      for (let i = 1; i <= 10_005; i++) { value.set(i); }
+      return {
+        signalValue: value.value,
+        domValue: el.dataset.value,
+        asyncLoopErrors: errors.filter(message => message.includes('async reactive loop detected')),
+      };
+    } finally {
+      console.error = originalError;
+    }
+  }, bundle);
+  expect(result).toEqual({ signalValue: 10_005, domValue: '10005', asyncLoopErrors: [] });
 });
 
 // ─── effect ────────────────────────────────────────────────────────────────
@@ -759,6 +1034,27 @@ test('effect runs immediately and reflects initial signal value', async ({ page,
     effect(() => { document.title = label.get(); });
   }, bundle);
   await expect(page).toHaveTitle('hello');
+});
+
+test('an initial effect error tears down partial subscriptions', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { signal, effect } = await import(src);
+    const value = signal(0);
+    let runs = 0;
+    let message;
+    try {
+      effect(() => {
+        runs++;
+        value.get();
+        throw new Error('initial effect error');
+      });
+    } catch (err) {
+      message = err.message;
+    }
+    value.set(1);
+    return { message, runs };
+  }, bundle);
+  expect(result).toEqual({ message: 'initial effect error', runs: 1 });
 });
 
 test('effect re-runs when signal changes', async ({ page, bundle }) => {
@@ -873,6 +1169,25 @@ test('signal content effect stops when element is removed from DOM', async ({ pa
     return el.textContent;
   }, bundle);
   expect(result).toBe('hello');
+});
+
+test('a write before removal cleanup can still reach the detached element', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal } = await import(src);
+    const text = signal('initial');
+    const el = t.p(text).toElement();
+    document.body.append(el);
+    await Promise.resolve();
+
+    el.remove();
+    text.set('before-cleanup');
+    const beforeCleanup = el.textContent;
+
+    await Promise.resolve();
+    text.set('after-cleanup');
+    return { beforeCleanup, afterCleanup: el.textContent };
+  }, bundle);
+  expect(result).toEqual({ beforeCleanup: 'before-cleanup', afterCleanup: 'before-cleanup' });
 });
 
 test('signal effects stop when a parent element is removed from DOM', async ({ page, bundle }) => {
@@ -2031,14 +2346,21 @@ test('loop counter fires and stops an infinite two-effect ping-pong', async ({ p
     console.error = msg => errors.push(msg);
     const a = signal(0);
     const b = signal(0);
-    effect(() => { b.set(a.get() + 1); });
-    effect(() => { a.set(b.get() + 1); });
+    const first = effect(() => { b.set(a.get() + 1); });
+    const second = effect(() => { a.set(b.get() + 1); });
     await new Promise(r => { setTimeout(r, 0); });
     console.error = orig;
-    return { errors, aVal: a.value, writable: (() => { a.set(999); return a.value; })() };
+    first.stop();
+    second.stop();
+    const postLoopValues = [];
+    const observer = effect(() => { postLoopValues.push(a.get()); });
+    a.set(999);
+    observer.stop();
+    return { errors, postLoopValues };
   }, bundle);
   expect(result.errors.some(e => e.includes('reactive loop detected'))).toBe(true);
-  expect(result.writable).toBe(999);
+  expect(result.postLoopValues).toHaveLength(2);
+  expect(result.postLoopValues.at(-1)).toBe(999);
 });
 
 test('converging two-effect loop does not trigger the loop counter', async ({ page, bundle }) => {
@@ -2086,9 +2408,9 @@ test('inComputedFn flag is correctly restored after a nested computed inside a c
   expect(result.warns.some(w => w.includes('without a key'))).toBe(true);
 });
 
-test(`requestAnimationFrame loop bypasses the flush counter and runs indefinitely without detection`, async ({ page, bundle }) => {
-  // The flush counter resets via setTimeout after each macrotask. requestAnimationFrame also
-  // fires as a macrotask, so flushCount is always 0 when each rAF callback runs. No guard
+test(`requestAnimationFrame loop bypasses the async-turn counter and runs indefinitely without detection`, async ({ page, bundle }) => {
+  // Per-effect async-turn counts reset after each macrotask. requestAnimationFrame also fires as
+  // a macrotask, so the count is reset before each rAF callback runs. No guard
   // fires — the loop runs at ~60 fps forever with no warning. This is a known limitation:
   // kensington cannot distinguish an effect scheduling its own writes via rAF from an
   // external animation driver updating the same signal at high frequency.
@@ -2155,8 +2477,8 @@ test('reconcile filters true and empty string from signal content', async ({ pag
   expect(result).toBe('helloworld');
 });
 
-test('async queueMicrotask loop is halted by the flush counter and page stays responsive', async ({ page, bundle }) => {
-  // Without the async flush counter, reading x via .get() subscribes the effect; the
+test('async microtask loop is halted by the async-turn counter', async ({ page, bundle }) => {
+  // Without the per-effect async-turn counter, reading x via .get() subscribes the effect; the
   // unconditional queueMicrotask write re-triggers it on every microtask turn, creating
   // an infinite chain that freezes the tab. If page.evaluate() returns, the guard worked.
   const result = await page.evaluate(async src => {

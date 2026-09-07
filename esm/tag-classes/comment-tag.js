@@ -1,4 +1,5 @@
 import { addOnStop, trackForStop } from '../lib/reactive/dom-tracker.js';
+import { withRuntimeValidation } from '../lib/reactive/runtime-guard.js';
 import { _internalEffect, isKensingtonSignal } from '../lib/reactive/signal.js';
 import showInvalid from '../lib/util/show-invalid.js';
 
@@ -28,6 +29,10 @@ export default class CommentTag {
   }
 
   toString() {
+    return withRuntimeValidation(this.validationLevel, this.logger, () => this.#toString());
+  }
+
+  #toString() {
     const raw = isKensingtonSignal(this.text) ? this.text.get() : this.text;
     const text = this.#normalize(raw);
     if (text === null) { return ''; }
@@ -40,6 +45,10 @@ export default class CommentTag {
   }
 
   toElement() {
+    return withRuntimeValidation(this.validationLevel, this.logger, () => this.#toElement());
+  }
+
+  #toElement() {
     if (this.#domElement) {
       if (this.#domElement.parentNode !== null) {
         showInvalid(`toElement() called on a tag instance already in the DOM — the same node will be moved. Call the tag as a function to create a new independent node.`, this.validationLevel, this.logger);

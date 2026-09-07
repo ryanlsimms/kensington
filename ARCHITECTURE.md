@@ -6,8 +6,8 @@ A map of the source tree for contributors. For commands and the high-level proje
 
 ```
 esm/                          ESM source (the authoritative one — cjs/ and dist/ are generated)
-  index.js                    Package entry. Exports Kensington, t, signal, computed, effect, hydration helpers
-  reactive.js                 Public re-export of the reactive core (Signal, signal, computed, effect, isKensingtonSignal). Backing file for the `kensington/reactive` subpath. Provided so consumers who need only the reactive primitives can import them without the tag pipeline
+  index.js                    Package entry. Exports Kensington, t, signal, computed, effect, batch, hydration helpers
+  reactive.js                 Public re-export of the reactive core (Signal, signal, computed, effect, batch, isKensingtonSignal). Backing file for the `kensington/reactive` subpath. Provided so consumers who need only the reactive primitives can import them without the tag pipeline
   kensington.js               GENERATED — the Kensington class with every tag as a method
   attributes.js               GENERATED — per-element attribute spec maps
   tag-classes/                The classes that an element instance can be
@@ -18,7 +18,9 @@ esm/                          ESM source (the authoritative one — cjs/ and dis
     comment-tag.js             Inline HTML comments (.inlineComment()). Strips `--` and updates nodeValue on signal change
   lib/
     reactive/                 Signals + DOM lifecycle. The reactive runtime
-      signal.js               Signal class, signal(), computed(), effect(). Microtask batching, SSR mode counter. Reactive loop guards: per-effect run counter (sync) and flush counter (async). Warns on same-run read/write and .set() inside computed
+      signal.js               Signal class, signal(), computed(), effect(), batch(). Synchronous propagation with explicit batching, SSR mode counter, and per-effect sync/async loop guards. Warns on same-run read/write and .set() inside computed
+      runtime-context.js      Passive validation scope shared across runtime copies and accessible windows
+      runtime-guard.js        Instance scoped diagnostics for tag rendering and binding updates. Omitted from slim builds
       lifecycle.js            Per-element effect/callback orchestrator. Owns the persist mechanism end-to-end
       dom-tracker.js          Shared MutationObserver. Stops effects on removal, fires connect callbacks on insertion
       reconcile.js            Array reconciler. Keyed by an internal `_kensingtonKey` property stamped on tags by `map-with-key.js`. Reuses cached tag instances per key. Calls stopRemoved synchronously on removed nodes so effects stop before the MutationObserver fires
@@ -47,9 +49,9 @@ esm/                          ESM source (the authoritative one — cjs/ and dis
   live/                       The kensington/live subpath. A small server/client runtime for signals shared across browsers
     index.js                  Unified entry: liveSignal, connectLive, liveServer
     client.js                 WebSocket transport (connectLive). Reconnect/backoff, write buffering, CAS retry loop
-    server.js                 Server handle (liveServer). Registry, Lamport clock, broadcast, canRead/canWrite policy
+    server.js                 Server handle (liveServer). Registry, version counter, broadcast, canRead/canWrite policy
     state.js                  Module-level transport registry. Placeholder signals (pre-transport) that get transparently upgraded in place once a transport connects
-    protocol.js               Wire message constants (MSG_SET, MSG_SET_OK, MSG_SET_FAIL, ...), encode/decode, shape guards. Lamport last-write-wins
+    protocol.js               Wire message constants (MSG_SET, MSG_SET_OK, MSG_SET_FAIL, ...), encode/decode, shape guards. Server ordered updates
     persistence/
       memory.js                Synchronous in-memory adapter
       sqlite.js                Lazy-loads better-sqlite3; debounces writes to coalesce bursts into single transactions
@@ -59,7 +61,7 @@ generate/                     Code generation. Reads spec data, emits esm/kensin
   bin/
     write-code-files.js       The build entry point (npm run build). Fetches @webref/css and @webref/idl, parses spec data, runs every builder below, writes esm/, cjs/, dist/
     fetch-all.js              Refreshes generate/fetched-data/*.json from the HTML/SVG/MathML living standards (npm run fetch)
-    build-browser.js          Rolls up esm/ into the dist/ browser bundles (full, slim, devtools, plus minified variants) via Rollup. Slim variants externalize `esm/lib/reactive/*.js` so signal-module identity is preserved when consumers alias `kensington -> kensington/dist/slim/min` alongside `kensington/live`
+    build-browser.js          Rolls up esm/ into the dist/ browser bundles (full, slim, devtools, plus minified variants) via Rollup. Every full and slim ESM variant externalizes `esm/lib/reactive/*.js` so effects, batch state, and hydration scopes keep one module identity when entry points are mixed
     build-cjs.js              Rolls up esm/ into cjs/ via Rollup
   fetched-data/                Cached HTML/SVG/MathML spec data (committed)
   build-kensington.js          Template that emits the Kensington class body (esm/kensington.js)
@@ -124,9 +126,9 @@ Re-calling `toElement()` on a tag that already built a node reuses that node in 
 
 ## Live signals
 
-`kensington/live` lets one named `Signal` synchronize across browser tabs and clients. `liveServer(opts)` (`esm/live/server.js`) owns the authoritative value and a Lamport clock per name, a `canRead`/`canWrite` policy, and an optional persistence adapter (`persistence/memory.js` or `persistence/sqlite.js`, both `get`/`set`/`delete`/`entries`/`close`). `attach(httpServer)` wires a `ws` `WebSocketServer` with ping/pong heartbeat. Outbound broadcasts are coalesced per microtask into a single `MSG_BATCH_UPDATE` when more than one name changes in the same tick. Names declared `persist: false` are dropped from the registry 30 seconds after every subscriber (client or server-side observer) is gone.
+`kensington/live` lets one named `Signal` synchronize across browser tabs and clients. `liveServer(opts)` (`esm/live/server.js`) owns the authoritative value and a version counter per name, a `canRead`/`canWrite` policy, and an optional persistence adapter (`persistence/memory.js` or `persistence/sqlite.js`, both `get`/`set`/`delete`/`entries`/`close`). `attach(httpServer)` wires a `ws` `WebSocketServer` with ping/pong heartbeat. Outbound broadcasts are coalesced per microtask into a single `MSG_BATCH_UPDATE` when more than one name changes in the same tick. Names declared `persist: false` are dropped from the registry 30 seconds after every subscriber (client or server-side observer) is gone.
 
-`connectLive(opts)` (`esm/live/client.js`) is a single WebSocket-per-tab transport with exponential-backoff reconnect and outbound write buffering while disconnected. `sig.set(fn)` goes through a CAS retry loop (`casUpdate`, re-running the updater against the server's authoritative value on conflict); `sig.set(value)` is a direct write. Both return a `Promise` that resolves on `MSG_SET_OK` and rejects with a `LiveSetRejected` error on `MSG_SET_FAIL` (conflict, policy, or unserializable value), rolling the local signal back to the server's authoritative value first.
+`connectLive(opts)` in `esm/live/client.js` is a single WebSocket per tab transport with exponential backoff reconnect and outbound write buffering while disconnected. `sig.set(fn)` goes through a CAS retry loop that runs the updater again with the server authoritative value after a conflict. `sig.set(value)` is a direct write. Both return a `Promise` that resolves on `MSG_SET_OK` and rejects with a `LiveSetRejected` error on `MSG_SET_FAIL`. The client first restores the server value or its own initial value when the server has no stored value. Reconnect snapshots also reset update ordering after a server restart.
 
 `liveSignal(initial, name)` (`esm/live/state.js`) returns a real registry-backed signal once a transport is registered. Called before that — e.g. at module scope, before `connectLive` runs — it returns a placeholder tagged `_isLivePlaceholder` that is transparently upgraded in place the moment a transport registers, so `export const x = liveSignal(0, 'x')` works regardless of import order. **`live.delete(name)` on the server is registry cleanup only.** It does not call `_setFromRemote` on cached subscribers and does not broadcast; existing subscribers keep their last value. Use `live.set(name, null)` when subscribers must observe a removal.
 
@@ -168,4 +170,4 @@ Re-calling `toElement()` on a tag that already built a node reuses that node in 
 - **`mapWithKey` gives every row structural reactivity.** Each key owns an internal `itemSignal` (registered in the outer computed's keyed-signal registry, so kensington auto-suppresses the signal-in-computed warning and auto-sweeps on key removal). `mapFn(item, key)` runs inside a per-key inner computed that reads `itemSignal.get()`, so the reactive dependency is set up by the wrapper rather than inferred from what `mapFn` happens to touch. A permanent keepAwake effect prevents the inner from sleeping across outer re-runs. When the outer array delivers a new object for a key, the wrapper writes it through only when a shallow (own-enumerable-key) diff shows the fields actually changed — a fresh literal with identical content is a no-op, so reorderings preserve tag identity and DOM nodes. The library-managed write uses `itemSignal._setFromRemote(item)` to bypass the set-in-computed guard, which stays active for user code.
 - **Live signals: `delete(name)` on the server does not notify anyone.** It only clears server-side registry/store/subscriber bookkeeping; existing subscribers (client or server-side cached signals) keep their last value. Use `live.set(name, null)` if subscribers must observe a removal.
 - **`prop` values are applied via property assignment (`el[name] = value`), not `setAttribute`.** Existence and writability are checked against the live element at render time, and the key never appears in `toString()` output or the HTML attribute pipeline.
-- **Reactive-core modules load exactly once per process.** Everything in `esm/lib/reactive/*.js` carries module-scope state (`currentEffect`, `currentHydrationScope`, SSR mode counter, warning throttles). The slim rollup marks the whole directory external so `dist/kensington.slim*.js` imports them via relative paths back into `esm/lib/reactive/` rather than inlining them. Consumers that alias `kensington -> kensington/dist/slim/min` alongside `kensington/live` (or any other subpath) then share one instance of each reactive module, so a `signal.set()` from one entry point wakes an `effect()` registered from another. Regression coverage: `tests/treeshake/signal-identity-test.js`.
+- **All ESM entry points resolve one reactive core.** Full and slim dist files externalize the stateful reactive modules so tracking, pending effects, batching, hydration scopes, and SSR state have one identity. Runtime Guard diagnostics are the exception. Slim replaces `runtime-guard.js` with an off scope wrapper. The shared `runtime-context.js` carries a checker only while a validated tag renders or a binding created in that scope runs. Each signal scheduler has its own token. The checker compares tokens and follows the owning instance's validation level and logger. Off scopes suppress inherited validation, so nested tags from another instance keep their own policy. Standalone reactive operations have no instance policy. Separate physical package copies and CommonJS runtimes remain incompatible within one reactive graph even when checks are disabled. Regression coverage lives in `tests/treeshake/signal-identity-test.js`, `tests/treeshake/treeshake-test.js`, and the instance validation tests.

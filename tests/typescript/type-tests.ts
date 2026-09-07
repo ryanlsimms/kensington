@@ -14,6 +14,7 @@ import Kensington, {
   type ImgTag,
   type Reactive,
   type ReadonlySignal,
+  batch,
   computed,
   effect,
   isBrowser,
@@ -30,6 +31,7 @@ import type {
   svgPresentationAttributes,
   svgXLinkAttributes,
 } from 'kensington/attributes';
+import { batch as reactiveBatch } from 'kensington/reactive';
 
 // ─── module augmentation ────────────────────────────────────────────────────
 
@@ -49,6 +51,21 @@ class MyEngine extends Kensington {
 }
 
 const t = new MyEngine({ validationLevel: 'warn', additionalNamespaces: ['hx'] });
+
+const _batchResult: number = batch(() => 42);
+const _reactiveBatchResult: string = reactiveBatch(() => 'ready');
+
+// @ts-expect-error - batch boundaries are synchronous and cannot span await
+batch(async () => 42);
+
+// @ts-expect-error - the reactive subpath enforces the same synchronous callback contract
+reactiveBatch(async () => 'ready');
+
+const _maybeAsyncBatch = (): number | Promise<number> => 42;
+// @ts-expect-error - a return type containing a Promise cannot be a synchronous batch boundary
+batch(_maybeAsyncBatch);
+// @ts-expect-error - the reactive subpath rejects Promise unions too
+reactiveBatch(_maybeAsyncBatch);
 
 // ─── constructor options ─────────────────────────────────────────────────────
 
@@ -388,10 +405,14 @@ renderForHydration(pair, {});
 renderForHydration(clientOnly, {}, 'myComp');
 
 // registerComponents accepts a map of name -> component function
-const registrationHandle: { stop(): void } = registerComponents({ counter: s => t.div(String(s['count'])) });
+const registrationHandle: void = registerComponents({ counter: s => t.div(String(s['count'])) });
+// @ts-expect-error registrations have no stop handle
 registrationHandle.stop();
 registerComponents({ clientOnly: () => null });
 registerComponents({ pair: () => [t.p('a'), t.p('b')] });
+registerComponents({ secure: () => t.div('secure') }, { nonce: 'request-nonce' });
+// @ts-expect-error - CSP nonces are strings
+registerComponents({ secure: () => t.div('secure') }, { nonce: 123 });
 
 // effect returns a stop handle
 const _e = effect(() => {});

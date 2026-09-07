@@ -60,6 +60,9 @@ git tag -a "v$VERSION" -m "release $VERSION"
 git push origin --follow-tags
 
 NOTES=$(awk "/^## \[$VERSION\]/{found=1; next} found && /^## \[/{exit} found{print}" CHANGELOG.md)
+# Relative links work in CHANGELOG.md itself but not reliably in a GitHub release body.
+# Point release-note links at the immutable tag while leaving the source changelog portable.
+NOTES=$(printf '%s\n' "$NOTES" | sed "s#](agent-docs/#](https://github.com/ryanlsimms/kensington/blob/v$VERSION/agent-docs/#g")
 if [[ "$IS_PRERELEASE" == true ]]; then
   gh release create "v$VERSION" --title "v$VERSION" --notes "$NOTES" --prerelease
 else

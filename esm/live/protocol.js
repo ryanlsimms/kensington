@@ -6,17 +6,23 @@
 //   { type: 'set',         name, value, opId, ifLamport? }
 //
 // Server → Client:
-//   { type: 'snapshot',   values: { [name]: value }, lamport }
+//   { type: 'snapshot',   values: { [name]: value }, present?: string[], missing?: string[], lamport }
 //   { type: 'update',     name, value, lamport }
 //   { type: 'batch-update', updates: Array<{ name, value, lamport }> }
 //   { type: 'set-ok',     name, lamport, opId }
-//   { type: 'set-fail',   name, opId, reason, value, lamport }
+//   { type: 'set-fail',   name, opId, reason, hasValue, value?, lamport }
 //   { type: 'error',      name, reason }
 //
 // Lamport is a monotonically-increasing integer assigned by the server.
 // It appears on every server-to-client frame so the client can drop stale
 // broadcasts. On client-to-server `set` frames it appears only as `ifLamport`
 // inside the CAS form; direct (non-CAS) writes carry no lamport.
+//
+// Snapshots distinguish a declared undefined initial from a name with no server state.
+// Names in `present` without a `values` property have an authoritative undefined value.
+// Names in `missing` fall back to the client initial value. Both reset the client's Lamport
+// position, including after a server restart. Legacy snapshots still work through `values`.
+// Newer pending writes remain optimistic until their own verdict arrives.
 //
 // The optional `persist` boolean on SUBSCRIBE declares the per-name
 // persistence policy. Default false. The first declaration the server sees
@@ -32,9 +38,10 @@
 // for the name; the server applies only if its current lamport matches,
 // otherwise it sends `set-fail` with reason `conflict` and the
 // authoritative value so the client can re-run fn and retry. `set-fail`
-// always includes the server's authoritative `value` + `lamport` so the
-// client can roll back the optimistic local apply via `_setFromRemote`
-// before rejecting the per-call Promise. Rejection reasons: `'forbidden'`
+// includes `hasValue`, the server's authoritative `value` when one exists,
+// and `lamport` so the client can roll back the optimistic local apply via
+// `_setFromRemote` before rejecting the per-call Promise. A false `hasValue`
+// restores the client's declared initial value. Rejection reasons: `'forbidden'`
 // (canWrite), `'conflict'` (CAS lamport mismatch), `'unserializable'`.
 // `set-ok` and `set-fail` go ONLY to the originating socket; the regular
 // `update` broadcast still goes to all other subscribers.

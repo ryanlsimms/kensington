@@ -1,4 +1,9 @@
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { defineConfig, devices } from '@playwright/test';
+
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 
 export default defineConfig({
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -57,11 +62,19 @@ export default defineConfig({
   },
 
   /* Run your local dev server before starting the tests */
-  webServer: {
-    command: 'node ../server/html-server.js',
-    reuseExistingServer: !process.env.CI,
-    url: 'http://localhost:3847',
-  },
+  webServer: [
+    {
+      command: 'node ../server/html-server.js',
+      reuseExistingServer: !process.env.CI,
+      url: 'http://localhost:3847',
+    },
+    {
+      command: 'npm run docs -- --host 127.0.0.1',
+      cwd: repoRoot,
+      reuseExistingServer: !process.env.CI,
+      url: 'http://127.0.0.1:4000',
+    },
+  ],
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
 });

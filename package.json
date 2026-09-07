@@ -17,6 +17,7 @@
     "cjs",
     "dist",
     "scripts",
+    "CHANGELOG.md",
     "types.d.ts",
     "attributes.d.ts",
     "devtools.d.ts",
@@ -30,6 +31,9 @@
       ],
       "devtools": [
         "./devtools.d.ts"
+      ],
+      "reactive": [
+        "./esm/reactive.d.ts"
       ],
       "vite": [
         "./esm/vite/index.d.ts"
@@ -69,6 +73,7 @@
       "import": "./esm/live/server.js"
     },
     "./reactive": {
+      "types": "./esm/reactive.d.ts",
       "import": "./esm/reactive.js"
     },
     ".": {
@@ -114,6 +119,7 @@
     "stop-server": "lsof -ti:3847 | xargs kill 2>/dev/null || true",
     "test-esm": "node --test \"./tests/esm/esm-test.js\" \"./tests/esm/live-test.js\"",
     "test-cjs": "node --test \"./tests/cjs/cjs-test.js\"",
+    "test-node-minimum": "node ./tests/node-minimum-smoke.mjs",
     "test-ts": "tsc --noEmit -p tests/typescript/tsconfig.json && echo 'TypeScript types OK'",
     "test-cli": "node --test \"./tests/html-to-kensington-test.js\"",
     "test-treeshake": "node --test \"./tests/treeshake/treeshake-test.js\" \"./tests/treeshake/signal-identity-test.js\"",

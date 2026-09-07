@@ -1,7 +1,7 @@
 
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
-const { default: Kensington, t } = require('kensington');
+const { batch, default: Kensington, effect, registerComponents, signal, t } = require('kensington');
 const {
   circleAttributes,
   divAttributes,
@@ -15,6 +15,21 @@ const {
 // ─── require syntax ────────────────────────────────────────────────────────
 
 describe('require syntax', () => {
+  it('registerComponents returns nothing and warns on duplicate names', () => {
+    const warnings = [];
+    const originalWarn = console.warn;
+    const component = () => t.div('component');
+    try {
+      console.warn = message => warnings.push(message);
+      assert.strictEqual(registerComponents({ cjsRegistration: component }), undefined);
+      assert.strictEqual(registerComponents({ cjsRegistration: component }), undefined);
+      assert.strictEqual(warnings.length, 1);
+      assert.match(warnings[0], /cjsRegistration.*already registered/);
+    } finally {
+      console.warn = originalWarn;
+    }
+  });
+
   it('default export is the Kensington class', () => {
     assert.strictEqual(typeof Kensington, 'function');
     assert.ok(new Kensington() instanceof Kensington);
@@ -33,6 +48,21 @@ describe('require syntax', () => {
   it('t is the same instance on repeated require (module cache)', () => {
     const { t: t2 } = require('kensington');
     assert.strictEqual(t, t2);
+  });
+
+  it('exports synchronous signals and explicit batch()', () => {
+    const value = signal(0);
+    const log = [];
+    const handle = effect(() => { log.push(value.get()); });
+    value.set(1);
+    assert.deepStrictEqual(log, [0, 1]);
+    batch(() => {
+      value.set(2);
+      value.set(3);
+      assert.deepStrictEqual(log, [0, 1]);
+    });
+    assert.deepStrictEqual(log, [0, 1, 3]);
+    handle.stop();
   });
 });
 

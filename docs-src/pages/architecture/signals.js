@@ -75,7 +75,7 @@ export function architectureSignals() {
     ]),
 
     t.section({ id: 'signal-write' }, [
-      t.h3('Writes and the microtask flush'),
+      t.h3('Synchronous writes and explicit batches'),
       t.p([
         t.code('.set(next)'),
         ' at ',
@@ -88,7 +88,6 @@ export function architectureSignals() {
   participant U as User code
   participant S as Signal
   participant Q as pending Set
-  participant Mt as queueMicrotask
   participant E as effect.run
 
   U->>S: .set(next)
@@ -99,42 +98,52 @@ export function architectureSignals() {
     S->>S: value updated
     loop each subscriber
       alt subscriber is effect
-        S->>Q: scheduleRun(fn)
-        S->>Mt: queueMicrotask(flush)
+        S->>Q: pending.add(fn)
       else subscriber is computed.update
         S->>E: update() synchronously
       end
     end
-    S-->>U: return
-    Mt->>Q: flush()
+    S->>Q: flush()
     loop each pending fn
       Q->>E: run()
     end
+    S-->>U: return
   end`),
       t.p([
-        'Effects are batched. Multiple ',
+        'Effects and DOM bindings flush before ',
         t.code('.set()'),
-        ' calls in the same synchronous turn coalesce into a single re-run per effect because ',
+        ' returns. The ',
         t.code('pending'),
-        ' is a ',
+        ' ',
         t.code('Set'),
-        '.',
+        ' still deduplicates subscribers reached through multiple computed paths during one notification cascade.',
       ]),
       t.p([
-        'Computed updates run synchronously. This is intentional. A computed reading ',
+        t.code('batch(fn)'),
+        ' increments a nesting depth, runs the callback immediately, and delays the flush until the outermost callback returns. Multiple writes then coalesce into one effect or DOM-binding run. Computed updates remain synchronous, so a computed reading ',
         t.code('a.get() + b.get()'),
-        ' must always be consistent with the latest values of ',
+        ' is current inside the batch after either source changes. The batch depth is restored in a ',
+        t.code('finally'),
+        ' block, so pending work commits even when the callback throws.',
+      ]),
+      t.p([
+        'A batch is deliberately synchronous. Kensington rejects a declared async callback before it runs. It also rejects a regular callback when that callback returns a Promise. Holding a process wide batch open across awaited work would incorrectly delay unrelated updates.',
+      ]),
+      t.p([
+        'Computed updates run inline with each write. A computed reading ',
+        t.code('a.get() + b.get()'),
+        ' therefore always sees the latest values of ',
         t.code('a'),
         ' and ',
         t.code('b'),
-        '.',
+        '. A batch therefore coalesces downstream effect and DOM work, not computed recomputation itself.',
       ]),
-      callout('warn', 'Error isolation in batches',
+      callout('warn', 'Effect error isolation',
         t.p([
           t.code('flush()'),
           ' wraps each effect run in try/catch and re-throws via ',
           t.code('queueMicrotask'),
-          '. One effect\'s thrown error does not abort the batch. Every queued effect still runs.',
+          '. One effect\'s thrown error does not abort the current notification or explicit batch. Every queued effect still runs.',
         ]),
       ),
       callout('warn', 'Loop guards',
@@ -145,12 +154,12 @@ export function architectureSignals() {
           ' re-queues for the same effect in one flush pass, it fires ',
           t.code('console.error'),
           ' and stops re-running that effect. A separate ',
-          t.code('flushCount'),
-          ' counter catches async flush loops: after ',
-          t.code('MAX_FLUSHES = 500'),
-          ' consecutive flushes, it fires ',
+          t.code('asyncTurnCounts'),
+          ' map catches loops that hop through Promise or queueMicrotask callbacks. A marker queued after each flush advances a microtask-turn generation only after effect-scheduled callbacks ahead of it have run. Repeated synchronous commits stay in one generation and are never mistaken for an async loop. After the same effect re-enters across more than ',
+          t.code('MAX_ASYNC_EFFECT_TURNS = 500'),
+          ' generations without yielding to a task, it fires ',
           t.code('console.error'),
-          ' and clears the pending set.',
+          ' and skips that run.',
         ]),
       ),
     ]),

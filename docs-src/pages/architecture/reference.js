@@ -43,8 +43,8 @@ export function architectureReference() {
           ' subscriptions on the cached tag, not through per-render attribute diffs.',
         ]),
         t.li([
-          t.strong('Effects batch via microtasks; computed updates are synchronous.'),
-          ' Multiple .set() calls in the same turn coalesce into one effect re-run. Computed signals see consistent inputs because their updates happen inline with the write.',
+          t.strong('Effects and DOM bindings update synchronously unless an explicit batch is open.'),
+          ' Each unbatched .set() is a complete commit. batch(fn) coalesces writes until its outermost synchronous callback returns. Computed signals stay current inside a batch because their updates happen inline with each write.',
         ]),
         t.li([
           t.strong('The DOM tracker has exactly one observer for the whole document.'),

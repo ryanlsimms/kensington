@@ -18,7 +18,10 @@ import {
   encode,
   isClientMessage,
   isServerMessage,
+  MSG_BATCH_UPDATE,
   MSG_SET,
+  MSG_SET_FAIL,
+  MSG_SET_OK,
   MSG_SNAPSHOT,
   MSG_SUBSCRIBE,
   MSG_UPDATE,
@@ -126,6 +129,32 @@ describe('kensington/live liveSignal without transport', () => {
 });
 
 describe('kensington/live liveSignal lazy upgrade', () => {
+  it('batches pending placeholder upgrades into one subscriber commit', () => {
+    _clearTransport();
+    const a = liveSignal(0, 'upgrade-batch-a');
+    const b = liveSignal(0, 'upgrade-batch-b');
+    const seen = [];
+    const eff = effect(() => { seen.push([a.get(), b.get()]); });
+    seen.length = 0;
+
+    const values = new Map([
+      ['upgrade-batch-a', 1],
+      ['upgrade-batch-b', 2],
+    ]);
+    _registerTransport({
+      getOrCreateSignal(name) { return signal(values.get(name)); },
+    });
+
+    try {
+      assert.deepStrictEqual(seen, [[1, 2]]);
+    } finally {
+      eff.stop();
+      a.stop();
+      b.stop();
+      _clearTransport();
+    }
+  });
+
   it('upgrades a pre-transport placeholder when a transport later registers', async () => {
     _clearTransport();
     const sig = liveSignal(0, 'upgrade-basic');
@@ -503,6 +532,25 @@ describe('kensington/live liveServer registry API', () => {
       live.close();
     }
   });
+  it('commits the server registry before liveSignal.set() effects run', async () => {
+    const live = await liveServer({ persistence: { kind: 'memory' } });
+    const sig = liveSignal(0, 'shared:atomic-registry');
+    const registryValuesSeenByEffect = [];
+    const eff = effect(() => {
+      sig.get();
+      registryValuesSeenByEffect.push(live.get('shared:atomic-registry'));
+    });
+    try {
+      registryValuesSeenByEffect.length = 0;
+      sig.set(5);
+      assert.deepStrictEqual(registryValuesSeenByEffect, [5]);
+    } finally {
+      eff.stop();
+      sig.stop();
+      _clearTransport();
+      live.close();
+    }
+  });
   it('rejects unknown persistence.kind', async () => {
     await assert.rejects(
       () => liveServer({ persistence: { kind: 'redis' } }),
@@ -613,16 +661,12 @@ describe('kensington/live server-side subscriptions', () => {
       const sig = liveSignal(0, 'observed:name');
       const seen = [];
       const eff = effect(() => { seen.push(sig.get()); });
-      // Wait one microtask for the initial effect run to settle.
-      await Promise.resolve();
+      assert.deepStrictEqual(seen, [0]);
       live.set('observed:name', 1);
+      assert.deepStrictEqual(seen, [0, 1]);
       live.set('observed:name', 2);
-      await Promise.resolve();
+      assert.deepStrictEqual(seen, [0, 1, 2]);
       eff.stop();
-      // Initial 0, then 1, then 2. The internal scheduling batches updates,
-      // so we assert the first and last values rather than the exact sequence.
-      assert.strictEqual(seen[0], 0);
-      assert.strictEqual(seen.at(-1), 2);
     } finally {
       _clearTransport();
       live.close();
@@ -905,6 +949,8 @@ describe('kensington/live canWrite: server-side enforcement', () => {
       assert.strictEqual(received[0]?.type, 'set-fail');
       assert.strictEqual(received[0]?.reason, 'forbidden');
       assert.strictEqual(received[0]?.opId, 1);
+      assert.strictEqual(received[0]?.hasValue, false);
+      assert.strictEqual(Object.hasOwn(received[0], 'value'), false);
       // Server-side write still works.
       live.set('guarded', 'y');
       assert.strictEqual(live.get('guarded'), 'y');
@@ -1140,6 +1186,44 @@ describe('kensington/live CAS (compare-and-swap) writes', () => {
       const snap = received.find(m => m.type === 'snapshot');
       assert.ok(snap, 'expected snapshot');
       assert.strictEqual(snap.values['fresh:name'], 'hello');
+      assert.deepStrictEqual(snap.present, ['fresh:name']);
+      assert.deepStrictEqual(snap.missing, []);
+    } finally {
+      _clearTransport();
+      live.close();
+    }
+  });
+
+  it('MSG_SNAPSHOT marks a name with no registry or declared initial as missing', async () => {
+    const live = await liveServer({ persistence: { kind: 'memory' } });
+    try {
+      const { handlers, fakeWs, received } = makeFakeSocket(live);
+      await handlers.open(fakeWs);
+      handlers.message(fakeWs, JSON.stringify({ type: 'subscribe', name: 'fresh:missing' }));
+      const snap = received.find(m => m.type === 'snapshot');
+      assert.ok(snap, 'expected snapshot');
+      assert.deepStrictEqual(snap.values, {});
+      assert.deepStrictEqual(snap.present, []);
+      assert.deepStrictEqual(snap.missing, ['fresh:missing']);
+      assert.strictEqual(snap.lamport, 0);
+    } finally {
+      _clearTransport();
+      live.close();
+    }
+  });
+
+  it('MSG_SNAPSHOT preserves an explicitly declared undefined initial', async () => {
+    const live = await liveServer({ persistence: { kind: 'memory' } });
+    try {
+      liveSignal(undefined, 'fresh:undefined');
+      const { handlers, fakeWs, received } = makeFakeSocket(live);
+      await handlers.open(fakeWs);
+      handlers.message(fakeWs, JSON.stringify({ type: 'subscribe', name: 'fresh:undefined' }));
+      const snap = received.find(m => m.type === 'snapshot');
+      assert.ok(snap, 'expected snapshot');
+      assert.deepStrictEqual(snap.values, {});
+      assert.deepStrictEqual(snap.present, ['fresh:undefined']);
+      assert.deepStrictEqual(snap.missing, []);
     } finally {
       _clearTransport();
       live.close();
@@ -1256,6 +1340,31 @@ describe('kensington/live liveServer.attach lifecycle', () => {
 // against a real attached liveServer so the full subscribe / message /
 // status pipeline is exercised, not just the in-process registry.
 describe('kensington/live ClientTransport lifecycle methods', () => {
+  // Manually driven sockets keep ordering tests deterministic. Each test restores
+  // the original WebSocket in its cleanup, and can inspect every replacement socket.
+  function installFakeWebSocket() {
+    const sockets = [];
+    globalThis.WebSocket = class FakeWebSocket {
+      constructor() {
+        sockets.push(this);
+        this.readyState = 0;
+        this.sent = [];
+        this.listeners = { open: [], close: [], message: [], error: [] };
+      }
+
+      addEventListener(type, fn) { this.listeners[type].push(fn); }
+
+      send(raw) { this.sent.push(decode(raw)); }
+
+      close() {}
+
+      emit(type, event = {}) {
+        for (const fn of this.listeners[type]) { fn(event); }
+      }
+    };
+    return sockets;
+  }
+
   async function listen(httpServer) {
     await new Promise(resolve => { httpServer.listen(0, resolve); });
     return httpServer.address().port;
@@ -1274,6 +1383,572 @@ describe('kensington/live ClientTransport lifecycle methods', () => {
       });
     });
   }
+
+  it('applies multi-signal snapshots and batch-update frames as one subscriber commit', async () => {
+    const { connectLive, liveSignal: clientLiveSignal } = await import('kensington/live');
+    const origWebSocket = globalThis.WebSocket;
+    installFakeWebSocket();
+    const transport = connectLive({ url: 'ws://127.0.0.1:0/__kensington/live' });
+    const a = clientLiveSignal(0, 'inbound-batch:a');
+    const b = clientLiveSignal(0, 'inbound-batch:b');
+    const seen = [];
+    const eff = effect(() => { seen.push([a.get(), b.get()]); });
+    try {
+      seen.length = 0;
+      transport.handleMessage(encode({
+        type: MSG_SNAPSHOT,
+        values: { 'inbound-batch:a': 1, 'inbound-batch:b': 2 },
+        lamport: 1,
+      }));
+      assert.deepStrictEqual(seen, [[1, 2]], 'one snapshot must produce one subscriber commit');
+
+      seen.length = 0;
+      transport.handleMessage(encode({
+        type: MSG_BATCH_UPDATE,
+        updates: [
+          { name: 'inbound-batch:a', value: 3, lamport: 2 },
+          { name: 'inbound-batch:b', value: 4, lamport: 2 },
+        ],
+      }));
+      assert.deepStrictEqual(seen, [[3, 4]], 'one batch-update frame must produce one subscriber commit');
+    } finally {
+      eff.stop();
+      a.stop();
+      b.stop();
+      transport.close();
+      _clearTransport();
+      globalThis.WebSocket = origWebSocket;
+    }
+  });
+
+  it('normalizes mixed snapshot values and presence markers in one commit', async () => {
+    const { connectLive, liveSignal: clientLiveSignal } = await import('kensington/live');
+    const origWebSocket = globalThis.WebSocket;
+    installFakeWebSocket();
+    const transport = connectLive({ url: 'ws://127.0.0.1:0/__kensington/live' });
+    const named = {
+      value: clientLiveSignal('client value', 'snapshot-mixed:value'),
+      present: clientLiveSignal('client present', 'snapshot-mixed:present'),
+      missing: clientLiveSignal('client missing', 'snapshot-mixed:missing'),
+    };
+    named.missing._setFromRemote('stale');
+    const seen = [];
+    const eff = effect(() => { seen.push(Object.values(named).map(sig => sig.get())); });
+    try {
+      seen.length = 0;
+      transport.handleMessage(encode({
+        type: MSG_SNAPSHOT,
+        values: { 'snapshot-mixed:value': 'server value' },
+        present: ['snapshot-mixed:value', 'snapshot-mixed:present', 'snapshot-mixed:present'],
+        missing: ['snapshot-mixed:value', 'snapshot-mixed:present', 'snapshot-mixed:missing'],
+        lamport: 3,
+      }));
+      assert.deepStrictEqual(seen, [['server value', undefined, 'client missing']]);
+      for (const key of Object.keys(named)) {
+        assert.strictEqual(transport.lastSeen.get(`snapshot-mixed:${key}`), 3);
+      }
+    } finally {
+      eff.stop();
+      Object.values(named).forEach(sig => sig.stop());
+      transport.close();
+      _clearTransport();
+      globalThis.WebSocket = origWebSocket;
+    }
+  });
+
+  it('rejects a throwing updater without changing local state or queuing a write', async () => {
+    const { connectLive, liveSignal: clientLiveSignal } = await import('kensington/live');
+    const origWebSocket = globalThis.WebSocket;
+    installFakeWebSocket();
+    const transport = connectLive({ url: 'ws://127.0.0.1:0/__kensington/live' });
+    const sig = clientLiveSignal(0, 'throwing-updater');
+    const error = new Error('updater failed');
+    try {
+      await assert.rejects(sig.set(() => { throw error; }), err => err === error);
+      assert.strictEqual(sig.value, 0);
+      assert.strictEqual(transport.pendingWrites.size, 0);
+      assert.deepStrictEqual(transport.outbound.filter(msg => msg.type === MSG_SET), []);
+    } finally {
+      sig.stop();
+      transport.close();
+      _clearTransport();
+      globalThis.WebSocket = origWebSocket;
+    }
+  });
+
+  it('rolls a rejected fresh write back to the client initial value', async () => {
+    const { connectLive, liveSignal: clientLiveSignal } = await import('kensington/live');
+    const origWebSocket = globalThis.WebSocket;
+    installFakeWebSocket();
+    const transport = connectLive({ url: 'ws://127.0.0.1:0/__kensington/live' });
+    const name = 'fresh-rejection:rollback';
+    const sig = clientLiveSignal(0, name);
+    try {
+      const write = sig.set(1);
+      const frame = transport.outbound.find(msg => msg.type === MSG_SET && msg.name === name);
+      transport.handleMessage(encode({
+        type: MSG_SET_FAIL,
+        name,
+        opId: frame.opId,
+        reason: 'forbidden',
+        hasValue: false,
+        lamport: 0,
+      }));
+      const rejection = await write.catch(error => error);
+      assert.strictEqual(sig.value, 0);
+      assert.strictEqual(transport.lastSeen.get(name), 0);
+      assert.strictEqual(rejection.reason, 'forbidden');
+      assert.strictEqual(rejection.authoritativeValue, 0);
+    } finally {
+      sig.stop();
+      transport.close();
+      _clearTransport();
+      globalThis.WebSocket = origWebSocket;
+    }
+  });
+
+  it('does not let an earlier rejected write hide a newer optimistic write', async () => {
+    const { connectLive, liveSignal: clientLiveSignal } = await import('kensington/live');
+    const origWebSocket = globalThis.WebSocket;
+    installFakeWebSocket();
+    const transport = connectLive({ url: 'ws://127.0.0.1:0/__kensington/live' });
+    const name = 'fresh-rejection:newer-write';
+    const sig = clientLiveSignal(0, name);
+    try {
+      const firstWrite = sig.set(1);
+      const secondWrite = sig.set(2);
+      const frames = transport.outbound.filter(msg => msg.type === MSG_SET && msg.name === name);
+      transport.handleMessage(encode({
+        type: MSG_SET_FAIL,
+        name,
+        opId: frames[0].opId,
+        reason: 'forbidden',
+        hasValue: false,
+        lamport: 0,
+      }));
+      const rejection = await firstWrite.catch(error => error);
+      assert.strictEqual(rejection.authoritativeValue, 0);
+      assert.strictEqual(sig.value, 2);
+
+      transport.handleMessage(encode({
+        type: MSG_SET_OK,
+        name,
+        opId: frames[1].opId,
+        lamport: 1,
+      }));
+      await secondWrite;
+      assert.strictEqual(sig.value, 2);
+    } finally {
+      sig.stop();
+      transport.close();
+      _clearTransport();
+      globalThis.WebSocket = origWebSocket;
+    }
+  });
+
+  it('resets stale Lamport state when a reconnect snapshot reports a missing name', async () => {
+    const { connectLive, liveSignal: clientLiveSignal } = await import('kensington/live');
+    const origWebSocket = globalThis.WebSocket;
+    installFakeWebSocket();
+    const transport = connectLive({ url: 'ws://127.0.0.1:0/__kensington/live' });
+    const name = 'snapshot-reset:missing';
+    const sig = clientLiveSignal(0, name);
+    try {
+      transport.handleMessage(encode({
+        type: MSG_SNAPSHOT,
+        values: { [name]: 7 },
+        present: [name],
+        missing: [],
+        lamport: 7,
+      }));
+      assert.strictEqual(sig.value, 7);
+      assert.strictEqual(transport.lastSeen.get(name), 7);
+
+      transport.handleMessage(encode({
+        type: MSG_SNAPSHOT,
+        values: {},
+        present: [],
+        missing: [name],
+        lamport: 0,
+      }));
+      assert.strictEqual(sig.value, 0);
+      assert.strictEqual(transport.lastSeen.get(name), 0);
+
+      transport.handleMessage(encode({ type: MSG_UPDATE, name, value: 1, lamport: 1 }));
+      assert.strictEqual(sig.value, 1);
+      assert.strictEqual(transport.lastSeen.get(name), 1);
+    } finally {
+      sig.stop();
+      transport.close();
+      _clearTransport();
+      globalThis.WebSocket = origWebSocket;
+    }
+  });
+
+  it('preserves a replayable optimistic write while applying its reconnect snapshot', async () => {
+    const { connectLive, liveSignal: clientLiveSignal } = await import('kensington/live');
+    const origWebSocket = globalThis.WebSocket;
+    installFakeWebSocket();
+    const transport = connectLive({ url: 'ws://127.0.0.1:0/__kensington/live' });
+    const name = 'snapshot-reset:pending';
+    const sig = clientLiveSignal(0, name);
+    try {
+      transport.handleMessage(encode({
+        type: MSG_SNAPSHOT,
+        values: { [name]: 7 },
+        present: [name],
+        missing: [],
+        lamport: 7,
+      }));
+      const write = sig.set(8);
+      const frame = transport.outbound.find(msg => msg.type === MSG_SET && msg.name === name);
+
+      transport.handleMessage(encode({
+        type: MSG_SNAPSHOT,
+        values: {},
+        present: [],
+        missing: [name],
+        lamport: 0,
+      }));
+      assert.strictEqual(sig.value, 8);
+      assert.strictEqual(transport.lastSeen.get(name), 0);
+
+      transport.handleMessage(encode({
+        type: MSG_SET_OK,
+        name,
+        opId: frame.opId,
+        lamport: 1,
+      }));
+      await write;
+      assert.strictEqual(sig.value, 8);
+      assert.strictEqual(transport.lastSeen.get(name), 1);
+    } finally {
+      sig.stop();
+      transport.close();
+      _clearTransport();
+      globalThis.WebSocket = origWebSocket;
+    }
+  });
+
+  it('applies an explicitly present undefined snapshot value', async () => {
+    const { connectLive, liveSignal: clientLiveSignal } = await import('kensington/live');
+    const origWebSocket = globalThis.WebSocket;
+    installFakeWebSocket();
+    const transport = connectLive({ url: 'ws://127.0.0.1:0/__kensington/live' });
+    const name = 'snapshot:undefined';
+    const sig = clientLiveSignal('client', name);
+    try {
+      transport.handleMessage(encode({
+        type: MSG_SNAPSHOT,
+        values: {},
+        present: [name],
+        missing: [],
+        lamport: 0,
+      }));
+      assert.strictEqual(sig.value, undefined);
+      assert.strictEqual(transport.lastSeen.get(name), 0);
+    } finally {
+      sig.stop();
+      transport.close();
+      _clearTransport();
+      globalThis.WebSocket = origWebSocket;
+    }
+  });
+
+  it('commits inbound lamport metadata before update effects run', async () => {
+    const { connectLive, liveSignal: clientLiveSignal } = await import('kensington/live');
+    const origWebSocket = globalThis.WebSocket;
+    installFakeWebSocket();
+    const transport = connectLive({ url: 'ws://127.0.0.1:0/__kensington/live' });
+    const name = 'inbound-lamport:atomic';
+    const sig = clientLiveSignal(0, name);
+    const seenLamports = [];
+    const eff = effect(() => {
+      sig.get();
+      seenLamports.push(transport.lastSeen.get(name));
+    });
+    try {
+      seenLamports.length = 0;
+      transport.handleMessage(encode({ type: MSG_UPDATE, name, value: 1, lamport: 7 }));
+      assert.deepStrictEqual(seenLamports, [7]);
+    } finally {
+      eff.stop();
+      sig.stop();
+      transport.close();
+      _clearTransport();
+      globalThis.WebSocket = origWebSocket;
+    }
+  });
+
+  it('registers and queues optimistic writes before their effects can re-enter the transport', async () => {
+    const { connectLive, liveSignal: clientLiveSignal } = await import('kensington/live');
+    const origWebSocket = globalThis.WebSocket;
+    installFakeWebSocket();
+    const transport = connectLive({ url: 'ws://127.0.0.1:0/__kensington/live' });
+    const directSource = clientLiveSignal(0, 'optimistic-order:direct-source');
+    const directFollow = clientLiveSignal(0, 'optimistic-order:direct-follow');
+    const casSource = clientLiveSignal(0, 'optimistic-order:cas-source');
+    const casFollow = clientLiveSignal(0, 'optimistic-order:cas-follow');
+    const observations = [];
+    const directEff = effect(() => {
+      if (directSource.get() !== 1) { return; }
+      observations.push(transport.pendingWrites.size);
+      directFollow.set(1);
+    });
+    const casEff = effect(() => {
+      if (casSource.get() !== 1) { return; }
+      observations.push(transport.pendingWrites.size);
+      casFollow.set(1);
+    });
+    try {
+      directSource.set(1);
+      casSource.set(value => value + 1);
+      const writes = transport.outbound
+        .filter(msg => msg.type === MSG_SET && msg.name.startsWith('optimistic-order:'));
+      assert.deepStrictEqual(writes.map(msg => msg.name), [
+        'optimistic-order:direct-source',
+        'optimistic-order:direct-follow',
+        'optimistic-order:cas-source',
+        'optimistic-order:cas-follow',
+      ]);
+      assert.deepStrictEqual(writes.map(msg => Object.hasOwn(msg, 'ifLamport')), [false, false, true, false]);
+      assert.strictEqual(writes[2].ifLamport, 0);
+      assert.deepStrictEqual(observations, [1, 3], 'each source write must be pending before its effect runs');
+    } finally {
+      directEff.stop();
+      casEff.stop();
+      directSource.stop();
+      directFollow.stop();
+      casSource.stop();
+      casFollow.stop();
+      transport.close();
+      _clearTransport();
+      globalThis.WebSocket = origWebSocket;
+    }
+  });
+
+  it('coalesces a CAS conflict rollback and retry into one subscriber commit', async () => {
+    const { connectLive, liveSignal: clientLiveSignal } = await import('kensington/live');
+    const origWebSocket = globalThis.WebSocket;
+    installFakeWebSocket();
+    const transport = connectLive({ url: 'ws://127.0.0.1:0/__kensington/live' });
+    const name = 'cas-conflict:atomic-retry';
+    const sig = clientLiveSignal(0, name);
+    const seen = [];
+    const eff = effect(() => { seen.push(sig.get()); });
+    try {
+      seen.length = 0;
+      sig.set(value => value + 1);
+      assert.deepStrictEqual(seen, [1]);
+      seen.length = 0;
+      const firstAttempt = transport.outbound.find(msg => msg.type === MSG_SET && msg.name === name);
+      transport.handleMessage(encode({
+        type: MSG_SET_FAIL,
+        name,
+        opId: firstAttempt.opId,
+        reason: 'conflict',
+        value: 10,
+        lamport: 7,
+      }));
+      assert.strictEqual(sig.value, 11);
+      assert.deepStrictEqual(seen, [11], 'the authoritative rollback must not render before the retry');
+      const attempts = transport.outbound.filter(msg => msg.type === MSG_SET && msg.name === name);
+      assert.strictEqual(attempts.length, 2);
+      assert.strictEqual(attempts[1].ifLamport, 7);
+    } finally {
+      eff.stop();
+      sig.stop();
+      transport.close();
+      _clearTransport();
+      globalThis.WebSocket = origWebSocket;
+    }
+  });
+
+  it('publishes connection statuses only after their transport bookkeeping is complete', async () => {
+    const { connectLive, liveSignal: clientLiveSignal } = await import('kensington/live');
+    const origWebSocket = globalThis.WebSocket;
+    const sockets = installFakeWebSocket();
+    const transport = connectLive({ url: 'ws://127.0.0.1:0/__kensington/live' });
+    const socket = sockets[0];
+    const name = 'status-order:write';
+    const sig = clientLiveSignal('initial', name);
+    sig.set('queued');
+    const disconnectedPendingSizes = [];
+    const statusEff = effect(() => {
+      const status = transport.status.get();
+      if (status === 'connected') { sig.set('from-status-effect'); }
+      if (status === 'disconnected') {
+        disconnectedPendingSizes.push(transport.pendingWrites.size);
+      }
+    });
+    try {
+      socket.readyState = 1;
+      socket.emit('open');
+      const sentValues = socket.sent
+        .filter(msg => msg.type === MSG_SET && msg.name === name)
+        .map(msg => msg.value);
+      assert.deepStrictEqual(sentValues, ['queued', 'from-status-effect']);
+
+      transport.close();
+      assert.deepStrictEqual(disconnectedPendingSizes, [0]);
+    } finally {
+      statusEff.stop();
+      sig.stop();
+      transport.close();
+      _clearTransport();
+      globalThis.WebSocket = origWebSocket;
+    }
+  });
+
+  it('installs the reconnect timer before publishing reconnecting', async () => {
+    const { connectLive } = await import('kensington/live');
+    const origWebSocket = globalThis.WebSocket;
+    globalThis.WebSocket = class FakeWebSocket {
+      constructor() {
+        this.readyState = 0;
+        this.listeners = { open: [], close: [], message: [], error: [] };
+        queueMicrotask(() => {
+          for (const fn of this.listeners.close) { fn({}); }
+        });
+      }
+
+      addEventListener(type, fn) { this.listeners[type].push(fn); }
+
+      close() {}
+    };
+    const transport = connectLive({
+      url: 'ws://127.0.0.1:0/__kensington/live',
+      reconnect: { initialDelay: 10_000, maxDelay: 10_000 },
+    });
+    const timerStateSeenByEffect = [];
+    const statusEff = effect(() => {
+      if (transport.status.get() === 'reconnecting') {
+        timerStateSeenByEffect.push(transport.reconnectTimer !== null);
+      }
+    });
+    try {
+      await waitForStatus(transport, 'reconnecting');
+      assert.deepStrictEqual(timerStateSeenByEffect, [true]);
+    } finally {
+      statusEff.stop();
+      transport.close();
+      _clearTransport();
+      globalThis.WebSocket = origWebSocket;
+    }
+  });
+
+  it('ignores stale socket events after reconnect and opens only one replacement', async () => {
+    const { connectLive, liveSignal: clientLiveSignal } = await import('kensington/live');
+    const origWebSocket = globalThis.WebSocket;
+    const sockets = installFakeWebSocket();
+    const transport = connectLive({
+      url: 'ws://127.0.0.1:0/__kensington/live',
+      reconnect: { initialDelay: 10_000, maxDelay: 10_000 },
+    });
+    const name = 'stale-socket-events';
+    const sig = clientLiveSignal('current', name);
+    const first = sockets[0];
+    try {
+      // Two same-turn requests queue two connect() callbacks. The second must
+      // see the first replacement and leave it alone rather than leaking a third socket.
+      transport.reconnect();
+      transport.reconnect();
+      await Promise.resolve();
+      const replacement = sockets[1];
+      assert.strictEqual(sockets.length, 2);
+      assert.strictEqual(transport.ws, replacement);
+      assert.strictEqual(transport.status.value, 'connecting');
+
+      first.readyState = 1;
+      first.emit('open');
+      first.emit('message', {
+        data: encode({ type: MSG_UPDATE, name, value: 'stale', lamport: 99 }),
+      });
+      first.emit('close');
+      first.emit('error', new Error('stale error'));
+
+      assert.strictEqual(transport.ws, replacement);
+      assert.strictEqual(transport.reconnectTimer, null);
+      assert.strictEqual(transport.status.value, 'connecting');
+      assert.strictEqual(sig.value, 'current');
+      assert.deepStrictEqual(first.sent, []);
+
+      replacement.readyState = 1;
+      replacement.emit('open');
+      assert.strictEqual(transport.status.value, 'connected');
+    } finally {
+      sig.stop();
+      transport.close();
+      _clearTransport();
+      globalThis.WebSocket = origWebSocket;
+    }
+  });
+
+  it('rejects sent-but-unacknowledged direct and CAS writes on manual reconnect', async () => {
+    const { connectLive, liveSignal: clientLiveSignal } = await import('kensington/live');
+    const origWebSocket = globalThis.WebSocket;
+    const sockets = installFakeWebSocket();
+    const transport = connectLive({ url: 'ws://127.0.0.1:0/__kensington/live' });
+    const first = sockets[0];
+    const direct = clientLiveSignal(0, 'manual-reconnect:direct');
+    const cas = clientLiveSignal(0, 'manual-reconnect:cas');
+    try {
+      first.readyState = 1;
+      first.emit('open');
+      const directWrite = direct.set(1);
+      const casWrite = cas.set(value => value + 1);
+      assert.strictEqual(transport.pendingWrites.size, 2);
+      assert.deepStrictEqual(
+        first.sent.filter(msg => msg.type === MSG_SET).map(msg => msg.name),
+        ['manual-reconnect:direct', 'manual-reconnect:cas'],
+      );
+
+      transport.reconnect();
+      const [directError, casError] = await Promise.all([
+        directWrite.catch(err => err),
+        casWrite.catch(err => err),
+      ]);
+      assert.strictEqual(directError.reason, 'disconnected');
+      assert.strictEqual(casError.reason, 'disconnected');
+      assert.strictEqual(transport.pendingWrites.size, 0);
+
+      await Promise.resolve();
+      const replacement = sockets[1];
+      replacement.readyState = 1;
+      replacement.emit('open');
+      assert.deepStrictEqual(
+        replacement.sent.filter(msg => msg.type === MSG_SET),
+        [],
+        'ambiguous writes must not be replayed on the replacement socket',
+      );
+      replacement.emit('message', {
+        data: encode({
+          type: MSG_SNAPSHOT,
+          values: {},
+          present: [],
+          missing: ['manual-reconnect:direct'],
+          lamport: 0,
+        }),
+      });
+      replacement.emit('message', {
+        data: encode({
+          type: MSG_SNAPSHOT,
+          values: {},
+          present: [],
+          missing: ['manual-reconnect:cas'],
+          lamport: 0,
+        }),
+      });
+      assert.strictEqual(direct.value, 0);
+      assert.strictEqual(cas.value, 0);
+    } finally {
+      direct.stop();
+      cas.stop();
+      transport.close();
+      _clearTransport();
+      globalThis.WebSocket = origWebSocket;
+    }
+  });
 
   it('reconnect() drops the WebSocket and re-opens with the same signals', async () => {
     const http = await import('node:http');
@@ -1664,29 +2339,35 @@ describe('kensington/live ClientTransport lifecycle methods', () => {
       reconnect: { initialDelay: 30, maxDelay: 200 },
       _internal: { onFrame: (dir, frame) => { if (dir === 'in') { inbound.push(frame); } } },
     });
+    let eff;
     try {
       await waitForStatus(transport, 'connected');
       // Subscribe to several names.
-      liveSignal(0, 'batch:a');
-      liveSignal(0, 'batch:b');
-      liveSignal(0, 'batch:c');
+      const a = liveSignal(0, 'batch:a');
+      const b = liveSignal(0, 'batch:b');
+      const c = liveSignal(0, 'batch:c');
       await new Promise(resolve => { setTimeout(resolve, 50); });
       inbound.length = 0;
+      const seen = [];
+      eff = effect(() => { seen.push([a.get(), b.get(), c.get()]); });
+      seen.length = 0;
       // Three server-side writes in one tick. Should coalesce into one batch.
       live.set('batch:a', 1);
       live.set('batch:b', 2);
       live.set('batch:c', 3);
       await new Promise(resolve => { setTimeout(resolve, 100); });
-      const batches = inbound.filter(f => f.type === 'batch-update');
+      const batches = inbound.filter(f => f.type === MSG_BATCH_UPDATE);
       const singles = inbound.filter(f => f.type === 'update');
       assert.ok(batches.length >= 1, 'expected at least one batch-update');
       assert.strictEqual(singles.length, 0, 'no single update frames when batching is in effect');
       const allNames = new Set();
-      for (const b of batches) { for (const u of b.updates ?? []) { allNames.add(u.name); } }
+      for (const frame of batches) { for (const u of frame.updates ?? []) { allNames.add(u.name); } }
       assert.ok(allNames.has('batch:a'));
       assert.ok(allNames.has('batch:b'));
       assert.ok(allNames.has('batch:c'));
+      assert.deepStrictEqual(seen, [[1, 2, 3]], 'one wire batch must produce one subscriber commit');
     } finally {
+      eff?.stop();
       transport.close();
       _clearTransport();
       live.close();

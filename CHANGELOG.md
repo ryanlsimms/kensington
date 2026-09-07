@@ -6,8 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- Added `batch(fn)` to `kensington` and `kensington/reactive`. It groups related signal writes into one round of effect and DOM updates.
+- Added TypeScript declarations for `kensington/reactive`.
+- Added a `nonce` option to `registerComponents` for Content Security Policies that restrict inline styles.
+- Added Runtime Guard diagnostics for reactive values from separate Kensington runtimes used during tag rendering and binding updates. The instance validation level controls reporting. Slim builds omit the diagnostics.
+
+### Changed
+- **BREAKING:** Signal effects and DOM bindings now update before `.set()` returns. Use `batch()` when related writes should update together. See [Migrating from microtask-batched updates](agent-docs/reactive.md#migrating-from-microtask-batched-updates).
+- **BREAKING:** `registerComponents` now returns nothing. The registration `stop()` handle has been removed and registrations last for the document's lifetime.
+- Registering a component name again now produces a warning and ignores the duplicate.
+
 ### Fixed
-- Hydration transition suppression is now temporary, scoped to successful replacements, and coalesced to one layout pass per frame. Missing, skipped, and failed mounts retain their SSR DOM without having their CSS animations interrupted.
+- Hydration no longer replays CSS transitions or animations when replacing server-rendered content. Skipped and failed mounts remain unaffected.
+- Separate `registerComponents` calls keep CSP nonces associated with the component names they register.
+- An effect that throws during its initial run no longer remains subscribed.
+- Late events from replaced WebSocket connections no longer interfere with the active connection.
+- Manual live-transport reconnects now reject sent-but-unacknowledged writes instead of leaving their promises pending forever.
+- Rejected fresh live writes now restore the client initial value. Empty reconnect snapshots also reset update ordering after a memory backed server restart.
 
 ## [2.0.0-signals.26] - 2026-08-25
 
@@ -52,7 +68,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 - `renderForHydration` and `registerComponents` now accept an `options.context` argument.
-- `kensington/live`. New subpath for state shared across browsers. `liveSignal(initial, name, options?)` reads like a regular signal but synchronizes through a server registry. `connectLive()` on the client and `liveServer()` on the server complete the setup. Protocol is plain JSON with Lamport ordering. `better-sqlite3` and `ws` are optional peer dependencies. See docs.
+- `kensington/live`. New subpath for state shared across browsers. `liveSignal(initial, name, options?)` reads like a regular signal but synchronizes through a server registry. `connectLive()` on the client and `liveServer()` on the server complete the setup. Protocol is plain JSON with server assigned version numbers. `better-sqlite3` and `ws` are optional peer dependencies. See docs.
   - Persistence backends: memory or sqlite. Per-signal `persist` flag; transient names drop 30s after the last subscriber leaves.
   - Per-signal and per-server `canRead` / `canWrite` policies (`'any'`, `'server-only'`, or a predicate).
   - Reactive connection `status` on both client and server handles. Connection-level errors log via `console.error`; the `status` signal is the canonical surface for connection state.

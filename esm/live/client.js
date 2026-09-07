@@ -5,7 +5,7 @@
 // connection dropped for a long time (laptop sleep, internet outage) does
 // not leave the user waiting out the remaining backoff delay.
 
-import { signal } from '../lib/reactive/signal.js';
+import { batch, signal } from '../lib/reactive/signal.js';
 import { DEFAULT_LIVE_PATH } from './constants.js';
 import { _registerTransport } from './state.js';
 
@@ -175,8 +175,10 @@ class ClientTransport {
   }
 
   connect() {
-    if (this.closed) { return; }
-    this.setStatus('connecting');
+    // A reconnect can be requested more than once before its queued connect() runs.
+    // Keep at most one current socket; event handlers below also reject events from a
+    // socket that was replaced after they were installed.
+    if (this.closed || this.ws !== null) { return; }
     let ws;
     try { ws = new WebSocket(this.url); }
     catch (err) {
@@ -187,36 +189,52 @@ class ClientTransport {
     this.ws = ws;
 
     ws.addEventListener('open', () => {
-      this.setStatus('connected');
-      this.resetReconnectState();
-      // Re-subscribe to every name we have a signal for. The server will reply
-      // with a snapshot containing the current value, which we apply via
-      // `_setFromRemote` (no re-broadcast). Re-send the persist flag too so
-      // the server can re-record policy after a restart.
-      for (const name of this.signals.keys()) {
-        this.rawSendOnSocket(ws, buildSubscribeMsg(name, this.persistFlags.get(name) === true));
-      }
-      // Flush any writes queued while disconnected.
-      while (this.outbound.length > 0) {
-        this.rawSendOnSocket(ws, this.outbound.shift());
-      }
+      if (this.closed || this.ws !== ws) { return; }
+      batch(() => {
+        this.resetReconnectState();
+        // Re-subscribe to every name we have a signal for. The server will reply
+        // with a snapshot containing the current value, which we apply via
+        // `_setFromRemote` (no re-broadcast). Re-send the persist flag too so
+        // the server can re-record policy after a restart.
+        for (const name of this.signals.keys()) {
+          this.rawSendOnSocket(ws, buildSubscribeMsg(name, this.persistFlags.get(name) === true));
+        }
+        // Flush writes queued while disconnected before exposing `connected`.
+        // A status effect may immediately write another live signal; publishing
+        // the status last preserves FIFO wire order with the older queue.
+        while (this.outbound.length > 0) {
+          this.rawSendOnSocket(ws, this.outbound.shift());
+        }
+        this.setStatus('connected');
+      });
     });
 
-    ws.addEventListener('message', e => this.handleMessage(e.data));
+    ws.addEventListener('message', e => {
+      if (this.closed || this.ws !== ws) { return; }
+      this.handleMessage(e.data);
+    });
     ws.addEventListener('close', () => {
-      this.ws = null;
-      // Any sent-but-unacked writes are dead now. The server may or may not
-      // have processed them; on reconnect we re-subscribe and the snapshot
-      // becomes the source of truth, so the opIds will never be replied to.
-      // Reject the pending Promises so awaiters don't hang for the full
-      // reconnect window (or forever if reconnect succeeds and the replies
-      // never arrive).
-      this.failPendingWrites('disconnected');
-      this.scheduleReconnect();
+      if (this.ws !== ws) { return; }
+      batch(() => {
+        this.ws = null;
+        // Any sent-but-unacked writes are dead now. The server may or may not
+        // have processed them; on reconnect we re-subscribe and the snapshot
+        // becomes the source of truth, so the opIds will never be replied to.
+        // Reject the pending Promises so awaiters don't hang for the full
+        // reconnect window (or forever if reconnect succeeds and the replies
+        // never arrive).
+        this.failPendingWrites('disconnected');
+        this.scheduleReconnect();
+      });
     });
     ws.addEventListener('error', err => {
+      if (this.closed || this.ws !== ws) { return; }
       console.error(`kensington/live: WebSocket error on ${this.url}`, err);
     });
+    // Publish the transition only after the replacement socket and all of its
+    // handlers are installed, so status subscribers cannot observe a half-
+    // initialized connection attempt.
+    this.setStatus('connecting');
   }
 
   scheduleReconnect() {
@@ -228,28 +246,33 @@ class ClientTransport {
       this.setStatus('disconnected');
       return;
     }
+    if (this.reconnectTimer === null) {
+      const delay = this.reconnectDelay;
+      this.reconnectDelay = Math.min(this.reconnectDelay * 2, this.reconnectOpts.maxDelay);
+      this.reconnectTimer = setTimeout(() => {
+        this.reconnectTimer = null;
+        this.reconnectAttempts += 1;
+        this.connect();
+      }, delay);
+    }
+    // Expose reconnecting only after the timer exists. Status effects can
+    // safely inspect or cancel all state associated with this transition.
     this.setStatus('reconnecting');
-    if (this.reconnectTimer !== null) { return; }
-    const delay = this.reconnectDelay;
-    this.reconnectDelay = Math.min(this.reconnectDelay * 2, this.reconnectOpts.maxDelay);
-    this.reconnectTimer = setTimeout(() => {
-      this.reconnectTimer = null;
-      this.reconnectAttempts += 1;
-      this.connect();
-    }, delay);
   }
 
   setStatus(next) {
     if (this.status.value === next) { return; }
-    this.status.set(next);
-    try { this.onStatus(next); } catch { /* user callback */ }
-    if (next === 'disconnected') {
-      // No socket to deliver pending writes on, and any reply for an already-
-      // sent opId will be dropped after reconnect anyway. Reject in-flight
-      // writes so awaiters don't hang. New writes attempted while status is
-      // 'disconnected' are also rejected immediately in directWrite/casUpdate.
-      this.failPendingWrites('disconnected');
-    }
+    batch(() => {
+      if (next === 'disconnected') {
+        // No socket to deliver pending writes on, and any reply for an already-
+        // sent opId will be dropped after reconnect anyway. Reject in-flight
+        // writes so awaiters don't hang. New writes attempted while status is
+        // 'disconnected' are also rejected immediately in write().
+        this.failPendingWrites('disconnected');
+      }
+      this.status.set(next);
+      try { this.onStatus(next); } catch { /* user callback */ }
+    });
   }
 
   failPendingWrites(reason) {
@@ -284,15 +307,53 @@ class ClientTransport {
     return pending;
   }
 
+  reapplyLatestPendingValue(name) {
+    let latestPending;
+    for (const pending of this.pendingWrites.values()) {
+      if (pending.name === name) { latestPending = pending; }
+    }
+    if (latestPending === undefined) { return; }
+    const sig = this.signals.get(name);
+    if (sig !== undefined) { sig._setFromRemote(latestPending.attemptedValue); }
+  }
+
   // Apply a single remote update. Drops stale broadcasts (those whose lamport
   // is not strictly greater than the last we applied for this name). Used by
   // both MSG_UPDATE (one name) and MSG_BATCH_UPDATE (many names).
   applyRemoteUpdate(name, value, lamport) {
     const seen = this.lastSeen.get(name) ?? -1;
     if (lamport <= seen) { return; }
-    const sig = this.signals.get(name);
-    if (sig !== undefined) { sig._setFromRemote(value); }
-    this.lastSeen.set(name, lamport);
+    batch(() => {
+      // Commit the causal metadata before the reactive value becomes visible.
+      // Effects that react to the value can now safely issue a CAS write using
+      // the lamport from this update.
+      this.lastSeen.set(name, lamport);
+      const sig = this.signals.get(name);
+      if (sig !== undefined) { sig._setFromRemote(value); }
+    });
+  }
+
+  applySnapshot(msg) {
+    // Normalize legacy values and the explicit presence markers once. A supplied value
+    // takes precedence over present, and present takes precedence over missing.
+    const values = new Map(Object.entries(
+      msg.values && typeof msg.values === 'object' ? msg.values : {},
+    ));
+    for (const name of Array.isArray(msg.present) ? msg.present : []) {
+      if (!values.has(name)) { values.set(name, undefined); }
+    }
+    for (const name of Array.isArray(msg.missing) ? msg.missing : []) {
+      if (!values.has(name)) { values.set(name, this.initialValues.get(name)); }
+    }
+    batch(() => {
+      for (const [name, value] of values) {
+        this.lastSeen.set(name, msg.lamport ?? 0);
+        this.signals.get(name)?._setFromRemote(value);
+      }
+      // Subscriptions precede replayable writes on reconnect. Restore their optimistic
+      // values after the snapshot baseline until each write receives its own verdict.
+      for (const name of values.keys()) { this.reapplyLatestPendingValue(name); }
+    });
   }
 
   handleMessage(raw) {
@@ -300,20 +361,16 @@ class ClientTransport {
     if (msg === null) { return; }
     this.notifyFrame('in', msg);
     if (msg.type === MSG_SNAPSHOT) {
-      if (msg.values && typeof msg.values === 'object') {
-        for (const [name, value] of Object.entries(msg.values)) {
-          const sig = this.signals.get(name);
-          if (sig !== undefined) { sig._setFromRemote(value); }
-          this.lastSeen.set(name, msg.lamport ?? 0);
-        }
-      }
+      this.applySnapshot(msg);
     } else if (msg.type === MSG_UPDATE) {
       this.applyRemoteUpdate(msg.name, msg.value, msg.lamport);
     } else if (msg.type === MSG_BATCH_UPDATE) {
       const updates = Array.isArray(msg.updates) ? msg.updates : [];
-      for (const u of updates) {
-        this.applyRemoteUpdate(u.name, u.value, u.lamport);
-      }
+      batch(() => {
+        for (const u of updates) {
+          this.applyRemoteUpdate(u.name, u.value, u.lamport);
+        }
+      });
     } else if (msg.type === MSG_SET_OK) {
       // Our write succeeded. Update lastSeen and resolve the pending entry.
       this.lastSeen.set(msg.name, msg.lamport);
@@ -322,20 +379,35 @@ class ClientTransport {
     } else if (msg.type === MSG_SET_FAIL) {
       const pending = this.takePendingWrite(msg.opId);
       if (pending === undefined) { return; } // stale reply for an already-handled opId
-      // Apply the server's authoritative value to the local Signal so the
-      // optimistic-local apply is overwritten with reality.
-      if (msg.value !== undefined) {
-        const sig = this.signals.get(msg.name);
-        if (sig !== undefined) { sig._setFromRemote(msg.value); }
-      }
-      this.lastSeen.set(msg.name, msg.lamport ?? this.lastSeen.get(msg.name) ?? 0);
-      if (msg.reason === 'conflict' && pending.isCas) {
-        // CAS conflict. Re-run fn against the new value and retry.
-        this.retryCas(pending);
-        return;
-      }
-      // forbidden, unserializable, conflict-on-direct, or unknown reason. Give up.
-      pending.reject(buildSetRejection(msg.name, msg.reason, pending.attemptedValue, msg.value));
+      batch(() => {
+        this.lastSeen.set(msg.name, msg.lamport ?? this.lastSeen.get(msg.name) ?? 0);
+        // Apply the server's authoritative value to the local Signal so the
+        // optimistic-local apply is overwritten with reality.
+        let authoritativeValue = msg.value;
+        const hasAuthoritativeValue = msg.hasValue === true
+          || (msg.hasValue === undefined && Object.hasOwn(msg, 'value'));
+        if (!hasAuthoritativeValue && msg.hasValue === false) {
+          authoritativeValue = this.initialValues.get(msg.name);
+        }
+        if (hasAuthoritativeValue || msg.hasValue === false) {
+          const sig = this.signals.get(msg.name);
+          if (sig !== undefined) { sig._setFromRemote(authoritativeValue); }
+        }
+        if (msg.reason === 'conflict' && pending.isCas) {
+          // CAS conflict. Re-run fn against the new value and retry. The outer
+          // batch hides the intermediate rollback from effects and bindings.
+          this.retryCas(pending);
+        } else {
+          // forbidden, unserializable, conflict-on-direct, or unknown reason. Give up.
+          this.reapplyLatestPendingValue(msg.name);
+          pending.reject(buildSetRejection(
+            msg.name,
+            msg.reason,
+            pending.attemptedValue,
+            authoritativeValue,
+          ));
+        }
+      });
     } else if (msg.type === MSG_ERROR) {
       // Subscribe-side rejection (canRead). Not tied to a specific write,
       // so there's no per-call Promise to reject. Log via console.error; the
@@ -372,18 +444,20 @@ class ClientTransport {
     pending.attemptedValue = next;
     // Optimistically apply locally so subscribers see the latest computed
     // value while we wait for the server's verdict.
-    sig._setFromRemote(next);
-    this.sendCasWrite(pending, next);
+    batch(() => {
+      sig._setFromRemote(next);
+      this.sendPendingWrite(pending);
+    });
   }
 
-  // Issue a CAS write for an in-flight `.set(fn)` attempt. Allocates a fresh
-  // opId, registers the pending entry, and sends MSG_SET with ifLamport set
-  // to whatever lamport this client has last applied for the name.
-  sendCasWrite(pending, next) {
+  // Register before sending so replies and reentrant effects can find this write.
+  // CAS retries get a fresh opId and use the latest authoritative Lamport position.
+  sendPendingWrite(pending) {
     const opId = this.nextOpId++;
     this.pendingWrites.set(opId, pending);
-    const ifLamport = this.lastSeen.get(pending.name) ?? 0;
-    this.send({ type: MSG_SET, name: pending.name, value: next, ifLamport, opId });
+    const msg = { type: MSG_SET, name: pending.name, value: pending.attemptedValue, opId };
+    if (pending.isCas) { msg.ifLamport = this.lastSeen.get(pending.name) ?? 0; }
+    this.send(msg);
   }
 
   send(msg) {
@@ -423,12 +497,7 @@ class ClientTransport {
     //                retries. Same return shape; rejection on permanent
     //                failure (forbidden / unserializable / retries exhausted).
     const origSet = sig.set.bind(sig);
-    sig.set = valueOrFn => {
-      if (typeof valueOrFn === 'function') {
-        return this.casUpdate(name, sig, origSet, valueOrFn);
-      }
-      return this.directWrite(name, sig, origSet, valueOrFn);
-    };
+    sig.set = valueOrFn => this.write(name, sig, origSet, valueOrFn);
 
     // Override .stop() to also tear down the server subscription so calling
     // .stop() does not leave the transport receiving broadcasts for a name
@@ -455,62 +524,41 @@ class ClientTransport {
     return sig;
   }
 
-  // Start a CAS update. Runs fn against the local value for an immediate
-  // optimistic apply, sends MSG_SET with ifLamport, and waits for the
-  // server's verdict via handleMessage. Returns a Promise that resolves
-  // when the write is confirmed (set-ok) or rejects when it's permanently
-  // denied or retries are exhausted. The internal `.catch(() => {})`
-  // silencer suppresses unhandled-rejection warnings for fire-and-forget
-  // callers; user code that attaches its own `.catch` (or `await`s) still
-  // sees the rejection on its own handlers.
-  casUpdate(name, sig, origSet, fn) {
+  // Both write forms validate and apply optimistically before waiting for a verdict.
+  // Only CAS writes carry an updater and retry on conflict. Keep their shared setup
+  // inside one batch so effects cannot run before the write is registered and queued.
+  write(name, sig, origSet, valueOrFn) {
+    const isCas = typeof valueOrFn === 'function';
     if (this.status.value === 'disconnected') {
-      return silenceUnhandled(Promise.reject(buildSetRejection(name, 'disconnected', undefined)));
+      return silenceUnhandled(Promise.reject(buildSetRejection(
+        name, 'disconnected', isCas ? undefined : valueOrFn,
+      )));
     }
-    let initialNext;
+    let value;
     try {
-      initialNext = fn(sig.value);
+      value = isCas ? valueOrFn(sig.value) : valueOrFn;
     } catch (err) {
       return silenceUnhandled(Promise.reject(err));
-    }
-    if (!this.checkSerializable(name, initialNext)) {
-      return silenceUnhandled(Promise.reject(buildSetRejection(name, 'unserializable', initialNext)));
-    }
-    // Apply optimistically. The local Signal updates synchronously; the UI
-    // shows the new value immediately. If the server rejects with a
-    // conflict, retryCas will overwrite with the server's value and try
-    // again. If it rejects permanently, handleMessage applies the server's
-    // value via _setFromRemote.
-    origSet(initialNext);
-    return silenceUnhandled(new Promise((resolve, reject) => {
-      this.sendCasWrite({
-        name, fn, attempts: 0, attemptedValue: initialNext, isCas: true, resolve, reject,
-      }, initialNext);
-    }));
-  }
-
-  // Start a direct write. Optimistically applies locally, sends MSG_SET with
-  // an opId (no ifLamport), and waits for the server's verdict. The Promise
-  // resolves on set-ok or rejects on set-fail; on rejection the server's
-  // authoritative value has already rolled back the local Signal via
-  // _setFromRemote in handleMessage before the rejection fires. The internal
-  // `.catch(() => {})` silencer keeps fire-and-forget `sig.set(value)` calls
-  // from producing unhandled-rejection warnings.
-  directWrite(name, sig, origSet, value) {
-    if (this.status.value === 'disconnected') {
-      return silenceUnhandled(Promise.reject(buildSetRejection(name, 'disconnected', value)));
     }
     if (!this.checkSerializable(name, value)) {
       return silenceUnhandled(Promise.reject(buildSetRejection(name, 'unserializable', value)));
     }
-    origSet(value);
-    return silenceUnhandled(new Promise((resolve, reject) => {
-      const opId = this.nextOpId++;
-      this.pendingWrites.set(opId, {
-        name, attemptedValue: value, isCas: false, resolve, reject,
+    let pendingWrite;
+    batch(() => {
+      origSet(value);
+      pendingWrite = new Promise((resolve, reject) => {
+        this.sendPendingWrite({
+          name,
+          attemptedValue: value,
+          isCas,
+          fn: isCas ? valueOrFn : undefined,
+          attempts: 0,
+          resolve,
+          reject,
+        });
       });
-      this.send({ type: MSG_SET, name, value, opId });
-    }));
+    });
+    return silenceUnhandled(pendingWrite);
   }
 
   // Validate that a value can round-trip through JSON. Fires a once-per-name
@@ -569,12 +617,14 @@ class ClientTransport {
   }
 
   close() {
-    this.closed = true;
-    this.detachFocusListeners();
-    this.dropSocket();
-    // The setStatus('disconnected') transition rejects any in-flight write
-    // promises via failPendingWrites, so awaiters don't hang.
-    this.setStatus('disconnected');
+    batch(() => {
+      this.closed = true;
+      this.detachFocusListeners();
+      this.dropSocket();
+      // The setStatus('disconnected') transition rejects any in-flight write
+      // promises via failPendingWrites, so awaiters don't hang.
+      this.setStatus('disconnected');
+    });
   }
 
   // Attach `visibilitychange` and `focus` listeners so a connection dropped
@@ -632,20 +682,24 @@ class ClientTransport {
     }
   }
 
-  // Drop the current WebSocket and immediately re-open. The transport handle
-  // stays alive; subscriptions, pending CAS, and the outbound buffer all
-  // survive. Resets backoff so the reconnect attempts start fast. Useful for
-  // "reconnect now" buttons and for paths that explicitly want to force a
-  // fresh snapshot from the server.
+  // Drop the current WebSocket and immediately re-open. The transport handle,
+  // subscriptions, and non-write outbound frames survive. Pending writes are
+  // rejected before the socket is replaced: an already-sent write may have
+  // committed even when its acknowledgement was lost, so replaying it could
+  // apply an updater twice. The reconnect snapshot reconciles optimistic state.
+  // Resets backoff so the reconnect attempts start fast.
   reconnect() {
     if (this.closed) { return; }
-    this.dropSocket();
-    this.resetReconnectState();
-    this.setStatus('reconnecting');
-    // Use a microtask so any caller-side state changes in the same tick land
-    // before connect() reads them (e.g. updating env.userName before triggering
-    // a reconnect that wants the new identity in the WS URL).
-    queueMicrotask(() => { if (!this.closed) { this.connect(); } });
+    batch(() => {
+      this.failPendingWrites('disconnected');
+      this.dropSocket();
+      this.resetReconnectState();
+      // Use a microtask so any caller-side state changes in the same tick land
+      // before connect() reads them (e.g. updating env.userName before triggering
+      // a reconnect that wants the new identity in the WS URL).
+      queueMicrotask(() => { if (!this.closed) { this.connect(); } });
+      this.setStatus('reconnecting');
+    });
   }
 
   // Buffer outgoing writes until _resumeSend() is called. Already-flushed

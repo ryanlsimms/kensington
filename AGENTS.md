@@ -133,7 +133,7 @@ If you already think in React or Svelte, these tables map the closest equivalent
 | `<slot />` | A prop holding `Content` (`children`, `header`, etc.) | |
 | `writable` / `derived` stores | `signal` / `computed` | Same role. No `$` prefix. |
 | `setContext` / `getContext` | `options.context` arg | See `agent-docs/hydration.md`. |
-| `tick()` | `await Promise.resolve()` | Reactive flush runs on the same microtask queue. |
+| `tick()` | Usually not needed | `.set()` updates effects and DOM bindings synchronously. Use `batch(fn)` to opt into one commit for several writes. |
 
 ## Decision trees
 
@@ -222,7 +222,7 @@ Each runtime warning ID gets a one-line fix sketch and a pointer to the section 
 
 | ID | When it fires | Fix | See |
 |---|---|---|---|
-| `async-loop` | An effect's signal write triggers more flushes than the cycle limit allows | Break the cycle. Do not write a signal the effect reads, or guard the write with a value-equality check | `reactive.md` → Reactive pitfalls |
+| `async-loop` | The same effect repeatedly re-enters across queued microtask turns without yielding to a task | Break the cycle. Do not write a signal the effect reads, or guard the write with a value-equality check | `reactive.md` → Reactive pitfalls |
 | `sync-loop` | The same effect re-queues itself in a single flush | Same as above. Read the signal once at the top, derive locally, then guard the write | `reactive.md` → Reactive pitfalls |
 | `set-in-effect` | A signal is both read with `.get()` and written with `.set()` in the same effect run | Read once at the top into a local. Compute the new value. Only call `.set()` when it differs | `reactive.md` → Do not read and write the same signal in the same effect or computed run |
 | `set-in-computed` | `.set()` was called inside a computed body | `computed` is for derivation only. Move the write to an `effect` or event handler | `reactive.md` → Do not call `.set()` inside a `computed` body |
@@ -455,7 +455,7 @@ Module-scope `liveSignal` declarations are safe before `connectLive` / `liveServ
 
 ```javascript
 // Everyday. The shared `t` instance, the reactive primitives, isBrowser.
-import { t, signal, computed, effect, isBrowser } from 'kensington';
+import { t, signal, computed, effect, batch, isBrowser } from 'kensington';
 
 // Component file types. Most files only need these three.
 import type { Signal, ReadonlySignal, Reactive, ContentTag } from 'kensington';
@@ -463,7 +463,7 @@ import type { Signal, ReadonlySignal, Reactive, ContentTag } from 'kensington';
 
 Use `Reactive<T>` (the `T | Signal<T> | ReadonlySignal<T>` union) when typing component parameters that accept either a plain value or a signal. Use `ReadonlySignal<T>` for derived signals returned by `computed`, `transform`, or `mapWithKey`. Use `Signal<T>` only when the caller must be able to write via `.set()`. `ContentTag` is the return type of every content element method.
 
-Less common imports (use when actually needed): the `Kensington` class for custom configuration, `import { Kensington } from 'kensington'`; the `formAttributes` / `globalAttributes` objects from `'kensington/attributes'`; the `VoidTag` / `LiteralTag` / `CommentTag` / `Content` / `ContentMethod` types; the `NameSpaceAttributes` / `GlobalAttributes` / `GlobalEvents` / `UniversalAttributes` / `ClassValue` slot types. All exported from `'kensington'`. Reactive-only consumers who want just the primitives can import them from the `'kensington/reactive'` subpath (`Signal`, `signal`, `computed`, `effect`, `isKensingtonSignal`); the tag pipeline drops out entirely.
+Less common imports (use when actually needed): the `Kensington` class for custom configuration, `import { Kensington } from 'kensington'`; `batch` when several signal writes should produce one effect/DOM commit; the `formAttributes` / `globalAttributes` objects from `'kensington/attributes'`; the `VoidTag` / `LiteralTag` / `CommentTag` / `Content` / `ContentMethod` types; the `NameSpaceAttributes` / `GlobalAttributes` / `GlobalEvents` / `UniversalAttributes` / `ClassValue` slot types. All exported from `'kensington'`. Reactive-only consumers who want just the primitives can import them from the `'kensington/reactive'` subpath (`Signal`, `signal`, `computed`, `effect`, `batch`, `isKensingtonSignal`); the tag pipeline drops out entirely.
 
 ## Recommended packages
 
@@ -852,6 +852,8 @@ registerComponents({ appPage }, { context: env });
 
 ## Common mistakes to avoid
 
+Runtime Guard diagnostics follow the rendering tag's instance validation level. They are disabled with `off`, report through the instance logger with `warn`, and throw with `error`. Bindings retain their originating policy on later updates. Child tags keep their own instance settings. Standalone signal, computed, effect, and batch calls have no instance policy. Slim builds omit the diagnostic implementation. Mixing separate reactive runtimes remains unsupported when validation is off. Loop protection and rejection of async batch callbacks are independent of this setting.
+
 General Kensington mistakes.
 
 - Do not use JSX or tagged template literals. Kensington uses method calls only
@@ -871,7 +873,7 @@ Coming from React or Svelte. These traps catch agents whose muscle memory is bui
 - **Do not rely on prop-identity comparisons.** There is no `React.memo`, no `===` cutoff on prop changes, no Svelte assignment-tracking. Reactivity is per-signal. Only the bindings that read a changed signal update. Pass signals (not snapshots) when downstream code needs reactivity.
 - **DOM access is not a ref object.** There is no ref that fills in after mount. Get the live element by capturing the return of the tag's `toElement()`, or via `addConnectedCallback(el => { ... })` where `el` is the live DOM node passed in. For a stable handle inside a component, declare a `let ref;` outside the tag and assign in the connect callback.
 - **Two-way binding is two one-way bindings.** `bind:value` / `v-model` style does not exist. Pair `prop: { value: sig }` with `oninput: e => sig.set(e.target.value)` (or `onchange` for selects and checkboxes).
-- **No `setState` batching to think about.** All signal writes in a synchronous block are coalesced into one flush automatically. Do not reach for `unstable_batchedUpdates` or `tick()` style helpers.
+- **Signal writes are synchronous unless you opt into batching.** After `sig.set(value)`, dependent effects and DOM bindings are current on the next line, so application bookkeeping an effect needs must happen before the write or inside the same `batch(() => { ... })`. A batch defers effect and DOM reruns caused by writes, but computeds still recompute per source write and a newly created or resumed effect still runs immediately. A batch callback must finish while `batch()` is running. Kensington rejects async functions and generator functions before their bodies run. It rejects an ordinary callback after it returns a Promise. Promise work already scheduled is not cancelled and later writes run outside the batch. Await first, then batch the related signal writes.
 
 ## HTML to Kensington CLI
 

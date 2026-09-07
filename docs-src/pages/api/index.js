@@ -34,6 +34,7 @@ export function apiSidebar() {
         t.ul([
           t.li(t.a({ href: '#api-signal' }, 'signal()')),
           t.li(t.a({ href: '#signal-methods' }, 'Signal methods')),
+          t.li(t.a({ href: '#api-batch' }, 'batch()')),
           t.li(t.a({ href: '#api-computed' }, 'computed()')),
           t.li(t.a({ href: '#api-keyed-forms' }, 'Keyed forms')),
           t.li(t.a({ href: '#api-map-with-key' }, 'signal.mapWithKey')),

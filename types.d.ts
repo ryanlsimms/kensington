@@ -2168,7 +2168,9 @@ export class Kensington {
     additionalNamespaces?: string | string[];
     /** Spaces per indentation level. Default: 2. Set to 0 to disable indentation. */
     indentationLevel?: number;
-    /** Attribute validation behavior. Default: `'off'`. */
+    /** Tag validation and rendered reactive runtime diagnostics. Defaults to `'off'`.
+     * Does not configure standalone signal, computed, effect, or batch calls.
+     */
     validationLevel?: 'off' | 'warn' | 'error';
     /** Called with warning messages when `validationLevel` is `'warn'`. Default: `console.log`. */
     logger?: (message: string) => void;
@@ -2661,6 +2663,27 @@ export function signal<T>(initial: T, key?: SignalKey): Signal<T>;
 export function computed<T>(fn: () => T, key?: SignalKey): ReadonlySignal<T>;
 
 /**
+ * Runs `fn` immediately and defers effects and DOM bindings caused by signal writes until
+ * the outermost batch returns. Nested batches are coalesced, and the callback's return value
+ * is returned unchanged. Computed signals remain current when read inside the batch.
+ *
+ * The callback must finish while batch is running. TypeScript rejects callbacks whose return
+ * type includes a Promise. The runtime rejects async functions and generator functions before
+ * their bodies run. It rejects an ordinary callback after it returns a Promise. Promise work
+ * already scheduled is not cancelled and later writes run outside the batch.
+ * @example
+ * batch(() => {
+ *   firstName.set('Grace');
+ *   lastName.set('Hopper');
+ * });
+ */
+export function batch<T>(
+  fn: () => T & (
+    [Extract<T, PromiseLike<unknown>>] extends [never] ? unknown : never
+  )
+): T;
+
+/**
  * Runs `fn` immediately and re-runs it whenever any signal read via `.get()` inside changes.
  * Use for side effects: syncing to localStorage, updating the URL, fetching data, etc.
  *
@@ -2683,14 +2706,18 @@ export function isKensingtonSignal(v: unknown): v is Signal<unknown>;
 export const isBrowser: boolean;
 
 /**
- * Registers component functions and hydrates all server-rendered instances in the page.
- * Call once on the client; Kensington finds every component rendered by `renderForHydration`
- * and mounts it reactively.
+ * Registers component functions and hydrates their server-rendered instances in the page.
+ * Kensington finds every matching component rendered by `renderForHydration` and mounts it
+ * reactively. Registrations last for the document's lifetime and share one observer.
+ * Duplicate names warn and are ignored, preserving their original function, context, and nonce.
+ * New names in the same call still register. Returns nothing.
  *
  * Pass `options.context` to supply a non-serialized runtime bag to every component.
  * The bag is forwarded as the second argument to each component function. Use it for
  * transport handles, identity, signals, and anything else that cannot round-trip through
  * JSON. Construct a matching bag on the server side and pass it to `renderForHydration`.
+ * Under a strict Content Security Policy, pass `options.nonce` so Kensington can authorize
+ * the transient style element that suppresses transitions during hydration.
  *
  * @example
  * import { registerComponents } from 'kensington';
@@ -2698,8 +2725,8 @@ export const isBrowser: boolean;
  */
 export function registerComponents(
   components: Record<string, (state: any, context?: any) => ContentTag | ContentTag[] | null>,
-  options?: { context?: unknown }
-): { stop(): void };
+  options?: { context?: unknown; nonce?: string }
+): void;
 
 /**
  * Renders a component to an HTML string and embeds the state as a JSON script block for

@@ -1,4 +1,5 @@
 import { trackForStop } from '../lib/reactive/dom-tracker.js';
+import { withRuntimeValidation } from '../lib/reactive/runtime-guard.js';
 import { _internalEffect, isKensingtonSignal } from '../lib/reactive/signal.js';
 import { HTML_NAMESPACE } from '../lib/render/namespaces.js';
 import showInvalid from '../lib/util/show-invalid.js';
@@ -18,6 +19,10 @@ export default class LiteralTag {
   }
 
   toString() {
+    return withRuntimeValidation(this.validationLevel, this.logger, () => this.#toString());
+  }
+
+  #toString() {
     const value = isKensingtonSignal(this.str) ? this.str.get() : this.str;
     if (typeof value !== 'string') {
       showInvalid(TYPE_ERROR, this.validationLevel, this.logger);
@@ -30,7 +35,11 @@ export default class LiteralTag {
     return value;
   }
 
-  toElement({ _parentContext, _parentElement } = {}) {
+  toElement(options = {}) {
+    return withRuntimeValidation(this.validationLevel, this.logger, () => this.#toElement(options));
+  }
+
+  #toElement({ _parentContext, _parentElement }) {
     if (typeof document === 'undefined') {
       throw new Error('toElement only supported in browser');
     }

@@ -6,11 +6,39 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
-  publish:
+  minimum-node-runtime:
+    name: Minimum Node 18.13 runtime
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Prepare runtime artifacts with the development toolchain
+        uses: actions/setup-node@v5
+        with:
+          node-version: '23'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build CommonJS
+        run: npm run build-cjs
+
+      - name: Select the minimum supported Node runtime
+        uses: actions/setup-node@v5
+        with:
+          node-version: '18.13.0'
+
+      - name: Smoke test ESM and CommonJS exports
+        run: npm run test-node-minimum
+
+  publish:
+    needs: minimum-node-runtime
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v5
 

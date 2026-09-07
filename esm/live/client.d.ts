@@ -50,10 +50,13 @@ export interface ClientTransport {
   /** Tear down the transport. Stops reconnect attempts, closes the WebSocket. Terminal. */
   close(): void;
   /**
-   * Drop the current WebSocket and immediately re-open. The transport handle
-   * stays alive; subscriptions, pending CAS, and the outbound buffer all
-   * survive. Resets backoff so reconnect attempts start fast. Use for "reconnect
-   * now" buttons or for paths that want to force a fresh snapshot.
+   * Drop the current WebSocket and immediately open a new one. The transport handle
+   * and subscriptions stay alive. Pending writes reject with reason
+   * `'disconnected'`. Replaying an unacknowledged updater could apply it twice.
+   * The reconnect snapshot reconciles values and ordering metadata. A name with no
+   * server value returns to its client initial value. Resets backoff
+   * so reconnect attempts start fast. Use for "reconnect now" buttons or for
+   * paths that want to force a fresh snapshot.
    */
   reconnect(): void;
   /** Stop subscribing to a specific name. The Signal returned by liveSignal stays valid locally. */

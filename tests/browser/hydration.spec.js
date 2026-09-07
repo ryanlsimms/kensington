@@ -152,6 +152,114 @@ test('transition suppression is removed after the mount-time reactive flush', as
   expect(result.transitionStartsAfterLaterUpdate).toBeGreaterThan(0);
 });
 
+test('registerComponents applies a CSP nonce to initial and dynamic hydration guards', async ({
+  page: pg,
+  bundle,
+}) => {
+  function panel({ id }) {
+    return t.div({ id, class: 'motion' }, id);
+  }
+
+  const initialHtml = renderForHydration(panel, { id: 'nonce-initial' }).toString();
+  const dynamicHtml = renderForHydration(panel, { id: 'nonce-dynamic' }).toString();
+  await inject(pg, initialHtml);
+
+  const result = await pg.evaluate(async ({ src, html }) => {
+    // A meta policy applies only to content that follows it, so install the application's
+    // stylesheet first and then require a nonce for Kensington's transient style guard.
+    const css = document.createElement('style');
+    css.textContent = '.motion{transition:opacity 2s linear}';
+    document.head.appendChild(css);
+    const policy = document.createElement('meta');
+    policy.httpEquiv = 'Content-Security-Policy';
+    policy.content = "style-src 'nonce-abc123'";
+    document.head.appendChild(policy);
+
+    const { registerComponents, t: tg } = await import(src);
+    function panelLive({ id }) {
+      return tg.div({ id, class: 'motion' }, id);
+    }
+    registerComponents({ panel: panelLive }, { nonce: 'abc123' });
+
+    const initialGuard = document.querySelector('style[data-k-ssr]');
+    const initial = {
+      nonce: initialGuard.nonce,
+      hasSheet: initialGuard.sheet !== null,
+      transition: getComputedStyle(document.getElementById('nonce-initial')).transitionProperty,
+    };
+
+    await new Promise(resolve => { requestAnimationFrame(resolve); });
+    document.body.insertAdjacentHTML('beforeend', html);
+    await Promise.resolve();
+
+    const dynamicGuard = document.querySelector('style[data-k-ssr]');
+    const dynamic = {
+      nonce: dynamicGuard.nonce,
+      hasSheet: dynamicGuard.sheet !== null,
+      transition: getComputedStyle(document.getElementById('nonce-dynamic')).transitionProperty,
+    };
+    return { initial, dynamic };
+  }, { src: bundle, html: dynamicHtml });
+
+  expect(result).toEqual({
+    initial: { nonce: 'abc123', hasSheet: true, transition: 'none' },
+    dynamic: { nonce: 'abc123', hasSheet: true, transition: 'none' },
+  });
+});
+
+for (const previousName of ['first', 'second']) {
+  test(`dynamic hydration keeps the owning CSP nonce when the previous name is ${previousName}`, async ({
+    page: pg,
+    bundle,
+  }) => {
+    function secondForSsr({ id }) {
+      return t.div({ id, class: 'motion' }, id);
+    }
+
+    const dynamicHtml = renderForHydration(secondForSsr, { id: 'nonce-owned' }, 'second').toString();
+
+    const result = await pg.evaluate(async ({ src, html, previousName: priorName }) => {
+      // Install application CSS before tightening the policy so the test can distinguish a
+      // rejected hydration guard from the application's transition rule.
+      const css = document.createElement('style');
+      css.textContent = '.motion{transition:opacity 2s linear}';
+      document.head.appendChild(css);
+      const policy = document.createElement('meta');
+      policy.httpEquiv = 'Content-Security-Policy';
+      policy.content = "style-src 'nonce-abc123'";
+      document.head.appendChild(policy);
+
+      const { registerComponents, t: tg } = await import(src);
+      function secondOld({ id }) {
+        return tg.div({ id, class: 'motion' }, `old:${id}`);
+      }
+      function second({ id }) {
+        return tg.div({ id, class: 'motion' }, id);
+      }
+
+      registerComponents({ [priorName]: secondOld }, { nonce: priorName === 'second' ? 'abc123' : undefined });
+      registerComponents({ second }, { nonce: priorName === 'second' ? 'wrong-nonce' : 'abc123' });
+      document.body.insertAdjacentHTML('beforeend', html);
+      await Promise.resolve();
+
+      const guard = document.querySelector('style[data-k-ssr]');
+      return {
+        nonce: guard.nonce,
+        hasSheet: guard.sheet !== null,
+        transition: getComputedStyle(document.getElementById('nonce-owned')).transitionProperty,
+        text: document.getElementById('nonce-owned').textContent,
+      };
+    }, { src: bundle, html: dynamicHtml, previousName });
+
+    expect(result).toEqual({
+      nonce: 'abc123',
+      hasSheet: true,
+      transition: 'none',
+      text: previousName === 'second' ? 'old:nonce-owned' : 'nonce-owned',
+    });
+  });
+}
+
 test('transition suppression covers mount-time updates from connected callbacks', async ({ page: pg, bundle }) => {
   function panel({ opacity }) {
     return t.div({ id: 'connected-panel', class: 'motion', style: `opacity:${opacity}` }, 'panel');
@@ -538,29 +646,192 @@ test('dynamic hydration suppresses only the newly mounted component', async ({ p
   });
 });
 
-test('stop() prevents hydration of dynamically inserted components', async ({ page: pg, bundle }) => {
+test('registrations return nothing and share one observer for future mounts', async ({ page: pg, bundle }) => {
   function widget({ value }) {
     return t.div({ id: 'widget' }, String(value));
   }
 
   const ssrHtml = renderForHydration(widget, { value: 42 }).toString();
 
-  const mountTargetStillPresent = await pg.evaluate(async ({ src, html }) => {
+  const result = await pg.evaluate(async ({ src, html }) => {
     const { registerComponents, t: tg } = await import(src);
     function widgetLive({ value }) {
       return tg.div({ id: 'widget' }, String(value));
     }
-    const handle = registerComponents({ widget: widgetLive });
-    handle.stop();
+    const NativeObserver = window.MutationObserver;
+    let observerCount = 0;
+    window.MutationObserver = class extends NativeObserver {
+      constructor(callback) {
+        super(callback);
+        observerCount++;
+      }
+    };
+    let first;
+    let second;
+    try {
+      first = registerComponents({ widget: widgetLive });
+      second = registerComponents({ other: widgetLive });
+    } finally {
+      window.MutationObserver = NativeObserver;
+    }
     document.body.innerHTML = html;
     await new Promise(resolve => { setTimeout(resolve, 0); });
-    return document.querySelector('[data-k-mount-target]') !== null;
+    return {
+      first: typeof first,
+      second: typeof second,
+      observerCount,
+      text: document.getElementById('widget')?.textContent,
+      stateBlockPresent: document.querySelector('script[data-k-component]') !== null,
+    };
   }, { src: bundle, html: ssrHtml });
 
-  expect(mountTargetStillPresent).toBe(true);
+  expect(result).toEqual({
+    first: 'undefined',
+    second: 'undefined',
+    observerCount: 1,
+    text: '42',
+    stateBlockPresent: false,
+  });
+});
+
+for (const replacementContext of [undefined, 'replacement']) {
+  test(`duplicate registration preserves the original context when the new context is ${replacementContext}`, async ({
+    page: pg,
+    bundle,
+  }) => {
+    function secondForSsr({ value }) {
+      return t.div({ id: 'owned-widget' }, `server:${value}`);
+    }
+
+    const ssrHtml = renderForHydration(secondForSsr, { value: 42 }, 'second').toString();
+
+    const result = await pg.evaluate(async ({ src, html, replacementContext: nextContext }) => {
+      const { registerComponents, t: tg } = await import(src);
+      function original({ value }, context) {
+        return tg.div({ id: 'owned-widget' }, `${context}:${value}`);
+      }
+      function second({ value }) {
+        return tg.div({ id: 'owned-widget' }, `client:${value}`);
+      }
+
+      registerComponents({ second: original }, { context: 'original' });
+      const warnings = [];
+      const originalWarn = console.warn;
+      try {
+        console.warn = message => warnings.push(message);
+        registerComponents({ second }, nextContext === undefined ? undefined : { context: nextContext });
+      } finally {
+        console.warn = originalWarn;
+      }
+      document.body.insertAdjacentHTML('beforeend', html);
+      await new Promise(resolve => { setTimeout(resolve, 0); });
+
+      return {
+        text: document.getElementById('owned-widget')?.textContent,
+        stateBlockPresent: document.querySelector('script[data-k-component="second"]') !== null,
+        warnings,
+      };
+    }, { src: bundle, html: ssrHtml, replacementContext });
+
+    expect(result.text).toBe('original:42');
+    expect(result.stateBlockPresent).toBe(false);
+    expect(result.warnings).toHaveLength(1);
+    expect(result.warnings[0]).toContain('"second"');
+    expect(result.warnings[0]).toContain('already registered');
+  });
+}
+
+test('a mixed registration ignores duplicates and keeps separate context and nonce for new names', async ({
+  page: pg,
+  bundle,
+}) => {
+  function panelForSsr({ id }) {
+    return t.div({ id }, 'server');
+  }
+
+  const ssrHtml = renderForHydration(panelForSsr, { id: 'first-panel' }, 'first').toString() +
+    renderForHydration(panelForSsr, { id: 'second-panel' }, 'second').toString();
+  const result = await pg.evaluate(async ({ src, html }) => {
+    const { registerComponents, t: tg } = await import(src);
+    const policy = document.createElement('meta');
+    policy.httpEquiv = 'Content-Security-Policy';
+    policy.content = "style-src 'nonce-first' 'nonce-second'";
+    document.head.appendChild(policy);
+    function panel({ id }, context) {
+      return tg.div({ id }, context);
+    }
+    function ignored() {
+      throw new Error('duplicate function must not run');
+    }
+
+    registerComponents({ first: panel }, { context: 'first context', nonce: 'first' });
+    const warnings = [];
+    const originalWarn = console.warn;
+    try {
+      console.warn = message => warnings.push(message);
+      registerComponents({ first: ignored, second: panel }, { context: 'second context', nonce: 'second' });
+    } finally {
+      console.warn = originalWarn;
+    }
+    document.body.insertAdjacentHTML('beforeend', html);
+    await Promise.resolve();
+    const firstMount = document.getElementById('first-panel').getAttribute('data-k-mount-target');
+    const secondMount = document.getElementById('second-panel').getAttribute('data-k-mount-target');
+    return {
+      warnings,
+      first: document.getElementById('first-panel').textContent,
+      second: document.getElementById('second-panel').textContent,
+      guards: [...document.querySelectorAll('style[data-k-ssr]')].map(style => ({
+        nonce: style.nonce,
+        hasSheet: style.sheet !== null,
+        includesFirst: style.textContent.includes(firstMount),
+        includesSecond: style.textContent.includes(secondMount),
+      })),
+    };
+  }, { src: bundle, html: ssrHtml });
+
+  expect(result.first).toBe('first context');
+  expect(result.second).toBe('second context');
+  expect(result.warnings).toHaveLength(1);
+  expect(result.warnings[0]).toContain('"first"');
+  expect(result.guards).toEqual([
+    { nonce: 'first', hasSheet: true, includesFirst: true, includesSecond: false },
+    { nonce: 'second', hasSheet: true, includesFirst: false, includesSecond: true },
+  ]);
 });
 
 // ─── error and deferred paths ──────────────────────────────────────────────
+
+test('registering another component during rendering does not hydrate a mount twice', async ({ page: pg, bundle }) => {
+  function panel({ id }) {
+    return t.div({ id }, 'server');
+  }
+  await inject(pg, renderForHydration(panel, { id: 'outer-registration' }, 'outer').toString() +
+    renderForHydration(panel, { id: 'inner-registration' }, 'inner').toString());
+  const result = await pg.evaluate(async src => {
+    const { registerComponents, t: tg } = await import(src);
+    let outerRuns = 0;
+    let innerRuns = 0;
+    function inner({ id }) {
+      innerRuns++;
+      return tg.div({ id }, 'inner');
+    }
+    function outer({ id }) {
+      outerRuns++;
+      registerComponents({ inner });
+      return tg.div({ id }, 'outer');
+    }
+    registerComponents({ outer });
+    return {
+      outerRuns,
+      innerRuns,
+      outerText: document.getElementById('outer-registration').textContent,
+      innerText: document.getElementById('inner-registration').textContent,
+      remainingScripts: document.querySelectorAll('script[data-k-component]').length,
+    };
+  }, bundle);
+  expect(result).toEqual({ outerRuns: 1, innerRuns: 1, outerText: 'outer', innerText: 'inner', remainingScripts: 0 });
+});
 
 test('does not add transition guards for hydration paths that preserve SSR', async ({ page: pg, bundle }) => {
   function serverPanel({ id }) {
@@ -762,7 +1033,81 @@ test('defers hydration until DOMContentLoaded when document is loading', async (
   expect(result.afterLoad).toBe(true);
 });
 
+test('duplicate registration during loading warns even for the same function', async ({ page: pg, bundle }) => {
+  function deferredOriginal() {
+    return t.p({ id: 'deferred-original' }, 'server');
+  }
+
+  await inject(pg, renderForHydration(deferredOriginal, {}).toString());
+
+  const result = await pg.evaluate(async src => {
+    const { registerComponents, t: tg } = await import(src);
+    Object.defineProperty(document, 'readyState', { configurable: true, get: () => 'loading' });
+    function deferredLive(_state, context) {
+      return tg.p({ id: 'deferred-original' }, context);
+    }
+    registerComponents({ deferredOriginal: deferredLive }, { context: 'original' });
+    const warnings = [];
+    const originalWarn = console.warn;
+    try {
+      console.warn = message => warnings.push(message);
+      registerComponents({ deferredOriginal: deferredLive }, { context: 'replacement' });
+    } finally {
+      console.warn = originalWarn;
+    }
+    Object.defineProperty(document, 'readyState', { configurable: true, get: () => 'complete' });
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+    return {
+      text: document.getElementById('deferred-original')?.textContent,
+      stateBlockPresent: document.querySelector('script[data-k-component="deferredOriginal"]') !== null,
+      warnings,
+    };
+  }, bundle);
+
+  expect(result.text).toBe('original');
+  expect(result.stateBlockPresent).toBe(false);
+  expect(result.warnings).toHaveLength(1);
+});
+
 // ─── hmrReplaceComponent ───────────────────────────────────────────────────
+
+test('a duplicate registration does not undo the latest HMR function', async ({
+  page: pg,
+  bundle,
+}) => {
+  function widgetForSsr() {
+    return t.div({ id: 'hmr-dynamic' }, 'server');
+  }
+
+  const ssrHtml = renderForHydration(widgetForSsr, {}, 'widget').toString();
+
+  const result = await pg.evaluate(async ({ src, html }) => {
+    const { hmrReplaceComponent, registerComponents, t: tg } = await import(src);
+    function widgetV1() {
+      return tg.div({ id: 'hmr-dynamic' }, 'v1');
+    }
+    function widgetV2() {
+      return tg.div({ id: 'hmr-dynamic' }, 'v2');
+    }
+
+    registerComponents({ widget: widgetV1 });
+    hmrReplaceComponent('widget', widgetV2);
+    const warnings = [];
+    const originalWarn = console.warn;
+    try {
+      console.warn = message => warnings.push(message);
+      registerComponents({ widget: widgetV1 });
+    } finally {
+      console.warn = originalWarn;
+    }
+    document.body.insertAdjacentHTML('beforeend', html);
+    await new Promise(resolve => { setTimeout(resolve, 0); });
+    return { text: document.getElementById('hmr-dynamic')?.textContent, warnings };
+  }, { src: bundle, html: ssrHtml });
+
+  expect(result.text).toBe('v2');
+  expect(result.warnings).toHaveLength(1);
+});
 
 test('hmrReplaceComponent preserves keyed signal state across swap', async ({ page: pg, bundle }) => {
   function counter({ start }) {

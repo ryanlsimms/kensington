@@ -4,7 +4,7 @@ import { pageTabs } from './components/page-tabs.js';
 import { searchDocs } from './components/search.js';
 import { closeMenuIcon, menuIcon } from './components/ui.js';
 
-const initScript = `(function(){var p=new URLSearchParams(location.search).get('page');if(p)document.documentElement.setAttribute('data-page',p);})()`;
+const initScript = `(function(){var d=document.documentElement;var p=new URLSearchParams(location.search).get('page');if(p)d.setAttribute('data-page',p);if(location.hash)d.setAttribute('data-initial-hash','');})()`;
 
 export function layout(pages) {
   return t.htmlWithDocType({ lang: 'en' }, [

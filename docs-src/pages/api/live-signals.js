@@ -81,13 +81,9 @@ sig.set(fn: (prev: T) => T): Promise<void>`),
       t.li([
         'Both forms resolve once the server confirms and reject with a ',
         t.code('LiveSetRejected'),
-        ' Error on rejection. The server-authoritative value is already applied to the local Signal via ',
-        t.code('_setFromRemote'),
-        ' before the rejection fires, so ',
-        t.code('sig.value'),
-        ' inside ',
-        t.code('.catch'),
-        ' reflects the truth, not the optimistic value.',
+        ' Error on rejection. A server rejection restores its stored or declared value. If the server has neither, the signal returns to the initial value declared by the client. A newer pending write stays visible while awaiting its own result. The error records the rollback value in ',
+        t.code('authoritativeValue'),
+        '.',
       ]),
       t.li([
         'Fire-and-forget callers can ignore the Promise. The library suppresses unhandled-rejection warnings for unawaited / un-',
@@ -106,7 +102,7 @@ sig.set(fn: (prev: T) => T): Promise<void>`),
     t.h3({ id: 'api-live-set-rejected' }, 'LiveSetRejected'),
     code('typescript', `type LiveSetReason =
   | 'forbidden'           // canWrite predicate rejected the write
-  | 'conflict'            // CAS lamport mismatch (retried internally; surfaced via 'retries-exhausted')
+  | 'conflict'            // Version mismatch retried internally until 'retries-exhausted'
   | 'unserializable'      // value can't round-trip JSON, or contains NaN / Infinity
   | 'disconnected'        // transport is 'disconnected' or the socket dropped mid-flight
   | 'retries-exhausted'   // CAS write retried MAX_CAS_RETRIES times without converging
@@ -259,7 +255,11 @@ interface ClientTransport {
       ],
       [
         t.code('reconnect()'),
-        'Drop and immediately re-open. Subscriptions survive. Backoff resets.',
+        [
+          'Drop and immediately re-open. Subscriptions survive and backoff resets. Pending writes reject with ',
+          t.code("reason: 'disconnected'"),
+          '. The reconnect snapshot reconciles optimistic values and resets ordering metadata even when the server has no stored value.',
+        ],
       ],
       [
         t.code('unsubscribe(name)'),

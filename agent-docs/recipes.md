@@ -985,7 +985,7 @@ export function startPollAggregator(live, pollId) {
         voters += 1;
       }
     }
-    live.set(`tally:poll:${pollId}`, { counts, voters, lamport: Date.now() }, { persist: true });
+    live.set(`tally:poll:${pollId}`, { counts, voters, updatedAt: Date.now() }, { persist: true });
   });
 
   return {

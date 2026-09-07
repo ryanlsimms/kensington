@@ -20,7 +20,7 @@
 // effect overwrites the placeholder on upgrade and the local write is
 // discarded in favour of the authoritative value.
 
-import { _internalEffect, signal as _signal } from '../lib/reactive/signal.js';
+import { _internalEffect, batch, signal as _signal } from '../lib/reactive/signal.js';
 
 let currentTransport = null;
 const pending = new Set(); // each entry. { placeholder, name, initial, opts }
@@ -63,7 +63,9 @@ export function _registerTransport(transport) {
   if (pending.size === 0) { return; }
   const drained = [...pending];
   pending.clear();
-  for (const rec of drained) { upgradePlaceholder(rec, transport); }
+  batch(() => {
+    for (const rec of drained) { upgradePlaceholder(rec, transport); }
+  });
 }
 
 export function _clearTransport() {

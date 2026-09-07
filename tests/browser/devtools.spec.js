@@ -102,7 +102,6 @@ test('devtools: effect runCount increments when the effect re-runs', async ({ pa
     const s = signal(0);
     const handle = effect(() => { s.get(); });
     s.set(1);
-    await Promise.resolve(); // flush queued effect re-run
     return { runCount: hook.effects.get(handle._devId)?.runCount };
   }, bundle);
   expect(result.runCount).toBe(2);

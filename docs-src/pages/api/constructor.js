@@ -18,7 +18,7 @@ export function apiConstructor() {
         t.code('validationLevel'),
         t.code("'off'"),
         [
-          'Attribute validation behavior. ',
+          'Tag validation and Runtime Guard diagnostics for this instance. ',
           t.code("'off'"),
           ' disables validation entirely (required for the slim build). ',
           t.code("'warn'"),
@@ -63,6 +63,23 @@ export function apiConstructor() {
         t.code('console.log'),
         ['Called with warning messages when ', t.code('validationLevel'), ' is ', t.code("'warn'"), '.'],
       ],
+    ]),
+    t.p([
+      'Runtime Guard checks apply while this instance\'s tags render and when their reactive bindings update. Each child tag uses its own instance\'s setting. ',
+      t.code("'off'"),
+      ' disables these checks, ',
+      t.code("'warn'"),
+      ' reports through the instance logger, and ',
+      t.code("'error'"),
+      ' throws through normal reactive error handling. Standalone ',
+      t.code('signal()'),
+      ', ',
+      t.code('computed()'),
+      ', ',
+      t.code('effect()'),
+      ', and ',
+      t.code('batch()'),
+      ' calls do not inherit an instance setting. Slim builds omit the guard diagnostics. Mixing separate reactive runtimes remains unsupported even when checks are off.',
     ]),
   ]);
 }

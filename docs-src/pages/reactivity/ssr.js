@@ -31,6 +31,11 @@ import { registerComponents } from 'kensington';
 import { counter } from './components/counter.js';
 
 registerComponents({ counter });`),
+    t.p([
+      'If your page uses a Content Security Policy that requires a nonce for inline styles, see the ',
+      t.a({ href: '?page=api#register-components-nonce' }, 'complete CSP nonce example'),
+      ' for the server header and client setup.',
+    ]),
     t.p('The component function runs on both server and client. Write it so it works in both environments:'),
     code('javascript', `// components/counter.js
 import { t, signal, effect, isBrowser } from 'kensington';
@@ -89,7 +94,9 @@ export function counter({ count: initial }) {
           t.code('context'),
           ' comes from ',
           t.code('options.context'),
-          '. Object keys are used as component names: ',
+          '. When the page uses a Content Security Policy that restricts inline styles, pass its nonce as ',
+          t.code('options.nonce'),
+          ' so the transient hydration transition guard is allowed. Object keys are used as component names: ',
           t.code('{ counter }'),
           ' registers the function under ',
           t.code("'counter'"),
@@ -103,9 +110,7 @@ export function counter({ count: initial }) {
           t.code('DOMContentLoaded'),
           ' if called while the page is still loading. Components in dynamically fetched HTML fragments are hydrated automatically, without re-calling ',
           t.code('registerComponents'),
-          '. Returns ',
-          t.code('{ stop() }'),
-          ' to stop watching for new components.',
+          '. Registrations last for the document\'s lifetime. Returns nothing. Duplicate names warn and are ignored without changing the original function, context, or nonce. New names in the same call still register.',
         ],
       ],
       [

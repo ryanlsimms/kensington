@@ -21,7 +21,7 @@ export function reactivityLiveSignals() {
       ' is atomic via compare-and-swap. Not suited to character-level concurrent text editing.',
     ]),
 
-    t.h3({ id: 'live-signals-setup' }, 'Setup. Three calls'),
+    t.h3({ id: 'live-signals-setup' }, 'Setup'),
     t.p([
       'Everything lives at the ',
       t.code('kensington/live'),

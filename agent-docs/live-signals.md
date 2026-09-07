@@ -239,7 +239,7 @@ The two-argument form `(name, ctx) => boolean` continues to work — predicates 
 
 **Don't use `isBrowser` inside `canWrite`.** `canWrite` always runs on the server, where `isBrowser === false`. `canWrite: !isBrowser` evaluates to `true` and allows all client writes — the opposite of the intent. Use `canWrite: 'server-only'` for "no client can write."
 
-**Rejected client writes** are returned to the originator as `MSG_SET_FAIL` carrying the server's authoritative value + lamport for both `.set(value)` and `.set(fn)`. The client rolls back the optimistic local apply via `_setFromRemote` and rejects the per-call Promise with a `LiveSetRejected` Error (`{ signalName, reason, attemptedValue, authoritativeValue }`). Other clients see nothing — the rejected value never reaches the registry. `MSG_ERROR` is reserved for `canRead` subscribe rejection and is logged via `console.error` (no per-call surface).
+**Rejected client writes** are returned to the originator as `MSG_SET_FAIL` carrying the server version number and any authoritative stored or declared value for both `.set(value)` and `.set(fn)`. The client rolls back the optimistic local apply via `_setFromRemote` and rejects the Promise with a `LiveSetRejected` Error containing `signalName`, `reason`, `attemptedValue`, and `authoritativeValue`. When the server has no stored or declared value, the client returns to its own declared initial value. A newer pending write keeps its optimistic value visible while awaiting its own result. The error still records the rollback value in `authoritativeValue`. Other clients see nothing because the rejected value never reaches the registry. `MSG_ERROR` is reserved for `canRead` subscription rejection and is logged through `console.error`.
 
 `LiveSetRejected` is exported as an importable interface from `kensington/live`. Import it for type-safe error narrowing:
 
@@ -302,7 +302,7 @@ const live = await liveServer({
 
 For SSR state threading (so the first paint reflects the current registry value), call `live.get(name)` synchronously inside the route handler and thread the value into the `state` argument of `renderForHydration`. The client picks up the same value when its `liveSignal(initial, name)` is read at hydration; the snapshot the server sends over the WebSocket on connect either matches (silent) or supersedes (the live signal jumps to the newer value).
 
-**Until the first `.set()` lands, the registry has no entry for the name and `live.get(name)` returns `undefined`.** This is true even though the local Signal returned by `liveSignal(initial, name)` reads as `initial` (the seed). The initial value is held only inside the local Signal until something writes through `applySet`. Use `live.get(name) ?? initial` in SSR route handlers, and don't "optimize" a server-side write by skipping it when `sig.value === newValue`. The first server-side write is the one that seeds the registry. Skipping it leaves `live.get` returning undefined and the WebSocket snapshot empty for any later client subscriber.
+**Until the first `.set()` lands, the registry has no entry for the name and `live.get(name)` returns `undefined`.** This is true even though the Signal returned by `liveSignal(initial, name)` reads as `initial`. The server remembers that declared initial value and includes it in snapshots until a write seeds the registry. Use `live.get(name) ?? initial` in SSR route handlers. Do not skip the first server write just because `sig.value === newValue`. Without that write, `live.get` remains undefined. If the server has neither a registry entry nor a declared initial value, snapshots explicitly report the missing name and clients restore their own initial value.
 
 `live.set(name, value)` is the canonical way to mutate from the server side (cron jobs, webhooks, admin endpoints). It updates the registry, persists, and broadcasts to all subscribed clients exactly as a client-initiated set would.
 
@@ -426,7 +426,7 @@ The default path (`'/__kensington/live'`) is deliberately namespaced so it can't
 
 `connectLive` is fire-and-forget. The transport is a singleton, registered globally. `liveSignal` finds it automatically. There's no per-component wiring.
 
-The transport reconnects with exponential backoff. Writes attempted while disconnected are buffered and replayed on reconnect. Inbound updates missed during the disconnect window are caught up by the snapshot the server sends on (re)connect.
+The transport reconnects with exponential backoff. Writes attempted while connecting or reconnecting are buffered and replayed when the connection opens. Writes attempted after the transport reaches `disconnected` are rejected. Inbound updates missed during the disconnect window are caught up by the snapshot the server sends after reconnecting. A snapshot with no stored or declared value restores the client initial value and resets its recorded update version. This lets the client accept new updates after a memory backed server restarts its counter. Newer pending writes stay visible until their own results arrive.
 
 The transport also retries immediately when the window regains focus or the tab becomes visible again (`visibilitychange` and `focus` listeners), skipping the remaining backoff delay. This covers a connection dropped for a long time, such as a laptop sleep or an internet outage while the tab was in the background, so a returning user does not sit on the last scheduled retry. It fires even after `reconnect.maxRetries` is exhausted, since a returning user is a fresh signal worth one more attempt. Pass `reconnect: { onFocus: false }` to `connectLive` to disable it; it is also a no-op outside a browser.
 
@@ -458,9 +458,9 @@ The quotes around `"--external:node:*"` prevent the shell from glob-expanding `n
 
 A production Vite build often aliases `kensington -> kensington/dist/slim/min` to drop the tag class from the client bundle. This is safe alongside `kensington/live`: the slim bundle externalizes every `esm/lib/reactive/*.js` module (signal, hydration-scope, ssr, etc.), so it and the live subpath resolve to the same on-disk file for each reactive module. `signal.set()` from the live transport wakes `effect()` from the slim bundle without any extra config.
 
-## Last-write-wins, Lamport ordering
+## How writes are ordered
 
-All writes are last-write-wins by Lamport counter, assigned server-side. For direct value writes (`sig.set(value)`), if two clients call simultaneously, both reach the server, the server applies them in arrival order, and the later value wins. This is correct for "set this to that" intent (theme changes, status flags, direct overrides) but unsafe for read-modify-write intent.
+The server assigns a version number to each accepted write. The latest accepted value wins. For direct value writes (`sig.set(value)`), if two clients call simultaneously, both reach the server, the server applies them in arrival order, and the later value wins. This is correct for "set this to that" intent (theme changes, status flags, direct overrides) but unsafe for read-modify-write intent.
 
 For read-modify-write — where the new value depends on the current value — use `.set(fn)`. See the next section.
 
@@ -479,8 +479,8 @@ messages.set(prev => [...prev, { id, text, by: me, at: Date.now() }]);
 ### How it works
 
 1. **The function runs locally for an optimistic apply.** The local Signal updates immediately so the UI is responsive. No spinner needed.
-2. **The library sends a CAS request** with the version (Lamport number) the client believed was current.
-3. **The server checks the version.** If it matches the registry's current Lamport for the name, the write is applied + broadcast. If it doesn't (because another client got there first), the server rejects with the current authoritative value and Lamport.
+2. **The library sends a CAS request** with the version number the client believed was current.
+3. **The server checks the version.** If it matches the registry's current version for the name, the write is applied + broadcast. If it doesn't (because another client got there first), the server rejects with the current value and version.
 4. **On conflict, the library re-runs `fn` against the new authoritative value** and tries again. This loops until success or until a small retry cap is hit.
 
 The end-to-end guarantee: **`fn` always operates on the server's authoritative value.** Concurrent calls converge to the right answer.
@@ -523,6 +523,7 @@ On disconnect:
 On reconnect:
 - Server sends a `snapshot` for every subscribed name.
 - Snapshots arrive at the client and apply via `_setFromRemote` (no re-broadcast).
+- Multi-value snapshots and `batch-update` frames apply inside an internal `batch()`, so effects and DOM bindings observe one final combined state rather than each intermediate signal write.
 - Buffered outbound writes flush.
 
 Server restart with `{ kind: 'sqlite' }`: registry reloads from the database for every name that was previously written with `persist: true`. Clients reconnect and resync. State survives.
@@ -972,7 +973,7 @@ The `onStatus` callback option on `connectLive` still fires for imperative consu
 The `ClientTransport` returned by `connectLive` exposes three methods beyond the reactive `status` signal. All three are safe to call repeatedly.
 
 - `transport.close()`. Terminal. Stops reconnect attempts, closes the WebSocket. After this, `liveSignal` calls still return a local Signal but no traffic flows. Use on full app teardown (single-page-app route swap, test cleanup).
-- `transport.reconnect()`. Drop the current WebSocket and immediately re-open. The transport handle stays alive; subscriptions, pending CAS, and the outbound buffer all survive. Resets backoff so the first attempt is fast. Use for "reconnect now" buttons and for paths that need a fresh snapshot (e.g. after the user's identity changes and you want the new ctx applied server-side).
+- `transport.reconnect()`. Drop the current WebSocket and immediately open a new one. The transport handle and subscriptions stay alive. Pending writes reject with `reason: 'disconnected'` because the server may already have applied an unacknowledged write. Replaying an updater could apply it twice. The reconnect snapshot reconciles optimistic local values and update ordering even when the server has no stored value. Backoff resets so the first attempt is fast. Use this for reconnect buttons and for paths that need a fresh snapshot after user identity changes.
 - `transport.unsubscribe(name)`. Stop subscribing to a specific name. The local Signal stays valid; it just stops receiving server pushes. Less common than `signal.stop()`, which is the documented way to wind a single live signal down.
 
 ## Values must be JSON-serializable

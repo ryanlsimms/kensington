@@ -5,9 +5,11 @@ import he from '../esm/lib/util/he.js';
 
 const WARMUP = 3;
 const ITERS = 10;
+const REACTIVE_WRITES = 20_000;
 
 const scenario = process.argv[2];
 const isBaseline = process.argv[3] === 'baseline';
+const isDomScenario = scenario?.startsWith('reactiveDom') === true;
 
 function fmt(n) {
   return `${n.toFixed(1)}ms`;
@@ -17,7 +19,21 @@ function pad(s, w) {
   return String(s).padStart(w);
 }
 
+if (isDomScenario) {
+  const { JSDOM } = await import('jsdom');
+  const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
+  globalThis.document = dom.window.document;
+  globalThis.MutationObserver = dom.window.MutationObserver;
+}
+
 const { default: Kensington } = (scenario && !isBaseline) ? await import('../esm/kensington.js') : {};
+const reactive = (scenario?.startsWith('reactive') && !isBaseline)
+  ? await import('../esm/reactive.js')
+  : {};
+
+function assertBench(condition, message) {
+  if (!condition) { throw new Error(`benchmark assertion failed: ${message}`); }
+}
 
 const fns = {
   encodeHeavy() {
@@ -99,6 +115,105 @@ const fns = {
     ).toString();
   },
 
+  reactiveUnbatched() {
+    const source = reactive.signal(0);
+    let seen = -1;
+    let effectRuns = 0;
+    const fx = reactive.effect(() => {
+      seen = source.get();
+      effectRuns++;
+    });
+    for (let i = 1; i <= REACTIVE_WRITES; i++) { source.set(i); }
+    assertBench(seen === REACTIVE_WRITES, 'unbatched effect must see the final value');
+    assertBench(effectRuns === REACTIVE_WRITES + 1, 'unbatched effect must run for every write');
+    fx.stop();
+  },
+
+  reactiveBatched() {
+    const source = reactive.signal(0);
+    let seen = -1;
+    let effectRuns = 0;
+    const fx = reactive.effect(() => {
+      seen = source.get();
+      effectRuns++;
+    });
+    reactive.batch(() => {
+      for (let i = 1; i <= REACTIVE_WRITES; i++) { source.set(i); }
+    });
+    assertBench(seen === REACTIVE_WRITES, 'batched effect must see the final value');
+    assertBench(effectRuns === 2, 'batched effect must run once at the boundary');
+    fx.stop();
+  },
+
+  reactiveComputedBatch() {
+    const a = reactive.signal(0);
+    const b = reactive.signal(0);
+    let computedRuns = 0;
+    let effectRuns = 0;
+    const total = reactive.computed(() => {
+      computedRuns++;
+      return a.get() + b.get();
+    });
+    const fx = reactive.effect(() => {
+      total.get();
+      effectRuns++;
+    });
+    reactive.batch(() => {
+      for (let i = 1; i <= REACTIVE_WRITES / 2; i++) {
+        a.set(i);
+        b.set(i);
+      }
+    });
+    assertBench(computedRuns === REACTIVE_WRITES + 1, 'computed must run after every source write');
+    assertBench(effectRuns === 2, 'computed consumer must commit once at the batch boundary');
+    fx.stop();
+    total.stop();
+  },
+
+  reactiveDiamond() {
+    const source = reactive.signal(0);
+    const plusOne = reactive.computed(() => source.get() + 1);
+    const timesTwo = reactive.computed(() => source.get() * 2);
+    let seen = -1;
+    let effectRuns = 0;
+    const fx = reactive.effect(() => {
+      seen = plusOne.get() + timesTwo.get();
+      effectRuns++;
+    });
+    for (let i = 1; i <= REACTIVE_WRITES; i++) { source.set(i); }
+    assertBench(seen === REACTIVE_WRITES * 3 + 1, 'diamond effect must see both final computed values');
+    assertBench(effectRuns === REACTIVE_WRITES + 1, 'diamond effect must run once per source write');
+    fx.stop();
+    plusOne.stop();
+    timesTwo.stop();
+  },
+
+  reactiveDomUnbatched() {
+    document.body.textContent = '';
+    const k = new Kensington({ validationLevel: 'off' });
+    const value = reactive.signal(0);
+    const el = k.div({ dataValue: value }).toElement();
+    document.body.append(el);
+    for (let i = 1; i <= REACTIVE_WRITES; i++) { value.set(i); }
+    assertBench(el.dataset.value === String(REACTIVE_WRITES), 'unbatched DOM binding must stay current');
+    value.stop();
+    el.remove();
+  },
+
+  reactiveDomBatched() {
+    document.body.textContent = '';
+    const k = new Kensington({ validationLevel: 'off' });
+    const value = reactive.signal(0);
+    const el = k.div({ dataValue: value }).toElement();
+    document.body.append(el);
+    reactive.batch(() => {
+      for (let i = 1; i <= REACTIVE_WRITES; i++) { value.set(i); }
+    });
+    assertBench(el.dataset.value === String(REACTIVE_WRITES), 'batched DOM binding must commit the final value');
+    value.stop();
+    el.remove();
+  },
+
 };
 
 const baselines = {
@@ -157,6 +272,89 @@ const baselines = {
       `<span class="${cls}" id="item-${i}" tabindex="${i % 10}" title="${title}"></span>`,
     ).join('');
     `<div>${spans}</div>`;
+  },
+
+  reactiveUnbatched() {
+    let source = 0;
+    let seen = -1;
+    let effectRuns = 0;
+    const effect = () => { seen = source; effectRuns++; };
+    effect();
+    for (let i = 1; i <= REACTIVE_WRITES; i++) {
+      source = i;
+      effect();
+    }
+    assertBench(seen === REACTIVE_WRITES, 'baseline unbatched effect must see the final value');
+    assertBench(effectRuns === REACTIVE_WRITES + 1, 'baseline unbatched effect count');
+  },
+
+  reactiveBatched() {
+    let source = 0;
+    let seen = -1;
+    let effectRuns = 0;
+    const effect = () => { seen = source; effectRuns++; };
+    effect();
+    for (let i = 1; i <= REACTIVE_WRITES; i++) { source = i; }
+    effect();
+    assertBench(seen === REACTIVE_WRITES, 'baseline batched effect must see the final value');
+    assertBench(effectRuns === 2, 'baseline batched effect count');
+  },
+
+  reactiveComputedBatch() {
+    let a;
+    let b = 0;
+    let total = 0;
+    let checksum = 0;
+    let computedRuns = 1;
+    let effectRuns = 1;
+    for (let i = 1; i <= REACTIVE_WRITES / 2; i++) {
+      a = i;
+      total = a + b;
+      checksum += total;
+      computedRuns++;
+      b = i;
+      total = a + b;
+      checksum += total;
+      computedRuns++;
+    }
+    effectRuns++;
+    assertBench(total === REACTIVE_WRITES, 'baseline computed must see the final value');
+    assertBench(checksum > total, 'baseline computed must consume intermediate values');
+    assertBench(computedRuns === REACTIVE_WRITES + 1, 'baseline computed count');
+    assertBench(effectRuns === 2, 'baseline computed consumer count');
+  },
+
+  reactiveDiamond() {
+    let seen = 1;
+    let effectRuns = 1;
+    for (let i = 1; i <= REACTIVE_WRITES; i++) {
+      const plusOne = i + 1;
+      const timesTwo = i * 2;
+      seen = plusOne + timesTwo;
+      effectRuns++;
+    }
+    assertBench(seen === REACTIVE_WRITES * 3 + 1, 'baseline diamond must see the final value');
+    assertBench(effectRuns === REACTIVE_WRITES + 1, 'baseline diamond effect count');
+  },
+
+  reactiveDomUnbatched() {
+    document.body.textContent = '';
+    const el = document.createElement('div');
+    document.body.append(el);
+    for (let i = 1; i <= REACTIVE_WRITES; i++) { el.setAttribute('data-value', String(i)); }
+    assertBench(el.dataset.value === String(REACTIVE_WRITES), 'baseline unbatched DOM value');
+    el.remove();
+  },
+
+  reactiveDomBatched() {
+    document.body.textContent = '';
+    const el = document.createElement('div');
+    document.body.append(el);
+    let value = 0;
+    for (let i = 1; i <= REACTIVE_WRITES; i++) { value = i; }
+    el.setAttribute('data-value', String(value));
+    assertBench(el.dataset.value === String(REACTIVE_WRITES), 'baseline batched DOM value');
+    el.remove();
   },
 
 };

@@ -17,8 +17,8 @@ export type CanWrite<T = unknown, Ctx = any> =
  * branching in a `.catch` handler without parsing the message string.
  *
  * - `'forbidden'`: the server's `canWrite` predicate rejected the write.
- * - `'conflict'`: a CAS write's `ifLamport` did not match the server's
- *   lamport. Only fires on `.set(fn)` writes; the library retries
+ * - `'conflict'`: an updater write's expected version did not match the server's
+ *   current version. Only fires on `.set(fn)` writes. The library retries
  *   automatically up to `MAX_CAS_RETRIES`, so this reason reaches user
  *   code only when the retry cap is exhausted via the `'retries-exhausted'`
  *   path below.
@@ -76,9 +76,9 @@ export interface LiveSetRejected<T = unknown> extends Error {
    */
   attemptedValue: T | undefined;
   /**
-   * The server's authoritative value at the moment of rejection. Already
-   * applied to the local Signal via `_setFromRemote` before this Error
-   * fires, so `sig.value` reflects this value when the `.catch` runs.
+   * The server value at the moment of rejection, or the client initial value
+   * when the server has no stored or declared value. This is the rollback value.
+   * A newer pending write may keep its optimistic value visible in the Signal.
    * `undefined` for client-side rejections that did not round-trip the
    * server (`'unserializable'`, `'disconnected'` on a write not yet sent).
    */

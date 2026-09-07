@@ -199,7 +199,7 @@ export const searchIndex = [
     label: 'When updates run',
     page: 'reactivity',
     id: 'when-updates-fire',
-    keywords: ['batching', 'updates', 'microtask', 'synchronous', 'timing', 'flush', 'schedule'],
+    keywords: ['batch', 'batching', 'updates', 'microtask', 'synchronous', 'timing', 'flush', 'schedule'],
   },
   {
     label: 'Immutable update patterns',
@@ -646,7 +646,7 @@ export const searchIndex = [
     label: 'registerComponents',
     page: 'api',
     id: 'register-components',
-    keywords: ['register', 'components', 'hydration', 'client', 'islands', 'activate'],
+    keywords: ['register', 'components', 'hydration', 'client', 'islands', 'activate', 'nonce', 'csp'],
   },
   {
     label: 'Exports',

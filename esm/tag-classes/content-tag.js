@@ -1,6 +1,7 @@
 import { markContentTracked } from '../lib/reactive/dom-tracker.js';
 import { createLifecycle } from '../lib/reactive/lifecycle.js';
 import { reconcile } from '../lib/reactive/reconcile.js';
+import { withRuntimeValidation } from '../lib/reactive/runtime-guard.js';
 import { isKensingtonSignal } from '../lib/reactive/signal.js';
 import { attributesArrayFromObject, SUBTREE_SIGNAL_KEY } from '../lib/render/attributes.js';
 import {
@@ -238,7 +239,9 @@ export default class ContentTag {
 
   toString() { return this._toString(); }
 
-  _toString(parentContext) { return renderToString(this, parentContext); }
+  _toString(parentContext) {
+    return withRuntimeValidation(this.validationLevel, this.logger, () => renderToString(this, parentContext));
+  }
 
   mount(target) {
     if (typeof document === 'undefined') {
@@ -251,7 +254,11 @@ export default class ContentTag {
     el.replaceWith(this.toElement());
   }
 
-  toElement({ _inheritPersist = false, _parentContext, _parentElement } = {}) {
+  toElement(options = {}) {
+    return withRuntimeValidation(this.validationLevel, this.logger, () => this.#toElement(options));
+  }
+
+  #toElement({ _inheritPersist = false, _parentContext, _parentElement }) {
     const persist = this.persist || _inheritPersist;
     const namespace = this._resolveNamespace(_parentContext);
     if (this.#domElement && this.#domElement.namespaceURI !== namespace) {

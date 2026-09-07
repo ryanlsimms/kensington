@@ -6,7 +6,7 @@
 //   live.attach(httpServer)       Node HTTP server + the `ws` package.
 //   live.bunWebsocket()           Bun-native WebSocket handlers config.
 
-import { signal } from '../lib/reactive/signal.js';
+import { batch, signal } from '../lib/reactive/signal.js';
 import { createMemoryStore } from './persistence/memory.js';
 import { createSqliteStore } from './persistence/sqlite.js';
 import {
@@ -368,8 +368,14 @@ export async function liveServer({
     sig.set = valueOrFn => {
       const resolved = typeof valueOrFn === 'function' ? valueOrFn(sig.value) : valueOrFn;
       if (!checkSerializable(name, resolved)) { return; }
-      origSet(resolved);
-      applySet(name, resolved, /* fromSocket = */ null);
+      batch(() => {
+        // Commit registry, persistence, broadcast, and Lamport state before
+        // exposing the reactive value. The registered observer normally
+        // updates this Signal during applySet; origSet also keeps an old
+        // stopped Signal reference locally writable after it leaves the cache.
+        applySet(name, resolved, /* fromSocket = */ null);
+        origSet(resolved);
+      });
     };
     return sig;
   }
@@ -427,9 +433,19 @@ export async function liveServer({
     if (opId === undefined) { return; }
     const entry = registry.get(name);
     const entryLamport = entry?.lamport ?? 0;
+    const hasValue = entry !== undefined || initialValues.has(name);
+    const authoritativeValue = entry === undefined ? initialValues.get(name) : entry.value;
     const reply = ok
       ? { type: MSG_SET_OK, name, lamport: entryLamport, opId }
-      : { type: MSG_SET_FAIL, name, opId, reason, value: entry?.value, lamport: entryLamport };
+      : {
+        type: MSG_SET_FAIL,
+        name,
+        opId,
+        reason,
+        hasValue,
+        ...(hasValue ? { value: authoritativeValue } : {}),
+        lamport: entryLamport,
+      };
     sendRaw(sock, encode(reply));
   }
 
@@ -499,12 +515,21 @@ export async function liveServer({
       state.subscribed.add(msg.name);
       getSubs(msg.name).add(sock);
       const entry = registry.get(msg.name);
+      const hasValue = entry !== undefined || initialValues.has(msg.name);
       const snapshotValue = entry === undefined ? initialValues.get(msg.name) : entry.value;
-      const values = { [msg.name]: snapshotValue };
+      const values = hasValue ? { [msg.name]: snapshotValue } : {};
+      const present = hasValue ? [msg.name] : [];
+      const missing = hasValue ? [] : [msg.name];
       // For fresh names with no registry entry, send lamport 0 so the
       // client's first CAS write (with ifLamport: 0) matches the server's
       // "no entry yet" baseline.
-      sendRaw(sock, encode({ type: MSG_SNAPSHOT, values, lamport: entry?.lamport ?? 0 }));
+      sendRaw(sock, encode({
+        type: MSG_SNAPSHOT,
+        values,
+        present,
+        missing,
+        lamport: entry?.lamport ?? 0,
+      }));
     } else if (msg.type === MSG_UNSUBSCRIBE) {
       state.subscribed.delete(msg.name);
       getSubs(msg.name).delete(sock);

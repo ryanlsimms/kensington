@@ -1,6 +1,7 @@
 import { t } from 'kensington';
 
 import { githubLink } from '../../components/ui.js';
+import { reactivityBatching } from './batching.js';
 import { reactivityBestPractices } from './best-practices.js';
 import { reactivityCleanup } from './cleanup.js';
 import { reactivityDevtools } from './devtools.js';
@@ -53,6 +54,14 @@ export function reactivitySidebar() {
           t.li(t.a({ href: '#per-row-signals' }, 'Per-row signals')),
         ]),
       ]),
+      t.li([
+        t.a({ href: '#signals-batching' }, 'Batching updates'),
+        t.ul([
+          t.li(t.a({ href: '#batch-what-is-deferred' }, 'What is deferred')),
+          t.li(t.a({ href: '#nested-batches' }, 'Nested batches')),
+          t.li(t.a({ href: '#batch-errors-and-async' }, 'Errors and async code')),
+        ]),
+      ]),
       t.li(t.a({ href: '#signals-existing-elements' }, 'Existing elements')),
       t.li(t.a({ href: '#signals-cleanup' }, 'Cleanup')),
       t.li([
@@ -66,7 +75,7 @@ export function reactivitySidebar() {
       t.li([
         t.a({ href: '#live-signals' }, 'Live signals'),
         t.ul([
-          t.li(t.a({ href: '#live-signals-setup' }, 'Setup. Three calls')),
+          t.li(t.a({ href: '#live-signals-setup' }, 'Setup')),
           t.li(t.a({ href: '#live-signals-naming' }, 'Naming')),
           t.li(t.a({ href: '#live-signals-persistence' }, 'Persistence')),
           t.li(t.a({ href: '#live-signals-canwrite' }, 'canRead / canWrite')),
@@ -110,6 +119,7 @@ export function reactivityContent() {
     ...reactivityValueAndTransform(),
     reactivityKeyedLists(),
     ...reactivityWhenUpdates(),
+    reactivityBatching(),
     reactivityExistingElements(),
     reactivityCleanup(),
     reactivityLifecycle(),

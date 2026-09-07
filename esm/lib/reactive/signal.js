@@ -16,6 +16,7 @@ import {
 } from './devtools.js';
 import { getCurrentHydrationScope } from './hydration-scope.js';
 import { mapWithKey } from './map-with-key.js';
+import { createRuntimeContext, RUNTIME_OWNER } from './runtime-context.js';
 import { renderSignalAsTag } from './signal-render.js';
 import { isSSRMode } from './ssr.js';
 import { throttledError, throttledWarn, warnKeyedInitialMismatch } from './warnings.js';
@@ -23,11 +24,18 @@ import { throttledError, throttledWarn, warnKeyedInitialMismatch } from './warni
 let currentEffect = null;
 const pending = new Set();
 const runCounts = new Map();
+const asyncTurnCounts = new Map();
 const MAX_EFFECT_LOOPS = 100;
-const MAX_FLUSHES = 500;
-let scheduled = false;
-let flushCount = 0;
-let flushResetScheduled = false;
+const MAX_ASYNC_EFFECT_TURNS = 500;
+const ASYNC_BATCH_MESSAGE = 'kensington batch() requires a synchronous callback. ' +
+  'Await first, then batch the signal writes.';
+// Internal bridge used by tag validation. Standalone reactive calls have no checker.
+export const _reactiveRuntime = createRuntimeContext();
+let asyncTurnCountsResetScheduled = false;
+let microtaskTurn = 0;
+let microtaskTurnAdvanceScheduled = false;
+let batchDepth = 0;
+let notificationDepth = 0;
 let inComputedFn = false;
 let suppressReactiveCheck = false;
 // Set by _internalComputed before calling computed(fn) so the new computed's
@@ -93,30 +101,42 @@ function rethrowAsync(err) {
   queueMicrotask(() => { throw err; });
 }
 
-function flush() {
-  scheduled = false;
-  flushCount++;
-  if (!flushResetScheduled) {
-    flushResetScheduled = true;
-    setTimeout(() => { flushCount = 0; flushResetScheduled = false; }, 0);
+// Queue the marker after an effect flush. Any Promise/queueMicrotask work started by an
+// effect is already ahead of this marker, so an async feedback loop advances the turn on
+// every one or two passes. Repeated synchronous .set() calls never yield to the marker and
+// therefore remain in one turn, regardless of how many commits the caller intentionally
+// performs. A plain per-macrotask run count cannot make that distinction.
+// Node nextTick callbacks can starve the microtask queue, so either queue may advance
+// the marker. Each scheduled pair advances it only once.
+function scheduleMicrotaskTurnAdvance() {
+  if (microtaskTurnAdvanceScheduled) { return; }
+  microtaskTurnAdvanceScheduled = true;
+  let advanced = false;
+  const advance = () => {
+    if (advanced) { return; }
+    advanced = true;
+    microtaskTurn += 1;
+    microtaskTurnAdvanceScheduled = false;
+  };
+  queueMicrotask(advance);
+  if (typeof globalThis.process?.nextTick === 'function') {
+    globalThis.process.nextTick(advance);
   }
-  if (flushCount > MAX_FLUSHES) {
-    throttledError(
-      'async-loop',
-      `kensington: async reactive loop detected. flush() was called ${flushCount} times without a macrotask turn. ` +
-      'An effect is likely setting a signal inside a queueMicrotask or Promise callback in a cycle. ' +
-      'Guard the write with a condition check to confirm the update is still needed before calling .set().',
-    );
-    pending.clear();
-    return;
+}
+
+function flush() {
+  if (inFlush || pending.size === 0) { return; }
+  if (!asyncTurnCountsResetScheduled) {
+    asyncTurnCountsResetScheduled = true;
+    setTimeout(() => { asyncTurnCounts.clear(); asyncTurnCountsResetScheduled = false; }, 0);
   }
   runCounts.clear();
   inFlush = true;
   try {
     while (pending.size > 0) {
-      const batch = [...pending];
+      const runs = [...pending];
       pending.clear();
-      for (const fn of batch) {
+      for (const fn of runs) {
         const count = (runCounts.get(fn) ?? 0) + 1;
         runCounts.set(fn, count);
         if (count > MAX_EFFECT_LOOPS) {
@@ -125,6 +145,22 @@ function flush() {
             `kensington: reactive loop detected. The same effect was re-queued ${count} times in a single flush. ` +
             'Check for an effect that writes to a signal it also reads, or two effects that write to each other\'s signal dependencies. ' +
             'For effects with async callbacks (queueMicrotask, setTimeout, fetch), guard the write with a condition check to confirm the update is still needed before calling .set().',
+          );
+          continue;
+        }
+        const previousTurn = asyncTurnCounts.get(fn);
+        const asyncTurnCount = previousTurn === undefined
+          ? 1
+          : previousTurn.turn === microtaskTurn
+            ? previousTurn.count
+            : previousTurn.count + 1;
+        asyncTurnCounts.set(fn, { turn: microtaskTurn, count: asyncTurnCount });
+        if (asyncTurnCount > MAX_ASYNC_EFFECT_TURNS) {
+          throttledError(
+            'async-loop',
+            `kensington: async reactive loop detected. The same effect re-entered across more than ${MAX_ASYNC_EFFECT_TURNS} microtask turns without yielding to a task. ` +
+            'An effect is likely setting a signal inside a queueMicrotask or Promise callback in a cycle. ' +
+            'Guard the write with a condition check to confirm the update is still needed before calling .set().',
           );
           continue;
         }
@@ -137,15 +173,77 @@ function flush() {
     }
   } finally {
     inFlush = false;
+    scheduleMicrotaskTurnAdvance();
   }
   runCounts.clear();
 }
 
-function scheduleRun(fn) {
-  pending.add(fn);
-  if (!scheduled) {
-    scheduled = true;
-    queueMicrotask(flush);
+function flushIfReady() {
+  if (batchDepth === 0 && notificationDepth === 0) {
+    flush();
+  }
+}
+
+function notifySubscribers(subscribers, value) {
+  notificationDepth++;
+  try {
+    for (const fn of [...subscribers]) {
+      if (fn._isEffect) {
+        pending.add(fn);
+      } else {
+        fn(value);
+      }
+    }
+  } finally {
+    notificationDepth--;
+    flushIfReady();
+  }
+}
+
+function isDeferredFunction(fn) {
+  let constructorName;
+  try {
+    constructorName = Object.getPrototypeOf(fn)?.constructor?.name;
+  } catch {
+    return false;
+  }
+  return constructorName === 'AsyncFunction'
+    || constructorName === 'GeneratorFunction'
+    || constructorName === 'AsyncGeneratorFunction';
+}
+
+function isPromiseLike(value) {
+  return value !== null &&
+    (typeof value === 'object' || typeof value === 'function') &&
+    typeof value.then === 'function';
+}
+
+/**
+ * Runs `fn` immediately and coalesces all effect and DOM-binding updates caused by signal
+ * writes until the outermost batch returns. Nested batches share the same pending queue.
+ * Computed signals continue to update synchronously, so reads inside the batch stay current.
+ * Async and generator callbacks are rejected. A Promise returned by an ordinary callback
+ * is rejected after the callback runs, but already scheduled Promise work cannot be cancelled.
+ * @template T
+ * @param {function(): T} fn
+ * @returns {T}
+ */
+export function batch(fn) {
+  _reactiveRuntime.check('batch()');
+  if (isDeferredFunction(fn)) {
+    throw new TypeError(ASYNC_BATCH_MESSAGE);
+  }
+  batchDepth++;
+  try {
+    const result = fn();
+    if (isPromiseLike(result)) {
+      Promise.resolve(result).catch(() => {});
+      throw new TypeError(ASYNC_BATCH_MESSAGE);
+    }
+    return result;
+  } finally {
+    batchDepth--;
+    flushIfReady();
   }
 }
 
@@ -167,6 +265,7 @@ export default class Signal {
   #subscribers = new Set();
 
   constructor(initial) {
+    _reactiveRuntime.check('signal()');
     this.#value = initial;
     notifySignalCreate(this, initial);
     if (!suppressReactiveCheck) {
@@ -191,6 +290,7 @@ export default class Signal {
   }
 
   get() {
+    _reactiveRuntime.check('Signal.get()');
     if (currentEffect !== null && !this.#subscribers.has(currentEffect)) {
       if (this.#subscribers.size === 0) {
         // Defer to the shared wakeup helper so we also fire _onFirstSubscriber.
@@ -250,11 +350,13 @@ export default class Signal {
   }
 
   get value() {
+    _reactiveRuntime.check('Signal.value');
     wakeForRead(this);
     return this.#value;
   }
 
   set(valueOrFn) {
+    _reactiveRuntime.check('Signal.set()');
     // Blocks external writes to computed/transform signals; depth > 0 means we're inside an update().
     if (derivedSignals.has(this) && derivedWriteDepth === 0) {
       throw new Error('Cannot call .set() on a computed or derived signal. Use signal() for writable state.');
@@ -294,13 +396,7 @@ export default class Signal {
     // from this signal at the start of its track() (clearing previous subscriptions) and
     // re-subscribes when its fn re-reads us, and Set iteration revisits entries that were
     // deleted and re-added during the same walk. Without the snapshot, that pattern loops.
-    for (const fn of [...this.#subscribers]) {
-      if (fn._isEffect) {
-        scheduleRun(fn);
-      } else {
-        fn(this.#value);
-      }
-    }
+    notifySubscribers(this.#subscribers, this.#value);
   }
 
   // Internal. Used by kensington/live to apply a value received from the server
@@ -309,18 +405,13 @@ export default class Signal {
   // legitimately land while local code is reading the signal). Still notifies
   // subscribers so DOM bindings update.
   _setFromRemote(next) {
+    _reactiveRuntime.check('live update');
     if (Object.is(next, this.#value)) {
       return;
     }
     this.#value = next;
     notifySignalSet(this, next, this.#subscribers.size);
-    for (const fn of [...this.#subscribers]) {
-      if (fn._isEffect) {
-        scheduleRun(fn);
-      } else {
-        fn(this.#value);
-      }
-    }
+    notifySubscribers(this.#subscribers, this.#value);
   }
 
   stop() {
@@ -412,7 +503,7 @@ function track(run, fn) {
   const prev = currentEffect;
   currentEffect = run;
   try {
-    return fn();
+    return _reactiveRuntime.run(run._validation, fn);
   } finally {
     currentEffect = prev;
   }
@@ -431,6 +522,7 @@ function track(run, fn) {
  * @returns {{ pause: function(): void, resume: function(): void, stop: function(): void }}
  */
 function createEffect(fn, isInternal = false) {
+  _reactiveRuntime.check('effect()');
   if (isSSRMode()) {
     return { pause() {}, resume() {}, stop() {} };
   }
@@ -445,20 +537,34 @@ function createEffect(fn, isInternal = false) {
     track(run, fn);
   }
   run._cleanups = [];
+  run._validation = _reactiveRuntime.capture();
   run._isEffect = true;
   run._isInternal = isInternal;
   run._devId = _devId;
-  run();
+  function unsubscribe() {
+    pending.delete(run);
+    const cleanups = run._cleanups;
+    for (let i = 0; i < cleanups.length; i++) {
+      cleanups[i]._unsubscribeFromRun(run);
+    }
+    run._cleanups = [];
+  }
+  try {
+    run();
+  } catch (err) {
+    // effect() cannot return a handle when its initial run throws. Tear down any
+    // dependencies read before the error so an unreachable effect is not left active.
+    paused = true;
+    destroyed = true;
+    unsubscribe();
+    notifyEffectStop(_devId);
+    throw err;
+  }
   return {
     _devId,
     pause() {
       paused = true;
-      pending.delete(run);
-      const cleanups = run._cleanups;
-      for (let i = 0; i < cleanups.length; i++) {
-        cleanups[i]._unsubscribeFromRun(run);
-      }
-      run._cleanups = [];
+      unsubscribe();
       notifyEffectPause(_devId);
     },
     resume() {
@@ -522,16 +628,18 @@ export function _internalEffect(fn) {
 // signal, so this fast path collapses ~20k subscribe+resubscribe pairs to plain calls in
 // benchmarks that fire many signal updates.
 export function _bindingEffect(sig, fn) {
+  _reactiveRuntime.check('DOM binding', sig[RUNTIME_OWNER] ?? sig.constructor);
   if (isSSRMode()) {
     return { pause() {}, resume() {}, stop() {} };
   }
   let paused = false;
   let destroyed = false;
   const _devId = notifyEffectCreate(fn);
+  const validation = _reactiveRuntime.capture();
   function run() {
     if (paused) { return; }
     notifyEffectRun(_devId);
-    fn(sig.value);
+    _reactiveRuntime.run(validation, () => fn(sig.value));
   }
   run._isEffect = true;
   run._isInternal = true;
@@ -547,7 +655,13 @@ export function _bindingEffect(sig, fn) {
     sig._bindingUnsubscribe(run);
   }
   sig._bindingSubscribe(run);
-  run();
+  try {
+    run();
+  } catch (err) {
+    unsubscribe();
+    notifyEffectStop(_devId);
+    throw err;
+  }
   return {
     _devId,
     pause() {
@@ -593,6 +707,7 @@ export function _bindingEffect(sig, fn) {
  * ));
  */
 export function computed(fn, key) {
+  _reactiveRuntime.check('computed()');
   // Keyed path: inside an outer computed with a stable key → reuse the same inner computed
   // across outer re-runs, updating the fn closure each time so captured variables stay fresh.
   if (key !== undefined && currentComputed !== null) {
@@ -757,6 +872,7 @@ export function computed(fn, key) {
     });
   }
   update._cleanups = [];
+  update._validation = _reactiveRuntime.capture();
   if (nextComputedInternal) {
     update._isInternal = true;
     nextComputedInternal = false;
@@ -958,6 +1074,7 @@ Signal.prototype.mount = function mount(target) {
 };
 
 Signal.prototype._isKensingtonSignal = true;
+Object.defineProperty(Signal.prototype, RUNTIME_OWNER, { value: _reactiveRuntime.token });
 
 export function isKensingtonSignal(v) {
   return v !== null && typeof v === 'object' && v._isKensingtonSignal === true;

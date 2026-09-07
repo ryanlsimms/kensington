@@ -158,9 +158,9 @@ items.set(prev => prev.map(it =>
         [
           [t.code('effect(() => ...)'), ' inside'],
           [
-            'The effect re-runs. Multiple ',
-            t.code('.set()'),
-            ' calls in the same synchronous turn are batched into a single re-run.',
+            'The effect re-runs synchronously. Wrap several writes in ',
+            t.code('batch(() => { ... })'),
+            ' to produce a single re-run.',
           ],
         ],
         [

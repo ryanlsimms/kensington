@@ -1,25 +1,54 @@
 import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import { before, beforeEach, describe, it } from 'node:test';
 
-import Kensington, { computed, effect, isBrowser, renderForHydration, signal, t } from 'kensington';
+import Kensington, {
+  batch,
+  computed,
+  effect,
+  isBrowser,
+  registerComponents,
+  renderForHydration,
+  signal,
+  t,
+} from 'kensington';
 import {
   circleAttributes,
   globalEvents,
   rectAttributes,
   svgGlobalAttributes,
 } from 'kensington/attributes';
+import { batch as reactiveBatch } from 'kensington/reactive';
 
 import {
   _disposeHydrationScope,
   _enterHydrationScope,
   _exitHydrationScope,
 } from '../../esm/lib/reactive/hydration-scope.js';
-import { _internalEffect } from '../../esm/lib/reactive/signal.js';
+import { withRuntimeValidation } from '../../esm/lib/reactive/runtime-guard.js';
+import { _bindingEffect, _internalEffect } from '../../esm/lib/reactive/signal.js';
 import { _resetWarningThrottle } from '../../esm/lib/reactive/warnings.js';
 import { attributesArrayFromObject } from '../../esm/lib/render/attributes.js';
 
 // ─── content tag ───────────────────────────────────────────────────────────
+
+describe('component registration without a browser', () => {
+  it('returns nothing and warns on duplicates without running component functions', () => {
+    const warnings = [];
+    const originalWarn = console.warn;
+    const component = () => { throw new Error('registration must not render without a document'); };
+    try {
+      console.warn = message => warnings.push(message);
+      assert.strictEqual(registerComponents({ nodeRegistration: component }), undefined);
+      assert.strictEqual(registerComponents({ nodeRegistration: component }), undefined);
+      assert.strictEqual(warnings.length, 1);
+      assert.match(warnings[0], /nodeRegistration.*already registered/);
+    } finally {
+      console.warn = originalWarn;
+    }
+  });
+});
 
 describe('content tag', () => {
   it('generates tag', () => {
@@ -229,6 +258,150 @@ describe('cross-instance tag compatibility', () => {
   it('resolves a foreign signal value when rendering content', () => {
     const foreignSignal = new ForeignSignal('world');
     assert.strictEqual(t.p(foreignSignal).toString(), '<p>world</p>');
+  });
+});
+
+describe('instance-scoped reactive runtime validation', () => {
+  const loadForeignRuntime = () => import('../../esm/lib/reactive/signal.js?cross-runtime-guard');
+  const pattern = /crossed reactive runtimes/;
+
+  it('leaves standalone reactive calls unchecked even when a strict instance exists', async () => {
+    const foreign = await loadForeignRuntime();
+    const strict = new Kensington({ validationLevel: 'error' });
+    const foreignSignal = foreign.signal(0);
+    const local = signal(0);
+    const handles = [];
+    try {
+      assert.doesNotThrow(() => {
+        handles.push(effect(() => foreignSignal.get()));
+        handles.push(foreign.effect(() => local.get()));
+        handles.push(computed(() => foreignSignal.get()));
+        batch(() => foreignSignal.set(1));
+        foreign.batch(() => local.set(1));
+      });
+      assert.strictEqual(foreignSignal.value, 1);
+      assert.strictEqual(local.value, 1);
+      assert.throws(() => strict.div(foreignSignal).toString(), pattern);
+    } finally {
+      handles.forEach(handle => handle.stop());
+      local.stop();
+      foreignSignal.stop();
+    }
+  });
+
+  for (const level of ['off', 'warn', 'error']) {
+    it(`uses instance validation ${level} for every serialized tag kind`, async () => {
+      const foreign = await loadForeignRuntime();
+      const value = foreign.signal('foreign');
+      const messages = [];
+      const renderer = new Kensington({ validationLevel: level, logger: msg => messages.push(msg) });
+      const tags = [
+        renderer.div(value),
+        renderer.div({ title: value }),
+        renderer.input({ value }),
+        renderer.literal(value),
+        renderer.unsafeLiteral(value),
+        renderer.inlineComment(value),
+      ];
+      try {
+        for (const tag of tags) {
+          if (level === 'error') {
+            assert.throws(() => tag.toString(), pattern);
+          } else {
+            assert.match(tag.toString(), /foreign/);
+          }
+        }
+        assert.strictEqual(messages.length, level === 'warn' ? tags.length : 0);
+        assert.ok(messages.every(message => pattern.test(message)));
+      } finally {
+        value.stop();
+      }
+    });
+  }
+
+  it('lets an off child override a strict parent and restores the parent scope afterward', async () => {
+    const foreign = await loadForeignRuntime();
+    const value = foreign.signal('foreign');
+    const strict = new Kensington({ validationLevel: 'error' });
+    const off = new Kensington({ validationLevel: 'off' });
+    try {
+      assert.doesNotThrow(() => strict.div(off.p(value)).toString());
+      assert.throws(() => strict.div([off.p(value), value]).toString(), pattern);
+      assert.doesNotThrow(() => off.div(value).toString());
+      assert.doesNotThrow(() => batch(() => value.set('after')));
+    } finally {
+      value.stop();
+    }
+  });
+
+  it('uses the returned tags policy during SSR without assigning one to the component function', async () => {
+    const foreign = await loadForeignRuntime();
+    const strict = new Kensington({ validationLevel: 'error' });
+    let value;
+    function component() {
+      value = foreign.signal('foreign');
+      return strict.div(value);
+    }
+    try {
+      assert.throws(() => renderForHydration(component, {}), pattern);
+      assert.doesNotThrow(() => renderForHydration(() => t.div(value), {}, 'unchecked'));
+    } finally {
+      value.stop();
+    }
+  });
+
+  it('checks a foreign binding before subscribing in error mode', async () => {
+    const foreign = await loadForeignRuntime();
+    const value = foreign.signal('foreign');
+    let subscribed = false;
+    value._onFirstSubscriber = () => { subscribed = true; };
+    try {
+      assert.throws(
+        () => withRuntimeValidation('error', undefined, () => _bindingEffect(value, () => {})),
+        pattern,
+      );
+      assert.strictEqual(subscribed, false);
+    } finally {
+      value.stop();
+    }
+  });
+
+  it('retains the originating policy on binding updates without leaking it to standalone effects', async () => {
+    const foreign = await loadForeignRuntime();
+    const value = foreign.signal('foreign');
+    const source = signal(false);
+    const messages = [];
+    const standalone = effect(() => {
+      if (source.get()) { value.get(); }
+    });
+    const binding = withRuntimeValidation('warn', msg => messages.push(msg), () =>
+      _bindingEffect(source, shouldRead => {
+        if (shouldRead) { batch(() => value.get()); }
+      }),
+    );
+    try {
+      source.set(true);
+      assert.strictEqual(messages.length, 1);
+      assert.match(messages[0], pattern);
+      assert.doesNotThrow(() => batch(() => value.set('outside')));
+    } finally {
+      binding.stop();
+      standalone.stop();
+      source.stop();
+      value.stop();
+    }
+  });
+
+  it('cleans up a binding whose initial callback throws and restores the previous scope', () => {
+    const source = signal(0);
+    let runs = 0;
+    assert.throws(() => withRuntimeValidation('error', undefined, () => _bindingEffect(source, () => {
+      runs++;
+      throw new Error('binding failed');
+    })), /binding failed/);
+    source.set(1);
+    assert.strictEqual(runs, 1);
+    source.stop();
   });
 });
 
@@ -2578,30 +2751,232 @@ describe('computed auto-dispose', () => {
 // ─── effect ────────────────────────────────────────────────────────────────
 
 describe('effect', () => {
+  it('exports the same batch() function from kensington/reactive', () => {
+    assert.strictEqual(reactiveBatch, batch);
+  });
   it('runs immediately', () => {
     const s = signal(1);
     let result = 0;
     effect(() => { result = s.get() * 2; });
     assert.strictEqual(result, 2);
   });
-  it('re-runs when a dependency changes', async () => {
+  it('tears down partial subscriptions when the initial run throws', () => {
+    const s = signal(0);
+    let runs = 0;
+    assert.throws(() => effect(() => {
+      runs++;
+      s.get();
+      throw new Error('initial effect error');
+    }), /initial effect error/);
+    s.set(1);
+    assert.strictEqual(runs, 1);
+  });
+  it('re-runs synchronously when a dependency changes', () => {
     const s = signal('a');
     const log = [];
     effect(() => { log.push(s.get()); });
     s.set('b');
-    await Promise.resolve();
+    assert.deepStrictEqual(log, ['a', 'b']);
     s.set('c');
-    await Promise.resolve();
     assert.deepStrictEqual(log, ['a', 'b', 'c']);
   });
-  it('batches multiple synchronous set() calls into one effect run', async () => {
+  it('runs once for each unbatched set() call', () => {
     const s = signal(0);
     const log = [];
     effect(() => { log.push(s.get()); });
     s.set(1);
     s.set(2);
-    await Promise.resolve();
+    assert.deepStrictEqual(log, [0, 1, 2]);
+  });
+  it('batch() coalesces multiple set() calls into one effect run', () => {
+    const s = signal(0);
+    const log = [];
+    effect(() => { log.push(s.get()); });
+    const result = batch(() => {
+      s.set(1);
+      s.set(2);
+      assert.deepStrictEqual(log, [0]);
+      return 'result';
+    });
     assert.deepStrictEqual(log, [0, 2]);
+    assert.strictEqual(result, 'result');
+  });
+  it('batch() coalesces writes to multiple dependencies', () => {
+    const a = signal(0);
+    const b = signal(0);
+    const log = [];
+    effect(() => { log.push(a.get() + b.get()); });
+    batch(() => {
+      a.set(1);
+      b.set(2);
+    });
+    assert.deepStrictEqual(log, [0, 3]);
+  });
+  it('one source write is glitch-free across a computed diamond', () => {
+    const source = signal(1);
+    const plusOne = computed(() => source.get() + 1);
+    const timesTwo = computed(() => source.get() * 2);
+    const log = [];
+    effect(() => { log.push(plusOne.get() + timesTwo.get()); });
+    source.set(2);
+    assert.deepStrictEqual(log, [4, 7]);
+  });
+  it('nested batches flush once at the outer boundary', () => {
+    const s = signal(0);
+    const log = [];
+    effect(() => { log.push(s.get()); });
+    batch(() => {
+      s.set(1);
+      batch(() => s.set(2));
+      assert.deepStrictEqual(log, [0]);
+      s.set(3);
+    });
+    assert.deepStrictEqual(log, [0, 3]);
+  });
+  it('batch() flushes pending effects and rethrows when the callback throws', () => {
+    const s = signal(0);
+    const log = [];
+    effect(() => { log.push(s.get()); });
+    assert.throws(() => batch(() => {
+      s.set(1);
+      throw new Error('batch error');
+    }), /batch error/);
+    assert.deepStrictEqual(log, [0, 1]);
+  });
+  it('computed values stay current inside a batch', () => {
+    const s = signal(1);
+    const doubled = computed(() => s.get() * 2);
+    batch(() => {
+      s.set(2);
+      assert.strictEqual(doubled.get(), 4);
+    });
+  });
+  it('computed values recompute for every source write inside a batch', () => {
+    const a = signal(0);
+    const b = signal(0);
+    let computedRuns = 0;
+    const total = computed(() => {
+      computedRuns++;
+      return a.get() + b.get();
+    });
+    const effectValues = [];
+    const fx = effect(() => { effectValues.push(total.get()); });
+    batch(() => {
+      a.set(1);
+      b.set(2);
+      assert.strictEqual(total.get(), 3);
+      assert.strictEqual(computedRuns, 3);
+      assert.deepStrictEqual(effectValues, [0]);
+    });
+    assert.deepStrictEqual(effectValues, [0, 3]);
+    fx.stop();
+    total.stop();
+  });
+  it('effect creation and resume stay immediate inside a batch', () => {
+    const createdSignal = signal(0);
+    const createdLog = [];
+    let created;
+    batch(() => {
+      created = effect(() => { createdLog.push(createdSignal.get()); });
+      assert.deepStrictEqual(createdLog, [0]);
+      createdSignal.set(1);
+      assert.deepStrictEqual(createdLog, [0]);
+    });
+    assert.deepStrictEqual(createdLog, [0, 1]);
+
+    const resumedSignal = signal(0);
+    const resumedLog = [];
+    const resumed = effect(() => { resumedLog.push(resumedSignal.get()); });
+    resumed.pause();
+    resumedSignal.set(1);
+    batch(() => {
+      resumed.resume();
+      assert.deepStrictEqual(resumedLog, [0, 1]);
+      resumedSignal.set(2);
+      assert.deepStrictEqual(resumedLog, [0, 1]);
+    });
+    assert.deepStrictEqual(resumedLog, [0, 1, 2]);
+    created.stop();
+    resumed.stop();
+  });
+  it('a net-zero batch still reruns a dirtied effect once', () => {
+    const s = signal(0);
+    const log = [];
+    const fx = effect(() => { log.push(s.get()); });
+    batch(() => {
+      s.set(1);
+      s.set(0);
+    });
+    assert.deepStrictEqual(log, [0, 0]);
+    fx.stop();
+  });
+  it('await Promise.resolve() preserves an already-committed synchronous update', async () => {
+    const s = signal(0);
+    let value;
+    effect(() => { value = s.get(); });
+    s.set(1);
+    assert.strictEqual(value, 1);
+    await Promise.resolve();
+    assert.strictEqual(value, 1);
+  });
+  it('rejects an async callback before it runs', async () => {
+    const s = signal(0);
+    const log = [];
+    effect(() => { log.push(s.get()); });
+    let callbackRan = false;
+    assert.throws(() => batch(async () => {
+      callbackRan = true;
+      s.set(1);
+      await Promise.resolve();
+      s.set(2);
+    }), /batch\(\) requires a synchronous callback/);
+    assert.strictEqual(callbackRan, false);
+    await Promise.resolve();
+    assert.deepStrictEqual(log, [0]);
+  });
+  it('does not mistake Symbol.toStringTag for an async callback', () => {
+    let callbackRan = false;
+    const callback = () => { callbackRan = true; };
+    Object.defineProperty(callback, Symbol.toStringTag, { value: 'AsyncFunction' });
+    assert.doesNotThrow(() => batch(callback));
+    assert.strictEqual(callbackRan, true);
+  });
+  it('rejects generator callbacks before their bodies can run', () => {
+    let generatorRan = false;
+    let asyncGeneratorRan = false;
+    assert.throws(() => batch(function* generatorCallback() {
+      generatorRan = true;
+      yield 1;
+    }), /batch\(\) requires a synchronous callback/);
+    assert.throws(() => batch(async function* asyncGeneratorCallback() {
+      asyncGeneratorRan = true;
+      yield 1;
+    }), /batch\(\) requires a synchronous callback/);
+    assert.strictEqual(generatorRan, false);
+    assert.strictEqual(asyncGeneratorRan, false);
+  });
+  it('rejects a Promise returned by a non-async callback and still closes the batch', () => {
+    const s = signal(0);
+    const log = [];
+    effect(() => { log.push(s.get()); });
+    assert.throws(() => batch(() => {
+      s.set(1);
+      return Promise.resolve('result');
+    }), /batch\(\) requires a synchronous callback/);
+    assert.deepStrictEqual(log, [0, 1]);
+    s.set(2);
+    assert.deepStrictEqual(log, [0, 1, 2]);
+  });
+  it('cannot cancel Promise work scheduled by an indirectly async callback', async () => {
+    const s = signal(0);
+    const log = [];
+    effect(() => { log.push(s.get()); });
+    assert.throws(() => batch(() => Promise.resolve().then(() => {
+      s.set(1);
+    })), /batch\(\) requires a synchronous callback/);
+    assert.deepStrictEqual(log, [0]);
+    await Promise.resolve();
+    assert.deepStrictEqual(log, [0, 1]);
   });
   it('tracks multiple signal dependencies', async () => {
     const a = signal(1);
@@ -2628,13 +3003,14 @@ describe('effect', () => {
     await Promise.resolve();
     assert.deepStrictEqual(log, [0, 1]);
   });
-  it('stop() before microtask fires cancels the pending run', async () => {
+  it('stop() before a batch commits cancels the pending run', () => {
     const s = signal(0);
     const log = [];
     const e = effect(() => { log.push(s.get()); });
-    s.set(1);
-    e.stop(); // cancels the deferred run before it fires
-    await Promise.resolve();
+    batch(() => {
+      s.set(1);
+      e.stop();
+    });
     assert.deepStrictEqual(log, [0]);
   });
   it('a throwing effect does not prevent other batched effects from running', async () => {
@@ -2653,7 +3029,8 @@ describe('effect', () => {
       s.get();
     });
     effect(() => { log.push(s.get()); });
-    s.set(1);
+    assert.doesNotThrow(() => s.set(1));
+    assert.deepStrictEqual(surfaced, [], 'effect errors remain asynchronous even though the effect ran synchronously');
     await Promise.resolve();
     await Promise.resolve();
     globalThis.queueMicrotask = origQMT;
@@ -2798,12 +3175,19 @@ describe('reactive loop guards', () => {
     console.error = msg => errors.push(msg);
     const a = signal(0);
     const b = signal(0);
-    effect(() => { b.set(a.get() + 1); });
-    effect(() => { a.set(b.get() + 1); });
+    const first = effect(() => { b.set(a.get() + 1); });
+    const second = effect(() => { a.set(b.get() + 1); });
     await new Promise(r => { setTimeout(r, 0); });
     console.error = origError;
+    first.stop();
+    second.stop();
+    const postLoopValues = [];
+    const observer = effect(() => { postLoopValues.push(a.get()); });
     a.set(999);
+    observer.stop();
     assert.strictEqual(a.value, 999);
+    assert.strictEqual(postLoopValues.length, 2);
+    assert.strictEqual(postLoopValues.at(-1), 999);
   });
 
   it('converging two-effect loop does not trigger the loop counter', async () => {
@@ -2818,6 +3202,85 @@ describe('reactive loop guards', () => {
     console.error = origError;
     assert.ok(!errors.some(e => e.includes('reactive loop detected')));
   });
+
+  it('does not count repeated synchronous commits as async turns', () => {
+    const errors = [];
+    const origError = console.error;
+    console.error = msg => errors.push(msg);
+    try {
+      const s = signal(0);
+      let runs = 0;
+      effect(() => { s.get(); runs++; });
+      for (let i = 1; i <= 10_005; i++) { s.set(i); }
+      assert.strictEqual(s.value, 10_005);
+      assert.strictEqual(runs, 10_006);
+    } finally {
+      console.error = origError;
+    }
+    assert.ok(!errors.some(e => e.includes('async reactive loop detected')));
+  });
+
+  it('stops an effect that re-enters across too many microtask turns', async () => {
+    const errors = [];
+    const origError = console.error;
+    console.error = msg => errors.push(msg);
+    const s = signal(0);
+    const loopingEffect = effect(() => {
+      const value = s.get();
+      queueMicrotask(() => { s.set(value + 1); });
+    });
+    try {
+      await new Promise(resolve => { setTimeout(resolve, 0); });
+    } finally {
+      loopingEffect.stop();
+      console.error = origError;
+    }
+    assert.ok(errors.some(e => e.includes('async reactive loop detected')));
+  });
+
+  it('stops a process.nextTick feedback loop without starving the event loop', async () => {
+    const moduleUrl = new URL('../../esm/index.js', import.meta.url).href;
+    const source = `
+      import { effect, signal } from ${JSON.stringify(moduleUrl)};
+      const errors = [];
+      console.error = message => errors.push(String(message));
+      const value = signal(0);
+      effect(() => {
+        const current = value.get();
+        process.nextTick(() => value.set(current + 1));
+      });
+      setTimeout(() => {
+        console.log(JSON.stringify({ errors, value: value.value }));
+      }, 0);
+    `;
+    const result = await new Promise((resolve, reject) => {
+      const child = spawn(process.execPath, ['--input-type=module', '--eval', source], {
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      let stdout = '';
+      let stderr = '';
+      let timedOut = false;
+      const timer = setTimeout(() => {
+        timedOut = true;
+        child.kill('SIGKILL');
+      }, 2000);
+      child.stdout.on('data', chunk => { stdout += chunk; });
+      child.stderr.on('data', chunk => { stderr += chunk; });
+      child.on('error', reject);
+      child.on('close', code => {
+        clearTimeout(timer);
+        if (timedOut) {
+          reject(new Error('process.nextTick feedback loop starved the event loop'));
+        } else if (code === 0) {
+          resolve(JSON.parse(stdout.trim()));
+        } else {
+          reject(new Error(`child exited ${code}\n${stderr}`));
+        }
+      });
+    });
+    assert.ok(result.errors.some(e => e.includes('async reactive loop detected')));
+    assert.ok(result.value > 0);
+  });
 });
 
 describe('renderForHydration', () => {
@@ -2828,6 +3291,64 @@ describe('renderForHydration', () => {
   it('injects data-k-mount-target on root element', () => {
     const html = renderForHydration(comp, {}).toString();
     assert.match(html, /data-k-mount-target="k[a-z0-9]+"/);
+  });
+
+  it('supports batch() inside a server render without browser globals', () => {
+    assert.strictEqual(typeof document, 'undefined');
+    function batchedComponent({ value }) {
+      return batch(() => t.div({ id: 'batched-ssr' }, value));
+    }
+    const html = renderForHydration(
+      batchedComponent,
+      { value: 'server' },
+      'batchedComponent',
+    ).toString();
+    assert.match(html, /id="batched-ssr"/);
+    assert.match(html, />server<\/div>/);
+    assert.match(html, /data-k-component="batchedComponent"/);
+  });
+
+  it('preserves SSR effect suppression and computed isolation inside nested batches', () => {
+    const source = signal(2);
+    let effectRuns = 0;
+    let computedRuns = 0;
+    function batchedComponent() {
+      return batch(() => batch(() => {
+        const doubled = computed(() => {
+          computedRuns++;
+          return source.get() * 2;
+        });
+        effect(() => { source.get(); effectRuns++; });
+        return t.div(doubled);
+      }));
+    }
+    const html = renderForHydration(batchedComponent, {}).toString();
+    assert.match(html, />4<\/div>/);
+    assert.strictEqual(effectRuns, 0);
+    assert.strictEqual(computedRuns, 1);
+    source.set(3);
+    assert.strictEqual(effectRuns, 0);
+    assert.strictEqual(computedRuns, 1);
+    source.stop();
+  });
+
+  it('restores both the batch and SSR state after a batched server render throws', () => {
+    function failedComponent() {
+      return batch(() => batch(() => { throw new Error('render failed'); }));
+    }
+    assert.throws(() => renderForHydration(failedComponent, {}), /render failed/);
+    const source = signal(0);
+    const seen = [];
+    const observer = effect(() => { seen.push(source.get()); });
+    try {
+      batch(() => { source.set(1); source.set(2); });
+      assert.deepStrictEqual(seen, [0, 2]);
+      source.set(3);
+      assert.deepStrictEqual(seen, [0, 2, 3]);
+    } finally {
+      observer.stop();
+      source.stop();
+    }
   });
 
   it('embeds state as application/json script block', () => {
@@ -3140,6 +3661,19 @@ describe('Signal.set during renderForHydration', () => {
     }
     const warnings = capture(() => renderForHydration(comp, {}).toString());
     assert.ok(warnings.some(w => w.includes('.set() called inside renderForHydration')));
+  });
+
+  it('still warns about signal mutation inside a batched server render', () => {
+    const shared = signal(0);
+    function batchedMutation() {
+      return batch(() => {
+        shared.set(1);
+        return t.div(shared);
+      });
+    }
+    const warnings = capture(() => renderForHydration(batchedMutation, {}).toString());
+    assert.ok(warnings.some(w => w.includes('.set() called inside renderForHydration')));
+    shared.stop();
   });
 
   it('does not warn when .set runs outside renderForHydration', () => {
@@ -4045,7 +4579,7 @@ describe('pendingSleep cancellation in flush', () => {
     const c = computed(() => { runs++; return src.get() * 2; });
     const e1 = effect(() => { c.get(); });
     const initialRuns = runs;
-    // Triggering src causes a batched flush. Inside it, the existing effect re-runs and
+    // Triggering src causes a notification flush. Inside it, the existing effect re-runs and
     // re-reads c. c does not need to re-run if its source didn't change.
     src.set(1); // Object.is(1,1) → no notify; runs stay constant
     assert.strictEqual(runs, initialRuns);

@@ -1,25 +1,30 @@
-// Regression test for signal-module identity across the slim bundle and
-// `kensington/live`. Reproduces the tool-web bug where an app aliases
+// Regression tests for reactive-module identity across full/slim dist files,
+// the package root, and `kensington/live`. The original case reproduced a tool-web bug where an app aliases
 // `kensington -> dist/slim/min` (to save ~30 KB in prod) while
 // `kensington/live` still resolves to its source ESM. Two copies of the
 // signal module were loading, each with its own subscriber registry, so
 // an `effect()` from the slim bundle never re-ran when the live
 // transport wrote to `transport.status` from the ESM copy.
 //
-// The fix is that both entry points share ONE reactive-core module at
-// runtime. This test builds a synthetic consumer that mirrors the
-// tool-web alias setup, executes it, and asserts that an `effect()`
-// from the slim bundle observes a `.set()` on a signal returned by
-// `liveSignal` (which is defined in the ESM live subpath).
+// `batch()` makes this invariant even more important: batchDepth and the
+// pending queue are module-scoped, so a batch from one copy cannot defer a
+// signal owned by another. Every ESM entry point must resolve the exact same
+// source reactive modules, not merely expose objects with compatible brands.
 
 import assert from 'node:assert/strict';
 import { rmSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { describe, it } from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { rollup } from 'rollup';
 
 const distSlim = fileURLToPath(new URL('../../dist/kensington.slim.js', import.meta.url));
+const distFull = fileURLToPath(new URL('../../dist/kensington.js', import.meta.url));
+const distFullMin = fileURLToPath(new URL('../../dist/kensington.min.js', import.meta.url));
+const distSlimMin = fileURLToPath(new URL('../../dist/kensington.slim.min.js', import.meta.url));
+const cjsRoot = fileURLToPath(new URL('../../cjs/index.js', import.meta.url));
+const sourceRoot = fileURLToPath(new URL('../../esm/index.js', import.meta.url));
 const liveClient = fileURLToPath(new URL('../../esm/live/client.js', import.meta.url));
 const nodeResolveModule = new URL(
   '../../node_modules/@rollup/plugin-node-resolve/dist/es/index.js',
@@ -32,6 +37,7 @@ const commonjsModule = new URL(
 
 const nodeResolve = (await import(nodeResolveModule.href)).default;
 const commonjs = (await import(commonjsModule.href)).default;
+const require = createRequire(import.meta.url);
 
 const VIRTUAL_ENTRY = '\0signal-identity-virtual-entry';
 
@@ -76,13 +82,18 @@ async function bundleMixedConsumer() {
 
             s.set(1);
             s2.set(1);
+            const immediateCount = count;
+            const immediateCount2 = count2;
 
-            // Effects flush on the microtask queue; wait for them.
+            // These waits are intentionally harmless with synchronous effects and also
+            // verify compatibility with consumers written for the old scheduler.
             await Promise.resolve();
             await Promise.resolve();
 
             handle.stop();
             handle2.stop();
+            export const observedImmediateCount = immediateCount;
+            export const observedImmediateCount2 = immediateCount2;
             export const observedCount = count;
             export const observedCount2 = count2;
             export const brandedLive = isKensingtonSignal(s);
@@ -99,7 +110,34 @@ async function bundleMixedConsumer() {
   return output[0].code;
 }
 
-describe('signal-module identity across dist/slim and esm/live', () => {
+describe('reactive-module identity across package entry points', () => {
+  for (const [name, distEntry] of [
+    ['full dist', distFull],
+    ['minified full dist', distFullMin],
+    ['slim dist', distSlim],
+    ['minified slim dist', distSlimMin],
+  ]) {
+    it(`${name} shares signal tracking and batch state with the source package root`, async () => {
+      const root = await import(pathToFileURL(sourceRoot).href);
+      const built = await import(pathToFileURL(distEntry).href);
+
+      assert.strictEqual(built.Signal, root.Signal, `${name} loaded a second Signal module`);
+      assert.strictEqual(built.batch, root.batch, `${name} loaded a second batch scheduler`);
+
+      const value = built.signal(0);
+      const seen = [];
+      const handle = root.effect(() => { seen.push(value.get()); });
+      root.batch(() => {
+        value.set(1);
+        value.set(2);
+        assert.deepStrictEqual(seen, [0], `${name} committed before the shared batch ended`);
+      });
+      assert.deepStrictEqual(seen, [0, 2]);
+      handle.stop();
+      value.stop();
+    });
+  }
+
   it('effect from slim bundle re-runs on set through liveSignal', async () => {
     const code = await bundleMixedConsumer();
     // Write the bundle to a fixture next to this test so the slim bundle's
@@ -117,6 +155,8 @@ describe('signal-module identity across dist/slim and esm/live', () => {
     }
 
     // Sanity: same-module signal wakes its own effect.
+    assert.strictEqual(mod.observedImmediateCount2, 2,
+      `Sanity failed: same-module signal effect should run synchronously, got ${mod.observedImmediateCount2}`);
     assert.strictEqual(mod.observedCount2, 2,
       `Sanity failed: signal+effect from the same module should count=2, got ${mod.observedCount2}`);
     assert.strictEqual(mod.brandedPlain, true,
@@ -126,11 +166,74 @@ describe('signal-module identity across dist/slim and esm/live', () => {
         + 'Two module identities would return false.');
     // The actual regression assertion.
     assert.strictEqual(
+      mod.observedImmediateCount,
+      2,
+      `Expected the cross-entry effect to re-run synchronously, got count=${mod.observedImmediateCount}.`,
+    );
+    assert.strictEqual(
       mod.observedCount,
       2,
       `Expected effect to re-run after set() on a liveSignal, got count=${mod.observedCount}. `
         + 'The slim bundle and esm/live/client.js each have their own copy of '
         + 'the reactive-core module. See tests/treeshake/signal-identity-test.js.',
     );
+  });
+
+  it('keeps full and slim instance validation independent while sharing the scheduler', async () => {
+    const esm = await import(pathToFileURL(sourceRoot).href);
+    const strict = new esm.Kensington({ validationLevel: 'error' });
+    const foreign = require(cjsRoot).signal('foreign');
+    try {
+      for (const path of [distSlim, distSlimMin]) {
+        const slim = await import(pathToFileURL(path).href);
+        assert.doesNotThrow(() => strict.div(slim.t.p(foreign)).toString());
+        assert.throws(() => slim.t.div(strict.p(foreign)).toString(), /crossed reactive runtimes/);
+      }
+    } finally {
+      foreign.stop();
+    }
+  });
+
+  it('scopes diagnostics for mixed CommonJS and ESM runtimes to validated instances', async () => {
+    const esm = await import(pathToFileURL(sourceRoot).href);
+    const cjs = require(cjsRoot);
+    const cjsSignal = cjs.signal(0);
+    const esmSignal = esm.signal(0);
+    const pattern = /crossed reactive runtimes/;
+    const strictEsm = new esm.Kensington({ validationLevel: 'error' });
+    const strictCjs = new cjs.Kensington({ validationLevel: 'error' });
+    const handles = [];
+    try {
+      handles.push(esm.effect(() => cjsSignal.get()));
+      handles.push(cjs.effect(() => esmSignal.get()));
+      assert.doesNotThrow(() => esm.batch(() => cjsSignal.set(1)));
+      assert.doesNotThrow(() => cjs.batch(() => esmSignal.set(1)));
+      assert.doesNotThrow(() => esm.t.div(cjsSignal).toString());
+      assert.doesNotThrow(() => cjs.t.div(esmSignal).toString());
+      assert.throws(
+        () => esm.renderForHydration(
+          () => {
+            return strictEsm.div(cjsSignal);
+          },
+          {},
+          'mixed-runtime',
+        ),
+        pattern,
+      );
+      assert.throws(
+        () => cjs.renderForHydration(
+          () => {
+            return strictCjs.div(esmSignal);
+          },
+          {},
+          'mixed-runtime',
+        ),
+        pattern,
+      );
+    } finally {
+      handles.forEach(handle => handle.stop());
+      cjsSignal.stop();
+      esmSignal.stop();
+    }
   });
 });
