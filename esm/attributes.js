@@ -1783,6 +1783,7 @@ export const tdAttributes = {
   'rowspan': Number,
 };
 export const templateAttributes = {
+  'for': String,
   'shadowrootclonable': Boolean,
   'shadowrootcustomelementregistry': Boolean,
   'shadowrootdelegatesfocus': Boolean,

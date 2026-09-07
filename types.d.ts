@@ -1930,6 +1930,7 @@ type TdAttributes = {
 } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type TemplateAttributes = {
+  'for'?: Reactive<string>;
   'shadowrootclonable'?: Reactive<boolean>;
   'shadowrootcustomelementregistry'?: Reactive<boolean>;
   'shadowrootdelegatesfocus'?: Reactive<boolean>;

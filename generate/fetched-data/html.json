@@ -563,6 +563,15 @@
       ]
     },
     {
+      "attribute": "for",
+      "elements": [
+        "template"
+      ],
+      "value": [
+        "Text"
+      ]
+    },
+    {
       "attribute": "form",
       "elements": [
         "button",
@@ -3120,6 +3129,7 @@
       ],
       "attributes": [
         "globals",
+        "for",
         "shadowrootmode",
         "shadowrootdelegatesfocus",
         "shadowrootslotassignment",
