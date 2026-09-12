@@ -199,7 +199,27 @@ export const searchIndex = [
     label: 'When updates run',
     page: 'reactivity',
     id: 'when-updates-fire',
-    keywords: ['batch', 'batching', 'updates', 'microtask', 'synchronous', 'timing', 'flush', 'schedule'],
+    keywords: ['batching', 'updates', 'microtask', 'synchronous', 'timing', 'schedule'],
+  },
+  {
+    label: 'applyPendingReactiveUpdates()',
+    page: 'reactivity',
+    id: 'apply-pending-reactive-updates',
+    keywords: ['applyPendingReactiveUpdates', 'pending', 'reactive', 'effects', 'DOM', 'animation', 'flush'],
+  },
+  {
+    label: 'Choose how to wait',
+    page: 'reactivity',
+    id: 'choosing-update-timing',
+    keywords: [
+      'queueMicrotask', 'Promise.resolve', 'await', 'microtask', 'applyPendingReactiveUpdates', 'timing', 'cleanup',
+    ],
+  },
+  {
+    label: 'Focus an input after showing it',
+    page: 'reactivity',
+    id: 'reactive-focus-example',
+    keywords: ['focus', 'input', 'editor', 'select', 'applyPendingReactiveUpdates'],
   },
   {
     label: 'Immutable update patterns',

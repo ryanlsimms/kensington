@@ -78,7 +78,7 @@ export function apiConstructor() {
       ', ',
       t.code('effect()'),
       ', and ',
-      t.code('batch()'),
+      t.code('applyPendingReactiveUpdates()'),
       ' calls do not inherit an instance setting. Slim builds omit the guard diagnostics. Mixing separate reactive runtimes remains unsupported even when checks are off.',
     ]),
   ]);

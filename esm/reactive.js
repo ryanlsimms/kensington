@@ -18,7 +18,7 @@ export {
   _bindingEffect,
   _internalComputed,
   _internalEffect,
-  batch,
+  applyPendingReactiveUpdates,
   computed,
   default,
   effect,

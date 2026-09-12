@@ -14,7 +14,7 @@ import Kensington, {
   type ImgTag,
   type Reactive,
   type ReadonlySignal,
-  batch,
+  applyPendingReactiveUpdates,
   computed,
   effect,
   isBrowser,
@@ -31,7 +31,7 @@ import type {
   svgPresentationAttributes,
   svgXLinkAttributes,
 } from 'kensington/attributes';
-import { batch as reactiveBatch } from 'kensington/reactive';
+import { applyPendingReactiveUpdates as reactiveUpdates } from 'kensington/reactive';
 
 // ─── module augmentation ────────────────────────────────────────────────────
 
@@ -52,20 +52,15 @@ class MyEngine extends Kensington {
 
 const t = new MyEngine({ validationLevel: 'warn', additionalNamespaces: ['hx'] });
 
-const _batchResult: number = batch(() => 42);
-const _reactiveBatchResult: string = reactiveBatch(() => 'ready');
+const _updatesResult: void = applyPendingReactiveUpdates();
+const _reactiveUpdatesResult: void = reactiveUpdates();
 
-// @ts-expect-error - batch boundaries are synchronous and cannot span await
-batch(async () => 42);
-
-// @ts-expect-error - the reactive subpath enforces the same synchronous callback contract
-reactiveBatch(async () => 'ready');
-
-const _maybeAsyncBatch = (): number | Promise<number> => 42;
-// @ts-expect-error - a return type containing a Promise cannot be a synchronous batch boundary
-batch(_maybeAsyncBatch);
-// @ts-expect-error - the reactive subpath rejects Promise unions too
-reactiveBatch(_maybeAsyncBatch);
+// @ts-expect-error - this helper does not accept a callback
+applyPendingReactiveUpdates(() => 42);
+// @ts-expect-error - the reactive subpath exposes the same zero argument API
+reactiveUpdates(async () => 'ready');
+// @ts-expect-error - processing pending work does not return a Promise
+const _updatesPromise: Promise<void> = applyPendingReactiveUpdates();
 
 // ─── constructor options ─────────────────────────────────────────────────────
 

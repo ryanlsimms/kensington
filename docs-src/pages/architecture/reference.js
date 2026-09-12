@@ -43,8 +43,8 @@ export function architectureReference() {
           ' subscriptions on the cached tag, not through per-render attribute diffs.',
         ]),
         t.li([
-          t.strong('Effects and DOM bindings update synchronously unless an explicit batch is open.'),
-          ' Each unbatched .set() is a complete commit. batch(fn) coalesces writes until its outermost synchronous callback returns. Computed signals stay current inside a batch because their updates happen inline with each write.',
+          t.strong('Effects and DOM bindings are automatically batched in a microtask.'),
+          ' Signal and computed values change immediately. applyPendingReactiveUpdates() processes pending effects and DOM bindings before returning when called from application code outside a reactive callback or server render.',
         ]),
         t.li([
           t.strong('The DOM tracker has exactly one observer for the whole document.'),

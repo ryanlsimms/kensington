@@ -6,9 +6,8 @@
 // an `effect()` from the slim bundle never re-ran when the live
 // transport wrote to `transport.status` from the ESM copy.
 //
-// `batch()` makes this invariant even more important: batchDepth and the
-// pending queue are module-scoped, so a batch from one copy cannot defer a
-// signal owned by another. Every ESM entry point must resolve the exact same
+// The pending queue is module scoped. A call to applyPendingReactiveUpdates()
+// from another copy cannot process it. Every ESM entry point must resolve the same
 // source reactive modules, not merely expose objects with compatible brands.
 
 import assert from 'node:assert/strict';
@@ -85,9 +84,8 @@ async function bundleMixedConsumer() {
             const immediateCount = count;
             const immediateCount2 = count2;
 
-            // These waits are intentionally harmless with synchronous effects and also
-            // verify compatibility with consumers written for the old scheduler.
-            await Promise.resolve();
+            // Effects and the live mirror share the same automatic update pass.
+            // Let the automatic scheduler update both entry points without the explicit helper.
             await Promise.resolve();
 
             handle.stop();
@@ -117,22 +115,28 @@ describe('reactive-module identity across package entry points', () => {
     ['slim dist', distSlim],
     ['minified slim dist', distSlimMin],
   ]) {
-    it(`${name} shares signal tracking and batch state with the source package root`, async () => {
+    it(`${name} shares signal tracking and pending updates with the source package root`, async () => {
       const root = await import(pathToFileURL(sourceRoot).href);
       const built = await import(pathToFileURL(distEntry).href);
 
       assert.strictEqual(built.Signal, root.Signal, `${name} loaded a second Signal module`);
-      assert.strictEqual(built.batch, root.batch, `${name} loaded a second batch scheduler`);
+      assert.strictEqual(built.applyPendingReactiveUpdates, root.applyPendingReactiveUpdates,
+        `${name} loaded a second reactive scheduler`);
 
       const value = built.signal(0);
       const seen = [];
       const handle = root.effect(() => { seen.push(value.get()); });
-      root.batch(() => {
-        value.set(1);
-        value.set(2);
-        assert.deepStrictEqual(seen, [0], `${name} committed before the shared batch ended`);
-      });
+      value.set(1);
+      value.set(2);
+      assert.deepStrictEqual(seen, [0]);
+      root.applyPendingReactiveUpdates();
       assert.deepStrictEqual(seen, [0, 2]);
+      value.set(3);
+      built.applyPendingReactiveUpdates();
+      assert.deepStrictEqual(seen, [0, 2, 3]);
+      // Verify the already queued automatic pass does not repeat the explicit updates.
+      await Promise.resolve();
+      assert.deepStrictEqual(seen, [0, 2, 3]);
       handle.stop();
       value.stop();
     });
@@ -155,8 +159,8 @@ describe('reactive-module identity across package entry points', () => {
     }
 
     // Sanity: same-module signal wakes its own effect.
-    assert.strictEqual(mod.observedImmediateCount2, 2,
-      `Sanity failed: same-module signal effect should run synchronously, got ${mod.observedImmediateCount2}`);
+    assert.strictEqual(mod.observedImmediateCount2, 1,
+      `Sanity failed: same-module signal effect should wait for a microtask, got ${mod.observedImmediateCount2}`);
     assert.strictEqual(mod.observedCount2, 2,
       `Sanity failed: signal+effect from the same module should count=2, got ${mod.observedCount2}`);
     assert.strictEqual(mod.brandedPlain, true,
@@ -167,8 +171,8 @@ describe('reactive-module identity across package entry points', () => {
     // The actual regression assertion.
     assert.strictEqual(
       mod.observedImmediateCount,
-      2,
-      `Expected the cross-entry effect to re-run synchronously, got count=${mod.observedImmediateCount}.`,
+      1,
+      `Expected the cross-entry effect to wait for a microtask, got count=${mod.observedImmediateCount}.`,
     );
     assert.strictEqual(
       mod.observedCount,
@@ -206,8 +210,8 @@ describe('reactive-module identity across package entry points', () => {
     try {
       handles.push(esm.effect(() => cjsSignal.get()));
       handles.push(cjs.effect(() => esmSignal.get()));
-      assert.doesNotThrow(() => esm.batch(() => cjsSignal.set(1)));
-      assert.doesNotThrow(() => cjs.batch(() => esmSignal.set(1)));
+      assert.doesNotThrow(() => esm.applyPendingReactiveUpdates());
+      assert.doesNotThrow(() => cjs.applyPendingReactiveUpdates());
       assert.doesNotThrow(() => esm.t.div(cjsSignal).toString());
       assert.doesNotThrow(() => cjs.t.div(esmSignal).toString());
       assert.throws(

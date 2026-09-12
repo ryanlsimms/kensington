@@ -15,11 +15,9 @@ export function examplesReactiveData() {
         t.code('computed'),
         ', and ',
         t.code('effect'),
-        '. Each ',
+        '. Multiple synchronous ',
         t.code('set()'),
-        ' updates synchronously; wrap related writes in ',
-        t.code('batch()'),
-        ' when they should produce one DOM update.',
+        ' calls batch into a single DOM update.',
       ]),
       code('javascript', `import { t, signal, computed, effect } from 'kensington';
 

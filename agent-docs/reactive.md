@@ -11,28 +11,30 @@ If you're writing trivial reactive code (a couple of signals, one computed, a si
 ### Imports
 
 ```javascript
-import { t, signal, computed, effect, batch, isBrowser } from 'kensington';
+import { t, signal, computed, effect, applyPendingReactiveUpdates, isBrowser } from 'kensington';
 import type { Signal, ReadonlySignal, Reactive } from 'kensington';
 ```
 
-Reactive-only consumers can import from the `kensington/reactive` subpath instead. Same `signal` / `computed` / `effect` / `batch` / `Signal` / `isKensingtonSignal` exports; no tag pipeline. Use this when a package needs only the reactive primitives, or when a downstream bundler is already dropping the tag class via tree-shaking and you want the import graph to reflect intent:
+Reactive-only consumers can import from the `kensington/reactive` subpath instead. Same `signal` / `computed` / `effect` / `applyPendingReactiveUpdates` / `Signal` / `isKensingtonSignal` exports; no tag pipeline. Use this when a package needs only the reactive primitives, or when a downstream bundler is already dropping the tag class via tree-shaking and you want the import graph to reflect intent:
 
 ```javascript
-import { signal, computed, effect, batch } from 'kensington/reactive';
+import { signal, computed, effect, applyPendingReactiveUpdates } from 'kensington/reactive';
 ```
 
-When imported as ESM from one installed package, the package root, `kensington/reactive`, `kensington/live`, and every full or slim dist build resolve the same stateful reactive modules. Tracking and batching therefore share one scheduler. Separate physical package copies and the generated CommonJS runtime still have separate schedulers and must not be mixed in one reactive graph.
+When imported as ESM from one installed package, the package root, `kensington/reactive`, `kensington/live`, and every full or slim dist build resolve the same stateful reactive modules. Tracking and pending updates therefore share one scheduler. Separate physical package copies and the generated CommonJS runtime still have separate schedulers and must not be mixed in one reactive graph.
 
-Runtime Guard diagnostics follow the instance whose tag is rendering. `validationLevel: 'off'` disables the checks, `warn` reports through that instance's logger, and `error` throws through normal reactive error handling. Bindings created during rendering retain this policy when they update. Each child tag establishes its own policy, including off. Standalone signal, computed, effect, and batch calls do not inherit an instance setting. Slim builds replace the guard with an off scope wrapper and do not load its diagnostic implementation. The shared core retains only the passive validation context. Disabling diagnostics does not make incompatible reactive graphs work. Loop protection and async batch callback checks remain independent.
+Runtime Guard diagnostics follow the instance whose tag is rendering. `validationLevel: 'off'` disables the checks, `warn` reports through that instance's logger, and `error` throws through normal reactive error handling. Bindings created during rendering retain this policy when they update. Each child tag establishes its own policy, including off. Standalone signal, computed, effect, and applyPendingReactiveUpdates calls do not inherit an instance setting. Slim builds replace the guard with an off scope wrapper and do not load its diagnostic implementation. The shared core retains only the passive validation context. Disabling diagnostics does not make incompatible reactive graphs work. Loop protection remains independent.
 
 ### The six core operations
 
 - `signal(initial, key?)` — writable state. **Read with `.get()`** (subscribes the current reactive context if one is active; equivalent to a plain read otherwise). Write with `.set(v)` or `.set(prev => next)`. `.stop()` tears down subscribers. `.transform(fn, key?)` chains a derivation. `.value` exists as a non-subscribing peek; it is the exception, not a peer of `.get()`. See [Always use `.get()`](#always-use-get).
 - `computed(fn, key?)` — derived state. Auto-disposes when it has no subscribers, re-runs when its tracked signals change.
 - `effect(fn)` — side effect (DOM updates, fetches, timers). Returns `{ pause, resume, stop }`. Re-runs when tracked signals change.
-- `batch(fn)` — opt-in coalescing. Effects and DOM bindings wait until the outermost callback returns; computed values remain current inside it. Outside a batch, `.set()` propagation is synchronous.
+- `applyPendingReactiveUpdates()` immediately processes pending user effects and DOM bindings. Ordinary writes are automatically batched. Call it from application code when the next line needs the updated DOM.
 - `signal.mapWithKey(keyOrProp, mapFn)` — keyed list rendering. Each key owns a stable tag instance. mapFn re-runs for a row when the outer array delivers a new object whose own enumerable fields actually differ (shallow diff). Reorderings with fresh literals of identical content are no-ops, so DOM node identity is preserved.
 - `tag.addConnectedCallback(el => …)` / `addDisconnectedCallback(() => …)` — lifecycle hooks tied to the live DOM element.
+
+For DOM access before the next line, use `applyPendingReactiveUpdates()`. For a callback that must run later, use `queueMicrotask(callback)`. To yield within an async function, use `await Promise.resolve()` only when a microtask boundary is what you need. These are different operations. Read [Choosing how to wait](#choosing-how-to-wait) before replacing one with another.
 
 ### The one rule that bites: pass a key when inside a reactive callback
 
@@ -66,7 +68,8 @@ The failure mode is silent: `computed(() => list.value.filter(...))` never re-ru
 | Why `.get()` is always the default | Signal API → Always use .get() |
 | Binding `value` / `checked` / `<select>` to a signal | DOM properties with `prop` |
 | Side effects, timers, fetches | effect |
-| Coalescing several writes into one commit | effect → Synchronous updates and batch |
+| Coalescing several writes into one commit | effect → Automatic batching and immediate updates |
+| Choose between the update helper, `queueMicrotask` and `await Promise.resolve()` | effect → Choosing how to wait |
 | Rendering a list | Keyed lists |
 | Row contents that update from outside the row | Updating a row after it's been cached |
 | External code driving per-row state | Addressing per-row state from outside the row |
@@ -85,7 +88,7 @@ Full reference follows.
 Signals and `computed` work in any JavaScript environment. `.toElement()` and DOM-mutating effects require a browser. During `renderForHydration`, `effect()` is suppressed entirely. Browser-only code inside an `effect()` is safe to call on the server.
 
 ```javascript
-import { t, signal, computed, effect, batch, isBrowser, Signal } from 'kensington';
+import { t, signal, computed, effect, applyPendingReactiveUpdates, isBrowser, Signal } from 'kensington';
 import { renderForHydration, registerComponents } from 'kensington';
 ```
 
@@ -381,10 +384,8 @@ function cell(weekSig, dayIso, myEdit, empId, projId, commit, cancel) {
         },
         onblur: () => commit(),
       });
-      // [!] Focus + select on mount. queueMicrotask defers so the prop:value
-      // binding lands before .select() runs. Without this, the input
-      // appears in the DOM but cannot be typed into because nothing has
-      // focused it; users perceive the tab as frozen.
+      // [!] Focus and select after mounting. queueMicrotask lets the current
+      // connection callback finish before moving focus.
       input.addConnectedCallback(el => {
         queueMicrotask(() => {
           el.focus();
@@ -422,7 +423,7 @@ function cell(weekSig, dayIso, myEdit, empId, projId, commit, cancel) {
 }
 ```
 
-The footguns marked `[!]` are the ones that bite. (1) The input's `prop: { value: ... }` reads `.value` (untracked) because you want the draft AT the moment the input is rendered, not on every keystroke. (2) The `addConnectedCallback` with `queueMicrotask` for focus is required because the input is inserted into the DOM after the click event finishes, and without a focus call the user has no cursor. (3) Safari throws on `<input type="number">.select()` while Chrome no-ops. Wrap in try/catch. (4) The read-mode branch uses `.get()` so the cell re-renders on underlying signal changes. The edit-mode branch does NOT read the underlying signal so typing doesn't rebuild the input.
+The important details are marked `[!]`. (1) The input's `prop: { value: ... }` reads `.value` because you want the draft at the moment the input is rendered, not on every keystroke. (2) `addConnectedCallback` focuses the input after it is mounted. The `queueMicrotask` postpones focus until the current connection callback finishes. If the click handler itself needs to focus the input before returning, use `applyPendingReactiveUpdates()` there instead, as shown in [Choosing how to wait](#choosing-how-to-wait). (3) Safari throws on `<input type="number">.select()` while Chrome does nothing. Wrap it in try/catch. (4) The display branch uses `.get()` so the cell updates when its source changes. The editing branch does not read that source, so typing does not rebuild the input.
 
 **Do not generalise `.value` from this recipe.** The `.value` here is correct because the same callback writes back to `myEdit` via `oninput`. That self-write is what makes the untracked read necessary. In a `.transform` or `computed` body that does NOT write back to the signal it is reading, `.value` is the silent-failure case from [Always use `.get()`](#always-use-get). Default to `.get()` and reach for `.value` only when you are pairing it with a same-callback `.set()` on the same signal.
 
@@ -446,13 +447,13 @@ ta.addConnectedCallback(el => {
 
 `prop` is silently ignored in `.toString()`. Known writable properties on the element's DOM interface are typed in TypeScript. Expando properties (arbitrary string keys) are also accepted as `unknown`. Property existence and writability are validated at render time via `validationLevel`.
 
-**`<select>` ordering gotcha.** Setting `prop: { value: ... }` on a `<select>` requires its `<option>` children to be mounted FIRST. If the prop binding fires before children are attached, the assigned value silently does not stick (the browser can't match the value to an option that doesn't exist yet). With kensington's normal `(attrs, content)` argument order this is fine. The risk is when you build the select via `addConnectedCallback` and assign `el.value` synchronously; defer the assignment with `queueMicrotask(...)` so the options land first. The same risk applies if you `.set()` the bound signal from `addConnectedCallback` before the children's binding effects have run.
+**`<select>` ordering matters.** Assigning a select's value requires its matching option to exist. Kensington builds the initial children before applying `prop` values. If your own callback changes the options through a signal and then assigns `el.value`, call `applyPendingReactiveUpdates()` between those steps so the new options exist before the assignment. Use `queueMicrotask` only when you intentionally want the assignment to happen after the current callback finishes.
 
 **SSR plus hydration plus custom elements.** When a component using `prop` is rendered via `renderForHydration` and then hydrated on the client, the SSR HTML contains no `prop` values at all (only the regular attributes the tag declared). On the client, `registerComponents` re-runs the component, replaces the SSR DOM via `.toElement()`, and the `prop` bindings land on the live element. For custom elements (`<sl-input>`, `<wa-input>`, any Lit-based or vanilla web component), the autoloader script tag should appear in `<head>` so the element is already upgraded by the time the hydration script runs; the `prop` assignment then targets the upgraded element's reactive property (`el.value = signalValue`) rather than the attribute, and the custom element's own reactive system observes the change.
 
 ## effect
 
-Runs immediately; re-runs synchronously when any signal read inside changes. This means effects and signal-backed DOM bindings are current before `.set()` returns.
+Runs immediately. Changes to signal dependencies queue a rerun in a microtask, automatically grouping related writes.
 
 ```javascript
 const e = effect(() => {
@@ -466,94 +467,114 @@ e.stop();    // permanently destroy; resume() becomes a no-op after this
 
 The initial callback executes as part of `effect()`. If it throws, Kensington tears down any partial subscriptions and `effect()` rethrows synchronously. Once the effect is registered, errors from dependency-triggered re-runs are isolated and surfaced on a microtask so one failing effect cannot prevent other subscribers from committing. A `try/catch` around `.set()` therefore does not catch a re-run error.
 
-### Synchronous updates and `batch`
+### Automatic batching and immediate updates
 
-By default, each `.set()` is its own commit. This makes imperative ordering unsurprising: write a signal, then immediately read the DOM or state changed by an effect.
-
-```javascript
-count.set(1);
-console.log(element.textContent); // "1". No await or tick helper needed.
-```
-
-Use `batch(fn)` when several related writes should notify effects and DOM bindings only once with the final state. The callback runs immediately, nested batches share the outer boundary, and `batch` returns the callback's value. Computed signals still recompute after every source write, so their `.get()` values stay current inside the callback. Only effect and DOM-binding re-runs caused by signal writes are deferred: creating an effect or calling `resume()` still runs it immediately. A batch that changes a signal and restores its original value still runs a dirtied effect once at the boundary.
-
-```javascript
-batch(() => {
-  firstName.set('Grace');
-  lastName.set('Hopper');
-  console.log(fullName.get());       // "Grace Hopper"
-  console.log(element.textContent);  // still the pre-batch DOM value
-});
-console.log(element.textContent);    // "Grace Hopper"
-```
-
-The callback must finish while `batch()` is running. A batch controls notification timing and does not roll back writes. Pending writes commit even if the callback throws. Kensington rejects async functions and generator functions before their bodies run. If an ordinary function returns a Promise, Kensington throws after the function returns. Synchronous writes have already happened by then. Promise work that was already scheduled is not cancelled and its later writes run outside the batch. TypeScript rejects Promise returning callbacks. Await first, then batch the related signal changes.
-
-```javascript
-const data = await loadProfile();
-batch(() => {
-  firstName.set(data.firstName);
-  lastName.set(data.lastName);
-});
-```
-
-`batch()` works in browser and server environments. It can wrap synchronous work inside `renderForHydration` because it does not use browser APIs. Signal state is still read only during server rendering. Putting `.set()` inside a batch does not make that mutation safe.
-
-An existing `await Promise.resolve()` used only before reading updated effect or DOM state remains valid, but it is no longer required. An await does not preserve the old pre-flush ordering for imperative statements between `.set()` and the await; effects have already run before `.set()` returns.
-
-### Migrating from microtask-batched updates
-
-This section applies to applications moving from `2.0.0-signals.26` or earlier. Those prereleases deferred effects and signal-backed DOM bindings to a microtask and automatically coalesced synchronous writes. Updates are now synchronous by default, with `batch(fn)` providing an explicit notification boundary.
-
-Signal values themselves were already updated immediately. The behavior change concerns effects and DOM bindings:
+Signal and computed values change immediately. Existing effects and DOM bindings update in a microtask after the current code finishes. Several writes are automatically grouped and subscribers see the final values. Creating or resuming an effect still runs its callback immediately.
 
 ```javascript
 firstName.set('Grace');
 lastName.set('Hopper');
+console.log(fullName.get()); // Grace Hopper
+// An existing effect reading both signals runs once after this code finishes.
 ```
 
-Previously, an effect reading both signals normally ran once in the next microtask and saw only `Grace Hopper`. It now runs after each `.set()` and can observe `Grace` paired with the previous last name. Wrap related writes that must appear atomically:
+Use `applyPendingReactiveUpdates()` when application code needs the pending DOM updates or user effects to finish before its next line. It takes no arguments and returns nothing.
 
 ```javascript
-import { batch } from 'kensington';
+import { applyPendingReactiveUpdates } from 'kensington';
 
-batch(() => {
-  firstName.set('Grace');
-  lastName.set('Hopper');
-});
+count.set(1);
+applyPendingReactiveUpdates();
+console.log(element.textContent); // 1
 ```
 
-Review these patterns during migration:
+The helper processes the shared pending queue, including updates queued elsewhere and further work queued synchronously by effects. It does not force clean effects to run. Later writes are automatically batched as usual. An already queued microtask does not repeat effects that have finished. A signal changed and restored to its original value still causes a pending effect to run once.
 
-- **Consecutive related writes.** Wrap them in `batch` when an effect or DOM binding reads more than one of the values, or when intermediate states are invalid.
-- **Effects with imperative side effects.** Unbatched writes now invoke storage, logging, analytics, network, and other effect bodies once per write. Batch the originating writes when only the final invocation is wanted.
-- **Imperative bookkeeping after `.set()`.** Effects now run before the next statement. Code such as `state.set('ready'); requestMetadata = next;` makes the effect observe the previous metadata. Move the bookkeeping before `.set()`, or put both statements in a batch so the effect runs after the callback:
+For animation resets, keep transitions disabled while applying updates and calculating layout.
 
-  ```javascript
-  batch(() => {
-    requestMetadata = next;
-    state.set('ready');
-  });
-  ```
+```javascript
+const previousTransition = element.style.transition;
+element.style.transition = 'none';
+try {
+  rotation.set(0);
+  applyPendingReactiveUpdates();
+  element.getBoundingClientRect();
+} finally {
+  element.style.transition = previousTransition;
+}
+```
 
-- **DOM and animation timing.** DOM bindings are current before `.set()` returns. Code that temporarily disables transitions can set the transition override, perform the reactive writes, force layout if needed, and then restore the transition without awaiting a Kensington flush. Use `batch` if several writes form one visual state.
-- **Removal cleanup.** Native DOM removal is observed through `MutationObserver`. In `element.remove(); state.set(next);`, the write occurs before Kensington receives the removal record, so an effect tied to the detached element can run once more. Await a microtask after removal before writing when cleanup must happen first. Kensington's own reconciler stops bindings synchronously for nodes it removes.
-- **`queueMicrotask` callbacks.** Putting several `.set()` calls in the same microtask no longer coalesces them. Put `batch` inside the callback when the callback itself is the desired transaction:
+This does not wait for promises, lifecycle observers, deferred computed cleanup, browser painting, animations, or updates scheduled by third party components. An effect can start asynchronous work that remains unfinished when the call returns. Await the application work itself before applying any resulting pending updates.
 
-  ```javascript
-  queueMicrotask(() => {
-    batch(() => {
-      x.set(1);
-      y.set(2);
-    });
-  });
-  ```
+Call the helper from application code such as an event handler. Calls inside computed or effect callbacks do not start a nested update pass. Calls during `renderForHydration` do nothing so server rendering cannot execute unrelated pending effects. Signal state remains read only during server rendering. The helper also works outside a browser for ordinary server effects.
 
-- **`await Promise.resolve()`.** An await used only before reading updated effect or DOM state remains compatible, but it no longer creates or waits for a Kensington batch. It does not delay effects until the await. Remove it when yielding is unnecessary; retain it when application code genuinely needs to yield to other queued microtasks.
+Errors from effect reruns are isolated and reported on a microtask. Other pending effects continue to run, and signal writes are not rolled back. A try/catch around `applyPendingReactiveUpdates()` does not catch those errors.
 
-Do not pass an async callback or generator callback to `batch`. Kensington rejects it before it runs. Fetch or await first, then batch the related writes afterward. A regular callback that returns a Promise is also rejected at runtime. Work already scheduled by that Promise is not cancelled and runs after the batch has closed.
+Existing code using `await Promise.resolve()` remains compatible with automatic batching. That await yields to the microtask queue. It is not a general guarantee that all later asynchronous work has completed. Prefer the explicit helper when you need pending reactive updates applied without yielding.
 
-Kensington-owned transactions already establish their own boundaries, including live snapshots, live batch-update frames, pending `liveSignal` placeholder upgrades, and live transport bookkeeping. Application-owned groups of writes remain the application's responsibility.
+### Choosing how to wait
+
+Most signal writes need none of these. Use `.set()` and let automatic batching handle the DOM. Signal and computed values read with `.get()` are already current.
+
+| Choice | Use it when | What it does |
+|---|---|---|
+| `applyPendingReactiveUpdates()` | Your next line must read, measure or focus the updated DOM, or inspect an effect's result | Runs Kensington's shared pending queue immediately, including further reactive work queued synchronously by effects. It does not yield. |
+| `queueMicrotask(callback)` | A callback must run after the current code finishes | Schedules ordinary JavaScript work. It does not apply reactive updates immediately or wait for the callback. |
+| `await Promise.resolve()` | An async function needs to let already queued microtasks run before continuing | Suspends that function and queues its continuation. It does not wait for all asynchronous work to finish. |
+
+`Promise.resolve()` by itself just returns a fulfilled promise. It does not pause your code. `Promise.resolve().then(callback)` also schedules a callback. Prefer `queueMicrotask(callback)` for simple deferral. Use a promise chain when you need its result or rejection handling.
+
+#### Focus an input after showing it
+
+The input must be inserted before the event handler can focus it. No asynchronous pause is needed.
+
+```javascript
+import { applyPendingReactiveUpdates, signal, t } from 'kensington';
+
+const editor = signal(null);
+const host = t.div(editor).toElement();
+const button = t.button({
+  onclick: () => {
+    editor.set(t.input({ prop: { value: 'Draft title' } }));
+    applyPendingReactiveUpdates();
+    const input = host.querySelector('input');
+    input.focus();
+    input.select();
+  },
+}, 'Edit title').toElement();
+document.body.append(button, host);
+```
+
+#### Run a callback after the current code
+
+Use `queueMicrotask` when finishing the current callback is part of the requirement. For example, a lazy signal registry may need to create entries outside the effect that discovers them. Capture the needed values inside the effect, then schedule the registry work outside it. The [live signal registry example](live-signals.md#presence-list--mapwithkey-worked-example) shows this pattern.
+
+Calling `applyPendingReactiveUpdates()` inside an effect or computed does not leave that reactive scope or start another update pass. Deferring a signal write does not make a feedback loop safe. The write still needs a condition that prevents repeated updates.
+
+#### Let a pending removal observer run
+
+Direct DOM removal is different from changing a binding. Kensington's removal observer must run before a reactive tag clears its cached element.
+
+```javascript
+import { signal, t } from 'kensington';
+
+const tag = t.p(signal('Ready'));
+const first = tag.toElement();
+document.body.append(first);
+first.remove();
+await Promise.resolve(); // Let the removal observer run.
+const second = tag.toElement();
+document.body.append(second);
+console.log(first === second); // false
+```
+
+The helper cannot replace this wait because it does not run lifecycle observers. One `await Promise.resolve()` is not a general way to empty the microtask queue. Other microtasks can schedule more work behind your continuation. Do not stack arbitrary numbers of resolved promise waits to guess when a request or component is ready. Await its actual promise or lifecycle event, then apply any resulting pending reactive updates if the next line needs them.
+
+None of these choices waits for browser painting or for an animation to finish.
+
+#### Choosing waits in tests
+
+Use the helper for assertions about updated DOM or effect results. Remove waits entirely for synchronous signal reads, computed reads and initial binding values. Keep real asynchronous waits when testing automatic batching, observer callbacks, deferred computed cleanup, asynchronous errors or transport events. `await new Promise(resolve => queueMicrotask(resolve))` introduces another scheduling step and is not automatically interchangeable with `await Promise.resolve()`.
 
 Common mistakes around `effect` (loops, leaked nested effects, signals created inside) are catalogued in [Reactive pitfalls](#reactive-pitfalls). For component-shaped effects whose lifetime should match a DOM element's, capture the handle and stop it from [addDisconnectedCallback](#addconnectedcallback--adddisconnectedcallback).
 
@@ -970,7 +991,7 @@ function statsPanel() {
 - For one-shot setup that doesn't need a teardown, you can still use `addConnectedCallback` alone (e.g. focus a newly mounted input via `el => el.focus()`).
 - The callback body is a plain function call, NOT inside a reactive scope. Creating `effect()` here is the right pattern when you need to react to a signal for as long as the element is mounted. Capture the stop function and call it from `addDisconnectedCallback`: `let stop; panel.addConnectedCallback(() => { stop = effect(() => { ... }); }); panel.addDisconnectedCallback(() => stop?.());`. The `kensington/no-ignored-effect-return` lint rule recognises this capture-and-stop pattern. Creating `signal()` or `computed()` here is also free of warnings since the callback is not a `computed` body.
 - **Window- or document-level listeners** are wired the same way. `panel.addConnectedCallback(() => { window.addEventListener('keydown', handler); }); panel.addDisconnectedCallback(() => { window.removeEventListener('keydown', handler); });` keeps the listener's lifetime tied to the panel's mount. Useful for global keyboard shortcuts, scroll listeners, `online`/`offline` events, etc. Always pair with a `removeEventListener` in the disconnect callback, since these listeners are not on a node that gets garbage collected with the panel.
-- **`addConnectedCallback` fires BEFORE `prop` bindings apply.** This is a general rule, not just a `<select>` or focus-and-select special case. When a tag declares `prop: { value: someSignal }`, the binding effect runs as part of the lifecycle setup that happens around (and partly after) the connected callbacks. **Anything inside `addConnectedCallback` that reads `el.value` (or any other prop-bound property) synchronously will see the pre-binding state, even when the signal is non-empty.** Example failures: measuring a textarea's content size to compute character-cell dimensions, calling `el.focus(); el.select()` on a pre-filled input, mirroring `el.value` to a sibling element. Defer any read with `queueMicrotask(() => { ... })` so the prop binding lands first. Plain `el.focus()` (no value read) is safe in either order because focus does not depend on the prop-bound value.
+- **Initial property bindings are already applied when the connected callback runs.** Kensington applies them while building the element, before the connection observer runs. A new signal write made inside the callback still queues a later binding update. If the next line must read that updated property, call `applyPendingReactiveUpdates()` first. If the work should happen after the current callback finishes, use `queueMicrotask`. Neither choice waits for a third party custom element to finish its own asynchronous rendering. Use that element's readiness API when needed.
 
 This is the canonical place for `setInterval`/`setTimeout`, `IntersectionObserver`, `ResizeObserver`, manual focus, `effect()` whose lifetime should match the element's mount, or any imperative DOM API that needs symmetric setup/cleanup tied to element mount/unmount.
 
@@ -1092,7 +1113,7 @@ effect(() => {
 
 ### Do not use `queueMicrotask` to defer a `.set()` inside an effect or computed
 
-If the surrounding effect or computed reads the signal via `.get()`, it is subscribed. The deferred write re-triggers the run synchronously from that microtask, and the run queues another microtask that writes again. The resulting infinite microtask chain can freeze the browser tab. Use `.value` for reads that should not create a dependency, and write directly without the deferral.
+If the surrounding effect or computed reads the signal via `.get()`, it is subscribed. The deferred write triggers another run, which queues another microtask that writes again. The resulting infinite microtask chain can freeze the browser tab. Use `.value` for reads that should not create a dependency, and write directly without the deferral.
 
 The canonical case is auto-selecting the first item when a filtered list changes:
 

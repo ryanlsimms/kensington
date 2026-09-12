@@ -117,7 +117,7 @@
     "test": "npm run test-esm && npm run test-cjs && npm run test-ts && npm run test-browser && npm run test-cli && npm run test-treeshake && echo 'All tests passed'",
     "test-browser": "npx playwright test --config ./tests/browser/config/playwright.config.js",
     "stop-server": "lsof -ti:3847 | xargs kill 2>/dev/null || true",
-    "test-esm": "node --test \"./tests/esm/esm-test.js\" \"./tests/esm/live-test.js\"",
+    "test-esm": "node --test \"./tests/esm/esm-test.js\" \"./tests/esm/live-test.js\" \"./tests/esm/pending-updates-test.js\"",
     "test-cjs": "node --test \"./tests/cjs/cjs-test.js\"",
     "test-node-minimum": "node ./tests/node-minimum-smoke.mjs",
     "test-ts": "tsc --noEmit -p tests/typescript/tsconfig.json && echo 'TypeScript types OK'",

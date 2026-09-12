@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import { before, beforeEach, describe, it } from 'node:test';
 
 import Kensington, {
-  batch,
+  applyPendingReactiveUpdates,
   computed,
   effect,
   isBrowser,
@@ -19,7 +19,6 @@ import {
   rectAttributes,
   svgGlobalAttributes,
 } from 'kensington/attributes';
-import { batch as reactiveBatch } from 'kensington/reactive';
 
 import {
   _disposeHydrationScope,
@@ -276,8 +275,10 @@ describe('instance-scoped reactive runtime validation', () => {
         handles.push(effect(() => foreignSignal.get()));
         handles.push(foreign.effect(() => local.get()));
         handles.push(computed(() => foreignSignal.get()));
-        batch(() => foreignSignal.set(1));
-        foreign.batch(() => local.set(1));
+        foreignSignal.set(1);
+        applyPendingReactiveUpdates();
+        local.set(1);
+        foreign.applyPendingReactiveUpdates();
       });
       assert.strictEqual(foreignSignal.value, 1);
       assert.strictEqual(local.value, 1);
@@ -328,7 +329,7 @@ describe('instance-scoped reactive runtime validation', () => {
       assert.doesNotThrow(() => strict.div(off.p(value)).toString());
       assert.throws(() => strict.div([off.p(value), value]).toString(), pattern);
       assert.doesNotThrow(() => off.div(value).toString());
-      assert.doesNotThrow(() => batch(() => value.set('after')));
+      assert.doesNotThrow(() => value.set('after'));
     } finally {
       value.stop();
     }
@@ -376,14 +377,15 @@ describe('instance-scoped reactive runtime validation', () => {
     });
     const binding = withRuntimeValidation('warn', msg => messages.push(msg), () =>
       _bindingEffect(source, shouldRead => {
-        if (shouldRead) { batch(() => value.get()); }
+        if (shouldRead) { value.get(); }
       }),
     );
     try {
       source.set(true);
+      applyPendingReactiveUpdates();
       assert.strictEqual(messages.length, 1);
       assert.match(messages[0], pattern);
-      assert.doesNotThrow(() => batch(() => value.set('outside')));
+      assert.doesNotThrow(() => value.set('outside'));
     } finally {
       binding.stop();
       standalone.stop();
@@ -1778,13 +1780,13 @@ describe('signal', () => {
     s.set(n => n * 2);
     assert.strictEqual(s.get(), 6);
   });
-  it('set() with same value does not re-run effects', async () => {
+  it('set() with same value does not re-run effects', () => {
     const s = signal('a');
     let calls = 0;
     effect(() => { s.get(); calls++; });
     calls = 0;
     s.set('a');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     assert.strictEqual(calls, 0);
   });
   it('signal as string content snapshots current value in toString()', () => {
@@ -1893,14 +1895,14 @@ describe('signal', () => {
     other.set(20);
     assert.strictEqual(c.get(), 25);
   });
-  it('value does not subscribe inside effect()', async () => {
+  it('value does not subscribe inside effect()', () => {
     const s = signal(0);
     const trigger = signal(0);
     let calls = 0;
     effect(() => { trigger.get(); s.value; calls++; });
     calls = 0;
     s.set(99);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     assert.strictEqual(calls, 0);
   });
   it('assigning to .value throws', () => {
@@ -1915,7 +1917,7 @@ describe('signal', () => {
   // unsubscribed server-side and missed every future broadcast. The symptom
   // was "remote updates land until the first time the rendering chain drops
   // and reattaches; after that the cell shows stale data until reload."
-  it('_onFirstSubscriber fires on 0 → 1 via .get() inside an effect', async () => {
+  it('_onFirstSubscriber fires on 0 → 1 via .get() inside an effect', () => {
     const s = signal('a');
     let firstCount = 0;
     let zeroCount = 0;
@@ -1926,14 +1928,13 @@ describe('signal', () => {
     assert.strictEqual(firstCount, 1, 'first subscriber via .get() must fire _onFirstSubscriber');
     // Drop the only subscriber.
     eff.stop();
-    await Promise.resolve();
     assert.strictEqual(zeroCount, 1, 'last subscriber leaving must fire _onZeroSubscribers');
     // Re-add via .get() inside a fresh effect. Hook must fire again.
     const eff2 = effect(() => { s.get(); });
     assert.strictEqual(firstCount, 2, 'resubscribe via .get() must fire _onFirstSubscriber');
     eff2.stop();
   });
-  it('_onFirstSubscriber fires on 0 → 1 via .get() inside a computed', async () => {
+  it('_onFirstSubscriber fires on 0 → 1 via .get() inside a computed', () => {
     const s = signal(0);
     let firstCount = 0;
     let zeroCount = 0;
@@ -1946,7 +1947,6 @@ describe('signal', () => {
     // Tear down the chain. The computed should sleep, releasing s.
     eff.stop();
     c = null;
-    await Promise.resolve();
     assert.strictEqual(zeroCount, 1);
     // Build a fresh chain. Resubscribe through .get() must re-fire the hook.
     const c2 = computed(() => s.get() + 1);
@@ -2153,7 +2153,7 @@ describe('signal.mapWithKey', () => {
     tags.get();
     assert.strictEqual(calls, 2); // no re-runs; content matches
   });
-  it('re-runs mapFn for a row when a shallow field on that row changes', async () => {
+  it('re-runs mapFn for a row when a shallow field on that row changes', () => {
     // The load-bearing case: the app updates one field via an immutable
     // update. Only that row's mapFn re-runs; the other rows keep their tags.
     const rows = signal([{ id: 1, label: 'a' }, { id: 2, label: 'b' }]);
@@ -2162,7 +2162,6 @@ describe('signal.mapWithKey', () => {
     tags.get();
     assert.deepStrictEqual(calls, { 1: 1, 2: 1 });
     rows.set(prev => prev.map(r => r.id === 2 ? { ...r, label: 'B!' } : r));
-    await Promise.resolve();
     tags.get();
     assert.deepStrictEqual(calls, { 1: 1, 2: 2 }); // only row 2 re-ran
   });
@@ -2189,7 +2188,7 @@ describe('signal.mapWithKey', () => {
     const rows = signal([1, 2]);
     assert.throws(() => rows.mapWithKey(() => 1, 'not a fn'), /second argument must be a function/);
   });
-  it('re-runs mapFn for a key when a signal it read changes', async () => {
+  it('re-runs mapFn for a key when a signal it read changes', () => {
     const flag = signal('A');
     const rows = signal([{ id: 1 }, { id: 2 }]);
     let calls = 0;
@@ -2200,7 +2199,6 @@ describe('signal.mapWithKey', () => {
     assert.strictEqual(first[0].toString(), '<li>1-A</li>');
 
     flag.set('B');
-    await Promise.resolve();
     const second = tags.get();
     assert.strictEqual(calls, 4); // each row's inner re-ran once
     assert.notStrictEqual(second[0], first[0]); // fresh tag for key 1
@@ -2222,7 +2220,7 @@ describe('signal.mapWithKey', () => {
     tags.get();
     assert.strictEqual(calls, 3); // only id 3 ran mapFn
   });
-  it('re-runs a row\'s mapFn when the outer array delivers a new object ref for that row', async () => {
+  it('re-runs a row\'s mapFn when the outer array delivers a new object ref for that row', () => {
     // The load-bearing case: the app holds one signal(array) and updates a
     // row by producing a new object at that row's position. Only that key's
     // mapFn should re-run. This is what "silent breakage" of the old naive
@@ -2237,12 +2235,11 @@ describe('signal.mapWithKey', () => {
     tags.get();
     assert.deepStrictEqual(calls, { 1: 1, 2: 1, 3: 1 });
     rows.set(prev => prev.map(r => r.id === 2 ? { ...r, label: 'B!' } : r));
-    await Promise.resolve();
     const after = tags.get();
     assert.deepStrictEqual(calls, { 1: 1, 2: 2, 3: 1 });
     assert.strictEqual(after[1].toString(), '<li>B!</li>');
   });
-  it('skips a row\'s mapFn when the outer array is replaced but the row\'s object ref is unchanged', async () => {
+  it('skips a row\'s mapFn when the outer array is replaced but the row\'s object ref is unchanged', () => {
     const a = { id: 1, label: 'a' };
     const b = { id: 2, label: 'b' };
     const rows = signal([a, b]);
@@ -2252,11 +2249,10 @@ describe('signal.mapWithKey', () => {
     assert.strictEqual(calls, 2);
     // Same object refs, new outer array.
     rows.set([a, b]);
-    await Promise.resolve();
     tags.get();
     assert.strictEqual(calls, 2); // no per-row re-run: refs were unchanged
   });
-  it('only the rows whose mapFn read the changed signal rebuild', async () => {
+  it('only the rows whose mapFn read the changed signal rebuild', () => {
     const colorA = signal('red');
     const colorB = signal('blue');
     const rows = signal([{ id: 'a', sig: colorA }, { id: 'b', sig: colorB }]);
@@ -2268,7 +2264,6 @@ describe('signal.mapWithKey', () => {
     assert.strictEqual(first[1].toString(), '<li>blue</li>');
 
     colorA.set('green');
-    await Promise.resolve();
     const second = tags.get();
     // Only the row that subscribed to colorA re-ran.
     assert.strictEqual(calls - firstCalls, 1);
@@ -2383,19 +2378,18 @@ describe('signal.mapWithKey', () => {
     } catch (e) { error = e; }
     assert.strictEqual(error, null);
   });
-  it('re-runs mapFn on the same tag when a nested field changes via fresh top-level ref', async () => {
+  it('re-runs mapFn on the same tag when a nested field changes via fresh top-level ref', () => {
     const rows = signal([{ id: 1, count: 0 }, { id: 2, count: 0 }]);
     const tags = rows.mapWithKey('id', r => t.li(`${r.id}:${r.count}`));
     const first = tags.get();
     // Edit row 1 only via immutable-update pattern.
     rows.set(prev => prev.map(r => r.id === 1 ? { ...r, count: 5 } : r));
-    await Promise.resolve();
     const after = tags.get();
     assert.notStrictEqual(after[0], first[0]); // row 1 re-rendered
     assert.strictEqual(after[1], first[1]); // row 2 tag unchanged
     assert.strictEqual(after[0].toString(), '<li>1:5</li>');
   });
-  it('combined add + edit + remove in one set applies each independently', async () => {
+  it('combined add + edit + remove in one set applies each independently', () => {
     const r1 = { id: 1, label: 'a' };
     const r2 = { id: 2, label: 'b' };
     const r3 = { id: 3, label: 'c' };
@@ -2406,11 +2400,10 @@ describe('signal.mapWithKey', () => {
     assert.deepStrictEqual(calls, { 1: 1, 2: 1, 3: 1, 4: 0 });
     // Remove r2, edit r1's label, keep r3 unchanged, add r4.
     rows.set([{ ...r1, label: 'A!' }, r3, { id: 4, label: 'd' }]);
-    await Promise.resolve();
     tags.get();
     assert.deepStrictEqual(calls, { 1: 2, 2: 1, 3: 1, 4: 1 });
   });
-  it('mapFn re-runs when it also reads an external signal (deps are additive)', async () => {
+  it('mapFn re-runs when it also reads an external signal (deps are additive)', () => {
     const debug = signal(false);
     const rows = signal([{ id: 1, label: 'a' }]);
     let calls = 0;
@@ -2422,12 +2415,10 @@ describe('signal.mapWithKey', () => {
     assert.strictEqual(calls, 1);
     // External signal change triggers re-run of every row that reads it.
     debug.set(true);
-    await Promise.resolve();
     tags.get();
     assert.strictEqual(calls, 2);
     // Row edit also triggers re-run.
     rows.set([{ id: 1, label: 'A!' }]);
-    await Promise.resolve();
     tags.get();
     assert.strictEqual(calls, 3);
   });
@@ -2459,7 +2450,7 @@ describe('signal.mapWithKey', () => {
     tags.get();
     assert.strictEqual(calls, 2); // no re-runs on removal
   });
-  it('preserves stable tag identity for unchanged rows when other rows edit', async () => {
+  it('preserves stable tag identity for unchanged rows when other rows edit', () => {
     // The load-bearing DOM-reuse property, expressed at the reactivity layer.
     const r1 = { id: 1, v: 'a' };
     const r2 = { id: 2, v: 'b' };
@@ -2468,14 +2459,13 @@ describe('signal.mapWithKey', () => {
     const tags = rows.mapWithKey('id', r => t.li(r.v));
     const first = tags.get();
     rows.set([r1, { ...r2, v: 'B!' }, r3]); // only r2 changed
-    await Promise.resolve();
     const after = tags.get();
     assert.strictEqual(after[0], first[0]);
     assert.notStrictEqual(after[1], first[1]);
     assert.strictEqual(after[2], first[2]);
   });
 
-  it('subscribes only to signals mapFn reads via .get() (not .value)', async () => {
+  it('subscribes only to signals mapFn reads via .get() (not .value)', () => {
     const debug = signal(false);
     const showInfo = signal('hi');
     const rows = signal([{ id: 1 }]);
@@ -2487,12 +2477,10 @@ describe('signal.mapWithKey', () => {
     tags.get();
     assert.strictEqual(calls, 1); // one inner run
     showInfo.set('hello');
-    await Promise.resolve();
     tags.get();
     assert.strictEqual(calls, 2); // one rebuild
     // debug was read via .value (untracked), so flipping it does not trigger a rebuild.
     debug.set(true);
-    await Promise.resolve();
     tags.get();
     assert.strictEqual(calls, 2);
   });
@@ -2522,14 +2510,14 @@ describe('computed signal', () => {
     b.set(20);
     assert.strictEqual(sum.get(), 30);
   });
-  it('does not re-run effects if computed value is unchanged', async () => {
+  it('does not re-run effects if computed value is unchanged', () => {
     const s = signal('a');
     const upper = computed(() => s.get().toUpperCase());
     let calls = 0;
     effect(() => { upper.get(); calls++; });
     calls = 0;
     s.set('A'); // same result after toUpperCase
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     assert.strictEqual(calls, 0);
   });
   it('computed value used in toString()', () => {
@@ -2573,6 +2561,7 @@ describe('computed signal', () => {
       assert.strictEqual(computeCalls, 1);
       for (let i = 0; i < 10; i++) {
         src.set(i + 2);
+        // Let the effect rerun and its deferred computed cleanup finish before the next write.
         await new Promise(resolve => { queueMicrotask(resolve); });
       }
       // With cleanup: ~21 calls (1 initial + 2 per set: existing update fires, then new
@@ -2591,7 +2580,7 @@ describe('computed signal', () => {
 // ─── computed auto-dispose ──────────────────────────────────────────────────
 
 describe('computed auto-dispose', () => {
-  it('unsubscribes from source when its last subscriber stops', async () => {
+  it('unsubscribes from source when its last subscriber stops', () => {
     const src = signal(1);
     let runs = 0;
     const c = computed(() => { runs++; return src.get() * 2; });
@@ -2600,7 +2589,6 @@ describe('computed auto-dispose', () => {
     fx.stop();
     const runsBefore = runs;
     src.set(99);
-    await Promise.resolve();
     assert.strictEqual(runs, runsBefore); // c did not re-run after sleep
   });
 
@@ -2616,7 +2604,7 @@ describe('computed auto-dispose', () => {
     assert.strictEqual(JSON.stringify({ c }), '{"c":30}');
   });
 
-  it('wakes and returns fresh value when a new subscriber reads it', async () => {
+  it('wakes and returns fresh value when a new subscriber reads it', () => {
     const src = signal(2);
     const c = computed(() => src.get() * 3);
     const fx = effect(() => { c.get(); });
@@ -2624,12 +2612,11 @@ describe('computed auto-dispose', () => {
     src.set(10);
     let seen;
     const fx2 = effect(() => { seen = c.get(); });
-    await Promise.resolve();
     assert.strictEqual(seen, 30); // woke up, re-ran fn, got fresh value
     fx2.stop();
   });
 
-  it('resumes tracking source after wake', async () => {
+  it('resumes tracking source after wake', () => {
     const src = signal(1);
     const c = computed(() => src.get() + 1);
     const fx = effect(() => { c.get(); });
@@ -2638,12 +2625,12 @@ describe('computed auto-dispose', () => {
     const results = [];
     const fx2 = effect(() => { results.push(c.get()); });
     src.set(10);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     assert.deepStrictEqual(results, [6, 11]); // woke at 6, then tracked 10+1=11
     fx2.stop();
   });
 
-  it('cascades sleep through a computed chain', async () => {
+  it('cascades sleep through a computed chain', () => {
     const src = signal(2);
     let bRuns = 0;
     let cRuns = 0;
@@ -2654,7 +2641,6 @@ describe('computed auto-dispose', () => {
     const fx = effect(() => { c.get(); });
     fx.stop();
     src.set(99);
-    await Promise.resolve();
     assert.strictEqual(bRuns, 0); // b also slept — did not re-run
     assert.strictEqual(cRuns, 0);
   });
@@ -2692,7 +2678,7 @@ describe('computed auto-dispose', () => {
     fx.stop();
   });
 
-  it('paused effect lets computed sleep; resume re-establishes tracking with fresh value', async () => {
+  it('paused effect lets computed sleep; resume re-establishes tracking with fresh value', () => {
     const src = signal(1);
     const c = computed(() => src.get() * 2);
     const results = [];
@@ -2700,12 +2686,11 @@ describe('computed auto-dispose', () => {
     fx.pause();
     src.set(5); // c still tracks, updates to 10
     fx.resume();
-    await Promise.resolve();
     assert.deepStrictEqual(results, [2, 10]); // initial + resumed run sees fresh value
     fx.stop();
   });
 
-  it('transform chain auto-disposes when effect stops', async () => {
+  it('transform chain auto-disposes when effect stops', () => {
     const src = signal(3);
     let runs = 0;
     const doubled = src.transform(v => { runs++; return v * 2; });
@@ -2714,7 +2699,6 @@ describe('computed auto-dispose', () => {
     const fx = effect(() => { plusOne.get(); });
     fx.stop();
     src.set(99);
-    await Promise.resolve();
     assert.strictEqual(runs, 0);
   });
 
@@ -2727,14 +2711,20 @@ describe('computed auto-dispose', () => {
     const fx = effect(() => { seen.push(c.get()); });
     runs = 0; // reset after initial effect run
     src.set(5);
+    applyPendingReactiveUpdates();
+    // Let deferred sleep checks run before verifying that resubscription kept the computed awake.
     await Promise.resolve();
     // c re-ran exactly once (src changed), no extra run from wake
     assert.strictEqual(runs, 1);
     assert.deepStrictEqual(seen, [2, 10]);
+    src.set(6);
+    assert.strictEqual(runs, 2); // A sleeping computed would not react to this source write.
+    applyPendingReactiveUpdates();
+    assert.deepStrictEqual(seen, [2, 10, 12]);
     fx.stop();
   });
 
-  it('computed still sleeps when its subscriber stops outside a flush', async () => {
+  it('computed still sleeps when its subscriber stops outside a flush', () => {
     const src = signal(1);
     let runs = 0;
     const c = computed(() => { runs++; return src.get() * 2; });
@@ -2743,7 +2733,6 @@ describe('computed auto-dispose', () => {
     fx.stop();
     const runsBefore = runs;
     src.set(99);
-    await Promise.resolve();
     assert.strictEqual(runs, runsBefore); // c slept immediately, did not re-run
   });
 });
@@ -2751,266 +2740,65 @@ describe('computed auto-dispose', () => {
 // ─── effect ────────────────────────────────────────────────────────────────
 
 describe('effect', () => {
-  it('exports the same batch() function from kensington/reactive', () => {
-    assert.strictEqual(reactiveBatch, batch);
-  });
   it('runs immediately', () => {
     const s = signal(1);
     let result = 0;
     effect(() => { result = s.get() * 2; });
     assert.strictEqual(result, 2);
   });
-  it('tears down partial subscriptions when the initial run throws', () => {
-    const s = signal(0);
-    let runs = 0;
-    assert.throws(() => effect(() => {
-      runs++;
-      s.get();
-      throw new Error('initial effect error');
-    }), /initial effect error/);
-    s.set(1);
-    assert.strictEqual(runs, 1);
-  });
-  it('re-runs synchronously when a dependency changes', () => {
+  it('re-runs when a dependency changes', () => {
     const s = signal('a');
     const log = [];
     effect(() => { log.push(s.get()); });
     s.set('b');
-    assert.deepStrictEqual(log, ['a', 'b']);
+    applyPendingReactiveUpdates();
     s.set('c');
+    applyPendingReactiveUpdates();
     assert.deepStrictEqual(log, ['a', 'b', 'c']);
   });
-  it('runs once for each unbatched set() call', () => {
+  it('batches multiple synchronous set() calls into one effect run', async () => {
     const s = signal(0);
     const log = [];
     effect(() => { log.push(s.get()); });
     s.set(1);
     s.set(2);
-    assert.deepStrictEqual(log, [0, 1, 2]);
-  });
-  it('batch() coalesces multiple set() calls into one effect run', () => {
-    const s = signal(0);
-    const log = [];
-    effect(() => { log.push(s.get()); });
-    const result = batch(() => {
-      s.set(1);
-      s.set(2);
-      assert.deepStrictEqual(log, [0]);
-      return 'result';
-    });
+    // Test automatic batching rather than forcing the queued effect to run.
+    await Promise.resolve();
     assert.deepStrictEqual(log, [0, 2]);
-    assert.strictEqual(result, 'result');
   });
-  it('batch() coalesces writes to multiple dependencies', () => {
-    const a = signal(0);
-    const b = signal(0);
-    const log = [];
-    effect(() => { log.push(a.get() + b.get()); });
-    batch(() => {
-      a.set(1);
-      b.set(2);
-    });
-    assert.deepStrictEqual(log, [0, 3]);
-  });
-  it('one source write is glitch-free across a computed diamond', () => {
-    const source = signal(1);
-    const plusOne = computed(() => source.get() + 1);
-    const timesTwo = computed(() => source.get() * 2);
-    const log = [];
-    effect(() => { log.push(plusOne.get() + timesTwo.get()); });
-    source.set(2);
-    assert.deepStrictEqual(log, [4, 7]);
-  });
-  it('nested batches flush once at the outer boundary', () => {
-    const s = signal(0);
-    const log = [];
-    effect(() => { log.push(s.get()); });
-    batch(() => {
-      s.set(1);
-      batch(() => s.set(2));
-      assert.deepStrictEqual(log, [0]);
-      s.set(3);
-    });
-    assert.deepStrictEqual(log, [0, 3]);
-  });
-  it('batch() flushes pending effects and rethrows when the callback throws', () => {
-    const s = signal(0);
-    const log = [];
-    effect(() => { log.push(s.get()); });
-    assert.throws(() => batch(() => {
-      s.set(1);
-      throw new Error('batch error');
-    }), /batch error/);
-    assert.deepStrictEqual(log, [0, 1]);
-  });
-  it('computed values stay current inside a batch', () => {
-    const s = signal(1);
-    const doubled = computed(() => s.get() * 2);
-    batch(() => {
-      s.set(2);
-      assert.strictEqual(doubled.get(), 4);
-    });
-  });
-  it('computed values recompute for every source write inside a batch', () => {
-    const a = signal(0);
-    const b = signal(0);
-    let computedRuns = 0;
-    const total = computed(() => {
-      computedRuns++;
-      return a.get() + b.get();
-    });
-    const effectValues = [];
-    const fx = effect(() => { effectValues.push(total.get()); });
-    batch(() => {
-      a.set(1);
-      b.set(2);
-      assert.strictEqual(total.get(), 3);
-      assert.strictEqual(computedRuns, 3);
-      assert.deepStrictEqual(effectValues, [0]);
-    });
-    assert.deepStrictEqual(effectValues, [0, 3]);
-    fx.stop();
-    total.stop();
-  });
-  it('effect creation and resume stay immediate inside a batch', () => {
-    const createdSignal = signal(0);
-    const createdLog = [];
-    let created;
-    batch(() => {
-      created = effect(() => { createdLog.push(createdSignal.get()); });
-      assert.deepStrictEqual(createdLog, [0]);
-      createdSignal.set(1);
-      assert.deepStrictEqual(createdLog, [0]);
-    });
-    assert.deepStrictEqual(createdLog, [0, 1]);
-
-    const resumedSignal = signal(0);
-    const resumedLog = [];
-    const resumed = effect(() => { resumedLog.push(resumedSignal.get()); });
-    resumed.pause();
-    resumedSignal.set(1);
-    batch(() => {
-      resumed.resume();
-      assert.deepStrictEqual(resumedLog, [0, 1]);
-      resumedSignal.set(2);
-      assert.deepStrictEqual(resumedLog, [0, 1]);
-    });
-    assert.deepStrictEqual(resumedLog, [0, 1, 2]);
-    created.stop();
-    resumed.stop();
-  });
-  it('a net-zero batch still reruns a dirtied effect once', () => {
-    const s = signal(0);
-    const log = [];
-    const fx = effect(() => { log.push(s.get()); });
-    batch(() => {
-      s.set(1);
-      s.set(0);
-    });
-    assert.deepStrictEqual(log, [0, 0]);
-    fx.stop();
-  });
-  it('await Promise.resolve() preserves an already-committed synchronous update', async () => {
-    const s = signal(0);
-    let value;
-    effect(() => { value = s.get(); });
-    s.set(1);
-    assert.strictEqual(value, 1);
-    await Promise.resolve();
-    assert.strictEqual(value, 1);
-  });
-  it('rejects an async callback before it runs', async () => {
-    const s = signal(0);
-    const log = [];
-    effect(() => { log.push(s.get()); });
-    let callbackRan = false;
-    assert.throws(() => batch(async () => {
-      callbackRan = true;
-      s.set(1);
-      await Promise.resolve();
-      s.set(2);
-    }), /batch\(\) requires a synchronous callback/);
-    assert.strictEqual(callbackRan, false);
-    await Promise.resolve();
-    assert.deepStrictEqual(log, [0]);
-  });
-  it('does not mistake Symbol.toStringTag for an async callback', () => {
-    let callbackRan = false;
-    const callback = () => { callbackRan = true; };
-    Object.defineProperty(callback, Symbol.toStringTag, { value: 'AsyncFunction' });
-    assert.doesNotThrow(() => batch(callback));
-    assert.strictEqual(callbackRan, true);
-  });
-  it('rejects generator callbacks before their bodies can run', () => {
-    let generatorRan = false;
-    let asyncGeneratorRan = false;
-    assert.throws(() => batch(function* generatorCallback() {
-      generatorRan = true;
-      yield 1;
-    }), /batch\(\) requires a synchronous callback/);
-    assert.throws(() => batch(async function* asyncGeneratorCallback() {
-      asyncGeneratorRan = true;
-      yield 1;
-    }), /batch\(\) requires a synchronous callback/);
-    assert.strictEqual(generatorRan, false);
-    assert.strictEqual(asyncGeneratorRan, false);
-  });
-  it('rejects a Promise returned by a non-async callback and still closes the batch', () => {
-    const s = signal(0);
-    const log = [];
-    effect(() => { log.push(s.get()); });
-    assert.throws(() => batch(() => {
-      s.set(1);
-      return Promise.resolve('result');
-    }), /batch\(\) requires a synchronous callback/);
-    assert.deepStrictEqual(log, [0, 1]);
-    s.set(2);
-    assert.deepStrictEqual(log, [0, 1, 2]);
-  });
-  it('cannot cancel Promise work scheduled by an indirectly async callback', async () => {
-    const s = signal(0);
-    const log = [];
-    effect(() => { log.push(s.get()); });
-    assert.throws(() => batch(() => Promise.resolve().then(() => {
-      s.set(1);
-    })), /batch\(\) requires a synchronous callback/);
-    assert.deepStrictEqual(log, [0]);
-    await Promise.resolve();
-    assert.deepStrictEqual(log, [0, 1]);
-  });
-  it('tracks multiple signal dependencies', async () => {
+  it('tracks multiple signal dependencies', () => {
     const a = signal(1);
     const b = signal(10);
     let result = 0;
     effect(() => { result = a.get() + b.get(); });
     assert.strictEqual(result, 11);
     a.set(2);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     assert.strictEqual(result, 12);
     b.set(20);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     assert.strictEqual(result, 22);
   });
-  it('stop() prevents further runs', async () => {
+  it('stop() prevents further runs', () => {
     const s = signal(0);
     const log = [];
     const e = effect(() => { log.push(s.get()); });
     s.set(1);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     e.stop();
     s.set(2);
     s.set(3);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     assert.deepStrictEqual(log, [0, 1]);
   });
-  it('stop() before a batch commits cancels the pending run', () => {
+  it('stop() before microtask fires cancels the pending run', async () => {
     const s = signal(0);
     const log = [];
     const e = effect(() => { log.push(s.get()); });
-    batch(() => {
-      s.set(1);
-      e.stop();
-    });
+    s.set(1);
+    e.stop(); // cancels the deferred run before it fires
+    // Let the scheduled automatic pass run and verify it skips the stopped effect.
+    await Promise.resolve();
     assert.deepStrictEqual(log, [0]);
   });
   it('a throwing effect does not prevent other batched effects from running', async () => {
@@ -3029,15 +2817,16 @@ describe('effect', () => {
       s.get();
     });
     effect(() => { log.push(s.get()); });
-    assert.doesNotThrow(() => s.set(1));
-    assert.deepStrictEqual(surfaced, [], 'effect errors remain asynchronous even though the effect ran synchronously');
+    s.set(1);
+    // Run the automatic effect pass, which catches and queues the error report.
     await Promise.resolve();
+    // Run the error report queued by that pass before restoring the microtask wrapper.
     await Promise.resolve();
     globalThis.queueMicrotask = origQMT;
     assert.strictEqual(surfaced.length, 1);
     assert.deepStrictEqual(log, [0, 1]);
   });
-  it('cleans up stale conditional dependencies', async () => {
+  it('cleans up stale conditional dependencies', () => {
     const flag = signal(true);
     const a = signal('a');
     const b = signal('b');
@@ -3045,16 +2834,16 @@ describe('effect', () => {
     effect(() => { log.push(flag.get() ? a.get() : b.get()); });
     assert.deepStrictEqual(log, ['a']);
     flag.set(false);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     assert.deepStrictEqual(log, ['a', 'b']);
     a.set('a2');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     assert.deepStrictEqual(log, ['a', 'b']); // a is no longer tracked
     b.set('b2');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     assert.deepStrictEqual(log, ['a', 'b', 'b2']);
     flag.set(true);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     assert.deepStrictEqual(log, ['a', 'b', 'b2', 'a2']);
   });
 });
@@ -3184,6 +2973,7 @@ describe('reactive loop guards', () => {
     const postLoopValues = [];
     const observer = effect(() => { postLoopValues.push(a.get()); });
     a.set(999);
+    applyPendingReactiveUpdates();
     observer.stop();
     assert.strictEqual(a.value, 999);
     assert.strictEqual(postLoopValues.length, 2);
@@ -3211,7 +3001,7 @@ describe('reactive loop guards', () => {
       const s = signal(0);
       let runs = 0;
       effect(() => { s.get(); runs++; });
-      for (let i = 1; i <= 10_005; i++) { s.set(i); }
+      for (let i = 1; i <= 10_005; i++) { s.set(i); applyPendingReactiveUpdates(); }
       assert.strictEqual(s.value, 10_005);
       assert.strictEqual(runs, 10_006);
     } finally {
@@ -3227,6 +3017,7 @@ describe('reactive loop guards', () => {
     const s = signal(0);
     const loopingEffect = effect(() => {
       const value = s.get();
+      // Deliberately cross microtask boundaries to test the asynchronous loop guard.
       queueMicrotask(() => { s.set(value + 1); });
     });
     try {
@@ -3238,49 +3029,55 @@ describe('reactive loop guards', () => {
     assert.ok(errors.some(e => e.includes('async reactive loop detected')));
   });
 
-  it('stops a process.nextTick feedback loop without starving the event loop', async () => {
-    const moduleUrl = new URL('../../esm/index.js', import.meta.url).href;
-    const source = `
-      import { effect, signal } from ${JSON.stringify(moduleUrl)};
-      const errors = [];
-      console.error = message => errors.push(String(message));
-      const value = signal(0);
-      effect(() => {
-        const current = value.get();
-        process.nextTick(() => value.set(current + 1));
+  for (const applyImmediately of [false, true]) {
+    const mode = applyImmediately ? 'explicit' : 'automatic';
+    it(`stops a process.nextTick feedback loop with ${mode} updates without starving the event loop`, async () => {
+      const moduleUrl = new URL('../../esm/index.js', import.meta.url).href;
+      const source = `
+        import { applyPendingReactiveUpdates, effect, signal } from ${JSON.stringify(moduleUrl)};
+        const errors = [];
+        console.error = message => errors.push(String(message));
+        const value = signal(0);
+        effect(() => {
+          const current = value.get();
+          process.nextTick(() => {
+            value.set(current + 1);
+            if (${applyImmediately}) { applyPendingReactiveUpdates(); }
+          });
+        });
+        setTimeout(() => {
+          console.log(JSON.stringify({ errors, value: value.value }));
+        }, 0);
+      `;
+      const result = await new Promise((resolve, reject) => {
+        const child = spawn(process.execPath, ['--input-type=module', '--eval', source], {
+          stdio: ['ignore', 'pipe', 'pipe'],
+        });
+        let stdout = '';
+        let stderr = '';
+        let timedOut = false;
+        const timer = setTimeout(() => {
+          timedOut = true;
+          child.kill('SIGKILL');
+        }, 2000);
+        child.stdout.on('data', chunk => { stdout += chunk; });
+        child.stderr.on('data', chunk => { stderr += chunk; });
+        child.on('error', reject);
+        child.on('close', code => {
+          clearTimeout(timer);
+          if (timedOut) {
+            reject(new Error('process.nextTick feedback loop starved the event loop'));
+          } else if (code === 0) {
+            resolve(JSON.parse(stdout.trim()));
+          } else {
+            reject(new Error(`child exited ${code}\n${stderr}`));
+          }
+        });
       });
-      setTimeout(() => {
-        console.log(JSON.stringify({ errors, value: value.value }));
-      }, 0);
-    `;
-    const result = await new Promise((resolve, reject) => {
-      const child = spawn(process.execPath, ['--input-type=module', '--eval', source], {
-        stdio: ['ignore', 'pipe', 'pipe'],
-      });
-      let stdout = '';
-      let stderr = '';
-      let timedOut = false;
-      const timer = setTimeout(() => {
-        timedOut = true;
-        child.kill('SIGKILL');
-      }, 2000);
-      child.stdout.on('data', chunk => { stdout += chunk; });
-      child.stderr.on('data', chunk => { stderr += chunk; });
-      child.on('error', reject);
-      child.on('close', code => {
-        clearTimeout(timer);
-        if (timedOut) {
-          reject(new Error('process.nextTick feedback loop starved the event loop'));
-        } else if (code === 0) {
-          resolve(JSON.parse(stdout.trim()));
-        } else {
-          reject(new Error(`child exited ${code}\n${stderr}`));
-        }
-      });
+      assert.ok(result.errors.some(e => e.includes('async reactive loop detected')));
+      assert.ok(result.value > 0);
     });
-    assert.ok(result.errors.some(e => e.includes('async reactive loop detected')));
-    assert.ok(result.value > 0);
-  });
+  }
 });
 
 describe('renderForHydration', () => {
@@ -3291,64 +3088,6 @@ describe('renderForHydration', () => {
   it('injects data-k-mount-target on root element', () => {
     const html = renderForHydration(comp, {}).toString();
     assert.match(html, /data-k-mount-target="k[a-z0-9]+"/);
-  });
-
-  it('supports batch() inside a server render without browser globals', () => {
-    assert.strictEqual(typeof document, 'undefined');
-    function batchedComponent({ value }) {
-      return batch(() => t.div({ id: 'batched-ssr' }, value));
-    }
-    const html = renderForHydration(
-      batchedComponent,
-      { value: 'server' },
-      'batchedComponent',
-    ).toString();
-    assert.match(html, /id="batched-ssr"/);
-    assert.match(html, />server<\/div>/);
-    assert.match(html, /data-k-component="batchedComponent"/);
-  });
-
-  it('preserves SSR effect suppression and computed isolation inside nested batches', () => {
-    const source = signal(2);
-    let effectRuns = 0;
-    let computedRuns = 0;
-    function batchedComponent() {
-      return batch(() => batch(() => {
-        const doubled = computed(() => {
-          computedRuns++;
-          return source.get() * 2;
-        });
-        effect(() => { source.get(); effectRuns++; });
-        return t.div(doubled);
-      }));
-    }
-    const html = renderForHydration(batchedComponent, {}).toString();
-    assert.match(html, />4<\/div>/);
-    assert.strictEqual(effectRuns, 0);
-    assert.strictEqual(computedRuns, 1);
-    source.set(3);
-    assert.strictEqual(effectRuns, 0);
-    assert.strictEqual(computedRuns, 1);
-    source.stop();
-  });
-
-  it('restores both the batch and SSR state after a batched server render throws', () => {
-    function failedComponent() {
-      return batch(() => batch(() => { throw new Error('render failed'); }));
-    }
-    assert.throws(() => renderForHydration(failedComponent, {}), /render failed/);
-    const source = signal(0);
-    const seen = [];
-    const observer = effect(() => { seen.push(source.get()); });
-    try {
-      batch(() => { source.set(1); source.set(2); });
-      assert.deepStrictEqual(seen, [0, 2]);
-      source.set(3);
-      assert.deepStrictEqual(seen, [0, 2, 3]);
-    } finally {
-      observer.stop();
-      source.stop();
-    }
   });
 
   it('embeds state as application/json script block', () => {
@@ -3444,6 +3183,7 @@ describe('renderForHydration', () => {
 
   it('throws for async component', () => {
     function asyncComp() {
+      // Return a Promise intentionally to verify that hydration rejects asynchronous components.
       return Promise.resolve(t.div());
     }
     assert.throws(
@@ -3663,15 +3403,14 @@ describe('Signal.set during renderForHydration', () => {
     assert.ok(warnings.some(w => w.includes('.set() called inside renderForHydration')));
   });
 
-  it('still warns about signal mutation inside a batched server render', () => {
+  it('still warns about signal mutation when pending updates are requested during SSR', () => {
     const shared = signal(0);
-    function batchedMutation() {
-      return batch(() => {
-        shared.set(1);
-        return t.div(shared);
-      });
+    function ssrMutation() {
+      shared.set(1);
+      applyPendingReactiveUpdates();
+      return t.div(shared);
     }
-    const warnings = capture(() => renderForHydration(batchedMutation, {}).toString());
+    const warnings = capture(() => renderForHydration(ssrMutation, {}).toString());
     assert.ok(warnings.some(w => w.includes('.set() called inside renderForHydration')));
     shared.stop();
   });

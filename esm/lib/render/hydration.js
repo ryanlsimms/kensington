@@ -334,8 +334,7 @@ function flushSSRStyles() {
   ssrStyleRemovalScheduled = false;
   if (pendingSSRStyles.size === 0) { return; }
 
-  // Signal effects commit synchronously. Connected callbacks and application-scheduled
-  // microtasks also run before this frame. Commit their final mount-time values in one layout
+  // Signal effects, connected callbacks, and application microtasks run before this frame. Commit their final mount-time values in one layout
   // pass with transitions still suppressed, then restore the application's CSS. Later state
   // changes animate normally.
   document.documentElement.getBoundingClientRect();

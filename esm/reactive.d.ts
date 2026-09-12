@@ -1,5 +1,5 @@
 export {
-  batch,
+  applyPendingReactiveUpdates,
   computed,
   effect,
   isKensingtonSignal,

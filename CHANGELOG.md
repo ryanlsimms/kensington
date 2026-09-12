@@ -7,14 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- Added `batch(fn)` to `kensington` and `kensington/reactive`. It groups related signal writes into one round of effect and DOM updates.
+- Added `applyPendingReactiveUpdates()` to `kensington` and `kensington/reactive`. It immediately processes pending DOM updates and user effects when code needs them completed before the next line.
 - Added TypeScript declarations for `kensington/reactive`.
 - Added a `nonce` option to `registerComponents` for Content Security Policies that restrict inline styles.
 - Added Runtime Guard diagnostics for reactive values from separate Kensington runtimes used during tag rendering and binding updates. The instance validation level controls reporting. Slim builds omit the diagnostics.
 - `<template>` `for` attribute
 
 ### Changed
-- **BREAKING:** Signal effects and DOM bindings now update before `.set()` returns. Use `batch()` when related writes should update together. See [Migrating from microtask-batched updates](agent-docs/reactive.md#migrating-from-microtask-batched-updates).
 - **BREAKING:** `registerComponents` now returns nothing. The registration `stop()` handle has been removed and registrations last for the document's lifetime.
 - Registering a component name again now produces a warning and ignores the duplicate.
 

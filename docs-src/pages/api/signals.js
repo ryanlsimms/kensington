@@ -91,36 +91,38 @@ signal<T>(initialValue: T, key: SignalKey): Signal<T>  // keyed form`),
       ],
     ]),
 
-    t.h3({ id: 'api-batch' }, 'batch'),
-    code('typescript', `import { batch } from 'kensington';
+    t.h3({ id: 'api-apply-pending-reactive-updates' }, 'applyPendingReactiveUpdates'),
+    code('typescript', `import { applyPendingReactiveUpdates } from 'kensington';
 
-batch<T>(fn: () => T): T`),
+applyPendingReactiveUpdates(): void`),
     t.p([
-      'Runs ',
-      t.code('fn'),
-      ' immediately and defers effects and DOM bindings caused by signal writes until the outermost batch returns. Nested batches coalesce into the same commit, the callback return value is preserved, and computed values stay current inside the callback. Computeds still recompute after every source write. Creating or resuming an effect still runs it immediately. A net-zero batch still runs a dirtied effect once. Outside a batch, signal updates propagate synchronously.',
-    ]),
-    code('javascript', `batch(() => {
-  firstName.set('Grace');
-  lastName.set('Hopper');
-}); // dependent effects and DOM bindings run once here`),
-    t.p([
-      t.code('batch()'),
-      ' accepts only callbacks that finish while the call is running. Kensington rejects async functions and generator functions before their bodies run. If an ordinary function returns a Promise, Kensington throws after that function returns. Promise work already scheduled is not cancelled. Writes from that later work run outside the batch. TypeScript reports Promise returning callbacks as errors.',
+      'Immediately processes pending reactive updates, including DOM bindings and user effects. It takes no arguments and returns nothing. The shared queue is processed before the call returns, including further updates queued synchronously by effects. Clean effects are not forced to rerun. Later writes are automatically batched as usual.',
     ]),
     t.p([
-      'Await any asynchronous work before calling ',
-      t.code('batch()'),
-      '. Then group the signal changes that should update the page together.',
+      'The helper runs the queued callbacks directly on the current call stack. It does not return a Promise, run JavaScript’s microtask queue or wait for asynchronous work started by an effect.',
+    ]),
+    code('javascript', `rotation.set(0);
+applyPendingReactiveUpdates();
+element.getBoundingClientRect();`),
+    t.p([
+      'Call this from application code when you need to read or measure the updated DOM immediately. It does not wait for promises, lifecycle observers, browser painting, or animations. Errors from effect reruns are reported on a microtask and do not interrupt the remaining updates.',
     ]),
     t.p([
-      'A batch is not an undo mechanism. If the callback throws an error, signal changes made before the error are kept. Any waiting effects and DOM updates still run.',
+      'During an effect or computed callback it does not start a nested update pass. During renderForHydration it does nothing so server rendering cannot execute unrelated pending effects.',
     ]),
     t.p([
-      t.code('batch()'),
-      ' works in browser and server environments, including inside ',
-      t.code('renderForHydration'),
-      '. It does not permit signal mutation during server rendering. Signals remain read only while a component is rendered for hydration.',
+      'See ',
+      t.a({ href: '?page=reactivity#signals-batching' }, 'Update timing'),
+      ' for automatic batching and animation reset examples.',
+    ]),
+    t.p([
+      'For the difference from ',
+      t.code('queueMicrotask(callback)'),
+      ' and ',
+      t.code('await Promise.resolve()'),
+      ', see ',
+      t.a({ href: '?page=reactivity#choosing-update-timing' }, 'Choose how to wait'),
+      '.',
     ]),
 
     t.h3({ id: 'api-computed' }, 'computed'),
@@ -191,9 +193,7 @@ effect(fn: () => void): { pause(): void, resume(): void, stop(): void }`),
     t.p([
       'Runs ',
       t.code('fn'),
-      ' immediately and re-runs it synchronously whenever any signal read inside it changes. Use ',
-      t.code('batch()'),
-      ' to coalesce several writes into one re-run. During SSR (',
+      ' immediately. Changes to its signal dependencies queue a rerun in a microtask. Several writes are automatically grouped into one rerun with the final values. During SSR (',
       t.code('renderForHydration'),
       ') it is a no-op. An error from the initial callback is cleaned up and rethrown synchronously by effect(). Errors from later dependency-triggered re-runs are isolated and surfaced on a microtask, so a try/catch around the originating .set() does not catch them.',
     ]),

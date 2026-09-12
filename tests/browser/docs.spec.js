@@ -1,8 +1,20 @@
 import { randomBytes } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { compileFunction } from 'node:vm';
 
 import { expect, test } from '@playwright/test';
 import { renderForHydration, signal, t } from 'kensington';
+
+function aiExample(heading) {
+  const source = readFileSync(new URL('../../agent-docs/reactive.md', import.meta.url), 'utf8');
+  const section = source.split(`#### ${heading}\n`)[1];
+  return section.match(/```javascript\n([\s\S]*?)```/)[1].trim();
+}
+
+function exampleLines(source) {
+  // The documentation renderer removes blank lines from code blocks.
+  return source.trim().split('\n').filter(line => line.trim());
+}
 
 test('direct hash loads at its target without animated scrolling', async ({ page }) => {
   await page.route(/https:\/\/(?:cdn\.jsdelivr\.net|fonts\.googleapis\.com|db\.onlinewebfonts\.com)\//, route => route.abort());
@@ -31,6 +43,103 @@ test('direct hash loads at its target without animated scrolling', async ({ page
   expect(state.scrollBehavior).toBe('smooth');
   expect(state.targetTop).toBeGreaterThanOrEqual(0);
   expect(state.targetTop).toBeLessThan(180);
+});
+
+test('pending updates are linked from both sidebars and the documented example works', async ({ page }) => {
+  await page.route(/https:\/\/(?:cdn\.jsdelivr\.net|fonts\.googleapis\.com|db\.onlinewebfonts\.com)\//, route => route.abort());
+  await page.goto('http://127.0.0.1:4000/?page=api');
+  await page.locator('a[href="#api-apply-pending-reactive-updates"]').click();
+  await expect(page.locator('#api-apply-pending-reactive-updates')).toBeInViewport();
+  await expect(page.locator('#api-batch')).toHaveCount(0);
+  await page.getByRole('link', { name: 'Update timing', exact: true }).click();
+  await expect(page.locator('#signals-batching')).toBeInViewport();
+  await page.locator('a[href="#apply-pending-reactive-updates"]').click();
+  await expect(page.locator('#apply-pending-reactive-updates')).toBeInViewport();
+  const example = await page.locator('#signals-batching pre code').nth(1).textContent();
+
+  await page.goto('http://localhost:3847/');
+  const seen = [];
+  page.on('console', message => {
+    if (message.type() === 'log') { seen.push(message.text()); }
+  });
+  await page.addScriptTag({
+    type: 'module',
+    content: example.replace("from 'kensington'", "from '/esm/index.js'"),
+  });
+  await expect.poll(() => seen).toEqual(['Before', 'After']);
+});
+
+test('the timing comparison is linked from the API and demonstrates deferred callbacks', async ({ page }) => {
+  await page.route(/https:\/\/(?:cdn\.jsdelivr\.net|fonts\.googleapis\.com|db\.onlinewebfonts\.com)\//, route => route.abort());
+  await page.goto('http://127.0.0.1:4000/?page=api#api-apply-pending-reactive-updates');
+  await page.getByRole('link', { name: 'Choose how to wait', exact: true }).click();
+  await expect(page.locator('#choosing-update-timing')).toBeInViewport();
+  // These are displayed API labels, not calls that schedule work in this test.
+  await expect(page.locator('#choosing-update-timing tbody tr td:first-child')).toHaveText([
+    'applyPendingReactiveUpdates()', 'queueMicrotask(callback)', 'await Promise.resolve()',
+  ]);
+  await expect(page.locator('a[href="#choosing-update-timing"]')).toHaveText('Choose how to wait');
+  await page.locator('a[href="#defer-a-callback"]').click();
+  await expect(page.locator('#defer-a-callback')).toBeInViewport();
+  const example = await page.locator('#defer-a-callback pre code').textContent();
+
+  await page.goto('http://localhost:3847/');
+  const seen = [];
+  page.on('console', message => {
+    if (message.type() === 'log') { seen.push(message.text()); }
+  });
+  await page.addScriptTag({ type: 'module', content: example });
+  await expect.poll(() => seen).toEqual(['current code', 'callback']);
+});
+
+test('the human and AI focus examples focus the new input before the handler returns', async ({ page }) => {
+  await page.route(/https:\/\/(?:cdn\.jsdelivr\.net|fonts\.googleapis\.com|db\.onlinewebfonts\.com)\//, route => route.abort());
+  await page.goto('http://127.0.0.1:4000/?page=reactivity#reactive-focus-example');
+  await expect(page.locator('a[href="#reactive-focus-example"]')).toHaveText('Focus an input');
+  const example = await page.locator('#reactive-focus-example pre code').textContent();
+  expect(exampleLines(example)).toEqual(exampleLines(aiExample('Focus an input after showing it')));
+
+  await page.goto('http://localhost:3847/');
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.addScriptTag({
+    type: 'module',
+    content: example.replace("from 'kensington'", "from '/esm/index.js'"),
+  });
+  const state = await page.getByRole('button', { name: 'Edit title', exact: true }).evaluate(button => {
+    button.click();
+    // Read in the same turn so automatic batching cannot hide a missing helper.
+    const input = document.querySelector('input');
+    return input && {
+      focused: document.activeElement === input,
+      value: input.value,
+      selection: [input.selectionStart, input.selectionEnd],
+    };
+  });
+  expect(state).toEqual({ focused: true, value: 'Draft title', selection: [0, 11] });
+  expect(errors).toEqual([]);
+});
+
+test('the human and AI removal examples wait for cleanup before reusing the tag', async ({ page }) => {
+  await page.route(/https:\/\/(?:cdn\.jsdelivr\.net|fonts\.googleapis\.com|db\.onlinewebfonts\.com)\//, route => route.abort());
+  await page.goto('http://127.0.0.1:4000/?page=reactivity#wait-for-removal-cleanup');
+  await expect(page.locator('a[href="#wait-for-removal-cleanup"]')).toHaveText('Wait for removal cleanup');
+  const example = await page.locator('#wait-for-removal-cleanup pre code').textContent();
+  expect(exampleLines(example)).toEqual(exampleLines(aiExample('Let a pending removal observer run')));
+
+  await page.goto('http://localhost:3847/');
+  const seen = [];
+  const errors = [];
+  page.on('console', message => {
+    if (message.type() === 'log') { seen.push(message.text()); }
+  });
+  page.on('pageerror', error => errors.push(error.message));
+  await page.addScriptTag({
+    type: 'module',
+    content: example.replace("from 'kensington'", "from '/esm/index.js'"),
+  });
+  await expect.poll(() => seen).toEqual(['false']);
+  expect(errors).toEqual([]);
 });
 
 test('the documented nonce example hydrates under its CSP response header', async ({ page }) => {

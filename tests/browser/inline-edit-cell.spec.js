@@ -11,8 +11,8 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('inline-edit cell transform swaps input back to display tag after commit', async ({ page, bundle }) => {
-  await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+  const result = await page.evaluate(async src => {
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
 
     const cellValue = signal('initial');
     const editing = signal(null);
@@ -30,16 +30,22 @@ test('inline-edit cell transform swaps input back to display tag after commit', 
     // Initial render. Display mode with text 'initial'.
     // Enter edit mode.
     editing.set('cell-1');
-    await new Promise(r => { queueMicrotask(r); });
+    applyPendingReactiveUpdates();
+    const enteredEditMode = document.querySelector('#the-input') !== null;
 
     // Simulate a commit. Update the value, then exit edit mode.
     cellValue.set('committed');
     editing.set(null);
 
-    await new Promise(r => { queueMicrotask(r); });
-    await new Promise(r => { queueMicrotask(r); });
+    applyPendingReactiveUpdates();
+    return {
+      enteredEditMode,
+      inputAfterCommit: document.querySelector('#the-input') !== null,
+      displayAfterCommit: document.querySelector('#host .display-mode')?.textContent,
+    };
   }, bundle);
 
+  expect(result).toEqual({ enteredEditMode: true, inputAfterCommit: false, displayAfterCommit: 'committed' });
   // The input from edit mode should be gone.
   await expect(page.locator('#the-input')).toHaveCount(0);
   // A div with the new value should be present.
@@ -48,8 +54,8 @@ test('inline-edit cell transform swaps input back to display tag after commit', 
 
 // eslint-disable-next-line @stylistic/js/max-len
 test('inline-edit cell display refreshes on cellValue change AFTER returning from edit mode', async ({ page, bundle }) => {
-  await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+  const result = await page.evaluate(async src => {
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
 
     const cellValue = signal('v0');
     const editing = signal(null);
@@ -66,16 +72,23 @@ test('inline-edit cell display refreshes on cellValue change AFTER returning fro
 
     // Toggle into edit mode and back.
     editing.set('cell-1');
-    await new Promise(r => { queueMicrotask(r); });
+    applyPendingReactiveUpdates();
+    const enteredEditMode = document.querySelector('#the-input') !== null;
     editing.set(null);
-    await new Promise(r => { queueMicrotask(r); });
+    applyPendingReactiveUpdates();
+    const afterLeavingEditMode = document.querySelector('#host .display-mode')?.textContent;
 
     // NOW update cellValue. The display computed for the post-commit run
     // should be subscribed and re-render the text.
     cellValue.set('v1');
-    await new Promise(r => { queueMicrotask(r); });
-    await new Promise(r => { queueMicrotask(r); });
+    applyPendingReactiveUpdates();
+    return {
+      enteredEditMode,
+      afterLeavingEditMode,
+      afterValueChange: document.querySelector('#host .display-mode')?.textContent,
+    };
   }, bundle);
 
+  expect(result).toEqual({ enteredEditMode: true, afterLeavingEditMode: 'v0', afterValueChange: 'v1' });
   await expect(page.locator('#host .display-mode')).toHaveText('v1');
 });

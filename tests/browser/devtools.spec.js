@@ -96,12 +96,13 @@ test('devtools: effect appears in hook.effects on creation', async ({ page, bund
 test('devtools: effect runCount increments when the effect re-runs', async ({ page, bundle }) => {
   test.skip(bundle.includes('slim'), 'devtools are no-ops in the slim build');
   const result = await page.evaluate(async src => {
-    const { signal, effect } = await import(src);
+    const { applyPendingReactiveUpdates, signal, effect } = await import(src);
     await import('/esm/devtools.js');
     const hook = window.__KENSINGTON_DEVTOOLS__;
     const s = signal(0);
     const handle = effect(() => { s.get(); });
     s.set(1);
+    applyPendingReactiveUpdates();
     return { runCount: hook.effects.get(handle._devId)?.runCount };
   }, bundle);
   expect(result.runCount).toBe(2);
@@ -265,7 +266,7 @@ test('devtools: source signal is removed when its only subscriber (a computed) s
       const handle = effect(() => { c.get(); });
       const presentBefore = hook.signals.has(baseId);
       handle.stop(); // computed sleeps, unsubscribes from base, schedules base removal
-      await Promise.resolve(); // notifySignalZeroSubscribers microtask fires
+      await Promise.resolve(); // Run the deferred devtools removal scheduled when the computed slept.
       return { baseId, presentBefore, presentAfter: hook.signals.has(baseId) };
     }, bundle);
     expect(result.baseId).toBeDefined();
@@ -285,10 +286,11 @@ test('devtools: signal entry is removed after all subscribing effects are paused
     const tag = t.span({ class: sig, persist: true });
     const el = tag.toElement();
     document.body.append(el);
-    await Promise.resolve();
     const idBefore = [...hook.signals.values()].find(m => m.value === 'x')?.id;
     el.remove();
+    // Let the removal observer pause the binding and queue devtools metadata cleanup.
     await Promise.resolve();
+    // Run the metadata cleanup queued by that observer, which the reactive helper cannot process.
     await Promise.resolve();
     return { idBefore, stillPresent: hook.signals.has(idBefore) };
   }, bundle);
@@ -296,7 +298,7 @@ test('devtools: signal entry is removed after all subscribing effects are paused
   expect(result.stillPresent).toBe(false);
 });
 
-test('devtools: signal entry is not removed when effects re-subscribe before microtask fires',
+test('devtools: signal entry is not removed when a reactive node is moved within its parent',
   async ({ page, bundle }) => {
     test.skip(bundle.includes('slim'), 'devtools are no-ops in the slim build');
     const result = await page.evaluate(async src => {
@@ -310,10 +312,13 @@ test('devtools: signal entry is not removed when effects re-subscribe before mic
       const elB = document.createElement('li');
       ul.append(elA, elB);
       document.body.append(ul);
+      // Observe the initial insertion separately from the later reorder.
       await Promise.resolve();
       const idBefore = [...hook.signals.values()].find(m => m.value === 'a')?.id;
-      ul.insertBefore(elB, elA);
+      ul.append(elA); // Move the node that owns the reactive descendant.
+      // Let the observer process the reactive node's removal and reinsertion records.
       await Promise.resolve();
+      // Give any incorrectly queued metadata removal a chance to run before asserting survival.
       await Promise.resolve();
       return { idBefore, stillPresent: hook.signals.has(idBefore) };
     }, bundle);
@@ -335,7 +340,7 @@ test('devtools: signal entry is not removed when a computed re-subscribes before
       handle.stop(); // computed sleeps, unsubscribes from base, schedules base removal
       // Before microtask fires, wake computed via a new effect — this must cancel the removal.
       effect(() => { c.get(); });
-      await Promise.resolve(); // microtask fires but removal should be cancelled
+      await Promise.resolve(); // Run deferred metadata cleanup and verify resubscription cancels removal.
       return { baseId, stillPresent: hook.signals.has(baseId) };
     }, bundle);
     expect(result.baseId).toBeDefined();

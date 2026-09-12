@@ -7,7 +7,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { effect, signal } from 'kensington';
+import { applyPendingReactiveUpdates, effect, signal } from 'kensington';
 import { _clearTransport, _registerTransport, liveSignal } from 'kensington/live';
 import { liveServer } from 'kensington/live/server';
 
@@ -129,7 +129,7 @@ describe('kensington/live liveSignal without transport', () => {
 });
 
 describe('kensington/live liveSignal lazy upgrade', () => {
-  it('batches pending placeholder upgrades into one subscriber commit', () => {
+  it('batches pending placeholder upgrades into one subscriber commit', async () => {
     _clearTransport();
     const a = liveSignal(0, 'upgrade-batch-a');
     const b = liveSignal(0, 'upgrade-batch-b');
@@ -146,6 +146,8 @@ describe('kensington/live liveSignal lazy upgrade', () => {
     });
 
     try {
+      // Verify placeholder upgrades reach subscribers in one automatic update pass.
+      await Promise.resolve();
       assert.deepStrictEqual(seen, [[1, 2]]);
     } finally {
       eff.stop();
@@ -203,7 +205,7 @@ describe('kensington/live liveSignal lazy upgrade', () => {
       const eff = effect(() => { seen.push(sig.get()); });
 
       live.set('upgrade-mirror', 99);
-      await new Promise(r => { queueMicrotask(r); });
+      applyPendingReactiveUpdates();
 
       assert.strictEqual(sig.value, 99);
       assert.deepStrictEqual(seen.slice(-1), [99]);
@@ -262,7 +264,7 @@ describe('kensington/live liveSignal lazy upgrade', () => {
     try {
       a.set(7);
       // Allow the mirror effect on b to pick up the change from real.
-      await new Promise(r => { queueMicrotask(r); });
+      applyPendingReactiveUpdates();
       assert.strictEqual(a.value, 7);
       assert.strictEqual(b.value, 7);
     } finally {
@@ -543,6 +545,7 @@ describe('kensington/live liveServer registry API', () => {
     try {
       registryValuesSeenByEffect.length = 0;
       sig.set(5);
+      applyPendingReactiveUpdates();
       assert.deepStrictEqual(registryValuesSeenByEffect, [5]);
     } finally {
       eff.stop();
@@ -663,8 +666,10 @@ describe('kensington/live server-side subscriptions', () => {
       const eff = effect(() => { seen.push(sig.get()); });
       assert.deepStrictEqual(seen, [0]);
       live.set('observed:name', 1);
+      applyPendingReactiveUpdates();
       assert.deepStrictEqual(seen, [0, 1]);
       live.set('observed:name', 2);
+      applyPendingReactiveUpdates();
       assert.deepStrictEqual(seen, [0, 1, 2]);
       eff.stop();
     } finally {
@@ -678,10 +683,9 @@ describe('kensington/live server-side subscriptions', () => {
       const sig = liveSignal(0, 'self-write:name');
       let runs = 0;
       const eff = effect(() => { sig.get(); runs += 1; });
-      await Promise.resolve();
       const baseline = runs;
       sig.set(1);
-      await Promise.resolve();
+      applyPendingReactiveUpdates();
       eff.stop();
       // Exactly one re-run for the set, not two (would be two if applySet's
       // observer notification re-fired the user's effect via _setFromRemote).
@@ -776,7 +780,7 @@ describe('kensington/live server-side subscriptions', () => {
       const eff = effect(() => { observed = sig.get(); });
       assert.strictEqual(observed, 7);
       live.delete('no-prop:test');
-      await Promise.resolve();
+      applyPendingReactiveUpdates();
       // The cached Signal subscribers were NOT fired. The local value stays.
       assert.strictEqual(observed, 7);
       assert.strictEqual(sig.value, 7);
@@ -797,7 +801,7 @@ describe('kensington/live server-side subscriptions', () => {
       const eff = effect(() => { observed = sig.get(); });
       assert.strictEqual(observed, 7);
       live.set('set-null:test', null);
-      await Promise.resolve();
+      applyPendingReactiveUpdates();
       assert.strictEqual(observed, null);
       assert.strictEqual(sig.value, null);
       eff.stop();
@@ -1372,12 +1376,14 @@ describe('kensington/live ClientTransport lifecycle methods', () => {
 
   // Wait for transport.status to reach a target value, with a timeout.
   function waitForStatus(transport, target, timeoutMs = 1500) {
+    // Keep a Promise return type even when the target status is already reached. This is not a wait.
     if (transport.status.value === target) { return Promise.resolve(); }
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error(`status never reached ${target}`)), timeoutMs);
       const stop = effect(() => {
         if (transport.status.get() === target) {
           clearTimeout(timer);
+          // Finish outside the effect callback, after effect() has returned the handle used for cleanup.
           queueMicrotask(() => { stop.stop(); resolve(); });
         }
       });
@@ -1400,6 +1406,8 @@ describe('kensington/live ClientTransport lifecycle methods', () => {
         values: { 'inbound-batch:a': 1, 'inbound-batch:b': 2 },
         lamport: 1,
       }));
+      // Verify automatic batching combines every value in this snapshot into one effect run.
+      await Promise.resolve();
       assert.deepStrictEqual(seen, [[1, 2]], 'one snapshot must produce one subscriber commit');
 
       seen.length = 0;
@@ -1410,6 +1418,8 @@ describe('kensington/live ClientTransport lifecycle methods', () => {
           { name: 'inbound-batch:b', value: 4, lamport: 2 },
         ],
       }));
+      // Verify automatic batching combines the frame's updates without an explicit helper call.
+      await Promise.resolve();
       assert.deepStrictEqual(seen, [[3, 4]], 'one batch-update frame must produce one subscriber commit');
     } finally {
       eff.stop();
@@ -1443,6 +1453,8 @@ describe('kensington/live ClientTransport lifecycle methods', () => {
         missing: ['snapshot-mixed:value', 'snapshot-mixed:present', 'snapshot-mixed:missing'],
         lamport: 3,
       }));
+      // Verify normalization reaches subscribers as one automatic commit with no intermediate state.
+      await Promise.resolve();
       assert.deepStrictEqual(seen, [['server value', undefined, 'client missing']]);
       for (const key of Object.keys(named)) {
         assert.strictEqual(transport.lastSeen.get(`snapshot-mixed:${key}`), 3);
@@ -1670,6 +1682,7 @@ describe('kensington/live ClientTransport lifecycle methods', () => {
     try {
       seenLamports.length = 0;
       transport.handleMessage(encode({ type: MSG_UPDATE, name, value: 1, lamport: 7 }));
+      applyPendingReactiveUpdates();
       assert.deepStrictEqual(seenLamports, [7]);
     } finally {
       eff.stop();
@@ -1703,17 +1716,18 @@ describe('kensington/live ClientTransport lifecycle methods', () => {
     try {
       directSource.set(1);
       casSource.set(value => value + 1);
+      applyPendingReactiveUpdates();
       const writes = transport.outbound
         .filter(msg => msg.type === MSG_SET && msg.name.startsWith('optimistic-order:'));
       assert.deepStrictEqual(writes.map(msg => msg.name), [
         'optimistic-order:direct-source',
-        'optimistic-order:direct-follow',
         'optimistic-order:cas-source',
+        'optimistic-order:direct-follow',
         'optimistic-order:cas-follow',
       ]);
-      assert.deepStrictEqual(writes.map(msg => Object.hasOwn(msg, 'ifLamport')), [false, false, true, false]);
-      assert.strictEqual(writes[2].ifLamport, 0);
-      assert.deepStrictEqual(observations, [1, 3], 'each source write must be pending before its effect runs');
+      assert.deepStrictEqual(writes.map(msg => Object.hasOwn(msg, 'ifLamport')), [false, true, false, false]);
+      assert.strictEqual(writes[1].ifLamport, 0);
+      assert.deepStrictEqual(observations, [2, 3], 'each source write must be pending before its effect runs');
     } finally {
       directEff.stop();
       casEff.stop();
@@ -1739,6 +1753,7 @@ describe('kensington/live ClientTransport lifecycle methods', () => {
     try {
       seen.length = 0;
       sig.set(value => value + 1);
+      applyPendingReactiveUpdates();
       assert.deepStrictEqual(seen, [1]);
       seen.length = 0;
       const firstAttempt = transport.outbound.find(msg => msg.type === MSG_SET && msg.name === name);
@@ -1751,6 +1766,8 @@ describe('kensington/live ClientTransport lifecycle methods', () => {
         lamport: 7,
       }));
       assert.strictEqual(sig.value, 11);
+      // Verify automatic batching hides the rollback and publishes only the retried value.
+      await Promise.resolve();
       assert.deepStrictEqual(seen, [11], 'the authoritative rollback must not render before the retry');
       const attempts = transport.outbound.filter(msg => msg.type === MSG_SET && msg.name === name);
       assert.strictEqual(attempts.length, 2);
@@ -1784,12 +1801,14 @@ describe('kensington/live ClientTransport lifecycle methods', () => {
     try {
       socket.readyState = 1;
       socket.emit('open');
+      applyPendingReactiveUpdates();
       const sentValues = socket.sent
         .filter(msg => msg.type === MSG_SET && msg.name === name)
         .map(msg => msg.value);
       assert.deepStrictEqual(sentValues, ['queued', 'from-status-effect']);
 
       transport.close();
+      applyPendingReactiveUpdates();
       assert.deepStrictEqual(disconnectedPendingSizes, [0]);
     } finally {
       statusEff.stop();
@@ -1807,6 +1826,7 @@ describe('kensington/live ClientTransport lifecycle methods', () => {
       constructor() {
         this.readyState = 0;
         this.listeners = { open: [], close: [], message: [], error: [] };
+        // Emit the simulated socket event after construction so connectLive can attach its listeners.
         queueMicrotask(() => {
           for (const fn of this.listeners.close) { fn({}); }
         });
@@ -1853,6 +1873,7 @@ describe('kensington/live ClientTransport lifecycle methods', () => {
       // see the first replacement and leave it alone rather than leaking a third socket.
       transport.reconnect();
       transport.reconnect();
+      // Run the queued reconnect callbacks, which are outside the reactive update queue.
       await Promise.resolve();
       const replacement = sockets[1];
       assert.strictEqual(sockets.length, 2);
@@ -1912,7 +1933,6 @@ describe('kensington/live ClientTransport lifecycle methods', () => {
       assert.strictEqual(casError.reason, 'disconnected');
       assert.strictEqual(transport.pendingWrites.size, 0);
 
-      await Promise.resolve();
       const replacement = sockets[1];
       replacement.readyState = 1;
       replacement.emit('open');
@@ -2012,6 +2032,7 @@ describe('kensington/live ClientTransport lifecycle methods', () => {
       constructor() {
         this.readyState = 0;
         this.listeners = { open: [], close: [], message: [], error: [] };
+        // Emit the simulated socket event after construction so connectLive can attach its listeners.
         queueMicrotask(() => {
           for (const fn of this.listeners.close) { fn({}); }
         });
@@ -2060,6 +2081,7 @@ describe('kensington/live ClientTransport lifecycle methods', () => {
       constructor() {
         this.readyState = 0;
         this.listeners = { open: [], close: [], message: [], error: [] };
+        // Defer the simulated failure until the transport has attached its socket listeners.
         queueMicrotask(() => {
           for (const fn of this.listeners.close) { fn({}); }
         });
@@ -2112,6 +2134,7 @@ describe('kensington/live ClientTransport lifecycle methods', () => {
         onConstruct();
         this.readyState = 0;
         this.listeners = { open: [], close: [], message: [], error: [] };
+        // Defer the simulated failure until the transport has attached its socket listeners.
         queueMicrotask(() => {
           for (const fn of this.listeners.close) { fn({}); }
         });

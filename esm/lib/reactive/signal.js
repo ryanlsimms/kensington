@@ -21,20 +21,19 @@ import { renderSignalAsTag } from './signal-render.js';
 import { isSSRMode } from './ssr.js';
 import { throttledError, throttledWarn, warnKeyedInitialMismatch } from './warnings.js';
 
+// Internal bridge used by tag validation. Standalone reactive calls have no checker.
+export const _reactiveRuntime = createRuntimeContext();
+
 let currentEffect = null;
 const pending = new Set();
 const runCounts = new Map();
 const asyncTurnCounts = new Map();
 const MAX_EFFECT_LOOPS = 100;
 const MAX_ASYNC_EFFECT_TURNS = 500;
-const ASYNC_BATCH_MESSAGE = 'kensington batch() requires a synchronous callback. ' +
-  'Await first, then batch the signal writes.';
-// Internal bridge used by tag validation. Standalone reactive calls have no checker.
-export const _reactiveRuntime = createRuntimeContext();
 let asyncTurnCountsResetScheduled = false;
 let microtaskTurn = 0;
 let microtaskTurnAdvanceScheduled = false;
-let batchDepth = 0;
+let scheduled = false;
 let notificationDepth = 0;
 let inComputedFn = false;
 let suppressReactiveCheck = false;
@@ -149,12 +148,11 @@ function flush() {
           continue;
         }
         const previousTurn = asyncTurnCounts.get(fn);
-        const asyncTurnCount = previousTurn === undefined
-          ? 1
-          : previousTurn.turn === microtaskTurn
-            ? previousTurn.count
-            : previousTurn.count + 1;
-        asyncTurnCounts.set(fn, { turn: microtaskTurn, count: asyncTurnCount });
+        let asyncTurnCount = previousTurn?.count ?? 0;
+        if (previousTurn?.turn !== microtaskTurn) {
+          asyncTurnCount++;
+          asyncTurnCounts.set(fn, { turn: microtaskTurn, count: asyncTurnCount });
+        }
         if (asyncTurnCount > MAX_ASYNC_EFFECT_TURNS) {
           throttledError(
             'async-loop',
@@ -178,9 +176,14 @@ function flush() {
   runCounts.clear();
 }
 
-function flushIfReady() {
-  if (batchDepth === 0 && notificationDepth === 0) {
-    flush();
+function scheduleRun(fn) {
+  pending.add(fn);
+  if (!scheduled && !inFlush) {
+    scheduled = true;
+    queueMicrotask(() => {
+      scheduled = false;
+      flush();
+    });
   }
 }
 
@@ -189,62 +192,28 @@ function notifySubscribers(subscribers, value) {
   try {
     for (const fn of [...subscribers]) {
       if (fn._isEffect) {
-        pending.add(fn);
+        scheduleRun(fn);
       } else {
         fn(value);
       }
     }
   } finally {
     notificationDepth--;
-    flushIfReady();
   }
-}
-
-function isDeferredFunction(fn) {
-  let constructorName;
-  try {
-    constructorName = Object.getPrototypeOf(fn)?.constructor?.name;
-  } catch {
-    return false;
-  }
-  return constructorName === 'AsyncFunction'
-    || constructorName === 'GeneratorFunction'
-    || constructorName === 'AsyncGeneratorFunction';
-}
-
-function isPromiseLike(value) {
-  return value !== null &&
-    (typeof value === 'object' || typeof value === 'function') &&
-    typeof value.then === 'function';
 }
 
 /**
- * Runs `fn` immediately and coalesces all effect and DOM-binding updates caused by signal
- * writes until the outermost batch returns. Nested batches share the same pending queue.
- * Computed signals continue to update synchronously, so reads inside the batch stay current.
- * Async and generator callbacks are rejected. A Promise returned by an ordinary callback
- * is rejected after the callback runs, but already scheduled Promise work cannot be cancelled.
- * @template T
- * @param {function(): T} fn
- * @returns {T}
+ * Applies pending reactive updates immediately, including DOM bindings and user effects.
+ * Processes the shared queue and any further updates queued synchronously by those effects.
+ * Does not wait for promises, lifecycle observers, browser painting, or animations.
+ * Call from application code outside reactive callbacks. During a reactive callback or
+ * server render it does nothing, preserving tracking and SSR isolation.
+ * @returns {void}
  */
-export function batch(fn) {
-  _reactiveRuntime.check('batch()');
-  if (isDeferredFunction(fn)) {
-    throw new TypeError(ASYNC_BATCH_MESSAGE);
-  }
-  batchDepth++;
-  try {
-    const result = fn();
-    if (isPromiseLike(result)) {
-      Promise.resolve(result).catch(() => {});
-      throw new TypeError(ASYNC_BATCH_MESSAGE);
-    }
-    return result;
-  } finally {
-    batchDepth--;
-    flushIfReady();
-  }
+export function applyPendingReactiveUpdates() {
+  _reactiveRuntime.check('applyPendingReactiveUpdates()');
+  if (isSSRMode() || currentEffect !== null || notificationDepth !== 0) { return; }
+  flush();
 }
 
 function wakeForRead(sig) {
@@ -511,6 +480,7 @@ function track(run, fn) {
 
 /**
  * Runs `fn` immediately and re-runs it whenever any signal read via `.get()` inside changes.
+ * Reruns are automatically batched in a microtask. applyPendingReactiveUpdates() runs pending work immediately.
  * Returns `{ pause(), resume(), stop() }`. `pause()` unsubscribes temporarily; `resume()` restarts.
  * `stop()` permanently destroys the effect. Calling `resume()` after `stop()` is a no-op.
  * @param {function(): void} fn The effect body. Signal reads inside it become dependencies.

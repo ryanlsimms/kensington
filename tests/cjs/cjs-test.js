@@ -1,7 +1,8 @@
 
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
-const { batch, default: Kensington, effect, registerComponents, signal, t } = require('kensington');
+const { applyPendingReactiveUpdates, default: Kensington, effect, registerComponents, signal, t }
+  = require('kensington');
 const {
   circleAttributes,
   divAttributes,
@@ -50,18 +51,19 @@ describe('require syntax', () => {
     assert.strictEqual(t, t2);
   });
 
-  it('exports synchronous signals and explicit batch()', () => {
+  it('exports automatic batching and explicit pending updates', () => {
     const value = signal(0);
     const log = [];
     const handle = effect(() => { log.push(value.get()); });
     value.set(1);
-    assert.deepStrictEqual(log, [0, 1]);
-    batch(() => {
-      value.set(2);
-      value.set(3);
-      assert.deepStrictEqual(log, [0, 1]);
-    });
-    assert.deepStrictEqual(log, [0, 1, 3]);
+    assert.deepStrictEqual(log, [0]);
+    value.set(2);
+    applyPendingReactiveUpdates();
+    assert.deepStrictEqual(log, [0, 2]);
+    value.set(3);
+    assert.deepStrictEqual(log, [0, 2]);
+    applyPendingReactiveUpdates();
+    assert.deepStrictEqual(log, [0, 2, 3]);
     handle.stop();
   });
 });

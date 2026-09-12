@@ -97,10 +97,11 @@ test('transition suppression is removed after the mount-time reactive flush', as
       }
     });
 
-    const { registerComponents, signal, t: tg } = await import(src);
+    const { applyPendingReactiveUpdates, registerComponents, signal, t: tg } = await import(src);
     let value;
     function panelLive({ opacity }) {
       value = signal(opacity);
+      // Simulate an update after mounting to verify the guard covers asynchronous startup work.
       queueMicrotask(() => { value.set(1); });
       return tg.div({ id: 'panel', class: 'motion', style: { opacity: value } }, 'panel');
     }
@@ -126,7 +127,7 @@ test('transition suppression is removed after the mount-time reactive flush', as
     };
 
     value.set(0);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     await new Promise(resolve => { requestAnimationFrame(resolve); });
     await new Promise(resolve => { requestAnimationFrame(resolve); });
 
@@ -190,6 +191,7 @@ test('registerComponents applies a CSP nonce to initial and dynamic hydration gu
 
     await new Promise(resolve => { requestAnimationFrame(resolve); });
     document.body.insertAdjacentHTML('beforeend', html);
+    // Let the hydration observer discover the inserted SSR mount and install its nonce guard.
     await Promise.resolve();
 
     const dynamicGuard = document.querySelector('style[data-k-ssr]');
@@ -240,6 +242,7 @@ for (const previousName of ['first', 'second']) {
       registerComponents({ [priorName]: secondOld }, { nonce: priorName === 'second' ? 'abc123' : undefined });
       registerComponents({ second }, { nonce: priorName === 'second' ? 'wrong-nonce' : 'abc123' });
       document.body.insertAdjacentHTML('beforeend', html);
+      // Let the hydration observer mount the new component using its original registration's nonce.
       await Promise.resolve();
 
       const guard = document.querySelector('style[data-k-ssr]');
@@ -324,12 +327,15 @@ test('transition guard fallback remains through mount-time microtasks without re
       const { registerComponents, signal, t: tg } = await import(src);
       function panelLive({ opacity }) {
         const value = signal(opacity);
+        // Queue startup work to verify the fallback guard survives both the write and its later DOM update.
         queueMicrotask(() => { value.set(1); });
         return tg.div({ id: 'fallback-panel', class: 'motion', style: { opacity: value } }, 'panel');
       }
       registerComponents({ panel: panelLive });
 
+      // Run the queued startup write, which schedules a separate reactive update pass.
       await Promise.resolve();
+      // Run that automatic DOM update while verifying the fallback guard remains until the next task.
       await Promise.resolve();
       const afterMicrotasks = {
         guardCount: document.querySelectorAll('style[data-k-ssr]').length,
@@ -613,6 +619,7 @@ test('dynamic hydration suppresses only the newly mounted component', async ({ p
     const existing = document.getElementById('existing');
     const existingMountId = existing.dataset.kMountTarget;
     document.body.insertAdjacentHTML('beforeend', html);
+    // Let the hydration observer discover the new mount before inspecting guard scope.
     await Promise.resolve();
 
     const dynamic = document.getElementById('dynamic');
@@ -774,6 +781,7 @@ test('a mixed registration ignores duplicates and keeps separate context and non
       console.warn = originalWarn;
     }
     document.body.insertAdjacentHTML('beforeend', html);
+    // Let the hydration observer mount both components before checking registration ownership.
     await Promise.resolve();
     const firstMount = document.getElementById('first-panel').getAttribute('data-k-mount-target');
     const secondMount = document.getElementById('second-panel').getAttribute('data-k-mount-target');
@@ -876,6 +884,7 @@ test('does not add transition guards for hydration paths that preserve SSR', asy
         exploder: () => { throw new Error('boom'); },
         invalid: () => tg.literal('<div id="invalid">client</div>'),
       });
+      // Let the style observer record any guard insertions before disconnecting it.
       await Promise.resolve();
     } finally {
       console.warn = originalWarn;

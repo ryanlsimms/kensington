@@ -58,10 +58,10 @@ export function notifyDomUntrack() {}
 `;
 
 // Every `esm/lib/reactive/*.js` module that carries mutable module-scope
-// state (currentEffect, batchDepth, pending effects, hydration scopes,
+// state (currentEffect, pending effects, hydration scopes,
 // SSR mode flags, etc.) must be shared by EVERY ESM dist build and every
 // source subpath. A foreign Signal can be recognized by its brand, but a
-// batch from another module instance cannot control its private scheduler.
+// pending update call from another module instance cannot process its private scheduler.
 //
 // DO NOT limit this externalization to the slim build. Both full and slim
 // dist files import these modules via relative paths from `dist/` back into
@@ -69,7 +69,7 @@ export function notifyDomUntrack() {}
 // `kensington/live`. That guarantees one module instance per resolved file
 // when applications mix entry points.
 // See tests/treeshake/signal-identity-test.js for the regression that
-// covers cross-entry effects and batch(), and hydration.spec.js for the
+// covers cross-entry effects and applyPendingReactiveUpdates(), and hydration.spec.js for the
 // same class of bug on `hydration-scope.js`.
 const reactiveExternalPaths = {};
 

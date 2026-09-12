@@ -383,7 +383,7 @@ export function architectureLiveSignals() {
             t.code('present'),
             ' without an encoded value are set to undefined. Names in ',
             t.code('missing'),
-            ' return to their client initial value. Supplied values take precedence over presence markers. Newer pending writes are reapplied after the snapshot. The whole operation uses one batch.',
+            ' return to their client initial value. Supplied values take precedence over presence markers. Newer pending writes are reapplied after the snapshot. Automatic batching groups the resulting effect and DOM updates.',
           ]),
           t.li([
             t.code('update'),
@@ -443,7 +443,7 @@ export function architectureLiveSignals() {
             t.strong('. '),
             'Both forms call ',
             t.code('write(name, sig, origSet, valueOrFn)'),
-            '. It resolves updater functions, validates the result, and batches the optimistic apply with pending write registration and sending.',
+            '. It resolves updater functions and validates the result. It then updates the local signal, registers the pending write, and sends it before queued effects run.',
           ]),
           t.li([
             t.strong('Wrap '),
@@ -483,7 +483,7 @@ export function architectureLiveSignals() {
           t.code('write(name, sig, origSet, valueOrFn)'),
           ' handles both direct values and updater functions. An updater runs synchronously against ',
           t.code('sig.value'),
-          '. If it throws, the returned Promise rejects without changing the signal. Otherwise the value is checked for serializability and applied locally. Pending write registration and sending happen in the same batch, before effects can react to the new value. The Promise settles when the server confirms or rejects the write.',
+          '. If it throws, the returned Promise rejects without changing the signal. Otherwise the value is checked for serializability and applied locally. Pending write registration and sending finish before effects run in the next microtask. The Promise settles when the server confirms or rejects the write.',
         ]),
         t.p([
           t.code('sendPendingWrite(pending)'),
@@ -741,9 +741,7 @@ export function architectureLiveSignals() {
           t.code('MSG_UPDATE'),
           '; sockets that pick up two or more receive a single ',
           t.code('MSG_BATCH_UPDATE'),
-          ' carrying the array. The grouping happens at flush time, not at broadcast time, so a burst of server-side writes in one tick coalesces correctly. The client applies every update in that frame inside one reactive ',
-          t.code('batch()'),
-          ', so effects and DOM bindings observe only the final combined state.',
+          ' carrying the array. The grouping happens when the queue is processed, so a burst of server writes in one turn coalesces correctly. The client applies every update in the frame before automatically running effects and DOM bindings in a microtask.',
         ]),
       ]),
 

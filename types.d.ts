@@ -2170,7 +2170,7 @@ export class Kensington {
     /** Spaces per indentation level. Default: 2. Set to 0 to disable indentation. */
     indentationLevel?: number;
     /** Tag validation and rendered reactive runtime diagnostics. Defaults to `'off'`.
-     * Does not configure standalone signal, computed, effect, or batch calls.
+     * Does not configure standalone signal, computed, effect, or applyPendingReactiveUpdates calls.
      */
     validationLevel?: 'off' | 'warn' | 'error';
     /** Called with warning messages when `validationLevel` is `'warn'`. Default: `console.log`. */
@@ -2664,27 +2664,21 @@ export function signal<T>(initial: T, key?: SignalKey): Signal<T>;
 export function computed<T>(fn: () => T, key?: SignalKey): ReadonlySignal<T>;
 
 /**
- * Runs `fn` immediately and defers effects and DOM bindings caused by signal writes until
- * the outermost batch returns. Nested batches are coalesced, and the callback's return value
- * is returned unchanged. Computed signals remain current when read inside the batch.
- *
- * The callback must finish while batch is running. TypeScript rejects callbacks whose return
- * type includes a Promise. The runtime rejects async functions and generator functions before
- * their bodies run. It rejects an ordinary callback after it returns a Promise. Promise work
- * already scheduled is not cancelled and later writes run outside the batch.
+ * Immediately applies pending reactive updates, including DOM bindings and user effects.
+ * Processes the shared queue, including further updates queued synchronously by effects.
+ * Does not wait for promises, lifecycle observers, browser painting, or animations.
+ * During a reactive callback or renderForHydration it does nothing.
+ * Errors from effect reruns are reported on a microtask, as with automatic updates.
  * @example
- * batch(() => {
- *   firstName.set('Grace');
- *   lastName.set('Hopper');
- * });
+ * rotation.set(0);
+ * applyPendingReactiveUpdates();
+ * element.getBoundingClientRect();
  */
-export function batch<T>(
-  fn: () => T & (
-    [Extract<T, PromiseLike<unknown>>] extends [never] ? unknown : never
-  )
-): T;
+export function applyPendingReactiveUpdates(): void;
 
 /**
+ * Signal changes automatically batch effect reruns in a microtask.
+ * Call applyPendingReactiveUpdates() when pending reruns must finish before the next line.
  * Runs `fn` immediately and re-runs it whenever any signal read via `.get()` inside changes.
  * Use for side effects: syncing to localStorage, updating the URL, fetching data, etc.
  *

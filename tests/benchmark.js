@@ -115,7 +115,24 @@ const fns = {
     ).toString();
   },
 
-  reactiveUnbatched() {
+  reactiveImmediate() {
+    const source = reactive.signal(0);
+    let seen = -1;
+    let effectRuns = 0;
+    const fx = reactive.effect(() => {
+      seen = source.get();
+      effectRuns++;
+    });
+    for (let i = 1; i <= REACTIVE_WRITES; i++) {
+      source.set(i);
+      reactive.applyPendingReactiveUpdates();
+    }
+    assertBench(seen === REACTIVE_WRITES, 'immediate effect must see the final value');
+    assertBench(effectRuns === REACTIVE_WRITES + 1, 'immediate effect must run for every write');
+    fx.stop();
+  },
+
+  async reactiveBatched() {
     const source = reactive.signal(0);
     let seen = -1;
     let effectRuns = 0;
@@ -124,28 +141,14 @@ const fns = {
       effectRuns++;
     });
     for (let i = 1; i <= REACTIVE_WRITES; i++) { source.set(i); }
-    assertBench(seen === REACTIVE_WRITES, 'unbatched effect must see the final value');
-    assertBench(effectRuns === REACTIVE_WRITES + 1, 'unbatched effect must run for every write');
-    fx.stop();
-  },
-
-  reactiveBatched() {
-    const source = reactive.signal(0);
-    let seen = -1;
-    let effectRuns = 0;
-    const fx = reactive.effect(() => {
-      seen = source.get();
-      effectRuns++;
-    });
-    reactive.batch(() => {
-      for (let i = 1; i <= REACTIVE_WRITES; i++) { source.set(i); }
-    });
+    // Measure the automatic effect pass, including its microtask scheduling.
+    await Promise.resolve();
     assertBench(seen === REACTIVE_WRITES, 'batched effect must see the final value');
-    assertBench(effectRuns === 2, 'batched effect must run once at the boundary');
+    assertBench(effectRuns === 2, 'batched effect must run once in the microtask');
     fx.stop();
   },
 
-  reactiveComputedBatch() {
+  async reactiveComputedBatch() {
     const a = reactive.signal(0);
     const b = reactive.signal(0);
     let computedRuns = 0;
@@ -158,14 +161,14 @@ const fns = {
       total.get();
       effectRuns++;
     });
-    reactive.batch(() => {
-      for (let i = 1; i <= REACTIVE_WRITES / 2; i++) {
-        a.set(i);
-        b.set(i);
-      }
-    });
+    for (let i = 1; i <= REACTIVE_WRITES / 2; i++) {
+      a.set(i);
+      b.set(i);
+    }
+    // Measure the automatically batched consumer after all synchronous computed updates.
+    await Promise.resolve();
     assertBench(computedRuns === REACTIVE_WRITES + 1, 'computed must run after every source write');
-    assertBench(effectRuns === 2, 'computed consumer must commit once at the batch boundary');
+    assertBench(effectRuns === 2, 'computed consumer must commit once in the microtask');
     fx.stop();
     total.stop();
   },
@@ -180,7 +183,10 @@ const fns = {
       seen = plusOne.get() + timesTwo.get();
       effectRuns++;
     });
-    for (let i = 1; i <= REACTIVE_WRITES; i++) { source.set(i); }
+    for (let i = 1; i <= REACTIVE_WRITES; i++) {
+      source.set(i);
+      reactive.applyPendingReactiveUpdates();
+    }
     assertBench(seen === REACTIVE_WRITES * 3 + 1, 'diamond effect must see both final computed values');
     assertBench(effectRuns === REACTIVE_WRITES + 1, 'diamond effect must run once per source write');
     fx.stop();
@@ -188,27 +194,30 @@ const fns = {
     timesTwo.stop();
   },
 
-  reactiveDomUnbatched() {
+  reactiveDomImmediate() {
+    document.body.textContent = '';
+    const k = new Kensington({ validationLevel: 'off' });
+    const value = reactive.signal(0);
+    const el = k.div({ dataValue: value }).toElement();
+    document.body.append(el);
+    for (let i = 1; i <= REACTIVE_WRITES; i++) {
+      value.set(i);
+      reactive.applyPendingReactiveUpdates();
+    }
+    assertBench(el.dataset.value === String(REACTIVE_WRITES), 'immediate DOM binding must stay current');
+    value.stop();
+    el.remove();
+  },
+
+  async reactiveDomBatched() {
     document.body.textContent = '';
     const k = new Kensington({ validationLevel: 'off' });
     const value = reactive.signal(0);
     const el = k.div({ dataValue: value }).toElement();
     document.body.append(el);
     for (let i = 1; i <= REACTIVE_WRITES; i++) { value.set(i); }
-    assertBench(el.dataset.value === String(REACTIVE_WRITES), 'unbatched DOM binding must stay current');
-    value.stop();
-    el.remove();
-  },
-
-  reactiveDomBatched() {
-    document.body.textContent = '';
-    const k = new Kensington({ validationLevel: 'off' });
-    const value = reactive.signal(0);
-    const el = k.div({ dataValue: value }).toElement();
-    document.body.append(el);
-    reactive.batch(() => {
-      for (let i = 1; i <= REACTIVE_WRITES; i++) { value.set(i); }
-    });
+    // Measure automatic DOM batching rather than the explicit update helper.
+    await Promise.resolve();
     assertBench(el.dataset.value === String(REACTIVE_WRITES), 'batched DOM binding must commit the final value');
     value.stop();
     el.remove();
@@ -274,7 +283,7 @@ const baselines = {
     `<div>${spans}</div>`;
   },
 
-  reactiveUnbatched() {
+  reactiveImmediate() {
     let source = 0;
     let seen = -1;
     let effectRuns = 0;
@@ -337,7 +346,7 @@ const baselines = {
     assertBench(effectRuns === REACTIVE_WRITES + 1, 'baseline diamond effect count');
   },
 
-  reactiveDomUnbatched() {
+  reactiveDomImmediate() {
     document.body.textContent = '';
     const el = document.createElement('div');
     document.body.append(el);

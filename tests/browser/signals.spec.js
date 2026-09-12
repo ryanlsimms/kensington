@@ -17,13 +17,13 @@ test('signal as literal updates the DOM element live', async ({ page, bundle }) 
 
 test('reactive literal updates retain the parent SVG parsing context', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { signal, t } = await import(src);
+    const { applyPendingReactiveUpdates, signal, t } = await import(src);
     const markup = signal('<circle id="literal-shape"/>');
     const svg = t.svg(t.literal(markup)).toElement();
     document.body.append(svg);
     const initial = svg.querySelector('#literal-shape').namespaceURI;
     markup.set('<title id="literal-shape">updated</title>');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     return {
       initial,
       updated: svg.querySelector('#literal-shape').namespaceURI,
@@ -37,11 +37,11 @@ test('reactive literal updates retain the parent SVG parsing context', async ({ 
 
 test('reactive namespaced attributes update through their namespace URI', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { signal, t } = await import(src);
+    const { applyPendingReactiveUpdates, signal, t } = await import(src);
     const href = signal('#one');
     const use = t.use({ 'xlink:href': href }).toElement();
     href.set('#two');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     return use.getAttributeNS('http://www.w3.org/1999/xlink', 'href');
   }, bundle);
   expect(result).toBe('#two');
@@ -49,11 +49,11 @@ test('reactive namespaced attributes update through their namespace URI', async 
 
 test('reactive tag content inherits an SVG parent context', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { signal, t } = await import(src);
+    const { applyPendingReactiveUpdates, signal, t } = await import(src);
     const child = signal(t.title('first'));
     const svg = t.svg(child).toElement();
     child.set(t.a('second'));
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     return {
       localName: svg.firstElementChild.localName,
       namespace: svg.firstElementChild.namespaceURI,
@@ -65,14 +65,14 @@ test('reactive tag content inherits an SVG parent context', async ({ page, bundl
 
 test('reactive SVG content rebuilds a contextual tag previously mounted as HTML', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { signal, t } = await import(src);
+    const { applyPendingReactiveUpdates, signal, t } = await import(src);
     const title = t.title('shared');
     document.head.append(title.toElement());
     const child = signal(null);
     const svg = t.svg(child).toElement();
     document.body.append(svg);
     child.set(title);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     return {
       htmlTitleStillMounted: document.head.querySelector('title') !== null,
       svgNamespace: svg.firstElementChild.namespaceURI,
@@ -84,11 +84,11 @@ test('reactive SVG content rebuilds a contextual tag previously mounted as HTML'
 
 test('literal() blocks script tag injection when signal value changes', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const html = signal('<p id="lit-safe">safe</p>');
     document.body.append(t.literal(html).toElement());
     html.set('<script>window.__injected = true</script>');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     return { safe: document.querySelector('#lit-safe') !== null, injected: window.__injected };
   }, bundle);
   expect(result.safe).toBe(true);
@@ -97,12 +97,12 @@ test('literal() blocks script tag injection when signal value changes', async ({
 
 test('signal as inlineComment updates the comment node value live', async ({ page, bundle }) => {
   const value = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const text = signal('before');
     const div = t.div([t.p('x'), t.inlineComment(text), t.p('y')]).toElement();
     document.body.append(div);
     text.set('after');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     return Array.from(div.childNodes)[1].nodeValue;
   }, bundle);
   expect(value).toBe('after');
@@ -264,7 +264,7 @@ test('signal holding array updates when set to new array', async ({ page, bundle
 
 test('keyed list reuses DOM nodes when sorted', async ({ page, bundle }) => {
   const reused = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const items = signal([
       { id: 1, name: 'Banana' },
       { id: 2, name: 'Apple' },
@@ -279,7 +279,7 @@ test('keyed list reuses DOM nodes when sorted', async ({ page, bundle }) => {
     bananaNode._sentinel = true;
 
     items.set(prev => [...prev].sort((a, b) => a.name.localeCompare(b.name)));
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
 
     const bananaAfter = document.querySelector('[data-key="1"]');
     return bananaAfter._sentinel === true;
@@ -292,7 +292,7 @@ test('keyed list reuses DOM nodes when sorted', async ({ page, bundle }) => {
 
 test('keyed list preserves unchanged DOM nodes when one item is replaced', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const items = signal([
       { id: 1, label: 'one' },
       { id: 2, label: 'two' },
@@ -309,7 +309,7 @@ test('keyed list preserves unchanged DOM nodes when one item is replaced', async
 
     // Replace item 2 with a new item — new id means new key, so a fresh node is created
     items.set(list => [list[0], { id: 4, label: 'four' }, list[2]]);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
 
     return Array.from(document.querySelectorAll('#partial-update li')).map(el => el._sentinel === true);
   }, bundle);
@@ -324,7 +324,7 @@ test('keyed list preserves unchanged DOM nodes when one item is replaced', async
 
 test('signal attribute effect on discarded fresh node is stopped after reconciliation', async ({ page, bundle }) => {
   const count = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
 
     const sharedClass = signal('a');
     const items = signal([{ id: 1, label: 'first' }]);
@@ -332,10 +332,9 @@ test('signal attribute effect on discarded fresh node is stopped after reconcili
       t.li({ dataKey: item.id, class: sharedClass }, item.label),
     );
     document.body.append(t.ul({ id: 'attr-effect-cleanup' }, rows).toElement());
-    await Promise.resolve();
 
     items.set([{ id: 1, label: 'second' }]);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
 
     // Count setAttribute('class') calls on the next signal update.
     // Without stopTracked: 2 (live + orphaned fresh node). With stopTracked: 1.
@@ -346,7 +345,7 @@ test('signal attribute effect on discarded fresh node is stopped after reconcili
       return orig.call(this, name, val);
     };
     sharedClass.set('b');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     Element.prototype.setAttribute = orig;
     return writes;
   }, bundle);
@@ -356,7 +355,7 @@ test('signal attribute effect on discarded fresh node is stopped after reconcili
 
 test('signal-managed attribute is preserved on keyed element after reconciliation', async ({ page, bundle }) => {
   const cls = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
 
     const sharedClass = signal('active');
     const items = signal([{ id: 1, label: 'first' }]);
@@ -364,10 +363,9 @@ test('signal-managed attribute is preserved on keyed element after reconciliatio
       t.li({ dataKey: item.id, class: sharedClass }, item.label),
     );
     document.body.append(t.ul({ id: 'attr-preserve' }, rows).toElement());
-    await Promise.resolve();
 
     items.set([{ id: 1, label: 'second' }]);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
 
     return document.querySelector('#attr-preserve li').getAttribute('class');
   }, bundle);
@@ -377,7 +375,7 @@ test('signal-managed attribute is preserved on keyed element after reconciliatio
 
 test('signal content effect on discarded fresh node is stopped after reconciliation', async ({ page, bundle }) => {
   const count = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
 
     const sharedContent = signal('hello');
     const items = signal([{ id: 1 }]);
@@ -385,10 +383,9 @@ test('signal content effect on discarded fresh node is stopped after reconciliat
       t.li({ dataKey: item.id }, [sharedContent]),
     );
     document.body.append(t.ul({ id: 'content-effect-cleanup' }, rows).toElement());
-    await Promise.resolve();
 
     items.set([{ id: 1 }]);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
 
     // Count createTextNode calls on the next signal update.
     // reconcile() calls createTextNode for each text value it renders.
@@ -400,7 +397,7 @@ test('signal content effect on discarded fresh node is stopped after reconciliat
       return orig.apply(this, args);
     };
     sharedContent.set('world');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     Document.prototype.createTextNode = orig;
     return creates;
   }, bundle);
@@ -410,7 +407,7 @@ test('signal content effect on discarded fresh node is stopped after reconciliat
 
 test('signal content in keyed element updates correctly after reconciliation', async ({ page, bundle }) => {
   await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
 
     const sharedContent = signal('hello');
     const items = signal([{ id: 1 }]);
@@ -418,13 +415,12 @@ test('signal content in keyed element updates correctly after reconciliation', a
       t.li({ dataKey: item.id }, [sharedContent]),
     );
     document.body.append(t.ul({ id: 'content-after-reconcile' }, rows).toElement());
-    await Promise.resolve();
 
     items.set([{ id: 1 }]);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
 
     sharedContent.set('world');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
   }, bundle);
 
   await expect(page.locator('#content-after-reconcile li')).toHaveText('world');
@@ -471,7 +467,7 @@ test('signal content switches from array to null and clears the DOM region', asy
 
 test('snapshot fast path: skips toElement when value-equal tag is re-rendered', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const items = signal([
       { id: 1, label: 'one', done: false },
       { id: 2, label: 'two', done: true },
@@ -493,7 +489,7 @@ test('snapshot fast path: skips toElement when value-equal tag is re-rendered', 
     };
     try {
       items.set(prev => [...prev]); // fresh array, same items
-      await Promise.resolve();
+      applyPendingReactiveUpdates();
     } finally {
       Document.prototype.createElement = orig;
     }
@@ -507,7 +503,7 @@ test('snapshot fast path: skips toElement when value-equal tag is re-rendered', 
 
 test('snapshot fast path: skips toElement through nested tag children', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const items = signal([
       { id: 1, href: '/a', label: 'A' },
       { id: 2, href: '/b', label: 'B' },
@@ -527,7 +523,7 @@ test('snapshot fast path: skips toElement through nested tag children', async ({
     };
     try {
       items.set(prev => [...prev]);
-      await Promise.resolve();
+      applyPendingReactiveUpdates();
     } finally {
       Document.prototype.createElement = orig;
     }
@@ -545,7 +541,7 @@ test('snapshot fast path: skips toElement through nested tag children', async ({
 
 test('snapshot fast path: DOM nodes are reused across a re-render with fresh functions', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const items = signal([{ id: 1 }, { id: 2 }]);
     const rows = items.mapWithKey(item => item.id, item =>
       t.li({ dataKey: item.id, onclick: () => {} }, String(item.id)),
@@ -556,7 +552,7 @@ test('snapshot fast path: DOM nodes are reused across a re-render with fresh fun
     before.forEach(el => { el._sentinel = true; });
 
     items.set(prev => [...prev]);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
 
     const after = Array.from(document.querySelectorAll('#fastpath-fn-identity li'));
     return after.map(el => el._sentinel === true);
@@ -566,7 +562,7 @@ test('snapshot fast path: DOM nodes are reused across a re-render with fresh fun
 
 test('snapshot fast path: a stable Signal as an attribute hits the fast path', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     // Per-item signal stored on the item itself, so the attribute value reference is stable
     // across renders. This is the recommended pattern when per-row reactivity is needed.
     const items = signal([
@@ -587,7 +583,7 @@ test('snapshot fast path: a stable Signal as an attribute hits the fast path', a
     };
     try {
       items.set(prev => [...prev]);
-      await Promise.resolve();
+      applyPendingReactiveUpdates();
     } finally {
       Document.prototype.createElement = orig;
     }
@@ -595,7 +591,7 @@ test('snapshot fast path: a stable Signal as an attribute hits the fast path', a
     // The per-row signal should still drive its attribute. Mutating it updates the DOM
     // even though the row was reused via the fast path.
     items.get()[0].cls.set('done');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
 
     return {
       count,
@@ -610,7 +606,7 @@ test('snapshot fast path: a stable Signal as an attribute hits the fast path', a
 
 test('snapshot fast path: a stable Signal in content hits the fast path', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     // Per-item label signal stored on the item itself. The content reference is stable across
     // renders so the fast path's reference-equality fallback for Signal instances matches.
     const items = signal([
@@ -631,14 +627,14 @@ test('snapshot fast path: a stable Signal in content hits the fast path', async 
     };
     try {
       items.set(prev => [...prev]);
-      await Promise.resolve();
+      applyPendingReactiveUpdates();
     } finally {
       Document.prototype.createElement = orig;
     }
 
     // The per-row signal still drives its content area even though the row was reused.
     items.get()[0].label.set('ONE');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
 
     return {
       count,
@@ -653,7 +649,7 @@ test('snapshot fast path: a stable Signal in content hits the fast path', async 
 
 test('snapshot fast path: reordering keyed nodes still hits the fast path', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const items = signal([
       { id: 1, label: 'one' },
       { id: 2, label: 'two' },
@@ -676,7 +672,7 @@ test('snapshot fast path: reordering keyed nodes still hits the fast path', asyn
     };
     try {
       items.set([items.get()[2], items.get()[0], items.get()[1]]); // reverse-ish
-      await Promise.resolve();
+      applyPendingReactiveUpdates();
     } finally {
       Document.prototype.createElement = orig;
     }
@@ -693,9 +689,9 @@ test('snapshot fast path: reordering keyed nodes still hits the fast path', asyn
   expect(result.tags).toEqual(['c', 'a', 'b']);
 });
 
-// ─── synchronous DOM updates and explicit batching ────────────────────────
+// ─── dom update batching ───────────────────────────────────────────────────
 
-test('unbatched set() calls update an attribute synchronously', async ({ page, bundle }) => {
+test('multiple set() calls on one signal produce one attribute write', async ({ page, bundle }) => {
   const writes = await page.evaluate(async src => {
     const { t, signal } = await import(src);
     const cls = signal('initial');
@@ -711,111 +707,46 @@ test('unbatched set() calls update an attribute synchronously', async ({ page, b
     };
     cls.set('intermediate');
     cls.set('final');
-    return log;
-  }, bundle);
-  expect(writes).toEqual(['intermediate', 'final']);
-});
-
-test('batch() coalesces multiple attribute writes', async ({ page, bundle }) => {
-  const writes = await page.evaluate(async src => {
-    const { batch, t, signal } = await import(src);
-    const cls = signal('initial');
-    const el = t.div({ class: cls }).toElement();
-    document.body.append(el);
-    const log = [];
-    const orig = el.setAttribute.bind(el);
-    el.setAttribute = (name, val) => {
-      if (name === 'class') {
-        log.push(val);
-      }
-      orig(name, val);
-    };
-    batch(() => {
-      cls.set('intermediate');
-      cls.set('final');
-    });
+    // Verify automatic batching combines both writes without an explicit update.
+    await Promise.resolve();
     return log;
   }, bundle);
   expect(writes).toEqual(['final']);
 });
 
-test('unbatched content updates are visible before the next line', async ({ page, bundle }) => {
+test('intermediate content value is never written to the DOM', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
     const { t, signal } = await import(src);
     const text = signal('initial');
     const el = t.p(text).toElement();
     document.body.append(el);
     text.set('intermediate');
-    const intermediate = el.textContent;
     text.set('final');
+    const before = el.textContent;
+    // Observe the automatic DOM update after checking that it was initially deferred.
     await Promise.resolve();
-    return { intermediate, final: el.textContent };
+    return { before, after: el.textContent };
   }, bundle);
-  expect(result.intermediate).toBe('intermediate');
-  expect(result.final).toBe('final');
+  expect(result.before).toBe('initial');
+  expect(result.after).toBe('final');
 });
 
-test('batch() keeps intermediate content out of the DOM', async ({ page, bundle }) => {
+test('two signals on one element are both deferred and update together', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { batch, t, signal } = await import(src);
-    const text = signal('initial');
-    const el = t.p(text).toElement();
-    document.body.append(el);
-    let afterFirstSet;
-    let afterSecondSet;
-    batch(() => {
-      text.set('intermediate');
-      afterFirstSet = el.textContent;
-      text.set('final');
-      afterSecondSet = el.textContent;
-    });
-    return { afterFirstSet, afterSecondSet, committed: el.textContent };
-  }, bundle);
-  expect(result).toEqual({
-    afterFirstSet: 'initial',
-    afterSecondSet: 'initial',
-    committed: 'final',
-  });
-});
-
-test('batch() updates two bindings together at its boundary', async ({ page, bundle }) => {
-  const result = await page.evaluate(async src => {
-    const { batch, t, signal } = await import(src);
+    const { t, signal } = await import(src);
     const cls = signal('foo');
     const title = signal('hello');
     const el = t.div({ class: cls, title }).toElement();
     document.body.append(el);
-    let inside;
-    batch(() => {
-      cls.set('bar');
-      title.set('world');
-      inside = { cls: el.className, title: el.title };
-    });
-    const before = inside;
+    cls.set('bar');
+    title.set('world');
+    const before = { cls: el.className, title: el.title };
+    // Verify both bindings update in the automatic pass after remaining unchanged synchronously.
+    await Promise.resolve();
     return { before, after: { cls: el.className, title: el.title } };
   }, bundle);
   expect(result.before).toEqual({ cls: 'foo', title: 'hello' });
   expect(result.after).toEqual({ cls: 'bar', title: 'world' });
-});
-
-test('batch() rejects an async callback before it runs', async ({ page, bundle }) => {
-  const result = await page.evaluate(async src => {
-    const { batch } = await import(src);
-    let callbackRan = false;
-    let message = null;
-    try {
-      batch(async () => {
-        callbackRan = true;
-        await Promise.resolve();
-      });
-    } catch (error) {
-      message = error.message;
-    }
-    await Promise.resolve();
-    return { callbackRan, message };
-  }, bundle);
-  expect(result.callbackRan).toBe(false);
-  expect(result.message).toContain('batch() requires a synchronous callback');
 });
 
 test('iframe signals follow instance validation while standalone calls stay unchecked', async ({ page, bundle }) => {
@@ -831,9 +762,6 @@ test('iframe signals follow instance validation while standalone calls stay unch
       try {
         const runtime = await import(parent.__kensingtonIframeBundle);
         parent.__kensingtonIframeSignal = runtime.signal(0);
-        parent.__kensingtonIframeAsync = async function iframeAsync() {
-          parent.__kensingtonIframeAsyncRan = true;
-        };
         parent.__kensingtonIframeReady();
       } catch (error) {
         parent.__kensingtonIframeFailed(error.message);
@@ -844,8 +772,7 @@ test('iframe signals follow instance validation while standalone calls stay unch
 
     const foreignSignal = window.__kensingtonIframeSignal;
     let effectMessage = null;
-    let batchMessage = null;
-    let asyncMessage = null;
+    let updatesMessage = null;
     let strictMessage = null;
     const warnings = [];
     const elements = [];
@@ -856,14 +783,10 @@ test('iframe signals follow instance validation while standalone calls stay unch
       effectMessage = error.message;
     }
     try {
-      local.batch(() => foreignSignal.set(1));
+      foreignSignal.set(1);
+      local.applyPendingReactiveUpdates();
     } catch (error) {
-      batchMessage = error.message;
-    }
-    try {
-      local.batch(window.__kensingtonIframeAsync);
-    } catch (error) {
-      asyncMessage = error.message;
+      updatesMessage = error.message;
     }
 
     elements.push(local.t.div(foreignSignal).toElement());
@@ -875,6 +798,7 @@ test('iframe signals follow instance validation while standalone calls stay unch
     }
     document.body.append(...elements);
     foreignSignal.set(2);
+    await Promise.resolve(); // Let the iframe's separate runtime apply its updates.
     const values = elements.map(element => element.textContent);
     standalone?.stop();
     elements.forEach(element => element.remove());
@@ -885,21 +809,16 @@ test('iframe signals follow instance validation while standalone calls stay unch
     delete window.__kensingtonIframeFailed;
     delete window.__kensingtonIframeBundle;
     delete window.__kensingtonIframeSignal;
-    delete window.__kensingtonIframeAsync;
-    const asyncRan = window.__kensingtonIframeAsyncRan === true;
-    delete window.__kensingtonIframeAsyncRan;
-    return { effectMessage, batchMessage, asyncMessage, asyncRan, strictMessage, warnings, values };
+    return { effectMessage, updatesMessage, strictMessage, warnings, values };
   }, bundle);
   expect(result.effectMessage).toBeNull();
-  expect(result.batchMessage).toBeNull();
+  expect(result.updatesMessage).toBeNull();
   expect(result.values.every(value => value === '2')).toBe(true);
   if (!bundle.includes('.slim')) {
     expect(result.strictMessage).toContain('crossed reactive runtimes');
     expect(result.warnings).toHaveLength(1);
     expect(result.warnings[0]).toContain('crossed reactive runtimes');
   }
-  expect(result.asyncMessage).toContain('batch() requires a synchronous callback');
-  expect(result.asyncRan).toBe(false);
 });
 
 // The test server uses request paths verbatim. Serve a query-suffixed module URL
@@ -915,7 +834,7 @@ test('instance validation remains scoped across DOM bindings and later updates',
   test.skip(bundle.includes('.slim'), 'slim only supports validation off');
   await serveForeignRuntime(page);
   const result = await page.evaluate(async src => {
-    const { Kensington, signal } = await import(src);
+    const { applyPendingReactiveUpdates, Kensington, signal } = await import(src);
     const foreign = await import('/esm/lib/reactive/signal.js?instance-validation');
     const foreignValue = foreign.signal('foreign');
     const source = signal('initial');
@@ -930,6 +849,7 @@ test('instance validation remains scoped across DOM bindings and later updates',
     document.body.append(parent, attribute, classes);
     const initialWarnings = warnings.length;
     source.set({ toString() { return foreignValue.get(); } });
+    applyPendingReactiveUpdates();
     const updatedTitle = attribute.title;
     const updatedClass = classes.className;
     const afterUpdateWarnings = warnings.length;
@@ -938,6 +858,7 @@ test('instance validation remains scoped across DOM bindings and later updates',
     let strictMessage = null;
     try { strict.div(foreignValue).toElement(); } catch (error) { strictMessage = error.message; }
     foreignValue.set('outside');
+    foreign.applyPendingReactiveUpdates();
     const childText = parent.textContent;
     parent.remove();
     attribute.remove();
@@ -989,6 +910,7 @@ for (const level of ['off', 'warn', 'error']) {
       }
       document.body.append(parent);
       value.set('updated');
+      foreign.applyPendingReactiveUpdates();
       const text = parent.textContent;
       const input = parent.querySelector('input')?.value;
       parent.remove();
@@ -1002,7 +924,7 @@ for (const level of ['off', 'warn', 'error']) {
   });
 }
 
-test('large synchronous write bursts keep DOM bindings current', async ({ page, bundle }) => {
+test('large synchronous write bursts update DOM bindings in the next microtask', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
     const { t, signal } = await import(src);
     const value = signal(0);
@@ -1013,6 +935,8 @@ test('large synchronous write bursts keep DOM bindings current', async ({ page, 
     console.error = message => errors.push(String(message));
     try {
       for (let i = 1; i <= 10_005; i++) { value.set(i); }
+      // Exercise automatic scheduling and its loop guard after a large synchronous write burst.
+      await Promise.resolve();
       return {
         signalValue: value.value,
         domValue: el.dataset.value,
@@ -1080,19 +1004,19 @@ test('effect tracks multiple signals', async ({ page, bundle }) => {
 
 test('effect pause() temporarily stops the effect', async ({ page, bundle }) => {
   const log = await page.evaluate(async src => {
-    const { signal, effect } = await import(src);
+    const { applyPendingReactiveUpdates, signal, effect } = await import(src);
     const s = signal('a');
     const calls = [];
     const e = effect(() => { calls.push(s.get()); });
     s.set('b');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     e.pause();
     s.set('c'); // skipped — effect is paused
     s.set('d'); // skipped — effect is paused
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     e.resume(); // runs once immediately with current value 'd', then re-subscribes
     s.set('e');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     return calls;
   }, bundle);
   expect(log).toEqual(['a', 'b', 'd', 'e']);
@@ -1100,19 +1024,19 @@ test('effect pause() temporarily stops the effect', async ({ page, bundle }) => 
 
 test('effect stop() permanently prevents further runs', async ({ page, bundle }) => {
   const log = await page.evaluate(async src => {
-    const { signal, effect } = await import(src);
+    const { applyPendingReactiveUpdates, signal, effect } = await import(src);
     const s = signal('a');
     const calls = [];
     const e = effect(() => { calls.push(s.get()); });
     s.set('b');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     e.stop();
     s.set('c');
     s.set('d');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     e.resume(); // no-op after stop()
     s.set('e');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     return calls;
   }, bundle);
   expect(log).toEqual(['a', 'b']);
@@ -1120,18 +1044,18 @@ test('effect stop() permanently prevents further runs', async ({ page, bundle })
 
 test('effect cleans up stale conditional dependencies', async ({ page, bundle }) => {
   const log = await page.evaluate(async src => {
-    const { signal, effect } = await import(src);
+    const { applyPendingReactiveUpdates, signal, effect } = await import(src);
     const flag = signal(true);
     const a = signal('a');
     const b = signal('b');
     const calls = [];
     effect(() => { calls.push(flag.get() ? a.get() : b.get()); });
     flag.set(false);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     a.set('a2'); // a is no longer tracked — should not trigger
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     b.set('b2');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     return calls;
   }, bundle);
   expect(log).toEqual(['a', 'b', 'b2']);
@@ -1141,15 +1065,15 @@ test('effect cleans up stale conditional dependencies', async ({ page, bundle })
 
 test('signal attribute effect stops when element is removed from DOM', async ({ page, bundle }) => {
   const writes = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const cls = signal('a');
     const el = t.div({ id: 'rm-attr', class: cls }).toElement();
     document.body.append(el);
-    await Promise.resolve();
     el.remove();
+    // Let the removal observer stop the attribute binding before changing its source.
     await Promise.resolve();
     cls.set('b');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     return document.getElementById('rm-attr') === null && el.className;
   }, bundle);
   expect(writes).toBe('a');
@@ -1157,34 +1081,36 @@ test('signal attribute effect stops when element is removed from DOM', async ({ 
 
 test('signal content effect stops when element is removed from DOM', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const text = signal('hello');
     const el = t.p({ id: 'rm-content' }, text).toElement();
     document.body.append(el);
-    await Promise.resolve();
     el.remove();
+    // Let the removal observer stop the content binding before changing its source.
     await Promise.resolve();
     text.set('world');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     return el.textContent;
   }, bundle);
   expect(result).toBe('hello');
 });
 
-test('a write before removal cleanup can still reach the detached element', async ({ page, bundle }) => {
+test('explicit updates can reach a detached element before removal cleanup', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { t, signal, applyPendingReactiveUpdates } = await import(src);
     const text = signal('initial');
     const el = t.p(text).toElement();
     document.body.append(el);
-    await Promise.resolve();
 
     el.remove();
     text.set('before-cleanup');
+    applyPendingReactiveUpdates();
     const beforeCleanup = el.textContent;
 
+    // Run removal cleanup to contrast this write with the explicit update before cleanup.
     await Promise.resolve();
     text.set('after-cleanup');
+    applyPendingReactiveUpdates();
     return { beforeCleanup, afterCleanup: el.textContent };
   }, bundle);
   expect(result).toEqual({ beforeCleanup: 'before-cleanup', afterCleanup: 'before-cleanup' });
@@ -1192,17 +1118,17 @@ test('a write before removal cleanup can still reach the detached element', asyn
 
 test('signal effects stop when a parent element is removed from DOM', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const cls = signal('x');
     const child = t.span({ class: cls }).toElement();
     const parent = document.createElement('div');
     parent.append(child);
     document.body.append(parent);
-    await Promise.resolve();
     parent.remove();
+    // Let the removal observer stop descendant bindings before changing their source.
     await Promise.resolve();
     cls.set('y');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     return child.className;
   }, bundle);
   expect(result).toBe('x');
@@ -1293,7 +1219,6 @@ test('getDomElement() returns null after a signal comment is removed from DOM', 
     const tag = t.inlineComment(note);
     document.body.append(tag.toElement());
     tag.getDomElement().remove();
-    await Promise.resolve();
     return tag.getDomElement();
   }, bundle);
   expect(result).toBeNull();
@@ -1301,17 +1226,18 @@ test('getDomElement() returns null after a signal comment is removed from DOM', 
 
 test('toElement() after removal of signal comment creates a fresh live comment', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const note = signal('before');
     const tag = t.inlineComment(note);
     const first = tag.toElement();
     document.body.append(first);
     first.remove();
+    // Let the removal observer clear the cached comment before creating its replacement.
     await Promise.resolve();
     const second = tag.toElement();
     document.body.append(second);
     note.set('after');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     return { different: first !== second, liveValue: second.nodeValue };
   }, bundle);
   expect(result.different).toBe(true);
@@ -1325,7 +1251,6 @@ test('getDomElement() returns null after a reactive element is removed from DOM'
     const tag = t.div({ id: 'gde-rx-rm', class: cls });
     document.body.append(tag.toElement());
     tag.getDomElement().remove();
-    await Promise.resolve();
     return tag.getDomElement();
   }, bundle);
   expect(result).toBeNull();
@@ -1343,17 +1268,18 @@ test('signal attributes update live on a toElement() node', async ({ page, bundl
 
 test('toElement() after removal of reactive element creates a fresh live element', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const cls = signal('a');
     const tag = t.div({ id: 'gde-rm', class: cls });
     const first = tag.toElement();
     document.body.append(first);
     first.remove();
+    // Let the removal observer clear the cached element before creating its replacement.
     await Promise.resolve();
     const second = tag.toElement();
     document.body.append(second);
     cls.set('b');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     return { different: first !== second, liveClass: second.getAttribute('class') };
   }, bundle);
   expect(result.different).toBe(true);
@@ -1362,16 +1288,16 @@ test('toElement() after removal of reactive element creates a fresh live element
 
 test('non-reactive child: getDomElement() null while filtered, live after unfilter', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const tagA = t.li({ id: 'nr-a' }, 'Alpha');
     const tagB = t.li({ id: 'nr-b' }, 'Beta');
     const items = signal([tagA, tagB]);
     document.body.append(t.ul(items).toElement());
     items.set([tagA]);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const nullResult = tagB.getDomElement();
     items.set([tagA, tagB]);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const liveEl = tagB.getDomElement();
     return {
       nullWhileOut: nullResult === null,
@@ -1386,21 +1312,21 @@ test('non-reactive child: getDomElement() null while filtered, live after unfilt
 
 test('reactive child: getDomElement() null while filtered, live after unfilter', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const cls = signal('on');
     const tagA = t.li({ id: 're-a' }, 'Alpha');
     const tagB = t.li({ id: 're-b', class: cls }, 'Beta');
     const items = signal([tagA, tagB]);
     document.body.append(t.ul(items).toElement());
     items.set([tagA]);
-    await Promise.resolve();
-    await Promise.resolve(); // ensure MutationObserver has fired
+    applyPendingReactiveUpdates();
+    await Promise.resolve(); // Exercise remounting after the removal observer has finished.
     const nullWhileFiltered = tagB.getDomElement();
     items.set([tagA, tagB]);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const freshB = tagB.getDomElement();
     cls.set('off');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     return {
       nullWhileFiltered: nullWhileFiltered === null,
       freshClass: freshB.getAttribute('class'),
@@ -1412,16 +1338,16 @@ test('reactive child: getDomElement() null while filtered, live after unfilter',
 
 test('keyed element that stays in DOM through a reconcile cycle remains reactive', async ({ page, bundle }) => {
   await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const cls = signal('on');
     const tagA = t.li({ id: 'keyed-rx-a', dataKey: 'a', class: cls }, 'Alpha');
     const tagB = t.li({ id: 'keyed-rx-b', dataKey: 'b' }, 'Beta');
     const items = signal([tagA, tagB]);
     document.body.append(t.ul(items).toElement());
     items.set([tagA]); // reconcile: tagA stays (existing === fresh path), tagB removed
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     cls.set('off');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
   }, bundle);
   await expect(page.locator('#keyed-rx-a')).toHaveClass('off');
 });
@@ -1430,12 +1356,12 @@ test('keyed element that stays in DOM through a reconcile cycle remains reactive
 
 test('signal prop updates DOM property live', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const val = signal('first');
     const el = t.input({ id: 'prop-sig', type: 'text', prop: { value: val } }).toElement();
     document.body.append(el);
     val.set('second');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     return el.value;
   }, bundle);
   expect(result).toBe('second');
@@ -1504,7 +1430,7 @@ test('prop value on <select> picks the matching option (prop runs after children
   // default (here "small"). content-tag.js#toElement applies `prop` after children for
   // exactly this reason.
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const fontSize = signal('medium');
     const sel = t.select({ id: 'select-prop-static', prop: { value: fontSize } }, [
       t.option({ value: 'small' }, 'Small'),
@@ -1512,10 +1438,9 @@ test('prop value on <select> picks the matching option (prop runs after children
       t.option({ value: 'large' }, 'Large'),
     ]).toElement();
     document.body.append(sel);
-    await Promise.resolve();
     const initial = sel.value;
     fontSize.set('large');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const afterSet = sel.value;
     return { initial, afterSet };
   }, bundle);
@@ -1525,15 +1450,15 @@ test('prop value on <select> picks the matching option (prop runs after children
 
 test('signal prop effect stops when element is removed from DOM', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const val = signal('before');
     const el = t.input({ type: 'text', prop: { value: val } }).toElement();
     document.body.append(el);
-    await Promise.resolve();
     el.remove();
+    // Let the removal observer stop the property binding before changing its source.
     await Promise.resolve();
     val.set('after');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     return el.value;
   }, bundle);
   expect(result).toBe('before');
@@ -1541,7 +1466,7 @@ test('signal prop effect stops when element is removed from DOM', async ({ page,
 
 test('per-row signal prop on a keyed element updates when the row signal changes', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const items = signal([
       { id: 1, checked: signal(false) },
       { id: 2, checked: signal(false) },
@@ -1552,10 +1477,9 @@ test('per-row signal prop on a keyed element updates when the row signal changes
       ),
     );
     document.body.append(t.ul({ id: 'static-prop-update' }, rows).toElement());
-    await Promise.resolve();
 
     items.get()[0].checked.set(true);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
 
     return Array.from(document.querySelectorAll('#static-prop-update input')).map(el => el.checked);
   }, bundle);
@@ -1565,7 +1489,7 @@ test('per-row signal prop on a keyed element updates when the row signal changes
 
 test('mapWithKey reuses the existing DOM node when the row signal changes', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const items = signal([{ id: 1, checked: signal(false) }]);
     const rows = items.mapWithKey(item => item.id, item =>
       t.li({ dataKey: item.id },
@@ -1573,13 +1497,12 @@ test('mapWithKey reuses the existing DOM node when the row signal changes', asyn
       ),
     );
     document.body.append(t.ul({}, rows).toElement());
-    await Promise.resolve();
 
     const before = document.getElementById('static-prop-node');
     before._sentinel = true;
 
     items.get()[0].checked.set(true);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
 
     const after = document.getElementById('static-prop-node');
     return { reused: after._sentinel === true, checked: after.checked };
@@ -1590,7 +1513,7 @@ test('mapWithKey reuses the existing DOM node when the row signal changes', asyn
 
 test('multiple per-row signal props on a keyed element each update independently', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const items = signal([
       { id: 1, checked: signal(false), disabled: signal(false) },
     ]);
@@ -1604,11 +1527,10 @@ test('multiple per-row signal props on a keyed element each update independently
       ),
     );
     document.body.append(t.ul({}, rows).toElement());
-    await Promise.resolve();
 
     items.get()[0].checked.set(true);
     items.get()[0].disabled.set(true);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
 
     const input = document.getElementById('multi-prop-input');
     return { checked: input.checked, disabled: input.disabled };
@@ -1619,7 +1541,7 @@ test('multiple per-row signal props on a keyed element each update independently
 
 test('per-row signal prop updates across multiple cycles including back to original', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const items = signal([
       { id: 1, checked: signal(false) },
       { id: 2, checked: signal(false) },
@@ -1630,23 +1552,22 @@ test('per-row signal prop updates across multiple cycles including back to origi
       ),
     );
     document.body.append(t.ul({ id: 'prop-cycle' }, rows).toElement());
-    await Promise.resolve();
 
     const snapshots = [];
     const read = () => Array.from(document.querySelectorAll('#prop-cycle input')).map(el => el.checked);
     const [a, b] = items.get();
 
     a.checked.set(true);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     snapshots.push(read());
 
     b.checked.set(true);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     snapshots.push(read());
 
     a.checked.set(false);
     b.checked.set(false);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     snapshots.push(read());
 
     return snapshots;
@@ -1658,7 +1579,7 @@ test('per-row signal prop updates across multiple cycles including back to origi
 
 test('signal prop on a keyed element stays reactive across reconcile cycles', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const val = signal('first');
     const items = signal([{ id: 1 }, { id: 2 }]);
     const rows = items.mapWithKey(item => item.id, item =>
@@ -1674,12 +1595,12 @@ test('signal prop on a keyed element stays reactive across reconcile cycles', as
 
     // Drop the second row, then add it back: the first row is reconciled across the cycle.
     items.set(prev => prev.filter(it => it.id === 1));
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     items.set([{ id: 1 }, { id: 2 }]);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
 
     val.set('second');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
 
     return document.getElementById('signal-prop-reactive')?.value;
   }, bundle);
@@ -1695,6 +1616,7 @@ test('addConnectedCallback fires when element is appended to the DOM', async ({ 
     let fired = false;
     tag.addConnectedCallback(() => { fired = true; });
     document.body.append(tag.toElement());
+    // Connected callbacks run in the insertion observer, outside the reactive update queue.
     await Promise.resolve();
     return fired;
   }, bundle);
@@ -1709,6 +1631,7 @@ test('addConnectedCallback receives the DOM element as its argument and as this'
     let thisId = null;
     tag.addConnectedCallback(function connectedCallback(el) { argId = el.id; thisId = this.id; });
     document.body.append(tag.toElement());
+    // Let the insertion observer call the handler before inspecting its argument and receiver.
     await Promise.resolve();
     return { argId, thisId };
   }, bundle);
@@ -1725,6 +1648,7 @@ test('addConnectedCallback fires when an ancestor is appended to the DOM', async
     const parent = document.createElement('div');
     parent.append(child.toElement());
     document.body.append(parent);
+    // Let the insertion observer discover and connect the descendant.
     await Promise.resolve();
     return fired;
   }, bundle);
@@ -1738,6 +1662,7 @@ test('addConnectedCallback does not fire if element is never added to the DOM', 
     let fired = false;
     tag.addConnectedCallback(() => { fired = true; });
     tag.toElement();
+    // Give queued lifecycle work a chance to run and verify an unmounted tag stays unconnected.
     await Promise.resolve();
     return fired;
   }, bundle);
@@ -1752,6 +1677,7 @@ test('multiple addConnectedCallback handlers all fire on connect', async ({ page
     tag.addConnectedCallback(() => { calls.push('a'); });
     tag.addConnectedCallback(() => { calls.push('b'); });
     document.body.append(tag.toElement());
+    // Let the insertion observer invoke all registered connected callbacks.
     await Promise.resolve();
     return calls;
   }, bundle);
@@ -1766,10 +1692,13 @@ test('addConnectedCallback re-fires on every re-attachment with persist', async 
     tag.addConnectedCallback(() => { calls.push('connected'); });
     const el = tag.toElement();
     document.body.append(el);
+    // Observe the first connection before beginning a separate removal phase.
     await Promise.resolve();
     el.remove();
+    // Let the removal observer disconnect the tag before reinserting it.
     await Promise.resolve();
     document.body.append(el);
+    // Let the insertion observer report the second connection.
     await Promise.resolve();
     return calls;
   }, bundle);
@@ -1785,12 +1714,16 @@ test('addDisconnectedCallback re-fires on every removal with persist', async ({ 
     tag.addDisconnectedCallback(() => { calls.push('disconnected'); });
     const el = tag.toElement();
     document.body.append(el);
+    // Let the insertion observer record the first connected callback.
     await Promise.resolve();
     el.remove();
+    // Let the removal observer record the first disconnected callback.
     await Promise.resolve();
     document.body.append(el);
+    // Let the insertion observer record the second connected callback.
     await Promise.resolve();
     el.remove();
+    // Let the removal observer record the second disconnected callback.
     await Promise.resolve();
     return calls;
   }, bundle);
@@ -1806,10 +1739,13 @@ test('addConnectedCallback does not re-fire after removal without persist', asyn
     tag.addDisconnectedCallback(() => { calls.push('disconnected'); });
     const el = tag.toElement();
     document.body.append(el);
+    // Observe the connection before testing permanent removal.
     await Promise.resolve();
     el.remove();
+    // Let the removal observer permanently clear the callbacks before reinsertion.
     await Promise.resolve();
     document.body.append(el);
+    // Give the insertion observer a chance to run and verify cleared callbacks stay silent.
     await Promise.resolve();
     return calls;
   }, bundle);
@@ -1825,6 +1761,7 @@ test('addDisconnectedCallback fires when element is removed from the DOM', async
     const el = tag.toElement();
     document.body.append(el);
     el.remove();
+    // Let the removal observer invoke the disconnected callback.
     await Promise.resolve();
     return fired;
   }, bundle);
@@ -1841,6 +1778,7 @@ test('addDisconnectedCallback receives the DOM element as its argument and as th
     const el = tag.toElement();
     document.body.append(el);
     el.remove();
+    // Let the removal observer call the handler before inspecting its argument and receiver.
     await Promise.resolve();
     return { argId, thisId };
   }, bundle);
@@ -1858,6 +1796,7 @@ test('addDisconnectedCallback fires when an ancestor is removed from the DOM', a
     parent.append(child.toElement());
     document.body.append(parent);
     parent.remove();
+    // Let the removal observer discover and disconnect the descendant.
     await Promise.resolve();
     return fired;
   }, bundle);
@@ -1871,6 +1810,7 @@ test('addDisconnectedCallback does not fire if element is never removed from the
     let fired = false;
     tag.addDisconnectedCallback(() => { fired = true; });
     document.body.append(tag.toElement());
+    // Process the insertion record and verify it does not fire a disconnected callback.
     await Promise.resolve();
     return fired;
   }, bundle);
@@ -1879,7 +1819,7 @@ test('addDisconnectedCallback does not fire if element is never removed from the
 
 test('addDisconnectedCallback fires alongside signal effect cleanup on removal', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const cls = signal('on');
     const tag = t.div({ id: 'dc-signal', class: cls });
     let dcFired = false;
@@ -1887,9 +1827,10 @@ test('addDisconnectedCallback fires alongside signal effect cleanup on removal',
     const el = tag.toElement();
     document.body.append(el);
     el.remove();
+    // Let the removal observer run both the disconnected callback and binding cleanup.
     await Promise.resolve();
     cls.set('off');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     return { dcFired, classAfterRemove: el.className };
   }, bundle);
   expect(result.dcFired).toBe(true);
@@ -1906,6 +1847,7 @@ test('multiple addDisconnectedCallback handlers all fire on removal', async ({ p
     const el = tag.toElement();
     document.body.append(el);
     el.remove();
+    // Let the removal observer invoke all registered disconnected callbacks.
     await Promise.resolve();
     return calls;
   }, bundle);
@@ -1921,8 +1863,10 @@ test('addConnectedCallback and addDisconnectedCallback fire in lifecycle order',
     tag.addDisconnectedCallback(() => { events.push('disconnected'); });
     const el = tag.toElement();
     document.body.append(el);
+    // Record the connection before the later removal can be observed.
     await Promise.resolve();
     el.remove();
+    // Let the removal observer record the disconnection after the connection.
     await Promise.resolve();
     return events;
   }, bundle);
@@ -1938,9 +1882,11 @@ test('addDisconnectedCallback re-fires on every removal with persist, no connect
     const el = tag.toElement();
     document.body.append(el);
     el.remove();
+    // Finish the first removal notification before starting the next cycle.
     await Promise.resolve();
     document.body.append(el);
     el.remove();
+    // Let the removal observer report the second cycle independently.
     await Promise.resolve();
     return calls;
   }, bundle);
@@ -1957,12 +1903,16 @@ test('all callbacks re-fire on every cycle with persist', async ({ page, bundle 
     tag.addDisconnectedCallback(() => { calls.push('b'); });
     const el = tag.toElement();
     document.body.append(el);
+    // Let the insertion observer record the first connection.
     await Promise.resolve();
     el.remove();
+    // Let the removal observer invoke both handlers for the first removal.
     await Promise.resolve();
     document.body.append(el);
+    // Let the insertion observer record the second connection.
     await Promise.resolve();
     el.remove();
+    // Let the removal observer invoke both handlers for the second removal.
     await Promise.resolve();
     return calls;
   }, bundle);
@@ -1980,9 +1930,11 @@ test('addDisconnectedCallback receives element on every removal with persist', a
     const el = tag.toElement();
     document.body.append(el);
     el.remove();
+    // Let the removal observer supply the element for the first removal.
     await Promise.resolve();
     document.body.append(el);
     el.remove();
+    // Let the removal observer supply the element for the second removal.
     await Promise.resolve();
     return ids;
   }, bundle);
@@ -1991,17 +1943,19 @@ test('addDisconnectedCallback receives element on every removal with persist', a
 
 test('signal attribute stays reactive across remove and re-insert with persist', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const cls = signal('a');
     const tag = t.div({ id: 'sig-resume', class: cls, persist: true });
     const el = tag.toElement();
     document.body.append(el);
     el.remove();
+    // Let the removal observer pause the persistent attribute binding.
     await Promise.resolve();
     document.body.append(el);
+    // Let the insertion observer resume the binding before changing its source.
     await Promise.resolve();
     cls.set('b');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     return el.className;
   }, bundle);
   expect(result).toBe('b');
@@ -2009,17 +1963,19 @@ test('signal attribute stays reactive across remove and re-insert with persist',
 
 test('signal content stays reactive across remove and re-insert with persist', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const text = signal('before');
     const tag = t.p({ id: 'sig-content-resume', persist: true }, text);
     const el = tag.toElement();
     document.body.append(el);
     el.remove();
+    // Let the removal observer pause the persistent content binding.
     await Promise.resolve();
     document.body.append(el);
+    // Let the insertion observer resume the binding before changing its source.
     await Promise.resolve();
     text.set('after');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     return el.textContent;
   }, bundle);
   expect(result).toBe('after');
@@ -2027,19 +1983,22 @@ test('signal content stays reactive across remove and re-insert with persist', a
 
 test('signal effects stop again when a resumed element is removed a second time', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const cls = signal('a');
     const tag = t.div({ id: 'sig-restop', class: cls, persist: true });
     const el = tag.toElement();
     document.body.append(el);
     el.remove();
+    // Let the removal observer pause the binding on the first removal.
     await Promise.resolve();
     document.body.append(el);
+    // Let the insertion observer resume the binding before removing it again.
     await Promise.resolve();
     el.remove();
+    // Let the removal observer pause the resumed binding before the next write.
     await Promise.resolve();
     cls.set('b');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     return el.className;
   }, bundle);
   expect(result).toBe('a');
@@ -2047,7 +2006,7 @@ test('signal effects stop again when a resumed element is removed a second time'
 
 test('signal effects resume and stop correctly across three removal cycles', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const cls = signal('a');
     const tag = t.div({ id: 'sig-three-cycles', class: cls, persist: true });
     const el = tag.toElement();
@@ -2055,14 +2014,16 @@ test('signal effects resume and stop correctly across three removal cycles', asy
 
     for (let i = 0; i < 3; i++) {
       document.body.append(el);
+      // Let the insertion observer resume bindings at the start of each cycle.
       await Promise.resolve();
       cls.set(String(i + 1));
-      await Promise.resolve();
+      applyPendingReactiveUpdates();
       snapshot.push(el.className);
       el.remove();
+      // Let the removal observer pause bindings before testing writes while detached.
       await Promise.resolve();
       cls.set('dead');
-      await Promise.resolve();
+      applyPendingReactiveUpdates();
       snapshot.push(el.className);
     }
     return snapshot;
@@ -2073,7 +2034,7 @@ test('signal effects resume and stop correctly across three removal cycles', asy
 
 test('signal effects survive insertBefore reorder within same parent with persist', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const clsA = signal('a');
     const clsB = signal('b');
     const tagA = t.li({ id: 'li-a', class: clsA, persist: true });
@@ -2083,16 +2044,18 @@ test('signal effects survive insertBefore reorder within same parent with persis
     const ul = document.createElement('ul');
     ul.append(elA, elB);
     document.body.append(ul);
+    // Process initial insertions so the next observer pass handles only the reorder.
     await Promise.resolve();
 
     // insertBefore moves elB before elA: fires removedNodes then addedNodes in same record
     ul.insertBefore(elB, elA);
+    // Let the observer process the move before verifying that it preserved both bindings.
     await Promise.resolve();
 
     // Both signal effects must still be live after the reorder
     clsA.set('a2');
     clsB.set('b2');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
 
     return [document.getElementById('li-a').className, document.getElementById('li-b').className];
   }, bundle);
@@ -2105,10 +2068,11 @@ test('getDomElement() returns the live element after reconnection in persist sce
     const tag = t.div({ id: 'gde-reconnect', persist: true });
     const el = tag.toElement();
     document.body.append(el);
-    await Promise.resolve();
     el.remove();
+    // Exercise a completed removal observer pass before reconnecting the persistent tag.
     await Promise.resolve();
     document.body.append(el);
+    // Verify the cached element remains accessible after the reconnection observer runs.
     await Promise.resolve();
     return tag.getDomElement()?.id ?? null;
   }, bundle);
@@ -2124,12 +2088,12 @@ test('disconnect callbacks fire in order on every removal with toElement persist
     tag.addDisconnectedCallback(() => { calls.push('second'); });
     const el = tag.toElement();
     document.body.append(el);
-    await Promise.resolve();
     el.remove();
+    // Finish the first removal notification before starting the next cycle.
     await Promise.resolve();
     document.body.append(el);
-    await Promise.resolve();
     el.remove();
+    // Let the removal observer report the second cycle independently.
     await Promise.resolve();
     return calls;
   }, bundle);
@@ -2139,17 +2103,19 @@ test('disconnect callbacks fire in order on every removal with toElement persist
 test('signal on child element stays reactive across remove and re-insert with persist parent',
   async ({ page, bundle }) => {
     const result = await page.evaluate(async src => {
-      const { t, signal } = await import(src);
+      const { applyPendingReactiveUpdates, t, signal } = await import(src);
       const cls = signal('a');
       const tag = t.div({ id: 'child-persist-resume', persist: true }, [t.span({ class: cls })]);
       const el = tag.toElement();
       document.body.append(el);
       el.remove();
+      // Let the removal observer pause the persistent parent's descendant binding.
       await Promise.resolve();
       document.body.append(el);
+      // Let the insertion observer resume the descendant before changing its source.
       await Promise.resolve();
       cls.set('b');
-      await Promise.resolve();
+      applyPendingReactiveUpdates();
       return el.querySelector('span').className;
     }, bundle);
     expect(result).toBe('b');
@@ -2157,15 +2123,16 @@ test('signal on child element stays reactive across remove and re-insert with pe
 
 test('signal on child element stops updating after persist parent is permanently removed', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const cls = signal('a');
     const tag = t.div({ id: 'child-persist-stop', persist: true }, [t.span({ class: cls })]);
     const el = tag.toElement();
     document.body.append(el);
     el.remove();
+    // Let the removal observer pause the descendant before testing a detached write.
     await Promise.resolve();
     cls.set('b');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     return el.querySelector('span').className;
   }, bundle);
   expect(result).toBe('a');
@@ -2173,21 +2140,23 @@ test('signal on child element stops updating after persist parent is permanently
 
 test('signal on child stops and resumes correctly across three persist cycles', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const cls = signal('a');
     const tag = t.div({ persist: true }, [t.span({ class: cls })]);
     const el = tag.toElement();
     const snapshot = [];
     for (let i = 0; i < 3; i++) {
       document.body.append(el);
+      // Let the insertion observer resume the descendant at the start of each cycle.
       await Promise.resolve();
       cls.set(String(i + 1));
-      await Promise.resolve();
+      applyPendingReactiveUpdates();
       snapshot.push(el.querySelector('span').className);
       el.remove();
+      // Let the removal observer pause the descendant before testing detached writes.
       await Promise.resolve();
       cls.set('dead');
-      await Promise.resolve();
+      applyPendingReactiveUpdates();
       snapshot.push(el.querySelector('span').className);
     }
     return snapshot;
@@ -2197,7 +2166,7 @@ test('signal on child stops and resumes correctly across three persist cycles', 
 
 test('signal on child element survives insertBefore reorder with persist parent', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const clsA = signal('a');
     const clsB = signal('b');
     const tagA = t.li({ persist: true }, [t.span({ id: 'child-reorder-a', class: clsA })]);
@@ -2207,12 +2176,14 @@ test('signal on child element survives insertBefore reorder with persist parent'
     const ul = document.createElement('ul');
     ul.append(elA, elB);
     document.body.append(ul);
+    // Process initial insertions so the next observer pass handles only the reorder.
     await Promise.resolve();
     ul.insertBefore(elB, elA);
+    // Let the observer process the move before verifying that descendant bindings survived.
     await Promise.resolve();
     clsA.set('a2');
     clsB.set('b2');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     return [
       document.getElementById('child-reorder-a').className,
       document.getElementById('child-reorder-b').className,
@@ -2223,7 +2194,7 @@ test('signal on child element survives insertBefore reorder with persist parent'
 
 test('signal effects survive insertBefore reorder without persist', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const clsA = signal('a');
     const clsB = signal('b');
     const elA = t.li({ id: 'li-nopersist-a', class: clsA }).toElement();
@@ -2231,16 +2202,18 @@ test('signal effects survive insertBefore reorder without persist', async ({ pag
     const ul = document.createElement('ul');
     ul.append(elA, elB);
     document.body.append(ul);
+    // Process initial insertions so the next observer pass handles only the reorder.
     await Promise.resolve();
 
     // insertBefore fires removedNodes then addedNodes in the same MO record.
     // isConnected is true by the time the observer runs, so effects must survive.
     ul.insertBefore(elB, elA);
+    // Let the removal observer check the moved nodes while they are connected again.
     await Promise.resolve();
 
     clsA.set('a2');
     clsB.set('b2');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
 
     return [document.getElementById('li-nopersist-a').className, document.getElementById('li-nopersist-b').className];
   }, bundle);
@@ -2249,7 +2222,7 @@ test('signal effects survive insertBefore reorder without persist', async ({ pag
 
 test('signal on child element survives insertBefore reorder without persist parent', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const clsA = signal('a');
     const clsB = signal('b');
     const elA = t.li([t.span({ id: 'child-nopersist-a', class: clsA })]).toElement();
@@ -2257,12 +2230,14 @@ test('signal on child element survives insertBefore reorder without persist pare
     const ul = document.createElement('ul');
     ul.append(elA, elB);
     document.body.append(ul);
+    // Process initial insertions so the next observer pass handles only the reorder.
     await Promise.resolve();
     ul.insertBefore(elB, elA);
+    // Let the observer process the move before verifying that descendant bindings survived.
     await Promise.resolve();
     clsA.set('a2');
     clsB.set('b2');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     return [
       document.getElementById('child-nopersist-a').className,
       document.getElementById('child-nopersist-b').className,
@@ -2273,13 +2248,13 @@ test('signal on child element survives insertBefore reorder without persist pare
 
 test('literal(signal) stops its effect when the host element is removed', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const html = signal('<p>a</p>');
     const host = t.div({ id: 'lit-leak' }, t.literal(html)).toElement();
     document.body.append(host);
 
     html.set('<p>b</p>');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const before = document.querySelector('#lit-leak').textContent;
 
     // Count template element constructions during signal updates after removal.
@@ -2297,7 +2272,7 @@ test('literal(signal) stops its effect when the host element is removed', async 
     try {
       html.set('<p>c</p>');
       html.set('<p>d</p>');
-      await Promise.resolve();
+      applyPendingReactiveUpdates();
     } finally {
       Document.prototype.createElement = orig;
     }
@@ -2355,6 +2330,8 @@ test('loop counter fires and stops an infinite two-effect ping-pong', async ({ p
     const postLoopValues = [];
     const observer = effect(() => { postLoopValues.push(a.get()); });
     a.set(999);
+    // Verify automatic scheduling recovers after the loop guard stops the earlier effects.
+    await Promise.resolve();
     observer.stop();
     return { errors, postLoopValues };
   }, bundle);
@@ -2437,7 +2414,7 @@ test(`requestAnimationFrame loop bypasses the async-turn counter and runs indefi
 
 test('reconcile flattens nested arrays in signal content', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal, computed } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal, computed } = await import(src);
     const items = signal([
       { id: 1, label: 'a' },
       { id: 2, label: 'b' },
@@ -2451,12 +2428,11 @@ test('reconcile flattens nested arrays in signal content', async ({ page, bundle
     );
     const rows = computed(() => [itemRows.get(), extraRows.get()]);
     document.body.append(t.ul({ id: 'flat-nested' }, rows).toElement());
-    await Promise.resolve();
     const before = Array.from(document.querySelectorAll('#flat-nested li')).map(el => el.textContent);
 
     // id 3 already cached. Reuses its tag (label 'c'). id 5 is new so its tag is built fresh.
     extra.set([{ id: 3, label: 'c' }, { id: 5, label: 'e' }]);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const after = Array.from(document.querySelectorAll('#flat-nested li')).map(el => el.textContent);
 
     return { before, after };
@@ -2471,7 +2447,6 @@ test('reconcile filters true and empty string from signal content', async ({ pag
     const { t, signal } = await import(src);
     const items = signal([true, '', 'hello', false, null, undefined, 'world']);
     document.body.append(t.span({ id: 'filter-true-empty' }, items).toElement());
-    await Promise.resolve();
     return document.querySelector('#filter-true-empty').textContent;
   }, bundle);
   expect(result).toBe('helloworld');
@@ -2489,6 +2464,7 @@ test('async microtask loop is halted by the async-turn counter', async ({ page, 
     const x = signal(0);
     effect(() => {
       x.get();
+      // Deliberately create a loop across microtasks to exercise the asynchronous loop guard.
       queueMicrotask(() => x.set(v => v + 1));
     });
     await new Promise(r => { setTimeout(r, 0); });
@@ -2508,7 +2484,7 @@ test('async microtask loop is halted by the async-turn counter', async ({ page, 
 
 test('local signal state inside computed survives outer re-render', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal, computed } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal, computed } = await import(src);
 
     const items = signal([
       { id: 'a', label: 'Apple' },
@@ -2533,18 +2509,15 @@ test('local signal state inside computed survives outer re-render', async ({ pag
     const liA = () => document.querySelector('[data-key="a"]');
 
     document.querySelector('#btn-a').click();
-    await Promise.resolve();
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const afterClick = liA().className;
 
     items.set(prev => [...prev, { id: 'c', label: 'Cherry' }]);
-    await Promise.resolve();
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const afterReRender = liA().className;
 
     document.querySelector('#btn-a').click();
-    await Promise.resolve();
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const afterSecondClick = liA().className;
 
     return { afterClick, afterReRender, afterSecondClick };
@@ -2557,7 +2530,7 @@ test('local signal state inside computed survives outer re-render', async ({ pag
 
 test('keyed signal inside computed persists state across outer re-render', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal, computed } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal, computed } = await import(src);
 
     const items = signal([
       { id: 'a', label: 'Apple' },
@@ -2582,18 +2555,15 @@ test('keyed signal inside computed persists state across outer re-render', async
     const liA = () => document.querySelector('[data-key="a"]');
 
     document.querySelector('#btn-a').click();
-    await Promise.resolve();
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const afterClick = liA().className;
 
     items.set(prev => [...prev, { id: 'c', label: 'Cherry' }]);
-    await Promise.resolve();
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const afterReRender = liA().className;
 
     document.querySelector('#btn-a').click();
-    await Promise.resolve();
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const afterSecondClick = liA().className;
 
     return { afterClick, afterReRender, afterSecondClick };
@@ -2608,7 +2578,7 @@ test('mapWithKey preserves DOM identity across outer re-render', async ({ page, 
   // mapWithKey returns the same tag instance for an unchanged key, so the cached DOM node
   // is reused. The snapshot fast path skips toElement() entirely; the sentinel survives.
   const sameNode = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const items = signal([
       { id: 'a', label: 'Apple' },
       { id: 'b', label: 'Banana' },
@@ -2620,8 +2590,7 @@ test('mapWithKey preserves DOM identity across outer re-render', async ({ page, 
     document.querySelector('[data-key="a"]')._sentinel = true;
 
     items.set(prev => [...prev, { id: 'c', label: 'Cherry' }]);
-    await Promise.resolve();
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
 
     return document.querySelector('[data-key="a"]')._sentinel === true;
   }, bundle);
@@ -2631,7 +2600,7 @@ test('mapWithKey preserves DOM identity across outer re-render', async ({ page, 
 
 test('keyed signals scope per-item state across a list', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal, computed } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal, computed } = await import(src);
 
     const items = signal([
       { id: 'a', label: 'Apple' },
@@ -2654,16 +2623,13 @@ test('keyed signals scope per-item state across a list', async ({ page, bundle }
     document.body.append(t.ul({ id: 'keyed-sig-scoped' }, list).toElement());
 
     document.querySelector('#btn-a').click();
-    await Promise.resolve();
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
 
     items.set(prev => [...prev, { id: 'c', label: 'Cherry' }]);
-    await Promise.resolve();
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
 
     document.querySelector('#btn-c').click();
-    await Promise.resolve();
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
 
     return {
       a: document.querySelector('[data-key="a"]').className,
@@ -2679,7 +2645,7 @@ test('keyed signals scope per-item state across a list', async ({ page, bundle }
 
 test('keyed signal is swept when its item leaves the list', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { signal, computed, effect } = await import(src);
+    const { applyPendingReactiveUpdates, signal, computed, effect } = await import(src);
 
     const items = signal([{ id: 'a' }, { id: 'b' }]);
     const refs = [];
@@ -2698,11 +2664,11 @@ test('keyed signal is swept when its item leaves the list', async ({ page, bundl
 
     // Remove 'b'. The keyed signal for 'b' should be stopped and removed from the registry.
     items.set([{ id: 'a' }]);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
 
     // Re-add 'b'. A fresh signal should be created (different reference from the original).
     items.set([{ id: 'a' }, { id: 'b' }]);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
 
     const bSignals = refs.filter(r => r.id === 'b');
     const sameInstance = bSignals.length >= 2 && bSignals[0].sig === bSignals[bSignals.length - 1].sig;
@@ -2728,7 +2694,7 @@ test('keyed local signal preserves input focus and value across outer re-render'
   // stable across outer re-renders. The DOM node is reused (cached tag), so focus, value,
   // and selection are preserved naturally — no special reconciler path needed.
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const items = signal([{ id: 'a' }, { id: 'b' }]);
     const list = items.mapWithKey(item => item.id, item =>
       t.li({ dataKey: item.id },
@@ -2743,8 +2709,7 @@ test('keyed local signal preserves input focus and value across outer re-render'
     inputA.setSelectionRange(2, 4);
 
     items.set(prev => [...prev, { id: 'c' }]);
-    await Promise.resolve();
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
 
     const inputAfter = document.querySelector('#input-a');
     return {
@@ -2828,7 +2793,7 @@ test(`sleeping computed attribute reflects current value when element is re-moun
   // and then re-shown, toElement() should produce an element whose class reflects the
   // current signal value — not the value at the time of the last sleep.
   const result = await page.evaluate(async src => {
-    const { t, signal, computed } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal, computed } = await import(src);
 
     const openSignal = signal(false);
     const isExpanded = computed(() => openSignal.get());
@@ -2838,21 +2803,21 @@ test(`sleeping computed attribute reflects current value when element is re-moun
     const show = signal(true);
     const container = t.div(show.transform(v => v ? child : null));
     document.body.append(container.toElement());
-    await Promise.resolve();
 
     const initial = document.body.lastElementChild.firstElementChild?.className;
 
     openSignal.set(true);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const afterSet = document.body.lastElementChild.firstElementChild?.className;
 
     // Collapse — child removed, effects stop, signals sleep
     show.set(false);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
+    await Promise.resolve(); // Allow deferred cleanup to finish before remounting.
 
     // Re-show — child re-mounted via toElement()
     show.set(true);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const afterRemount = document.body.lastElementChild.firstElementChild?.className;
 
     return { initial, afterSet, afterRemount };
@@ -2867,7 +2832,7 @@ test('sleeping computed with two-level chain reflects current value on re-mount'
   // Closer to the real-world case: isExpanded reads a second sleeping computed (searchState)
   // before falling back to openSignal.
   const result = await page.evaluate(async src => {
-    const { t, signal, computed } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal, computed } = await import(src);
 
     const term = signal('');
     const searchState = computed(() => term.get() ? `search:${term.get()}` : null);
@@ -2885,21 +2850,21 @@ test('sleeping computed with two-level chain reflects current value on re-mount'
     const show = signal(true);
     const container = t.div(show.transform(v => v ? child : null));
     document.body.append(container.toElement());
-    await Promise.resolve();
 
     const initial = document.body.lastElementChild.firstElementChild?.className;
 
     openSignal.set(true);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const afterSet = document.body.lastElementChild.firstElementChild?.className;
 
     // Collapse — child removed, all signals sleep (isExpanded, searchState, btnClass)
     show.set(false);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
+    await Promise.resolve(); // Allow deferred cleanup to finish before remounting.
 
     // Re-show — child re-mounted, sleeping two-level chain must wake correctly
     show.set(true);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const afterRemount = document.body.lastElementChild.firstElementChild?.className;
 
     return { initial, afterSet, afterRemount };
@@ -2916,7 +2881,7 @@ test('sleeping chain stays reactive on conditional child after collapse-expand',
   // collapses and re-expands, the child's button class must reflect the current
   // openSignal value AND remain reactive to future openSignal changes.
   const result = await page.evaluate(async src => {
-    const { t, signal, computed } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal, computed } = await import(src);
 
     // Shared searchState (sleeping computed)
     const searchTerm = signal('');
@@ -2938,36 +2903,36 @@ test('sleeping chain stays reactive on conditional child after collapse-expand',
     const showChildren = signal(false);
     const parent = t.div(showChildren.transform(v => v ? [child] : []));
     document.body.append(parent.toElement());
-    await Promise.resolve();
 
     // Step 1: show children — button should start 'closed'
     showChildren.set(true);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const btn = () => document.body.lastElementChild.querySelector('button');
     const step1 = btn()?.className;
 
     // Step 2: manually expand the child
     openSignal.set(true);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const step2 = btn()?.className;
 
     // Step 3: collapse parent — child removed, signals sleep
     showChildren.set(false);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
+    await Promise.resolve(); // Allow deferred cleanup to finish before remounting.
 
     // Step 4: re-expand — child re-mounted via toElement()
     showChildren.set(true);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const step4Remount = btn()?.className;
 
     // Step 5: verify reactivity still works — collapse the child
     openSignal.set(false);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const step5Collapse = btn()?.className;
 
     // Step 6: re-expand the child again
     openSignal.set(true);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const step6Reexpand = btn()?.className;
 
     return { step1, step2, step4Remount, step5Collapse, step6Reexpand };
@@ -2985,14 +2950,13 @@ test('signal-text comment inside conditional child stays reactive after collapse
   // the signal-text comment. After collapse-expand the comment's text must reflect
   // the current signal value and continue updating on future signal changes.
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
 
     const note = signal('one');
     const child = t.div(t.inlineComment(note));
     const show = signal(true);
     const root = t.div(show.transform(v => v ? child : null));
     document.body.append(root.toElement());
-    await Promise.resolve();
 
     const findComment = () => {
       const inner = document.body.lastElementChild.firstElementChild;
@@ -3001,18 +2965,19 @@ test('signal-text comment inside conditional child stays reactive after collapse
     const initial = findComment()?.nodeValue;
 
     note.set('two');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const afterSet = findComment()?.nodeValue;
 
     show.set(false);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
+    await Promise.resolve(); // Test a later remount after the removal observer has processed the comment.
 
     show.set(true);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const afterRemount = findComment()?.nodeValue;
 
     note.set('three');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const afterRemountSet = findComment()?.nodeValue;
 
     return { initial, afterSet, afterRemount, afterRemountSet };
@@ -3029,31 +2994,31 @@ test('signal literal inside conditional child stays reactive after collapse-expa
   // driven by a signal. LiteralTag has no #domElement of its own, so staleness is
   // tracked via a flag set by the dom-tracker stop callback on its start anchor.
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
 
     const html = signal('<span>one</span>');
     const child = t.div(t.literal(html));
     const show = signal(true);
     const root = t.div(show.transform(v => v ? child : null));
     document.body.append(root.toElement());
-    await Promise.resolve();
 
     const findSpan = () => document.body.lastElementChild.querySelector('span');
     const initial = findSpan()?.textContent;
 
     html.set('<span>two</span>');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const afterSet = findSpan()?.textContent;
 
     show.set(false);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
+    await Promise.resolve(); // Test a later remount after the removal observer has processed the literal.
 
     show.set(true);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const afterRemount = findSpan()?.textContent;
 
     html.set('<span>three</span>');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const afterRemountSet = findSpan()?.textContent;
 
     return { initial, afterSet, afterRemount, afterRemountSet };
@@ -3069,7 +3034,7 @@ test('keyed nested child: reactive button stays reactive after parent collapse-e
   // Mirrors pulse-web's hierarchy picker: each child uses a dataKey, the reactive button
   // is nested inside a header div which is inside the keyed item div.
   const result = await page.evaluate(async src => {
-    const { t, signal, computed } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal, computed } = await import(src);
 
     // Shared sleeping computed
     const searchTerm = signal('');
@@ -3105,36 +3070,36 @@ test('keyed nested child: reactive button stays reactive after parent collapse-e
       parentOpen.transform(open => open ? [itemA] : []),
     );
     document.body.append(list.toElement());
-    await Promise.resolve();
 
     const btn = () => document.body.querySelector('[data-testid="btn-a"]');
 
     // Show, then expand the child
     parentOpen.set(true);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const step1 = btn()?.className;
 
     openSignalA.set(true);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const step2 = btn()?.className;
 
     // Collapse parent — itemA is removed
     parentOpen.set(false);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
+    await Promise.resolve(); // Allow deferred cleanup to finish before remounting.
     const step3HasBtn = btn() !== null;
 
     // Re-expand parent — itemA is re-mounted
     parentOpen.set(true);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const step4Remount = btn()?.className;
 
     // Now click-equivalent: toggle openSignalA. Class should react.
     openSignalA.set(false);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const step5Collapse = btn()?.className;
 
     openSignalA.set(true);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const step6Reexpand = btn()?.className;
 
     return { step1, step2, step3HasBtn, step4Remount, step5Collapse, step6Reexpand };
@@ -3153,7 +3118,7 @@ test('reactive button in static controls survives parent collapse-expand via rec
   // header contains static controls div which contains the reactive button. After
   // collapse-expand of parent, clicking the button must update its class.
   const result = await page.evaluate(async src => {
-    const { t, signal, computed } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal, computed } = await import(src);
 
     const term = signal('');
     const searchState = computed(() => term.get() || null);
@@ -3188,7 +3153,6 @@ test('reactive button in static controls survives parent collapse-expand via rec
     const parentOpen = signal(true);
     const list = t.div(parentOpen.transform(open => open ? [itemA] : []));
     document.body.append(list.toElement());
-    await Promise.resolve();
 
     const btn = () => document.body.querySelector('[data-testid="btn-a"]');
 
@@ -3196,25 +3160,26 @@ test('reactive button in static controls survives parent collapse-expand via rec
 
     // Click the button directly (simulates user clicking chevron)
     btn().click();
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const step2Clicked = btn()?.className;
 
     // Collapse parent — itemA removed from DOM
     parentOpen.set(false);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
+    await Promise.resolve(); // Allow deferred cleanup to finish before remounting.
 
     // Re-expand parent — itemA re-mounted via reconcile
     parentOpen.set(true);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const step3Remount = btn()?.className;
 
     // CRITICAL: click the button after re-mount. Should update class.
     btn().click();
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const step4ClickAfterRemount = btn()?.className;
 
     btn().click();
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const step5ClickAgain = btn()?.className;
 
     return { step1, step2Clicked, step3Remount, step4ClickAfterRemount, step5ClickAgain };
@@ -3244,19 +3209,19 @@ test('clearing a signal-bound list removes every child between the anchors', asy
 
 test('signal effects on cleared list children are stopped, not leaked', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const label = signal('initial');
     const items = signal([t.li({ id: 'tracked-li' }, label)]);
     document.body.append(t.ul({ id: 'clear-stops-effects' }, items).toElement());
 
     items.set([]);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     // If the effect were still wired, the next set would mutate something — but the node
     // is gone, so there's nothing to mutate. We assert that the live DOM has zero children
     // both before and after the set.
     const beforeSet = document.querySelectorAll('#clear-stops-effects li').length;
     label.set('mutated');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const afterSet = document.querySelectorAll('#clear-stops-effects li').length;
     return { beforeSet, afterSet };
   }, bundle);
@@ -3266,11 +3231,11 @@ test('signal effects on cleared list children are stopped, not leaked', async ({
 
 test('a cleared signal-bound list can be re-populated', async ({ page, bundle }) => {
   await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const items = signal([t.li('first')]);
     document.body.append(t.ul({ id: 'clear-then-refill' }, items).toElement());
     items.set([]);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     items.set([t.li('again-a'), t.li('again-b')]);
   }, bundle);
   await expect(page.locator('#clear-then-refill li')).toHaveCount(2);
@@ -3286,7 +3251,7 @@ test('a cleared signal-bound list can be re-populated', async ({ page, bundle })
 
 test('removing a middle row leaves surrounding rows in place with stable DOM identity', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const items = signal([
       { id: 1, label: 'one' },
       { id: 2, label: 'two' },
@@ -3303,7 +3268,7 @@ test('removing a middle row leaves surrounding rows in place with stable DOM ide
     document.querySelectorAll('#middle-remove li').forEach(el => { el._kept = true; });
 
     items.set(prev => prev.filter(item => item.id !== 3));
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
 
     const survivors = [...document.querySelectorAll('#middle-remove li')];
     return {
@@ -3321,7 +3286,7 @@ test('removing a middle row leaves surrounding rows in place with stable DOM ide
 
 test('removing every other row keeps the survivors in the correct order', async ({ page, bundle }) => {
   const orderedKeys = await page.evaluate(async src => {
-    const { t, signal, computed } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal, computed } = await import(src);
     const items = signal([1, 2, 3, 4, 5, 6, 7, 8].map(id => ({ id })));
     const rows = computed(() => items.get().map(item =>
       t.li({ dataKey: item.id }, String(item.id)),
@@ -3329,7 +3294,7 @@ test('removing every other row keeps the survivors in the correct order', async 
     document.body.append(t.ul({ id: 'scatter-remove' }, rows).toElement());
 
     items.set(prev => prev.filter(item => item.id % 2 === 1));
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
 
     return [...document.querySelectorAll('#scatter-remove li')]
       .map(el => el.dataset.key)
@@ -3345,13 +3310,13 @@ test('removing every other row keeps the survivors in the correct order', async 
 
 test('reconcile head-to-tail: first item moves to end with one DOM mutation', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const items = signal([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }]);
     document.body.append(t.ul({ id: 'h2t' }, items.mapWithKey('id', item => t.li(String(item.id)))).toElement());
     const lis = Array.from(document.querySelectorAll('#h2t li'));
     lis.forEach((el, i) => { el._stamp = String.fromCharCode(65 + i); });
     items.set([{ id: 2 }, { id: 3 }, { id: 4 }, { id: 1 }]);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const after = Array.from(document.querySelectorAll('#h2t li'));
     return { texts: after.map(el => el.textContent), stamps: after.map(el => el._stamp) };
   }, bundle);
@@ -3362,13 +3327,13 @@ test('reconcile head-to-tail: first item moves to end with one DOM mutation', as
 
 test('reconcile tail-to-head: last item moves to start (swap-1000 case)', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const items = signal([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }]);
     document.body.append(t.ul({ id: 't2h' }, items.mapWithKey('id', item => t.li(String(item.id)))).toElement());
     const lis = Array.from(document.querySelectorAll('#t2h li'));
     lis.forEach((el, i) => { el._stamp = String.fromCharCode(65 + i); });
     items.set([{ id: 4 }, { id: 1 }, { id: 2 }, { id: 3 }]);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const after = Array.from(document.querySelectorAll('#t2h li'));
     return { texts: after.map(el => el.textContent), stamps: after.map(el => el._stamp) };
   }, bundle);
@@ -3378,14 +3343,14 @@ test('reconcile tail-to-head: last item moves to start (swap-1000 case)', async 
 
 test('reconcile swap of two adjacent items reuses both DOM nodes', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const items = signal([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }]);
     document.body.append(t.ul({ id: 'adj-swap' }, items.mapWithKey('id', item => t.li(String(item.id)))).toElement());
     const lis = Array.from(document.querySelectorAll('#adj-swap li'));
     lis.forEach((el, i) => { el._stamp = String.fromCharCode(65 + i); });
     // swap positions 1 and 2 (B and C in stamps; ids 2 and 3)
     items.set([{ id: 1 }, { id: 3 }, { id: 2 }, { id: 4 }]);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const after = Array.from(document.querySelectorAll('#adj-swap li'));
     return { texts: after.map(el => el.textContent), stamps: after.map(el => el._stamp) };
   }, bundle);
@@ -3398,7 +3363,7 @@ test('reconcile swap of distant items (1 and N-2 in a 10-item list)', async ({ p
   // every other position is left alone. The bidirectional pass should reach a steady state
   // with two cheap-branch hits and the rest as prefix/suffix matches.
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const items = signal(Array.from({ length: 10 }, (_, i) => ({ id: i + 1 })));
     const list = t.ul({ id: 'distant-swap' }, items.mapWithKey('id', item => t.li(String(item.id))));
     document.body.append(list.toElement());
@@ -3407,7 +3372,7 @@ test('reconcile swap of distant items (1 and N-2 in a 10-item list)', async ({ p
     const next = items.get().slice();
     const a = next[1]; next[1] = next[8]; next[8] = a;
     items.set(next);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const after = Array.from(document.querySelectorAll('#distant-swap li'));
     return { texts: after.map(el => el.textContent), stamps: after.map(el => el._stamp) };
   }, bundle);
@@ -3424,10 +3389,11 @@ test('reconcile swap of distant items (1 and N-2 in a 10-item list)', async ({ p
 
 test('node removed and reinserted in the same task keeps its signal bindings live', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const klass = signal('a');
     const el = t.div({ id: 'remove-reinsert', class: klass }).toElement();
     document.body.append(el);
+    // Process the initial insertion separately so it cannot mask a broken removal check.
     await Promise.resolve();
     const initial = el.className;
     const parent = document.body;
@@ -3437,7 +3403,7 @@ test('node removed and reinserted in the same task keeps its signal bindings liv
     // Wait for any pending mutation observer callback.
     await new Promise(r => { setTimeout(r, 30); });
     klass.set('b');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     return { initial, afterRemoveReinsertAndSet: el.className, stillConnected: el.isConnected };
   }, bundle);
   expect(result.initial).toBe('a');
@@ -3476,26 +3442,28 @@ test('signal-bound content via binding-effect updates on every change', async ({
 
 test('binding-effect on a persist parent pauses on removal and resumes on reinsertion', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const klass = signal('a');
     const el = t.div({ id: 'binding-persist', persist: true, class: klass }).toElement();
     document.body.append(el);
     const initial = el.className;
 
     el.remove();
+    // Let the removal observer pause the binding before testing a detached write.
     await Promise.resolve();
     // While detached, setting the signal must not update the (offscreen) element.
     klass.set('b');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const whileDetached = el.className;
 
     document.body.append(el);
+    // Let the insertion observer resume the binding and apply its current value.
     await Promise.resolve();
     // On reinsertion the effect resumes and the latest value is applied.
     const afterRemount = el.className;
 
     klass.set('c');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const afterFurtherChange = el.className;
 
     return { initial, whileDetached, afterRemount, afterFurtherChange };
@@ -3513,7 +3481,7 @@ test('binding-effect on a persist parent pauses on removal and resumes on reinse
 
 test('signal read inside mapFn triggers a row rebuild when the signal changes', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const showCount = signal(false);
     const tasks = signal([
       { id: 1, name: 'a', count: 3 },
@@ -3527,7 +3495,7 @@ test('signal read inside mapFn triggers a row rebuild when the signal changes', 
 
     const before = document.querySelectorAll('#reactive-mapfn .count').length;
     showCount.set(true);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const after = document.querySelectorAll('#reactive-mapfn .count').length;
     const texts = Array.from(document.querySelectorAll('#reactive-mapfn li')).map(el => el.textContent);
     return { before, after, texts };
@@ -3542,7 +3510,7 @@ test('row rebuild preserves the full preserve-state capture set', async ({ page,
   // mapWithKey reactive re-emit: input value, checkbox checked + indeterminate, select
   // value, textarea value, details.open, dialog.open, and scrollTop on a scrollable div.
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const decorate = signal(false);
     const items = signal([{ id: 'rich' }]);
     const rows = items.mapWithKey('id', item => t.li({ id: `row-${item.id}` }, [
@@ -3577,7 +3545,7 @@ test('row rebuild preserves the full preserve-state capture set', async ({ page,
     scroller.scrollTop = 120;
 
     decorate.set(true);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
 
     return {
       inputValue: document.getElementById('rich-input').value,
@@ -3610,7 +3578,7 @@ test('restoreState drops state gracefully when the new tree shape mismatches', a
   const errors = [];
   page.on('pageerror', e => errors.push(String(e)));
   const result = await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     // The decorate flag DROPS the inner input on the second render. The focused element's
     // child-index path on the captured root no longer resolves to a valid input. State is
     // dropped silently.
@@ -3625,7 +3593,7 @@ test('restoreState drops state gracefully when the new tree shape mismatches', a
     document.getElementById('shape-input').focus();
     document.getElementById('shape-input').value = 'lost';
     decorate.set(true);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     return {
       hasInput: Boolean(document.getElementById('shape-input')),
       hasText: Boolean(document.getElementById('shape-text')),
@@ -3638,7 +3606,7 @@ test('restoreState drops state gracefully when the new tree shape mismatches', a
 
 test('row rebuild preserves focus and input value', async ({ page, bundle }) => {
   await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const decorate = signal(false);
     const items = signal([{ id: 'r1' }, { id: 'r2' }]);
     const rows = items.mapWithKey('id', item => t.li([
@@ -3653,7 +3621,7 @@ test('row rebuild preserves focus and input value', async ({ page, bundle }) => 
     inputBefore.setSelectionRange(2, 5);
 
     decorate.set(true);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
   }, bundle);
   // The input should still exist (under the same id) with its value preserved.
   await expect(page.locator('#input-r1')).toHaveValue('typed text');

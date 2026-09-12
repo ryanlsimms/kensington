@@ -6,8 +6,8 @@ A map of the source tree for contributors. For commands and the high-level proje
 
 ```
 esm/                          ESM source (the authoritative one — cjs/ and dist/ are generated)
-  index.js                    Package entry. Exports Kensington, t, signal, computed, effect, batch, hydration helpers
-  reactive.js                 Public re-export of the reactive core (Signal, signal, computed, effect, batch, isKensingtonSignal). Backing file for the `kensington/reactive` subpath. Provided so consumers who need only the reactive primitives can import them without the tag pipeline
+  index.js                    Package entry. Exports Kensington, t, signal, computed, effect, applyPendingReactiveUpdates, hydration helpers
+  reactive.js                 Public re-export of the reactive core (Signal, signal, computed, effect, applyPendingReactiveUpdates, isKensingtonSignal). Backing file for the `kensington/reactive` subpath. Provided so consumers who need only the reactive primitives can import them without the tag pipeline
   kensington.js               GENERATED — the Kensington class with every tag as a method
   attributes.js               GENERATED — per-element attribute spec maps
   tag-classes/                The classes that an element instance can be
@@ -18,7 +18,7 @@ esm/                          ESM source (the authoritative one — cjs/ and dis
     comment-tag.js             Inline HTML comments (.inlineComment()). Strips `--` and updates nodeValue on signal change
   lib/
     reactive/                 Signals + DOM lifecycle. The reactive runtime
-      signal.js               Signal class, signal(), computed(), effect(), batch(). Synchronous propagation with explicit batching, SSR mode counter, and per-effect sync/async loop guards. Warns on same-run read/write and .set() inside computed
+      signal.js               Signal class, signal(), computed(), effect(), applyPendingReactiveUpdates(). Automatic microtask batching with an explicit synchronous update helper, SSR mode counter, and per-effect sync/async loop guards. Warns on same-run read/write and .set() inside computed
       runtime-context.js      Passive validation scope shared across runtime copies and accessible windows
       runtime-guard.js        Instance scoped diagnostics for tag rendering and binding updates. Omitted from slim builds
       lifecycle.js            Per-element effect/callback orchestrator. Owns the persist mechanism end-to-end
@@ -61,7 +61,7 @@ generate/                     Code generation. Reads spec data, emits esm/kensin
   bin/
     write-code-files.js       The build entry point (npm run build). Fetches @webref/css and @webref/idl, parses spec data, runs every builder below, writes esm/, cjs/, dist/
     fetch-all.js              Refreshes generate/fetched-data/*.json from the HTML/SVG/MathML living standards (npm run fetch)
-    build-browser.js          Rolls up esm/ into the dist/ browser bundles (full, slim, devtools, plus minified variants) via Rollup. Every full and slim ESM variant externalizes `esm/lib/reactive/*.js` so effects, batch state, and hydration scopes keep one module identity when entry points are mixed
+    build-browser.js          Rolls up esm/ into the dist/ browser bundles (full, slim, devtools, plus minified variants) via Rollup. Every full and slim ESM variant externalizes `esm/lib/reactive/*.js` so effects, pending update state, and hydration scopes keep one module identity when entry points are mixed
     build-cjs.js              Rolls up esm/ into cjs/ via Rollup
   fetched-data/                Cached HTML/SVG/MathML spec data (committed)
   build-kensington.js          Template that emits the Kensington class body (esm/kensington.js)

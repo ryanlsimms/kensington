@@ -523,7 +523,7 @@ On disconnect:
 On reconnect:
 - Server sends a `snapshot` for every subscribed name.
 - Snapshots arrive at the client and apply via `_setFromRemote` (no re-broadcast).
-- Multi-value snapshots and `batch-update` frames apply inside an internal `batch()`, so effects and DOM bindings observe one final combined state rather than each intermediate signal write.
+- Multi-value snapshots and `batch-update` frames apply their values immediately. Automatic batching lets effects and DOM bindings observe the final combined state after the current code finishes.
 - Buffered outbound writes flush.
 
 Server restart with `{ kind: 'sqlite' }`: registry reloads from the database for every name that was previously written with `persist: true`. Clients reconnect and resync. State survives.
@@ -753,6 +753,8 @@ addConnectedCallback(() => {
 ```
 
 The same shape works for any registry whose key set is discovered at runtime (search results, async-fetched lists, server-pushed items). The `addConnectedCallback` + `effect` + `queueMicrotask` pattern is verbose but the alternative — calling `getRemoteSelection(u.id)` from inside a render computed — fires the runtime warning on every new user.
+
+Keep `queueMicrotask` here. Its purpose is to run registry creation after the effect finishes, outside its reactive scope. `applyPendingReactiveUpdates()` does not provide that separation and does nothing when called inside the effect. See [Choosing how to wait](reactive.md#choosing-how-to-wait) for the distinction from immediate DOM updates and `await Promise.resolve()`.
 
 ### Presence list + `mapWithKey` worked example
 

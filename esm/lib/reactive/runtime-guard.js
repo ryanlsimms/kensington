@@ -11,7 +11,7 @@ export function withRuntimeValidation(validationLevel, logger, fn) {
     check = (owner, operation) => {
       if (owner === _reactiveRuntime.token || reported.has(owner)) { return; }
       const message = `kensington: ${operation} crossed reactive runtimes. ` +
-        'Use one installation/module format. Tracking and batch() cannot cross them.';
+        'Use one installation/module format. Tracking and pending updates cannot cross them.';
       if (validationLevel === 'warn') {
         reported.add(owner);
         (logger ?? console.log)(message);

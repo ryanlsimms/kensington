@@ -6,7 +6,7 @@
 //   live.attach(httpServer)       Node HTTP server + the `ws` package.
 //   live.bunWebsocket()           Bun-native WebSocket handlers config.
 
-import { batch, signal } from '../lib/reactive/signal.js';
+import { signal } from '../lib/reactive/signal.js';
 import { createMemoryStore } from './persistence/memory.js';
 import { createSqliteStore } from './persistence/sqlite.js';
 import {
@@ -368,14 +368,13 @@ export async function liveServer({
     sig.set = valueOrFn => {
       const resolved = typeof valueOrFn === 'function' ? valueOrFn(sig.value) : valueOrFn;
       if (!checkSerializable(name, resolved)) { return; }
-      batch(() => {
-        // Commit registry, persistence, broadcast, and Lamport state before
-        // exposing the reactive value. The registered observer normally
-        // updates this Signal during applySet; origSet also keeps an old
-        // stopped Signal reference locally writable after it leaves the cache.
-        applySet(name, resolved, /* fromSocket = */ null);
-        origSet(resolved);
-      });
+
+      // Commit registry, persistence, broadcast, and Lamport state before
+      // exposing the reactive value. The registered observer normally
+      // updates this Signal during applySet; origSet also keeps an old
+      // stopped Signal reference locally writable after it leaves the cache.
+      applySet(name, resolved, /* fromSocket = */ null);
+      origSet(resolved);
     };
     return sig;
   }

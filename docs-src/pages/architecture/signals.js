@@ -75,7 +75,7 @@ export function architectureSignals() {
     ]),
 
     t.section({ id: 'signal-write' }, [
-      t.h3('Synchronous writes and explicit batches'),
+      t.h3('Writes and pending updates'),
       t.p([
         t.code('.set(next)'),
         ' at ',
@@ -103,47 +103,29 @@ export function architectureSignals() {
         S->>E: update() synchronously
       end
     end
-    S->>Q: flush()
+    S->>Q: schedule microtask if needed
+    S-->>U: return
+    Note over Q: microtask runs after current code
     loop each pending fn
       Q->>E: run()
     end
-    S-->>U: return
   end`),
       t.p([
-        'Effects and DOM bindings flush before ',
-        t.code('.set()'),
-        ' returns. The ',
-        t.code('pending'),
-        ' ',
-        t.code('Set'),
-        ' still deduplicates subscribers reached through multiple computed paths during one notification cascade.',
+        'Signal values and computed derivations update immediately. Effect reruns and DOM bindings enter a shared pending Set. The first queued effect schedules a microtask and further writes share that update pass.',
       ]),
       t.p([
-        t.code('batch(fn)'),
-        ' increments a nesting depth, runs the callback immediately, and delays the flush until the outermost callback returns. Multiple writes then coalesce into one effect or DOM-binding run. Computed updates remain synchronous, so a computed reading ',
-        t.code('a.get() + b.get()'),
-        ' is current inside the batch after either source changes. The batch depth is restored in a ',
-        t.code('finally'),
-        ' block, so pending work commits even when the callback throws.',
+        t.code('applyPendingReactiveUpdates()'),
+        ' processes the same queue synchronously. An already scheduled microtask remains available for later writes and does no work if the queue is empty. Calls inside reactive callbacks or during server rendering do nothing. Effects queued during an update pass are processed by the active pass without recursive execution.',
       ]),
       t.p([
-        'A batch is deliberately synchronous. Kensington rejects a declared async callback before it runs. It also rejects a regular callback when that callback returns a Promise. Holding a process wide batch open across awaited work would incorrectly delay unrelated updates.',
-      ]),
-      t.p([
-        'Computed updates run inline with each write. A computed reading ',
-        t.code('a.get() + b.get()'),
-        ' therefore always sees the latest values of ',
-        t.code('a'),
-        ' and ',
-        t.code('b'),
-        '. A batch therefore coalesces downstream effect and DOM work, not computed recomputation itself.',
+        'Computed updates run inline with each write. Automatic batching groups downstream effect and DOM work, not computed recomputation itself.',
       ]),
       callout('warn', 'Effect error isolation',
         t.p([
           t.code('flush()'),
           ' wraps each effect run in try/catch and re-throws via ',
           t.code('queueMicrotask'),
-          '. One effect\'s thrown error does not abort the current notification or explicit batch. Every queued effect still runs.',
+          '. One effect\'s thrown error does not abort the remaining pending updates. Every queued effect still runs.',
         ]),
       ),
       callout('warn', 'Loop guards',
@@ -218,7 +200,9 @@ export function architectureSignals() {
     },
   };
 }`),
-      t.p('The three returned methods give the caller control:'),
+      t.p([
+        'The three returned methods give the caller control:',
+      ]),
       t.div({ class: 'compare-grid' }, [
         t.div([
           t.h4('pause'),

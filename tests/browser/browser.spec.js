@@ -85,12 +85,11 @@ test('style as object sets inline styles via setAttribute', async ({ page, bundl
 
 test('reactive style property updates only the changed property on signal change', async ({ page, bundle }) => {
   await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const color = signal('red');
     document.body.append(t.div({ id: 'rs', style: { color, opacity: '0.5' } }).toElement());
-    await Promise.resolve();
     color.set('blue');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
   }, bundle);
   await expect(page.locator('#rs')).toHaveCSS('color', 'rgb(0, 0, 255)');
   await expect(page.locator('#rs')).toHaveCSS('opacity', '0.5');
@@ -98,12 +97,11 @@ test('reactive style property updates only the changed property on signal change
 
 test('reactive style property removes the property when signal is set to null', async ({ page, bundle }) => {
   await page.evaluate(async src => {
-    const { t, signal } = await import(src);
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const display = signal('none');
     document.body.append(t.div({ id: 'rd', style: { display } }).toElement());
-    await Promise.resolve();
     display.set(null);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
   }, bundle);
   const display = await page.locator('#rd').evaluate(el => el.style.display);
   expect(display).toBe('');
@@ -131,13 +129,13 @@ test('sets text content as a text node', async ({ page, bundle }) => {
 
 test('places template children in template.content and keeps them reactive', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { signal, t } = await import(src);
+    const { applyPendingReactiveUpdates, signal, t } = await import(src);
     const label = signal('first');
     const template = t.template(t.span({ class: label }, label)).toElement();
     document.body.append(template);
 
     label.set('second');
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
 
     const span = template.content.querySelector('span');
     return {
@@ -160,7 +158,7 @@ test('places template children in template.content and keeps them reactive', asy
 
 test('stops effects in template.content when the template is removed', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
-    const { signal, t } = await import(src);
+    const { applyPendingReactiveUpdates, signal, t } = await import(src);
     const source = signal(0);
     let runs = 0;
     const label = source.transform(value => {
@@ -171,14 +169,14 @@ test('stops effects in template.content when the template is removed', async ({ 
     document.body.append(template);
 
     source.set(1);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
     const beforeRemoval = runs;
     const textBeforeRemoval = template.content.querySelector('span')?.textContent;
 
     template.remove();
     await new Promise(resolve => { requestAnimationFrame(resolve); });
     source.set(2);
-    await Promise.resolve();
+    applyPendingReactiveUpdates();
 
     return { beforeRemoval, afterRemoval: runs, textBeforeRemoval };
   }, bundle);
