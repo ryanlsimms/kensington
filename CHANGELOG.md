@@ -15,6 +15,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Effects already waiting in the current flush absorb earlier writes without running twice.
 - Live broadcasts send each signal's final value once per recipient per flush, preserving write acknowledgements and origin exclusions.
 
+### Fixed
+- `kensington/live` now closes and reopens the client WebSocket around browser `pagehide` / `pageshow` lifecycle events, preventing console errors when a page is restored from the back-forward cache.
+
 ## [2.0.0-signals.27] - 2026-09-14
 
 ### Added

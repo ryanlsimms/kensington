@@ -142,6 +142,7 @@ class ClientTransport {
     // imperative wiring. Both fire on every transition.
     this.status = signal('connecting');
     this.reconnectTimer = null;
+    this.pageSuspended = false;
     // reconnectDelay grows by 2× per failed attempt; reconnectAttempts is
     // compared against reconnectOpts.maxRetries (default Infinity). Both are
     // reset by resetReconnectState() at construction, on 'open', and on
@@ -156,7 +157,9 @@ class ClientTransport {
     // reconnect.onFocus enabled. Tracked so close() knows whether there is
     // anything to remove.
     this.focusListenersAttached = false;
+    this.pageLifecycleListenersAttached = false;
     this.attachFocusListeners();
+    this.attachPageLifecycleListeners();
   }
 
   // Send a single message on an open WebSocket and notify onFrame. Used by
@@ -178,12 +181,12 @@ class ClientTransport {
     // A reconnect can be requested more than once before its queued connect() runs.
     // Keep at most one current socket; event handlers below also reject events from a
     // socket that was replaced after they were installed.
-    if (this.closed || this.ws !== null) { return; }
+    if (this.closed || this.pageSuspended || this.ws !== null) { return; }
     let ws;
     try { ws = new WebSocket(this.url); }
     catch (err) {
       console.error(`kensington/live: WebSocket constructor failed for ${this.url}`, err);
-      this.scheduleReconnect();
+      if (!this.pageSuspended) { this.scheduleReconnect(); }
       return;
     }
     this.ws = ws;
@@ -223,10 +226,10 @@ class ClientTransport {
       // reconnect window (or forever if reconnect succeeds and the replies
       // never arrive).
       this.failPendingWrites('disconnected');
-      this.scheduleReconnect();
+      if (!this.pageSuspended) { this.scheduleReconnect(); }
     });
     ws.addEventListener('error', err => {
-      if (this.closed || this.ws !== ws) { return; }
+      if (this.closed || this.pageSuspended || this.ws !== ws) { return; }
       console.error(`kensington/live: WebSocket error on ${this.url}`, err);
     });
     // Publish the transition only after the replacement socket and all of its
@@ -236,7 +239,7 @@ class ClientTransport {
   }
 
   scheduleReconnect() {
-    if (this.closed) { return; }
+    if (this.closed || this.pageSuspended) { return; }
     const maxRetries = this.reconnectOpts.maxRetries ?? Infinity;
     if (this.reconnectAttempts >= maxRetries) {
       // Exhausted. Stay disconnected until the caller explicitly resets via
@@ -609,10 +612,47 @@ class ClientTransport {
   close() {
     this.closed = true;
     this.detachFocusListeners();
+    this.detachPageLifecycleListeners();
     this.dropSocket();
     // The setStatus('disconnected') transition rejects any in-flight write
     // promises via failPendingWrites, so awaiters don't hang.
     this.setStatus('disconnected');
+  }
+
+  // Close the socket before the browser freezes this document for bfcache.
+  // Browsers may close it themselves while the page is frozen, which can
+  // otherwise produce a noisy error and leave the transport attached to a
+  // stale socket when the document is restored.
+  attachPageLifecycleListeners() {
+    if (typeof window === 'undefined') { return; }
+    this.onPageHide = () => { this.suspendForPageHide(); };
+    this.onPageShow = () => {
+      if (this.pageSuspended) { this.resumeAfterPageShow(); }
+    };
+    window.addEventListener('pagehide', this.onPageHide);
+    window.addEventListener('pageshow', this.onPageShow);
+    this.pageLifecycleListenersAttached = true;
+  }
+
+  detachPageLifecycleListeners() {
+    if (!this.pageLifecycleListenersAttached) { return; }
+    window.removeEventListener('pagehide', this.onPageHide);
+    window.removeEventListener('pageshow', this.onPageShow);
+    this.pageLifecycleListenersAttached = false;
+  }
+
+  suspendForPageHide() {
+    if (this.closed || this.pageSuspended) { return; }
+    this.pageSuspended = true;
+    this.failPendingWrites('disconnected');
+    this.dropSocket();
+    this.setStatus('disconnected');
+  }
+
+  resumeAfterPageShow() {
+    if (this.closed || !this.pageSuspended) { return; }
+    this.pageSuspended = false;
+    this.reconnect();
   }
 
   // Attach `visibilitychange` and `focus` listeners so a connection dropped
@@ -647,7 +687,7 @@ class ClientTransport {
   // maxRetries was already exhausted (a returning user is a fresh signal
   // worth one more attempt). No-op while already connected or mid-handshake.
   retryNowIfStale() {
-    if (this.closed) { return; }
+    if (this.closed || this.pageSuspended) { return; }
     if (this.status.value !== 'disconnected' && this.status.value !== 'reconnecting') { return; }
     if (this.reconnectTimer !== null) {
       clearTimeout(this.reconnectTimer);
@@ -665,8 +705,11 @@ class ClientTransport {
       this.reconnectTimer = null;
     }
     if (this.ws !== null) {
-      try { this.ws.close(); } catch { /* socket already gone */ }
+      const ws = this.ws;
+      // Clear the active reference first. Some WebSocket implementations and
+      // test doubles can dispatch close synchronously from close().
       this.ws = null;
+      try { ws.close(); } catch { /* socket already gone */ }
     }
   }
 
@@ -685,7 +728,7 @@ class ClientTransport {
     // Use a microtask so any caller-side state changes in the same tick land
     // before connect() reads them (e.g. updating env.userName before triggering
     // a reconnect that wants the new identity in the WS URL).
-    queueMicrotask(() => { if (!this.closed) { this.connect(); } });
+    queueMicrotask(() => { if (!this.closed && !this.pageSuspended) { this.connect(); } });
     this.setStatus('reconnecting');
   }
 

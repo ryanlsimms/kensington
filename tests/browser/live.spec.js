@@ -27,6 +27,35 @@ test('connectLive opens a WebSocket and transitions status to connected', async 
   expect(result).toBe('connected');
 });
 
+test('reconnects cleanly when a page returns from the back-forward cache', async ({ page, bundle }) => {
+  const liveErrors = [];
+  page.on('console', message => {
+    if (message.type() === 'error' && message.text().includes('kensington/live: WebSocket error')) {
+      liveErrors.push(message.text());
+    }
+  });
+
+  await page.evaluate(async ({ src, liveSrc }) => {
+    const { effect } = await import(src);
+    const { connectLive } = await import(liveSrc);
+    const transport = connectLive({ url: 'ws://localhost:3847/__kensington/live' });
+    window.__liveTransport = transport;
+    await new Promise(resolve => {
+      effect(() => { if (transport.status.get() === 'connected') { resolve(); } });
+    });
+  }, { src: bundle, liveSrc: LIVE_BUNDLE });
+
+  await page.goto('http://localhost:3847/sandbox.html');
+  await page.goBack();
+  const restoredFromBfcache = await page.evaluate(() => window.__liveTransport !== undefined);
+  if (restoredFromBfcache) {
+    await expect.poll(() => page.evaluate(() => window.__liveTransport.status.value), {
+      timeout: 3000,
+    }).toBe('connected');
+  }
+  expect(liveErrors).toEqual([]);
+});
+
 test('liveSignal value broadcasts between two browser contexts', async ({ browser, bundle }) => {
   const name = `browser:broadcast:${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 

@@ -1419,6 +1419,7 @@ describe('kensington/live ClientTransport lifecycle methods', () => {
         sockets.push(this);
         this.readyState = 0;
         this.sent = [];
+        this.closeCalls = 0;
         this.listeners = { open: [], close: [], message: [], error: [] };
       }
 
@@ -1426,7 +1427,7 @@ describe('kensington/live ClientTransport lifecycle methods', () => {
 
       send(raw) { this.sent.push(decode(raw)); }
 
-      close() {}
+      close() { this.closeCalls += 1; }
 
       emit(type, event = {}) {
         for (const fn of this.listeners[type]) { fn(event); }
@@ -2371,10 +2372,59 @@ describe('kensington/live ClientTransport lifecycle methods', () => {
     try {
       assert.ok(typeof windowListeners.focus === 'function');
       assert.ok(typeof documentListeners.visibilitychange === 'function');
+      assert.ok(typeof windowListeners.pagehide === 'function');
+      assert.ok(typeof windowListeners.pageshow === 'function');
       transport.close();
       assert.strictEqual(windowListeners.focus, undefined, 'close() must remove the focus listener');
       assert.strictEqual(documentListeners.visibilitychange, undefined, 'close() must remove the visibilitychange one');
+      assert.strictEqual(windowListeners.pagehide, undefined, 'close() must remove the pagehide listener');
+      assert.strictEqual(windowListeners.pageshow, undefined, 'close() must remove the pageshow listener');
     } finally {
+      _clearTransport();
+      globalThis.WebSocket = origWebSocket;
+      globalThis.window = origWindow;
+      globalThis.document = origDocument;
+    }
+  });
+
+  it('closes and reconnects around a bfcache pagehide/pageshow cycle', async () => {
+    const { connectLive } = await import('kensington/live');
+    const origWebSocket = globalThis.WebSocket;
+    const origWindow = globalThis.window;
+    const origDocument = globalThis.document;
+    const sockets = installFakeWebSocket();
+    const { window, document, windowListeners } = stubFocusGlobals();
+    globalThis.window = window;
+    globalThis.document = document;
+    const errors = [];
+    const origConsoleError = console.error;
+    console.error = (...args) => { errors.push(args); };
+    const transport = connectLive({ url: 'ws://127.0.0.1:0/__kensington/live' });
+    const first = sockets[0];
+    try {
+      first.readyState = 1;
+      first.emit('open');
+
+      windowListeners.pagehide({ persisted: true });
+      assert.strictEqual(first.closeCalls, 1);
+      assert.strictEqual(transport.ws, null);
+      assert.strictEqual(transport.status.value, 'disconnected');
+
+      // A browser may deliver an error from the socket while it is being
+      // discarded. That event is expected during page suspension.
+      first.emit('error', new Error('browser closed the cached-page socket'));
+      assert.deepStrictEqual(errors, []);
+
+      windowListeners.pageshow({ persisted: true });
+      await Promise.resolve();
+      assert.strictEqual(sockets.length, 2);
+      const replacement = sockets[1];
+      replacement.readyState = 1;
+      replacement.emit('open');
+      assert.strictEqual(transport.status.value, 'connected');
+    } finally {
+      console.error = origConsoleError;
+      transport.close();
       _clearTransport();
       globalThis.WebSocket = origWebSocket;
       globalThis.window = origWindow;

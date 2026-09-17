@@ -430,6 +430,8 @@ The transport reconnects with exponential backoff. Writes attempted while connec
 
 The transport also retries immediately when the window regains focus or the tab becomes visible again (`visibilitychange` and `focus` listeners), skipping the remaining backoff delay. This covers a connection dropped for a long time, such as a laptop sleep or an internet outage while the tab was in the background, so a returning user does not sit on the last scheduled retry. It fires even after `reconnect.maxRetries` is exhausted, since a returning user is a fresh signal worth one more attempt. Pass `reconnect: { onFocus: false }` to `connectLive` to disable it; it is also a no-op outside a browser.
 
+The transport also closes its WebSocket on `pagehide` and reconnects on `pageshow`. This lets a document restored from the browser back-forward cache start with a fresh socket and suppresses the expected browser error from the socket that was frozen or closed during navigation. Live signal subscriptions and values remain attached to the transport while the document is cached.
+
 ## Bundler setup (esbuild)
 
 `kensington/live` has a `browser` export condition that resolves to a client-only entry (`esm/live/client.js`), which excludes the server deps (`ws`, `better-sqlite3`, `node:fs`, etc.). With `--platform=browser`, esbuild should activate this condition automatically.
