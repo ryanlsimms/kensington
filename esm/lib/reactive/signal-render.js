@@ -1,35 +1,10 @@
 import { trackForStop } from './dom-tracker.js';
+import { reconcile } from './reconcile.js';
 import { _internalEffect } from './signal.js';
 
-function clearBetween(start, end) {
-  let node = start.nextSibling;
-  while (node !== end && node !== null) {
-    const next = node.nextSibling;
-    node.remove();
-    node = next;
-  }
-}
-
-function renderItem(item) {
-  if (item === null || item === undefined || item === false || item === true || item === '') {
-    return null;
-  }
-  if (item._isKensingtonTag === true) {
-    return item.toElement();
-  }
-  return document.createTextNode(String(item));
-}
-
 // Renders a Signal as a standalone DOM node. Returns a DocumentFragment with two comment-node
-// anchors and reactive content between them. On every signal change the prior siblings are
-// cleared and the new value is rendered fresh.
-//
-// Deliberately simple. Unlike signal-as-content (a child of a real tag), this path does not
-// route through reconcile. Reconcile's keyed-list matching, preserve-state restoration, and
-// bidirectional matching are unnecessary for a standalone signal whose value is typically
-// a single tag (the "swap between two views" pattern). Keeping this off the slim build's
-// hot path is the reason. If you need keyed reconciliation around a signal, wrap it in a
-// tag: `t.div([signal.mapWithKey(...)])`.
+// anchors and reactive content between them. Uses the same reconciliation as tag content,
+// preserving existing nodes when the fragment is adopted into its live parent.
 //
 // The effect is created via `_internalEffect` so it does not trip the
 // "effect inside computed/transform" warning when a parent's reactive callback wires this
@@ -53,19 +28,13 @@ export function renderSignalAsTag(signal) {
       eff.stop();
       return;
     }
-    clearBetween(start, end);
     const value = signal.get();
     const items = Array.isArray(value) ? value : [value];
     const parent = start.parentNode;
     if (!parent) {
       return;
     }
-    for (const item of items) {
-      const node = renderItem(item);
-      if (node !== null) {
-        parent.insertBefore(node, end);
-      }
-    }
+    reconcile(parent, start, end, items);
   });
 
   trackForStop(startAnchor, () => eff.stop());

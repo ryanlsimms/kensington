@@ -237,17 +237,15 @@ export function architectureReconcile() {
   return cached !== node && cached !== item;
 }`),
       t.p([
-        'When the tag is stale, ',
-        t.code('rebuildNode'),
-        ' captures user-visible state from the old node via ',
+        'Before changing the DOM, the reconciler captures state for every row that needs replacement via ',
         loc('esm/lib/reactive/preserve-state.js'),
         ' (',
         t.code('captureState'),
-        '), builds the fresh DOM via ',
+        '). It then builds the fresh DOM via ',
         t.code('item.toElement()'),
         ', inserts the fresh node before the old, removes the old node (which triggers ',
         t.code('dom-tracker'),
-        ' to stop the old effects), and restores state onto the fresh subtree.',
+        ' to stop the old effects), and restores state after all replacements. Form and open-state writes finish before focus and scroll restoration, avoiding a separate layout for each row.',
       ]),
       t.p([
         'Focus and selection, ',

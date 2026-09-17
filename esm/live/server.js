@@ -166,7 +166,7 @@ export async function liveServer({
     if (pendingBroadcasts.length === 0) { return; }
     const entries = pendingBroadcasts.splice(0, pendingBroadcasts.length);
 
-    // bySocket: Map<socket, Array<{ name, value, lamport }>>
+    // Deduplicate per recipient, after applying each write's origin exclusion.
     const bySocket = new Map();
     for (const { name, exclude } of entries) {
       const entry = registry.get(name);
@@ -175,12 +175,13 @@ export async function liveServer({
       for (const sock of getSubs(name)) {
         if (sock === exclude) { continue; }
         let list = bySocket.get(sock);
-        if (list === undefined) { list = []; bySocket.set(sock, list); }
-        list.push(payload);
+        if (list === undefined) { list = new Map(); bySocket.set(sock, list); }
+        list.set(name, payload);
       }
     }
 
-    for (const [sock, list] of bySocket) {
+    for (const [sock, updates] of bySocket) {
+      const list = [...updates.values()];
       if (list.length === 1) {
         const u = list[0];
         sendRaw(sock, encode({ type: MSG_UPDATE, name: u.name, value: u.value, lamport: u.lamport }));

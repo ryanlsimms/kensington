@@ -373,36 +373,65 @@ test('signal-managed attribute is preserved on keyed element after reconciliatio
   expect(cls).toBe('active');
 });
 
-test('signal content effect on discarded fresh node is stopped after reconciliation', async ({ page, bundle }) => {
-  const count = await page.evaluate(async src => {
+test('removed row text binding stops after reconciliation', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
     const { applyPendingReactiveUpdates, t, signal } = await import(src);
 
     const sharedContent = signal('hello');
-    const items = signal([{ id: 1 }]);
+    const items = signal([{ id: 1, revision: 0 }]);
     const rows = items.mapWithKey(item => item.id, item =>
       t.li({ dataKey: item.id }, [sharedContent]),
     );
     document.body.append(t.ul({ id: 'content-effect-cleanup' }, rows).toElement());
+    const oldRow = document.querySelector('#content-effect-cleanup li');
+    const oldText = [...oldRow.childNodes].find(node => node.nodeType === Node.TEXT_NODE);
 
-    items.set([{ id: 1 }]);
+    items.set([{ id: 1, revision: 1 }]);
     applyPendingReactiveUpdates();
+    const liveRow = document.querySelector('#content-effect-cleanup li');
+    const liveText = [...liveRow.childNodes].find(node => node.nodeType === Node.TEXT_NODE);
 
-    // Count createTextNode calls on the next signal update.
-    // reconcile() calls createTextNode for each text value it renders.
-    // Without stopTracked: 2 (live + orphaned). With stopTracked: 1.
-    let creates = 0;
-    const orig = Document.prototype.createTextNode;
-    Document.prototype.createTextNode = function createTextNode(...args) {
-      creates++;
-      return orig.apply(this, args);
+    // Observe updates to live and detached text nodes. Only the live binding should run.
+    let liveWrites = 0;
+    let removedWrites = 0;
+    const descriptor = Object.getOwnPropertyDescriptor(Node.prototype, 'nodeValue');
+    Object.defineProperty(Node.prototype, 'nodeValue', {
+      ...descriptor,
+      get() { return descriptor.get.call(this); },
+      set(value) {
+        if (this === liveText) { liveWrites++; }
+        if (this === oldText) { removedWrites++; }
+        descriptor.set.call(this, value);
+      },
+    });
+    try {
+      sharedContent.set('world');
+      applyPendingReactiveUpdates();
+    } finally {
+      Object.defineProperty(Node.prototype, 'nodeValue', descriptor);
+    }
+    return {
+      replaced: liveRow !== oldRow,
+      oldConnected: oldRow.isConnected,
+      liveConnected: liveRow.isConnected,
+      oldContent: oldRow.textContent,
+      liveContent: liveRow.textContent,
+      sameLiveText: liveText === [...liveRow.childNodes].find(node => node.nodeType === Node.TEXT_NODE),
+      liveWrites,
+      removedWrites,
     };
-    sharedContent.set('world');
-    applyPendingReactiveUpdates();
-    Document.prototype.createTextNode = orig;
-    return creates;
   }, bundle);
 
-  expect(count).toBe(1);
+  expect(result).toEqual({
+    replaced: true,
+    oldConnected: false,
+    liveConnected: true,
+    oldContent: 'hello',
+    liveContent: 'world',
+    sameLiveText: true,
+    liveWrites: 1,
+    removedWrites: 0,
+  });
 });
 
 test('signal content in keyed element updates correctly after reconciliation', async ({ page, bundle }) => {

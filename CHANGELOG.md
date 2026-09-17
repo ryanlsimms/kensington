@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Performance
+- Keyed lists coalesce shared row dependency updates into one synchronous list evaluation and reuse unchanged output arrays.
+- List-owned row computations sleep when the list loses its subscribers and are disposed when the list stops.
+- Keyed row replacements capture DOM state before mutations, avoiding repeated layouts while preserving form state, focus and scroll.
+- Direct signal mounting uses the same reconciliation as signal content inside a tag, preserving existing nodes and focus when appending rows.
+- Reactive text retains its text node. Equivalent attribute and style updates skip redundant writes while still repairing external DOM edits.
+- Effects already waiting in the current flush absorb earlier writes without running twice.
+- Live broadcasts send each signal's final value once per recipient per flush, preserving write acknowledgements and origin exclusions.
+
 ## [2.0.0-signals.27] - 2026-09-14
 
 ### Added

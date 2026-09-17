@@ -2086,6 +2086,73 @@ describe('signal.transform', () => {
 // ─── signal.mapWithKey ─────────────────────────────────────────────────────
 
 describe('signal.mapWithKey', () => {
+  it('scans a shared dependency update once and publishes current rows synchronously', () => {
+    const theme = signal('a');
+    const source = signal(Array.from({ length: 100 }, (_, id) => ({ id })));
+    let keys = 0;
+    let builds = 0;
+    const rows = source.mapWithKey(item => { keys++; return item.id; }, item => {
+      builds++;
+      return t.li(`${item.id}:${theme.get()}`);
+    });
+    const labels = computed(() => rows.get().map(row => row.toString()));
+    keys = 0;
+    builds = 0;
+    theme.set('b');
+    assert.strictEqual(keys, 100);
+    assert.strictEqual(builds, 100);
+    assert.strictEqual(rows.get()[99].toString(), '<li>99:b</li>');
+    assert.strictEqual(labels.get()[99], '<li>99:b</li>');
+    labels.stop();
+    rows.stop();
+  });
+
+  it('reuses an unchanged output array without notifying consumers', () => {
+    const source = signal([{ id: 1, label: 'one' }]);
+    const rows = source.mapWithKey('id', item => t.li(item.label));
+    const first = rows.get();
+    let runs = 0;
+    const consumer = effect(() => { rows.get(); runs++; });
+    source.set([{ id: 1, label: 'one' }]);
+    applyPendingReactiveUpdates();
+    assert.strictEqual(rows.get(), first);
+    assert.strictEqual(runs, 1);
+    consumer.stop();
+    rows.stop();
+  });
+
+  it('sleeps row builders with the list, revives on reads, and disposes on stop', () => {
+    const theme = signal('a');
+    const source = signal([{ id: 1 }]);
+    let builds = 0;
+    const rows = source.mapWithKey('id', item => {
+      builds++;
+      return t.li(`${item.id}:${theme.get()}`);
+    });
+    const consumer = effect(() => rows.get());
+    consumer.stop();
+    builds = 0;
+    theme.set('b');
+    assert.strictEqual(builds, 0);
+    assert.strictEqual(rows.get()[0].toString(), '<li>1:b</li>');
+    assert.strictEqual(builds, 1);
+    theme.set('c');
+    assert.strictEqual(builds, 1, 'a plain read must leave the list asleep');
+    const next = effect(() => rows.get());
+    assert.strictEqual(rows.get()[0].toString(), '<li>1:c</li>');
+    builds = 0;
+    theme.set('d');
+    assert.strictEqual(builds, 1);
+    rows.stop();
+    builds = 0;
+    theme.set('e');
+    source.set([{ id: 2 }]);
+    applyPendingReactiveUpdates();
+    assert.strictEqual(builds, 0);
+    assert.strictEqual(source.get()[0].id, 2, 'stopping a list does not stop its source');
+    next.stop();
+  });
+
   it('returns a signal whose value is the array of mapped tags', () => {
     const rows = signal([{ id: 1, label: 'one' }, { id: 2, label: 'two' }]);
     const tags = rows.mapWithKey(r => r.id, r => t.li(r.label));

@@ -56,14 +56,14 @@ function stopOne(element, entry) {
 }
 
 // Walks the subtree rooted at `node` (including `node` itself) and invokes `fn(el, entry)`
-// for every tracked element or comment found. When `node` itself is tracked, descendant
+// for every tracked element or comment found. When `node` is a persist root, descendant
 // non-element nodes are skipped so that the comment-anchor entries owned by LiteralTag and
 // CommentTag are not collateral damage of a persist parent's pause-on-removal cycle.
 function visit(node, fn) {
   const own = entries.get(node);
   if (own !== undefined) { fn(node, own); }
   if (node.nodeType !== 1) { return; }
-  const skipComments = own !== undefined;
+  const skipComments = own?.persist === true;
   const walker = document.createTreeWalker(node, SHOW_ELEMENT_AND_COMMENT);
   for (let el = walker.nextNode(); el !== null; el = walker.nextNode()) {
     if (skipComments && el.nodeType !== 1) { continue; }

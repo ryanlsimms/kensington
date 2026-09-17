@@ -23,6 +23,39 @@ afterEach(() => {
 });
 
 describe('applyPendingReactiveUpdates', () => {
+  it('absorbs writes before a queued reader runs, but reruns readers written after their turn', () => {
+    const a = signal(0);
+    const b = signal(0);
+    watch(() => b.set(a.get()));
+    const seen = [];
+    watch(() => seen.push([a.get(), b.get()]));
+    seen.length = 0;
+    a.set(1);
+    applyPendingReactiveUpdates();
+    assert.deepStrictEqual(seen, [[1, 1]]);
+
+    const c = signal(0);
+    const d = signal(0);
+    const later = [];
+    watch(() => later.push([c.get(), d.get()]));
+    watch(() => d.set(c.get()));
+    later.length = 0;
+    c.set(1);
+    applyPendingReactiveUpdates();
+    assert.deepStrictEqual(later, [[1, 0], [1, 1]]);
+  });
+
+  it('does not execute a queued effect stopped before its turn', () => {
+    const trigger = signal(false);
+    let reader = null;
+    watch(() => { if (trigger.get()) { reader.stop(); } });
+    let calls = 0;
+    reader = watch(() => { trigger.get(); calls++; });
+    trigger.set(true);
+    applyPendingReactiveUpdates();
+    assert.strictEqual(calls, 1);
+  });
+
   it('shares the root and reactive entry point and replaces batch', async () => {
     const root = await import('kensington');
     assert.strictEqual(reactive.applyPendingReactiveUpdates, applyPendingReactiveUpdates);

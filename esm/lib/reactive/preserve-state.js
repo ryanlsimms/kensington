@@ -37,7 +37,7 @@ function walk(node, fn, path) {
 
 function resolvePath(root, path) {
   let node = root;
-  for (const index of path) {
+  for (const index of path ?? []) {
     if (node === null || node.childNodes === undefined || index >= node.childNodes.length) {
       return null;
     }
@@ -101,13 +101,7 @@ export function captureState(root) {
   return state;
 }
 
-export function restoreState(root, state) {
-  for (const entry of state.scrolls) {
-    const node = resolvePath(root, entry.path);
-    if (node === null) { continue; }
-    node.scrollTop = entry.top;
-    node.scrollLeft = entry.left;
-  }
+export function restoreFormState(root, state) {
   for (const entry of state.inputs) {
     const node = resolvePath(root, entry.path);
     if (node === null) { continue; }
@@ -127,11 +121,14 @@ export function restoreState(root, state) {
     if (node === null) { continue; }
     node.open = entry.open;
   }
+}
+
+export function restoreViewState(root, state) {
   if (state.focus !== null) {
     const node = resolvePath(root, state.focus.path);
     if (node !== null && typeof node.focus === 'function') {
       try {
-        node.focus();
+        node.focus({ preventScroll: true });
       } catch {
         // focus() can throw on detached or non-focusable elements in some browsers.
       }
@@ -148,4 +145,15 @@ export function restoreState(root, state) {
       }
     }
   }
+  for (const entry of state.scrolls) {
+    const node = resolvePath(root, entry.path);
+    if (node === null) { continue; }
+    node.scrollTop = entry.top;
+    node.scrollLeft = entry.left;
+  }
+}
+
+export function restoreState(root, state) {
+  restoreFormState(root, state);
+  restoreViewState(root, state);
 }

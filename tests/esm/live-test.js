@@ -860,6 +860,72 @@ function makeFakeSocket(live) {
   return { handlers, fakeWs, received };
 }
 
+describe('kensington/live broadcast deduplication', () => {
+  it('sends only the final update per name and recipient', async () => {
+    const live = await liveServer({ persistence: { kind: 'memory' }, heartbeatInterval: false });
+    try {
+      const { handlers, fakeWs, received } = makeFakeSocket(live);
+      await handlers.open(fakeWs);
+      for (const name of ['a', 'b']) {
+        handlers.message(fakeWs, encode({ type: MSG_SUBSCRIBE, name }));
+      }
+      received.length = 0;
+      for (let i = 1; i <= 100; i++) { live.set('a', i); }
+      live.set('b', 42);
+      await Promise.resolve();
+      assert.strictEqual(received.length, 1);
+      assert.strictEqual(received[0].type, MSG_BATCH_UPDATE);
+      assert.deepStrictEqual(received[0].updates.map(({ name, value }) => [name, value]), [['a', 100], ['b', 42]]);
+      received.length = 0;
+      live.set('a', 101);
+      live.set('a', 102);
+      await Promise.resolve();
+      assert.strictEqual(received.length, 1);
+      assert.strictEqual(received[0].type, MSG_UPDATE);
+      assert.strictEqual(received[0].value, 102);
+    } finally {
+      _clearTransport();
+      live.close();
+    }
+  });
+
+  it('preserves origin exclusions and every write acknowledgement', async () => {
+    const live = await liveServer({ persistence: { kind: 'memory' }, heartbeatInterval: false });
+    try {
+      const sockets = [makeFakeSocket(live), makeFakeSocket(live), makeFakeSocket(live)];
+      for (const socket of sockets) {
+        await socket.handlers.open(socket.fakeWs);
+        socket.handlers.message(socket.fakeWs, encode({ type: MSG_SUBSCRIBE, name: 'counter' }));
+        socket.received.length = 0;
+      }
+      const [first, second, observer] = sockets;
+      function write(socket, value, opId) {
+        socket.handlers.message(socket.fakeWs, encode({ type: MSG_SET, name: 'counter', value, opId }));
+      }
+      write(first, 1, 1);
+      write(first, 2, 2);
+      await Promise.resolve();
+      assert.deepStrictEqual(first.received.map(message => message.type), [MSG_SET_OK, MSG_SET_OK]);
+      assert.strictEqual(observer.received.length, 1);
+      assert.strictEqual(observer.received[0].value, 2);
+      for (const socket of sockets) { socket.received.length = 0; }
+      write(first, 3, 3);
+      write(second, 4, 4);
+      await Promise.resolve();
+      for (const socket of sockets) {
+        const updates = socket.received.filter(message => message.type === MSG_UPDATE);
+        assert.strictEqual(updates.length, 1);
+        assert.strictEqual(updates[0].value, 4);
+      }
+      assert.strictEqual(first.received.filter(message => message.type === MSG_SET_OK).length, 1);
+      assert.strictEqual(second.received.filter(message => message.type === MSG_SET_OK).length, 1);
+    } finally {
+      _clearTransport();
+      live.close();
+    }
+  });
+});
+
 describe('kensington/live persist-mismatch warning behavior', () => {
   // Regression. A client MSG_SUBSCRIBE without an explicit persist field
   // (the default-false case) must NOT trigger a mismatch warning against

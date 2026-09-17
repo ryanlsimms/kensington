@@ -1,6 +1,6 @@
 import { stopRangeBetween, stopRemoved } from './dom-tracker.js';
 import { KENSINGTON_KEY } from './map-with-key.js';
-import { captureState, restoreState } from './preserve-state.js';
+import { captureState, restoreFormState, restoreViewState } from './preserve-state.js';
 
 // Reconciliation key per DOM node. Populated when reconcile inserts a new node for a keyed
 // item. Read on the next render via WeakMap. Keys live in JS land so the rendered DOM stays
@@ -46,20 +46,6 @@ function tagNeedsRebuild(item, node) {
   return cached !== node && cached !== item; // cached === item shows up for tags that don't render to a single node
 }
 
-// Build the new DOM for `item`, capture user-visible state from `oldNode`, swap in place,
-// restore state. Returns the fresh DOM node. dom-tracker stops the old node's effects when
-// the removal mutation fires.
-function rebuildNode(parent, oldNode, item, key, renderOptions) {
-  const fresh = item.toElement(renderOptions);
-  if (key !== undefined && key !== null) { nodeKeys.set(fresh, key); }
-  const state = captureState(oldNode);
-  parent.insertBefore(fresh, oldNode);
-  oldNode.remove();
-  stopRemoved(oldNode);
-  restoreState(fresh, state);
-  return fresh;
-}
-
 // Items may themselves be arrays. The common case is a flat array, so detect once and avoid
 // a generator allocation. The rare nested case flattens into a temporary buffer.
 function flattenInto(items, out) {
@@ -102,35 +88,11 @@ function filterRenderable(items) {
   return items;
 }
 
-// Reconciliation against signal-content. Items produced by `signal.mapWithKey` carry their
-// reconciliation key on a Kensington-internal property, which is stamped onto the live DOM
-// node via the nodeKeys WeakMap. The rendered DOM is left clean of bookkeeping.
-//
-// Algorithm. Vue 2 / Inferno style bidirectional reconciliation. Four cheap cases handle the
-// common shapes with at most one DOM mutation each. Anything that falls through hits the
-// keymap path at the bottom. Hot paths (no change, swap, contiguous insert, contiguous
-// remove, head-to-tail move) finish without building the keymap.
-export function reconcile(parent, startAnchor, endAnchor, newItems, renderOptions) {
-  const items = filterRenderable(flattenIfNeeded(newItems));
+function isTextItem(item) {
+  return item === null || typeof item !== 'object' || typeof item.toElement !== 'function';
+}
 
-  // Clear fast path. One TreeWalker plus Range.deleteContents beats a per-row remove loop
-  // because each individual removal goes through its own DOM mutation and observer record.
-  if (items.length === 0 && startAnchor.nextSibling !== endAnchor) {
-    stopRangeBetween(startAnchor.nextSibling, endAnchor);
-    const range = document.createRange();
-    range.setStartAfter(startAnchor);
-    range.setEndBefore(endAnchor);
-    range.deleteContents();
-    return;
-  }
-
-  // Snapshot the current children. Array index access is faster than Map.get on the slow
-  // path and lets the bidirectional pass advance and retreat from both ends in O(1).
-  const oldChildren = [];
-  for (let node = startAnchor.nextSibling; node !== endAnchor; node = node.nextSibling) {
-    oldChildren.push(node);
-  }
-
+function reconcileChildren(parent, endAnchor, items, oldChildren, renderOptions, rebuildNode) {
   let oldStart = 0;
   let oldEnd = oldChildren.length - 1;
   let newStart = 0;
@@ -144,17 +106,22 @@ export function reconcile(parent, startAnchor, endAnchor, newItems, renderOption
     const newStartKey = itemKey(items[newStart]);
     const newEndKey = itemKey(items[newEnd]);
 
-    if (oldStartKey === newStartKey && oldStartKey !== undefined) {
+    if (oldStartNode.nodeType === 3 && isTextItem(items[newStart])) {
+      const text = String(items[newStart]);
+      if (oldStartNode.nodeValue !== text) { oldStartNode.nodeValue = text; }
+      oldStart++;
+      newStart++;
+    } else if (oldStartKey === newStartKey && oldStartKey !== undefined) {
       // Prefix match. Rebuild only when the new tag is a fresh instance for the key.
       if (tagNeedsRebuild(items[newStart], oldStartNode)) {
-        oldChildren[oldStart] = rebuildNode(parent, oldStartNode, items[newStart], oldStartKey, renderOptions);
+        oldChildren[oldStart] = rebuildNode(oldStartNode, items[newStart], oldStartKey);
       }
       oldStart++;
       newStart++;
     } else if (oldEndKey === newEndKey && oldEndKey !== undefined) {
       // Suffix match.
       if (tagNeedsRebuild(items[newEnd], oldEndNode)) {
-        oldChildren[oldEnd] = rebuildNode(parent, oldEndNode, items[newEnd], oldEndKey, renderOptions);
+        oldChildren[oldEnd] = rebuildNode(oldEndNode, items[newEnd], oldEndKey);
       }
       oldEnd--;
       newEnd--;
@@ -162,7 +129,7 @@ export function reconcile(parent, startAnchor, endAnchor, newItems, renderOption
       // Head moved to tail.
       let node = oldStartNode;
       if (tagNeedsRebuild(items[newEnd], oldStartNode)) {
-        node = rebuildNode(parent, oldStartNode, items[newEnd], oldStartKey, renderOptions);
+        node = rebuildNode(oldStartNode, items[newEnd], oldStartKey);
         oldChildren[oldStart] = node;
       }
       parent.insertBefore(node, oldEndNode.nextSibling);
@@ -172,7 +139,7 @@ export function reconcile(parent, startAnchor, endAnchor, newItems, renderOption
       // Tail moved to head. The js-framework-benchmark swap test lives here.
       let node = oldEndNode;
       if (tagNeedsRebuild(items[newStart], oldEndNode)) {
-        node = rebuildNode(parent, oldEndNode, items[newStart], oldEndKey, renderOptions);
+        node = rebuildNode(oldEndNode, items[newStart], oldEndKey);
         oldChildren[oldEnd] = node;
       }
       parent.insertBefore(node, oldStartNode);
@@ -234,7 +201,7 @@ export function reconcile(parent, startAnchor, endAnchor, newItems, renderOption
       oldChildren[oldIndex] = null;
       keymap.delete(key);
       if (tagNeedsRebuild(item, node)) {
-        node = rebuildNode(parent, node, item, key, renderOptions);
+        node = rebuildNode(node, item, key);
       }
     }
     parent.insertBefore(node, insertRef);
@@ -248,5 +215,66 @@ export function reconcile(parent, startAnchor, endAnchor, newItems, renderOption
       node.remove();
       stopRemoved(node);
     }
+  }
+}
+
+// Reconciliation against signal-content. Items produced by `signal.mapWithKey` carry their
+// reconciliation key on a Kensington-internal property, which is stamped onto the live DOM
+// node via the nodeKeys WeakMap. The rendered DOM is left clean of bookkeeping.
+//
+// Algorithm. Vue 2 / Inferno style bidirectional reconciliation. Four cheap cases handle the
+// common shapes with at most one DOM mutation each. Anything that falls through hits the
+// keymap path at the bottom. Hot paths (no change, swap, contiguous insert, contiguous
+// remove, head-to-tail move) finish without building the keymap.
+export function reconcile(parent, startAnchor, endAnchor, newItems, renderOptions) {
+  const items = filterRenderable(flattenIfNeeded(newItems));
+
+  // Clear fast path. One TreeWalker plus Range.deleteContents beats a per-row remove loop
+  // because each individual removal goes through its own DOM mutation and observer record.
+  if (items.length === 0 && startAnchor.nextSibling !== endAnchor) {
+    stopRangeBetween(startAnchor.nextSibling, endAnchor);
+    const range = document.createRange();
+    range.setStartAfter(startAnchor);
+    range.setEndBefore(endAnchor);
+    range.deleteContents();
+    return;
+  }
+
+  // Snapshot the current children. Array index access is faster than Map.get on the slow
+  // path and lets the bidirectional pass advance and retreat from both ends in O(1).
+  const oldChildren = [];
+  for (let node = startAnchor.nextSibling; node !== endAnchor; node = node.nextSibling) {
+    oldChildren.push(node);
+  }
+
+  // Read state for every replacement before the first connected-DOM write. Alternating
+  // scroll reads with row replacements forces one layout per row.
+  const oldByKey = new Map();
+  for (const node of oldChildren) {
+    const key = nodeKeys.get(node);
+    if (key !== undefined) { oldByKey.set(key, node); }
+  }
+  const states = new Map();
+  for (const item of items) {
+    const old = oldByKey.get(itemKey(item));
+    if (old && tagNeedsRebuild(item, old)) { states.set(old, captureState(old)); }
+  }
+  const restored = [];
+  function rebuildNode(oldNode, item, key) {
+    const fresh = item.toElement(renderOptions);
+    if (key !== undefined && key !== null) { nodeKeys.set(fresh, key); }
+    parent.insertBefore(fresh, oldNode);
+    oldNode.remove();
+    stopRemoved(oldNode);
+    restored.push([fresh, states.get(oldNode)]);
+    return fresh;
+  }
+  try {
+    reconcileChildren(parent, endAnchor, items, oldChildren, renderOptions, rebuildNode);
+  } finally {
+    // Form and open-state writes can invalidate layout. Finish all of them before
+    // restoring focus/scroll, which can force the browser to calculate layout.
+    for (const [node, state] of restored) { restoreFormState(node, state); }
+    for (const [node, state] of restored) { restoreViewState(node, state); }
   }
 }

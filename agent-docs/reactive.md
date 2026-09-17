@@ -248,7 +248,9 @@ t.button({ class: cls, disabled: isLoading }, 'Save')  // live attribute + boole
 t.input({ type: 'search', value: query })         // live value attribute
 ```
 
-An unkeyed `Signal<Tag[]>` passed as content reconciles in place by position — the array becomes the new content on every change. For stable per-item identity (caching tags across re-renders, preserving DOM state per row), use `mapWithKey` instead.
+An unkeyed `Signal<Tag[]>` passed as content becomes the new content on every change. For stable per-item identity (caching tags across updates, preserving DOM state per row), use `mapWithKey`.
+
+Direct mounting with `rows.toElement()` or `rows.mount(parent)` uses the same reconciliation as `t.div(rows)`. Appending a keyed row leaves existing inputs and their focus in place. A wrapper element is optional. List-owned row computations sleep when the list loses its subscribers, resume on a later read or mount, and stop permanently when `rows.stop()` is called.
 
 A `Signal<Tag | null>` passed as content works the same way the single-tag case does. When the signal flips between a tag and `null`, the previous DOM is removed and the new one is inserted in place. Use this for "show this only when X" patterns where no list is involved. The "Conditional subtrees that contain a keyed list" guidance in [Keyed lists](#keyed-lists) below covers the case where the conditional subtree contains a `mapWithKey` and the simple `null`-toggle pattern would tear down the keyed cache.
 

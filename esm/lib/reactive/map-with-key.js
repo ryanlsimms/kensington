@@ -70,6 +70,7 @@ export function mapWithKey(keyOrProp, mapFn) {
     );
   }
   const cache = new Map();
+  let previous = [];
 
   return _internalComputed(() => {
     const items = this.get();
@@ -110,6 +111,10 @@ export function mapWithKey(keyOrProp, mapFn) {
         entry = { inner, keepAwake };
         cache.set(key, entry);
       }
+      if (entry.paused) {
+        entry.paused = false;
+        entry.keepAwake.resume();
+      }
       const tag = entry.inner.get();
       stampKey(tag, key);
       result[writeIdx++] = tag;
@@ -122,6 +127,25 @@ export function mapWithKey(keyOrProp, mapFn) {
         cache.delete(k);
       }
     }
+    if (previous.length === result.length && result.every((tag, i) => Object.is(tag, previous[i]))) {
+      return previous;
+    }
+    previous = result;
     return result;
+  }, {
+    coalesce: true,
+    sleep() {
+      for (const entry of cache.values()) {
+        entry.paused = true;
+        entry.keepAwake.pause();
+      }
+    },
+    stop() {
+      for (const entry of cache.values()) {
+        entry.keepAwake.stop();
+        entry.inner.stop();
+      }
+      cache.clear();
+    },
   });
 }

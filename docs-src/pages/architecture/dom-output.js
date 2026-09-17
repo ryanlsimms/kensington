@@ -324,24 +324,20 @@ export function renderSignalAsTag(signal) {
   frag.append(startAnchor, endAnchor);
   // ... WeakRef setup ...
   const eff = _internalEffect(() => {
-    clearBetween(start, end);
     const value = signal.get();
     const items = Array.isArray(value) ? value : [value];
-    for (const item of items) start.parentNode.insertBefore(renderItem(item), end);
+    if (start.parentNode) reconcile(start.parentNode, start, end, items);
   });
   trackForStop(startAnchor, () => eff.stop());
   return frag;
 }`),
       t.p([
-        'Deliberately simple. Unlike signal-as-content (a child of a real tag), this path does NOT route through ',
+        'Direct mounting uses the same ',
         t.code('reconcile'),
-        '. Each change clears all sibling nodes between the anchors and renders the new value fresh. Keyed-list matching, preserve-state restoration, and bidirectional diffing are unnecessary for a standalone signal whose value is typically a single tag (the "swap between two views" pattern). Keeping ',
-        t.code('reconcile'),
-        ' and ',
-        t.code('preserve-state'),
-        ' out of the slim build\'s hot path is the reason. If you need keyed reconciliation around a signal, wrap it in a tag:',
+        ' function as signal content inside a tag. Keyed rows retain their existing nodes when rows are appended, and replacements preserve form state, focus and scroll. Text updates reuse their text nodes. A wrapper element is optional:',
       ]),
-      code('javascript', `t.div([signal.mapWithKey('id', renderRow)])`),
+      code('javascript', `const rows = items.mapWithKey('id', renderRow);
+document.body.append(rows.toElement());`),
       callout('key', 'The fragment adopts cleanly into a real parent',
         t.p([
           'The anchors live in the fragment until ',

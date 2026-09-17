@@ -64,6 +64,13 @@ const wakeFns = new WeakMap();
 const pendingSleep = new Set();
 // Tracks signals created by computed()/transform() so .set() can be blocked on them.
 const derivedSignals = new WeakSet();
+// Only internal list aggregators coalesce synchronous dependency notifications. Ordinary
+// computeds retain their eager behavior. Reads pull a pending aggregator forward, and the
+// outermost notification drains the remainder before Signal.set() returns.
+const computedUpdates = new WeakMap();
+const computedLifecycle = new WeakMap();
+const pendingComputeds = new Set();
+let drainingComputeds = false;
 // Counter rather than boolean so nested computed calls don't prematurely re-enable the guard.
 let derivedWriteDepth = 0;
 
@@ -134,8 +141,10 @@ function flush() {
   try {
     while (pending.size > 0) {
       const runs = [...pending];
-      pending.clear();
       for (const fn of runs) {
+        // Keep later readers queued while earlier writers run. Their existing turn
+        // already observes those writes; writes after their turn still enqueue them.
+        if (!pending.delete(fn)) { continue; }
         const count = (runCounts.get(fn) ?? 0) + 1;
         runCounts.set(fn, count);
         if (count > MAX_EFFECT_LOOPS) {
@@ -193,12 +202,26 @@ function notifySubscribers(subscribers, value) {
     for (const fn of [...subscribers]) {
       if (fn._isEffect) {
         scheduleRun(fn);
+      } else if (fn._coalesce) {
+        pendingComputeds.add(fn);
       } else {
         fn(value);
       }
     }
   } finally {
     notificationDepth--;
+    if (notificationDepth === 0 && !drainingComputeds) {
+      drainingComputeds = true;
+      try {
+        while (pendingComputeds.size > 0) {
+          const update = pendingComputeds.values().next().value;
+          pendingComputeds.delete(update);
+          update();
+        }
+      } finally {
+        drainingComputeds = false;
+      }
+    }
   }
 }
 
@@ -217,6 +240,10 @@ export function applyPendingReactiveUpdates() {
 }
 
 function wakeForRead(sig) {
+  if (pendingComputeds.size > 0) {
+    const update = computedUpdates.get(sig);
+    if (pendingComputeds.delete(update)) { update(); }
+  }
   const wake = wakeFns.get(sig);
   if (wake !== undefined) {
     suppressWakeNotify = true;
@@ -260,6 +287,10 @@ export default class Signal {
 
   get() {
     _reactiveRuntime.check('Signal.get()');
+    if (pendingComputeds.size > 0) {
+      const update = computedUpdates.get(this);
+      if (pendingComputeds.delete(update)) { update(); }
+    }
     if (currentEffect !== null && !this.#subscribers.has(currentEffect)) {
       if (this.#subscribers.size === 0) {
         // Defer to the shared wakeup helper so we also fire _onFirstSubscriber.
@@ -431,7 +462,13 @@ export default class Signal {
       if (typeof this._onZeroSubscribers === 'function') { this._onZeroSubscribers(); }
       return;
     }
-    if (!inFlush) { sleep(); if (typeof this._onZeroSubscribers === 'function') { this._onZeroSubscribers(); } return; }
+    // A synchronous downstream computed can also release and reacquire a list during
+    // notification. Keep its owned rows awake through that transient unsubscribe.
+    if (!inFlush && !(notificationDepth !== 0 && computedLifecycle.has(this))) {
+      sleep();
+      if (typeof this._onZeroSubscribers === 'function') { this._onZeroSubscribers(); }
+      return;
+    }
     pendingSleep.add(this);
     queueMicrotask(() => {
       if (!pendingSleep.delete(this)) { return; }
@@ -842,6 +879,7 @@ export function computed(fn, key) {
     });
   }
   update._cleanups = [];
+  computedUpdates.set(s, update);
   update._validation = _reactiveRuntime.capture();
   if (nextComputedInternal) {
     update._isInternal = true;
@@ -853,7 +891,9 @@ export function computed(fn, key) {
   // which point sources are unsubscribed and the value is frozen until a new subscriber wakes it.
   let sleeping = false;
   sleepFns.set(s, () => {
+    if (sleeping) { return; }
     sleeping = true;
+    pendingComputeds.delete(update);
     // Suppress during transient wakeForRead reads (.toJSON(), .value, .get() outside reactive
     // context) so serializing a value that contains sleeping computed signals does not emit
     // spurious computed:stop events and trigger unnecessary devtools re-renders.
@@ -863,6 +903,7 @@ export function computed(fn, key) {
       cleanups[i]._unsubscribeFromRun(update);
     }
     update._cleanups = [];
+    computedLifecycle.get(s)?.sleep?.();
   });
   wakeFns.set(s, () => {
     if (!sleeping) { return false; }
@@ -875,6 +916,10 @@ export function computed(fn, key) {
     return true;
   });
   stopFns.set(s, () => {
+    pendingComputeds.delete(update);
+    computedUpdates.delete(s);
+    computedLifecycle.get(s)?.stop?.();
+    computedLifecycle.delete(s);
     pendingSleep.delete(s);
     sleepFns.delete(s);
     wakeFns.delete(s);
@@ -1001,14 +1046,19 @@ Signal.prototype.transform = function transform(fn, key) {
 // context around the `computed()` call so the "computed-in-computed without key" entry warning
 // (meant for user mistakes) does not fire when the library itself is intentionally creating
 // an inner computed (e.g. mapWithKey's per-key reactive path).
-export function _internalComputed(fn) {
+export function _internalComputed(fn, options) {
   const prevInComputedFn = inComputedFn;
   const prevCurrentEffect = currentEffect;
   inComputedFn = false;
   currentEffect = null;
   nextComputedInternal = true;
   try {
-    return computed(fn);
+    const result = computed(fn);
+    if (options !== undefined && !isSSRMode()) {
+      computedUpdates.get(result)._coalesce = options.coalesce === true;
+      computedLifecycle.set(result, options);
+    }
+    return result;
   } finally {
     inComputedFn = prevInComputedFn;
     currentEffect = prevCurrentEffect;

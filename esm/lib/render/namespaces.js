@@ -23,16 +23,19 @@ function attributeNamespace(attrName) {
 export function setDomAttribute(element, attrName, value) {
   const namespace = attributeNamespace(attrName);
   if (namespace === null) {
-    element.setAttribute(attrName, value);
+    if (element.getAttribute(attrName) !== String(value)) { element.setAttribute(attrName, value); }
   } else {
-    element.setAttributeNS(namespace, attrName, value);
+    const local = attrName.slice(attrName.indexOf(':') + 1);
+    if (element.getAttributeNS(namespace, local) !== String(value)) {
+      element.setAttributeNS(namespace, attrName, value);
+    }
   }
 }
 
 export function removeDomAttribute(element, attrName) {
   const namespace = attributeNamespace(attrName);
   if (namespace === null) {
-    element.removeAttribute(attrName);
+    if (element.hasAttribute(attrName)) { element.removeAttribute(attrName); }
   } else {
     const separator = attrName.indexOf(':');
     element.removeAttributeNS(namespace, separator === -1 ? attrName : attrName.slice(separator + 1));

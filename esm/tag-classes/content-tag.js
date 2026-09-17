@@ -18,6 +18,7 @@ import {
   contentIsShort,
   renderToString,
 } from '../lib/render/serialize.js';
+import { createStyleWriter } from '../lib/render/style-writer.js';
 import {
   attributeIsValid,
   attributeValueIsValid,
@@ -311,6 +312,7 @@ export default class ContentTag {
           // style: signal-yielding-object. On each emission, diff per-property
           // against the previous emission. New/changed: setProperty. Missing: removeProperty.
           const prevProps = new Set();
+          const writeStyle = createStyleWriter();
           ensureLifecycle().signalEffect(signal, (el, val) => {
             const next = new Set();
             if (val !== null && typeof val === 'object' && !Array.isArray(val)) {
@@ -322,16 +324,12 @@ export default class ContentTag {
                 }
                 const cssProp = camelToKebab(propKey);
                 next.add(cssProp);
-                if (v === null || v === undefined || v === false || v === '') {
-                  el.style.removeProperty(cssProp);
-                } else {
-                  el.style.setProperty(cssProp, String(v));
-                }
+                writeStyle(el, cssProp, v);
               }
             }
             for (const old of prevProps) {
               if (!next.has(old)) {
-                el.style.removeProperty(old);
+                writeStyle(el, old, null);
               }
             }
             prevProps.clear();
@@ -402,12 +400,9 @@ export default class ContentTag {
           continue; // static values are already set via the initial style attribute
         }
         const cssProp = camelToKebab(propName);
+        const writeStyle = createStyleWriter();
         ensureLifecycle().signalEffect(propValue, (el, val) => {
-          if (val === null || val === undefined || val === false || val === '') {
-            el.style.removeProperty(cssProp);
-          } else {
-            el.style.setProperty(cssProp, String(val));
-          }
+          writeStyle(el, cssProp, val);
         }, `style:${propName}`);
       }
     }
