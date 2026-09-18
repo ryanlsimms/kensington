@@ -1790,6 +1790,34 @@ describe('signal', () => {
     const s = signal(42);
     assert.strictEqual(s.get(), 42);
   });
+  it('subscribe() aliases get() and tracks effect dependencies', () => {
+    const s = signal(1);
+    const values = [];
+    const handle = effect(() => { values.push(s.subscribe()); });
+
+    assert.deepStrictEqual(values, [1]);
+    s.set(2);
+    applyPendingReactiveUpdates();
+    assert.deepStrictEqual(values, [1, 2]);
+
+    handle.stop();
+    s.set(3);
+    applyPendingReactiveUpdates();
+    assert.deepStrictEqual(values, [1, 2]);
+  });
+  it('subscribe() can establish a trigger without consuming the value', () => {
+    const trigger = signal(0);
+    let calls = 0;
+    const handle = effect(() => {
+      trigger.subscribe();
+      calls++;
+    });
+
+    trigger.set(1);
+    applyPendingReactiveUpdates();
+    assert.strictEqual(calls, 2);
+    handle.stop();
+  });
   it('set(value) updates the value', () => {
     const s = signal(0);
     s.set(5);

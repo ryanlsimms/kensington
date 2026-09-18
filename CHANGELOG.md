@@ -18,6 +18,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 - `t.script().toString()` now reports script content containing `</script>` when `validationLevel` is `'warn'` or `'error'`, while preserving the original raw output.
 
+### Added
+- Added `Signal.subscribe()` as an alias for `Signal.get()`, making trigger-only reads in effects explicit.
+
 ### Fixed
 - `kensington/live` now closes and reopens the client WebSocket around browser `pagehide` / `pageshow` lifecycle events, preventing console errors when a page is restored from the back-forward cache.
 

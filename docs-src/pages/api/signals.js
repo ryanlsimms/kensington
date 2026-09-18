@@ -9,7 +9,9 @@ export function apiSignals() {
     t.p([
       'Reactive values. Read with ',
       t.code('.get()'),
-      ', write with ',
+      ', or use ',
+      t.code('.subscribe()'),
+      ' for a trigger-only read in an effect. Write with ',
       t.code('.set()'),
       ', derive with ',
       t.code('computed()'),
@@ -43,6 +45,14 @@ signal<T>(initialValue: T, key: SignalKey): Signal<T>  // keyed form`),
           ' or ',
           t.code('effect()'),
           ', registers this signal as a dependency.',
+        ],
+      ],
+      [
+        t.code('.subscribe(): T'),
+        [
+          'Alias for ',
+          t.code('.get()'),
+          '. Use it when an effect reads a signal only to establish a trigger dependency; it tracks the active reactive context and returns the current value. It does not register a callback.',
         ],
       ],
       [

@@ -209,6 +209,7 @@ export type SignalKey = string | number | object | symbol;
  */
 export interface ReadonlySignal<T> {
   get(): T;
+  subscribe(): T;
   readonly value: T;
   stop(): void;
   transform<U>(fn: (value: T) => U, key?: SignalKey): ReadonlySignal<U>;
@@ -250,6 +251,7 @@ export interface ReadonlySignal<T> {
 export class Signal<T> implements ReadonlySignal<T> {
   private constructor();
   get(): T;
+  subscribe(): T;
   readonly value: T;
   set(valueOrFn: T | ((current: T) => T)): void;
   stop(): void;

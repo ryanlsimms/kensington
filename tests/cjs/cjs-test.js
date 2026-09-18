@@ -66,6 +66,16 @@ describe('require syntax', () => {
     assert.deepStrictEqual(log, [0, 2, 3]);
     handle.stop();
   });
+
+  it('subscribe() aliases get() and tracks effect dependencies', () => {
+    const value = signal(1);
+    const log = [];
+    const handle = effect(() => { log.push(value.subscribe()); });
+    value.set(2);
+    applyPendingReactiveUpdates();
+    assert.deepStrictEqual(log, [1, 2]);
+    handle.stop();
+  });
 });
 
 // ─── core output ───────────────────────────────────────────────────────────

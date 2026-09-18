@@ -349,6 +349,10 @@ export default class Signal {
     return this.#value;
   }
 
+  subscribe() {
+    return this.get();
+  }
+
   get value() {
     _reactiveRuntime.check('Signal.value');
     wakeForRead(this);

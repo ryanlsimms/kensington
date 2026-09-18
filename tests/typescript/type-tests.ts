@@ -416,8 +416,10 @@ _e.stop();
 // signal and computed have stop()
 const _s = signal(0);
 _s.stop();
+const _subscribedNumber: number = _s.subscribe();
 const _c: ReadonlySignal<number> = computed(() => _s.get() * 2);
 _c.stop();
+const _subscribedReadonlyNumber: number = _c.subscribe();
 
 // Reactive<T> accepts a static value, a mutable signal, or a readonly signal
 const _r1: Reactive<string> = 'hello';

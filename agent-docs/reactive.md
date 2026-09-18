@@ -27,7 +27,7 @@ Runtime Guard diagnostics follow the instance whose tag is rendering. `validatio
 
 ### The six core operations
 
-- `signal(initial, key?)` — writable state. **Read with `.get()`** (subscribes the current reactive context if one is active; equivalent to a plain read otherwise). Write with `.set(v)` or `.set(prev => next)`. `.stop()` tears down subscribers. `.transform(fn, key?)` chains a derivation. `.value` exists as a non-subscribing peek; it is the exception, not a peer of `.get()`. See [Always use `.get()`](#always-use-get).
+- `signal(initial, key?)` — writable state. **Read with `.get()`**, or use `.subscribe()` when the read exists only to trigger an effect; both subscribe the current reactive context if one is active and return the current value. Write with `.set(v)` or `.set(prev => next)`. `.stop()` tears down subscribers. `.transform(fn, key?)` chains a derivation. `.value` exists as a non-subscribing peek; it is the exception, not a peer of `.get()` or `.subscribe()`. See [Reading signals](#reading-signals).
 - `computed(fn, key?)` — derived state. Auto-disposes when it has no subscribers, re-runs when its tracked signals change.
 - `effect(fn)` — side effect (DOM updates, fetches, timers). Returns `{ pause, resume, stop }`. Re-runs when tracked signals change.
 - `applyPendingReactiveUpdates()` immediately processes pending user effects and DOM bindings. Ordinary writes are automatically batched. Call it from application code when the next line needs the updated DOM.
@@ -40,9 +40,18 @@ For DOM access before the next line, use `applyPendingReactiveUpdates()`. For a 
 
 Before writing any `signal()` / `computed()` / `.transform()` call, ask: will this call run on the call stack of `computed(fn)`, `signal.transform(fn)`, `mapWithKey(key, mapFn)`'s mapFn, or `effect(fn)` at runtime? If yes, pass a stable key as the second argument. Call-stack matters, not lexical position. A helper called from inside a reactive callback is in the trap even though the call looks top-level in the source.
 
-### Always use `.get()`
+### Reading signals
 
-**Read signals with `.get()`. Always.** It reads the current value and, if you happen to be inside a reactive context, subscribes. Outside a reactive context (event handlers, top-level code, `addConnectedCallback` bodies, async callbacks), `.get()` is functionally identical to `.value` — there is no context to subscribe to, so nothing is tracked. There is no penalty for "always use `.get()`."
+**Read signals with `.get()` by default.** It reads the current value and, if you happen to be inside a reactive context, subscribes. Outside a reactive context (event handlers, top-level code, `addConnectedCallback` bodies, async callbacks), `.get()` is functionally identical to `.value` — there is no context to subscribe to, so nothing is tracked. `.subscribe()` is an alias for `.get()` with the same tracking and return value; use it when an effect reads a signal only to establish a trigger dependency:
+
+```javascript
+effect(() => {
+  refreshTrigger.subscribe();
+  refreshResults();
+});
+```
+
+`.subscribe()` does not register a callback or create a separate subscription handle. It is only a readable name for a tracked value read.
 
 **`.value` is an escape hatch, not a peer of `.get()`.** It exists for one specific case: you are inside a reactive callback (`computed`, `transform`, `effect`, `mapWithKey` mapFn) AND you deliberately do NOT want to subscribe. Examples include reading a signal you are about to `.set()` later in the same callback (avoids a self-trigger loop) or capturing a "frozen" initial value when you genuinely want the rest of the callback to not re-run on changes. If you are not solving one of those problems, use `.get()`.
 
@@ -65,7 +74,7 @@ The failure mode is silent: `computed(() => list.value.filter(...))` never re-ru
 
 | Task | Section |
 |---|---|
-| Why `.get()` is always the default | Signal API → Always use .get() |
+| Choosing `.get()` or `.subscribe()` | Signal API → Reading signals |
 | Binding `value` / `checked` / `<select>` to a signal | DOM properties with `prop` |
 | Side effects, timers, fetches | effect |
 | Coalescing several writes into one commit | effect → Automatic batching and immediate updates |
@@ -98,14 +107,15 @@ import { renderForHydration, registerComponents } from 'kensington';
 
 ```javascript
 const n = signal(0);
-n.get()                   // read. ALWAYS PREFER THIS. Subscribes if inside computed/effect; plain read otherwise.
+n.get()                   // read and subscribe if inside computed/effect; plain read otherwise.
+n.subscribe()             // same read and tracking; clearer for trigger-only effect dependencies.
 n.set(1)                  // set
 n.set(v => v + 1)         // update via function
 n.stop()                  // clear all subscribers; signal retains current value
 n.toJSON()                // returns the current value; makes signals transparent to JSON.stringify
 n.toString()              // returns String(this.get()); works in template literals and string concatenation
 
-n.value                   // ESCAPE HATCH. Reads without subscribing. See "Always use .get()" before reaching for this.
+n.value                   // ESCAPE HATCH. Reads without subscribing. See "Reading signals" before reaching for this.
 
 const double = n.transform(v => v * 2)                       // derived; chainable
 const label  = computed(() => n.get() === 1 ? 'item' : 'items')  // read multiple signals
@@ -207,9 +217,9 @@ function maybeSignal(value) {
 }
 ```
 
-**Read with `.get()`. Always.** This is restated multiple times in this doc because it is the single most common silent-failure mode in kensington apps.
+**Read with `.get()` by default, or `.subscribe()` for trigger-only reads.** Both methods track the active reactive callback; this is the single most common silent-failure boundary in kensington apps.
 
-`.get()` reads the current value and — if a reactive callback (`computed`, `transform`, `effect`, `mapWithKey` mapFn) is currently running — subscribes the callback to this signal so it re-runs on future changes. Outside any reactive callback (event handlers, top-level code, `addConnectedCallback` bodies, async callbacks), `.get()` simply returns the current value. There is no penalty for using `.get()` everywhere. **If you are reaching for `.value`, stop and confirm you actually need to skip subscription.** The number of legitimate reasons is small:
+`.get()` and `.subscribe()` read the current value and — if a reactive callback (`computed`, `transform`, `effect`, `mapWithKey` mapFn) is currently running — subscribe the callback to this signal so it re-runs on future changes. Outside any reactive callback (event handlers, top-level code, `addConnectedCallback` bodies, async callbacks), both simply return the current value. **If you are reaching for `.value`, stop and confirm you actually need to skip subscription.** The number of legitimate reasons is small:
 
 1. Reading a signal you are about to `.set()` later in the same reactive callback, to avoid a self-trigger loop (see [Do not read and write the same signal in the same effect or computed run](#do-not-read-and-write-the-same-signal-in-the-same-effect-or-computed-run)).
 2. Capturing a "frozen" initial value inside a reactive callback when you genuinely want subsequent changes NOT to re-trigger the callback (rare; the [Spreadsheet-style inline-edit cell](#dom-properties-with-prop) recipe is one example).
@@ -427,7 +437,7 @@ function cell(weekSig, dayIso, myEdit, empId, projId, commit, cancel) {
 
 The important details are marked `[!]`. (1) The input's `prop: { value: ... }` reads `.value` because you want the draft at the moment the input is rendered, not on every keystroke. (2) `addConnectedCallback` focuses the input after it is mounted. The `queueMicrotask` postpones focus until the current connection callback finishes. If the click handler itself needs to focus the input before returning, use `applyPendingReactiveUpdates()` there instead, as shown in [Choosing how to wait](#choosing-how-to-wait). (3) Safari throws on `<input type="number">.select()` while Chrome does nothing. Wrap it in try/catch. (4) The display branch uses `.get()` so the cell updates when its source changes. The editing branch does not read that source, so typing does not rebuild the input.
 
-**Do not generalise `.value` from this recipe.** The `.value` here is correct because the same callback writes back to `myEdit` via `oninput`. That self-write is what makes the untracked read necessary. In a `.transform` or `computed` body that does NOT write back to the signal it is reading, `.value` is the silent-failure case from [Always use `.get()`](#always-use-get). Default to `.get()` and reach for `.value` only when you are pairing it with a same-callback `.set()` on the same signal.
+**Do not generalise `.value` from this recipe.** The `.value` here is correct because the same callback writes back to `myEdit` via `oninput`. That self-write is what makes the untracked read necessary. In a `.transform` or `computed` body that does NOT write back to the signal it is reading, `.value` is the silent-failure case from [Reading signals](#reading-signals). Default to `.get()` and reach for `.value` only when you are pairing it with a same-callback `.set()` on the same signal.
 
 **The same dance applies to every editable element**, not just `<input type="number">`. Swap the edit-mode tag for a `<textarea>` (multi-line sticky notes), `<input type="text">` (free-text fields), `<input type="email">`, `<select>`, `<input type="checkbox">` (with appropriate event), or any custom element that owns a `value` property. The same four footguns apply. `prop: { value: untracked }` for the initial draft. `queueMicrotask` deferred focus. `try/catch` around `.select()` because some elements/browsers throw on it (notably `<input type="number">` in Safari. `<textarea>.select()` is well-supported but harmless to wrap). Tracked-read read-mode vs. untracked-read edit-mode.
 
