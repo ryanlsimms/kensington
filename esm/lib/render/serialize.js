@@ -7,6 +7,8 @@ import { LINE_BREAK_TEST_REGEX, preserveSpaces } from '../util/text-utils.js';
 import { attributesArrayFromObject, attributesStringFromObject } from './attributes.js';
 import stringifyContentArray from './stringify-content-array.js';
 
+const SCRIPT_CLOSE_RE = /<\/script>/i;
+
 export function contentIsShort(tag) { // fast path. Avoids the heavier stringifyContentArray+indent pipeline for simple single-string content
   if (!tag.content.length) {
     return true;
@@ -47,6 +49,18 @@ export function attributeArray(tag) {
 
 export function renderToString(tag, parentContext) {
   tag.validateContent();
+  if (tag.contentIsLiteral && tag.tagName === 'script' && tag.validationLevel !== 'off') {
+    for (const c of tag.content) {
+      if (typeof c === 'string' && SCRIPT_CLOSE_RE.test(c)) {
+        showInvalid(
+          'script content contains `</script>` and will close the element early when parsed as HTML',
+          tag.validationLevel,
+          tag.logger,
+        );
+        break;
+      }
+    }
+  }
   const namespace = tag._resolveNamespace(parentContext);
   const childContext = tag._childRenderContext(namespace);
 

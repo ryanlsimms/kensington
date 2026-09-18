@@ -107,6 +107,14 @@ describe('core output', () => {
     assert.strictEqual(t.pre(['line1', 'line2']).toString(), '<pre>line1\nline2</pre>');
     assert.strictEqual(t.script(['var a = 1;', 'var b = 2;']).toString(), '<script>var a = 1;\nvar b = 2;</script>');
   });
+  it('warns when script content contains a closing script tag', () => {
+    const messages = [];
+    const tw = new Kensington({ validationLevel: 'warn', logger: message => messages.push(message) });
+    const html = tw.script('const value = "</script>";').toString();
+    assert.strictEqual(html, '<script>const value = "</script>";</script>');
+    assert.strictEqual(messages.length, 1);
+    assert.match(messages[0], /script content contains `<\/script>`/);
+  });
 });
 
 // ─── attributes ────────────────────────────────────────────────────────────

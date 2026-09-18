@@ -416,6 +416,26 @@ describe('literal content', () => {
       `<body>\n  <script>const x = "<div></div>";\n  console.log(x);</script>\n</body>`,
     );
   });
+  it('warns when script content contains a closing script tag', () => {
+    const messages = [];
+    const tw = new Kensington({ validationLevel: 'warn', logger: message => messages.push(message) });
+    const html = tw.script(['const a = "</script>";', 'const b = "</SCRIPT>";']).toString();
+    assert.strictEqual(html, '<script>const a = "</script>";\nconst b = "</SCRIPT>";</script>');
+    assert.strictEqual(messages.length, 1);
+    assert.match(messages[0], /script content contains `<\/script>`/);
+    assert.strictEqual(
+      tw.script('const prefix = "</script";').toString(),
+      '<script>const prefix = "</script";</script>',
+    );
+    assert.strictEqual(messages.length, 1);
+  });
+  it('throws when script content contains a closing script tag at error level', () => {
+    const te = new Kensington({ validationLevel: 'error' });
+    assert.throws(
+      () => te.script('const value = "</script>";').toString(),
+      /script content contains `<\/script>`/,
+    );
+  });
   it('encodes pre tag content', () => {
     assert.strictEqual(
       t.div(t.pre('<div></div')).toString(),
