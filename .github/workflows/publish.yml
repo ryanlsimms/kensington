@@ -3,6 +3,12 @@ name: Publish
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref containing the version to publish
+        required: true
+        default: main
 
 permissions:
   contents: read
@@ -12,10 +18,12 @@ jobs:
     name: Minimum Node 18.13 runtime
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.ref }}
 
       - name: Prepare runtime artifacts with the development toolchain
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: '23'
 
@@ -40,12 +48,15 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v5
-
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v6
         with:
-          node-version: '23'
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.ref }}
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
 
       - name: Install dependencies
         run: npm ci
@@ -67,9 +78,7 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           if [[ "$VERSION" == *"-"* ]]; then
             PREID=$(echo "$VERSION" | sed 's/.*-\([^.]*\)\..*/\1/')
-            npm publish --provenance --access public --tag "$PREID"
+            npm publish --access public --tag "$PREID"
           else
-            npm publish --provenance --access public
+            npm publish --access public
           fi
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

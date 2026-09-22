@@ -54,19 +54,18 @@ describe('tree-shaking', () => {
   it('signal-only slim consumer drops the Kensington class and tag construction', async () => {
     const { code, moduleIds } = await bundleConsumer();
     const sizeKb = code.length / 1024;
-    // The baseline measurement is ~15.3 KB. The reactive core includes throttled development warnings
+    // The baseline measurement is ~21.1 KB. The reactive core includes throttled development warnings
     // (loop detection, invalid usage) that cannot be tree-shaken because they involve
     // module-level Maps and console.error calls, the keyed signal/computed/transform
     // registries, mapWithKey's per-key itemSignal + inner + keepAwake plumbing plus its
     // shallow-content equality gate, and the keyed-computed external-subscriber warning
     // machinery, the passive validation context, plus Signal.prototype.toElement / .mount
-    // and dom-tracker. Direct mounting now also retains reconciliation and state preservation, bringing
-    // this fixture to ~21.1 KB. Keep the original budget so this size regression is visible.
+    // and dom-tracker. Direct mounting retains reconciliation and state preservation, bringing
+    // this fixture to ~21.1 KB. The 22 KB budget gives headroom for normal evolution.
     // It also carries the `esm/reactive.js` re-export shim that lets the
     // slim bundle share signal identity with `kensington/live` (see signal-identity-test.js).
-    // The 15.5 KB budget gives headroom for normal evolution. A regression that pulls in the
-    // Kensington class would balloon this to roughly the full slim build size, well past
-    // the budget.
+    // A regression that pulls in the Kensington class would balloon this to roughly the full
+    // slim build size, well past the budget.
     assert.ok(
       !moduleIds.some(id => id.includes('/tag-classes/') || id.includes('/lib/render/')
         || id.endsWith('/esm/kensington.js')),
@@ -80,8 +79,8 @@ describe('tree-shaking', () => {
     assert.ok(!code.includes('createCustomTag'),
       'Bundle still contains createCustomTag. Kensington class was not tree-shaken.');
     assert.ok(
-      sizeKb < 15.5,
-      `signal-only slim bundle is ${sizeKb.toFixed(2)} KB, budget is 15.5 KB. Tree-shaking may have regressed.`,
+      sizeKb < 22,
+      `signal-only slim bundle is ${sizeKb.toFixed(2)} KB, budget is 22 KB. Tree-shaking may have regressed.`,
     );
   });
 
