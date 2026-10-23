@@ -26,7 +26,12 @@ import {
   _exitHydrationScope,
 } from '../../esm/lib/reactive/hydration-scope.js';
 import { withRuntimeValidation } from '../../esm/lib/reactive/runtime-guard.js';
-import { _bindingEffect, _internalEffect } from '../../esm/lib/reactive/signal.js';
+import {
+  _bindingEffect,
+  _enterConnectedCallback,
+  _exitConnectedCallback,
+  _internalEffect,
+} from '../../esm/lib/reactive/signal.js';
 import { _resetWarningThrottle } from '../../esm/lib/reactive/warnings.js';
 import { attributesArrayFromObject } from '../../esm/lib/render/attributes.js';
 
@@ -4381,7 +4386,7 @@ describe('sibling keyed computed first-run owner registration', () => {
         return cls.get();
       }));
       list.get(); // force evaluation
-      const oos = warns.filter(w => /out-of-scope-reactive-reference/.test(w));
+      const oos = warns.filter(w => /subscribed to from outside its owning scope/.test(w));
       assert.strictEqual(oos.length, 0, `unexpected warnings: ${oos.join(' | ')}`);
     } finally {
       console.warn = origWarn;
@@ -4438,5 +4443,112 @@ describe('pendingSleep cancellation in flush', () => {
     src.set(1); // Object.is(1,1) → no notify; runs stay constant
     assert.strictEqual(runs, initialRuns);
     e1.stop();
+  });
+});
+
+describe('_enterConnectedCallback / _exitConnectedCallback', () => {
+  // The lifecycle layer brackets each connectedCallback invocation with these
+  // enter/exit calls so an effect() created inside the callback is marked as
+  // internal — its lifetime is tied to the DOM node (the caller stops it from
+  // a disconnectedCallback) so the usual out-of-scope-reactive-reference
+  // concern does not apply.
+  beforeEach(() => { _resetWarningThrottle(); });
+
+  /**
+   * Run `fn` while capturing console.warn messages. The out-of-scope
+   * warning goes through throttledWarn → console.warn directly, so
+   * patching console.warn is the right hook (not withRuntimeValidation,
+   * which only sees runtime-check messages).
+   * @template T
+   * @param {(push: (msg: string) => void) => T} fn
+   * @returns {{ msgs: string[], result: T }}
+   */
+  function captureWarns(fn) {
+    const msgs = [];
+    const origWarn = console.warn;
+    console.warn = msg => msgs.push(String(msg));
+    try {
+      const result = fn(msg => msgs.push(String(msg)));
+      return { msgs, result };
+    } finally {
+      console.warn = origWarn;
+    }
+  }
+
+  it('fires the baseline warning when an outside effect reads a keyed inner', () => {
+    // Sanity check — the pattern below is the one the enter/exit are meant
+    // to silence. Without the bracket, kensington should still warn.
+    const { msgs, result: e } = captureWarns(() => {
+      let innerSig;
+      computed(() => {
+        innerSig = signal(0, 'cb-baseline-inner');
+        return innerSig.get();
+      }, 'cb-baseline-outer').get();
+      return effect(() => { innerSig.get(); });
+    });
+    const oos = msgs.filter(w => /subscribed to from outside its owning scope/.test(w));
+    assert.ok(oos.length > 0, 'expected baseline warning without the bracket');
+    e.stop();
+  });
+
+  it('suppresses the warning for effects created inside the bracket', () => {
+    const { msgs, result: e } = captureWarns(() => {
+      let innerSig;
+      computed(() => {
+        innerSig = signal(0, 'cb-ok-inner');
+        return innerSig.get();
+      }, 'cb-ok-outer').get();
+      _enterConnectedCallback();
+      try {
+        return effect(() => { innerSig.get(); });
+      } finally {
+        _exitConnectedCallback();
+      }
+    });
+    const oos = msgs.filter(w => /subscribed to from outside its owning scope/.test(w));
+    assert.deepStrictEqual(oos, [], `unexpected warnings: ${oos.join(' | ')}`);
+    e.stop();
+  });
+
+  it('leaves effects created after exit unmarked (depth decrements)', () => {
+    const { msgs, result: e } = captureWarns(() => {
+      let innerSig;
+      computed(() => {
+        innerSig = signal(0, 'cb-decrement-inner');
+        return innerSig.get();
+      }, 'cb-decrement-outer').get();
+      _enterConnectedCallback();
+      _exitConnectedCallback();
+      // Depth is back to zero, so this effect should warn like any other.
+      return effect(() => { innerSig.get(); });
+    });
+    const oos = msgs.filter(w => /subscribed to from outside its owning scope/.test(w));
+    assert.ok(oos.length > 0, 'depth did not decrement — effect was still auto-internal after exit');
+    e.stop();
+  });
+
+  it('nests correctly (inner exit does not unmark outer scope)', () => {
+    const { msgs, result: e } = captureWarns(() => {
+      let innerSig;
+      computed(() => {
+        innerSig = signal(0, 'cb-nested-inner');
+        return innerSig.get();
+      }, 'cb-nested-outer').get();
+      _enterConnectedCallback();
+      try {
+        _enterConnectedCallback();
+        try {
+          // inner scope — exit returns to the still-active outer scope
+        } finally {
+          _exitConnectedCallback();
+        }
+        return effect(() => { innerSig.get(); });
+      } finally {
+        _exitConnectedCallback();
+      }
+    });
+    const oos = msgs.filter(w => /subscribed to from outside its owning scope/.test(w));
+    assert.deepStrictEqual(oos, [], `unexpected warnings: ${oos.join(' | ')}`);
+    e.stop();
   });
 });

@@ -54,6 +54,13 @@ let inFlush = false;
 // that maps its own children) are safe because the inner mapFn only runs once per key, so
 // the mapwithkey-in-reactive warning is suppressed for this case.
 let mapWithKeyInnerDepth = 0;
+// Non-zero while a trackForConnect callback is executing. Effects created
+// in that scope are auto-marked internal — their lifetime is tied to the
+// DOM node (the caller is expected to stop them in a disconnectedCallback)
+// so the usual out-of-scope-reactive-reference concern does not apply.
+let insideConnectedCallbackDepth = 0;
+export function _enterConnectedCallback() { insideConnectedCallbackDepth++; }
+export function _exitConnectedCallback() { insideConnectedCallbackDepth--; }
 const stopFns = new WeakMap();
 // sleep/wake hooks for auto-disposing computed signals when subscriber count hits zero.
 const sleepFns = new WeakMap();
@@ -536,6 +543,14 @@ function createEffect(fn, isInternal = false) {
   _reactiveRuntime.check('effect()');
   if (isSSRMode()) {
     return { pause() {}, resume() {}, stop() {} };
+  }
+  // Effects born inside a connectedCallback are DOM-scoped: the caller
+  // is expected to stop them via addDisconnectedCallback. Treat them as
+  // internal so Signal.get() skips the out-of-scope-reactive-reference
+  // warning — the subscriber dies with the element, not with any outer
+  // computed, so the usual leak concern does not apply.
+  if (!isInternal && insideConnectedCallbackDepth > 0) {
+    isInternal = true;
   }
   let paused = false;
   let destroyed = false;

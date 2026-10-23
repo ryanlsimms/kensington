@@ -1,6 +1,6 @@
 import { markNextEffectAsBinding, notifyEffectElement } from './devtools.js';
 import { addOnStop, trackForConnect, trackForStop } from './dom-tracker.js';
-import { _bindingEffect } from './signal.js';
+import { _bindingEffect, _enterConnectedCallback, _exitConnectedCallback } from './signal.js';
 
 /**
  * Owns the lifecycle of signal effects and connect/disconnect callbacks for a single DOM
@@ -89,7 +89,14 @@ export function createLifecycle({ element, persist }) {
               }
             }
           }
-          for (const fn of connectCallbacks) { fn.call(element, element); }
+          for (const fn of connectCallbacks) {
+            _enterConnectedCallback();
+            try {
+              fn.call(element, element);
+            } finally {
+              _exitConnectedCallback();
+            }
+          }
         }, persist);
       }
     },
