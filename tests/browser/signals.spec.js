@@ -3409,6 +3409,47 @@ test('reconcile swap of distant items (1 and N-2 in a 10-item list)', async ({ p
   expect(result.stamps).toEqual([0, 8, 2, 3, 4, 5, 6, 7, 1, 9]);
 });
 
+test('reconcile keeps every five-row keyed-list permutation in order', async ({ page, bundle }) => {
+  const mismatches = await page.evaluate(async src => {
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
+    const permutations = values => {
+      if (values.length < 2) { return [values]; }
+      return values.flatMap((value, index) =>
+        permutations(values.filter((_, i) => i !== index))
+          .map(rest => [value, ...rest]),
+      );
+    };
+
+    const initial = ['A', 'B', 'C', 'D', 'E'];
+    const failures = [];
+    for (const order of permutations(initial)) {
+      const items = signal(initial.map(id => ({ id })));
+      const list = t.ul(items.mapWithKey('id', item => t.li(item.id))).toElement();
+      document.body.append(list);
+      items.set(order.map(id => ({ id })));
+      applyPendingReactiveUpdates();
+      const shown = [...list.querySelectorAll('li')].map(li => li.textContent).join('');
+      if (shown !== order.join('')) { failures.push({ expected: order.join(''), actual: shown }); }
+      list.remove();
+    }
+    return failures;
+  }, bundle);
+  expect(mismatches).toEqual([]);
+});
+
+test('reconcile inserts new keyed rows in the right place after a head-to-tail move', async ({ page, bundle }) => {
+  const shown = await page.evaluate(async src => {
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
+    const items = signal(['A', 'B', 'C'].map(id => ({ id })));
+    const list = t.ul(items.mapWithKey('id', item => t.li(item.id))).toElement();
+    document.body.append(list);
+    items.set(['C', 'X', 'A'].map(id => ({ id })));
+    applyPendingReactiveUpdates();
+    return [...list.querySelectorAll('li')].map(li => li.textContent).join('');
+  }, bundle);
+  expect(shown).toBe('CXA');
+});
+
 // ─── dom-tracker: same-batch remove-and-reinsert ──────────────────────────
 // dom-tracker's MutationObserver guards stopRemoved with `if (!node.isConnected)`. If a
 // node is removed and reinserted in the same microtask batch, the observer fires for the

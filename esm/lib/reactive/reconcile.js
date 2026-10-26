@@ -97,6 +97,7 @@ function reconcileChildren(parent, endAnchor, items, oldChildren, renderOptions,
   let oldEnd = oldChildren.length - 1;
   let newStart = 0;
   let newEnd = items.length - 1;
+  let trailingFence = endAnchor;
 
   while (oldStart <= oldEnd && newStart <= newEnd) {
     const oldStartNode = oldChildren[oldStart];
@@ -123,6 +124,7 @@ function reconcileChildren(parent, endAnchor, items, oldChildren, renderOptions,
       if (tagNeedsRebuild(items[newEnd], oldEndNode)) {
         oldChildren[oldEnd] = rebuildNode(oldEndNode, items[newEnd], oldEndKey);
       }
+      trailingFence = oldChildren[oldEnd];
       oldEnd--;
       newEnd--;
     } else if (oldStartKey === newEndKey && oldStartKey !== undefined) {
@@ -133,6 +135,7 @@ function reconcileChildren(parent, endAnchor, items, oldChildren, renderOptions,
         oldChildren[oldStart] = node;
       }
       parent.insertBefore(node, oldEndNode.nextSibling);
+      trailingFence = node;
       oldStart++;
       newEnd--;
     } else if (oldEndKey === newStartKey && oldEndKey !== undefined) {
@@ -150,10 +153,9 @@ function reconcileChildren(parent, endAnchor, items, oldChildren, renderOptions,
     }
   }
 
-  // The fence for any remaining inserts. The suffix nodes (oldChildren[oldEnd+1...]) were
-  // either left in place by suffix matches or moved into position by the head-to-tail
-  // branch above. Either way the first one is the right "insert before this" reference.
-  const trailingFence = oldEnd + 1 < oldChildren.length ? oldChildren[oldEnd + 1] : endAnchor;
+  // Track the first already-positioned node after the remaining range as branches run.
+  // Moves change live DOM order without changing oldChildren's snapshot order, so deriving
+  // this fence from oldChildren after the loop can point at the wrong node.
 
   if (oldStart > oldEnd) {
     // Pure inserts. Append every remaining new item before the trailing fence.
