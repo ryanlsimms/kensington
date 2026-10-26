@@ -126,18 +126,24 @@ export default function parseData(htmlData, svgData, mathData, { cssPropertyType
       // is an HTML integration point. The fetched MathML table omits it.
       mathEl.attributes.push('encoding');
     }
-    if (!htmlElements.find(el => el.tag === mathEl.tag)) {
+    const existingElement = htmlElements.find(el => el.tag === mathEl.tag);
+    if (existingElement) {
+      // MathML 4's <a> shares its name with both HTML and SVG. Like SVG's shared-name
+      // elements, expose one contextual tag and merge the MathML-specific attribute names.
+      existingElement.mathContextual = true;
+      existingElement.attributes = [...new Set([...existingElement.attributes, ...mathEl.attributes])];
+    } else {
       htmlElements.push({ ...mathEl, tagType: 'Math' });
-      mathEl.attributes.forEach(mathAttr => {
-        if (!attributes.find(attr => attr.attribute === mathAttr)) {
-          attributes.push({
-            attribute: mathAttr,
-            elements: [],
-            value: [],
-          });
-        }
-      });
     }
+    mathEl.attributes.forEach(mathAttr => {
+      if (!attributes.find(attr => attr.attribute === mathAttr)) {
+        attributes.push({
+          attribute: mathAttr,
+          elements: [],
+          value: [],
+        });
+      }
+    });
   });
 
   const elements = htmlElements.filter(e => !tagsToSkip.includes(e.tag)).sort((a, b) => a.tag.localeCompare(b.tag));

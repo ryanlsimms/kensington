@@ -355,12 +355,17 @@ type SvgPresentationAttributes = {
 
 type AAttributes = {
   prop?: ContextualPropFor<'a'> | null;
+  'displaystyle'?: string;
   'download'?: string;
   'href'?: string;
   'hreflang'?: string;
+  'mathbackground'?: string;
+  'mathcolor'?: string;
+  'mathsize'?: string;
   'ping'?: string;
   'referrerpolicy'?: string;
   'rel'?: string;
+  'scriptlevel'?: string;
   'target'?: string;
   'type'?: string;
 } & SvgPresentationAttributes & SvgConditionalAttributes & SvgXLinkAttributes & NameSpaceAttributes & GlobalAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;

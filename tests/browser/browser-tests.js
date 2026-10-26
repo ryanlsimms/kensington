@@ -414,6 +414,19 @@ export function registerTests(bundle) {
     });
   });
 
+  test('creates a shared anchor in the MathML namespace', async ({ page }) => {
+    const result = await page.evaluate(async src => {
+      const { t } = await import(src);
+      const tree = t.math(t.a({ id: 'math-a', mathcolor: 'red', displaystyle: 'true' }, t.mi('x'))).toElement();
+      const anchor = tree.querySelector('#math-a');
+      return { namespace: anchor.namespaceURI, childNamespace: anchor.firstElementChild.namespaceURI };
+    }, bundle);
+    expect(result).toEqual({
+      namespace: 'http://www.w3.org/1998/Math/MathML',
+      childNamespace: 'http://www.w3.org/1998/Math/MathML',
+    });
+  });
+
   test('unsupported crossings preserve each method\'s intrinsic namespace', async ({ page }) => {
     const namespaces = await page.evaluate(async src => {
       const { t } = await import(src);

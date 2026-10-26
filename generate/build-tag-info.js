@@ -8,6 +8,7 @@ const TYPE_CODES = {
   LiteralContent: 'L',
   ContextualContent: 'X',
   ContextualLiteralContent: 'Y',
+  ContextualMathContent: 'Z',
   DocType: 'D',
 };
 
@@ -16,9 +17,11 @@ function asKey(name) {
 }
 
 function entryValue(el) {
-  const type = el.svgContextual
-    ? (el.tagType === 'LiteralContent' ? 'ContextualLiteralContent' : 'ContextualContent')
-    : el.tagType;
+  const type = el.mathContextual
+    ? 'ContextualMathContent'
+    : el.svgContextual
+      ? (el.tagType === 'LiteralContent' ? 'ContextualLiteralContent' : 'ContextualContent')
+      : el.tagType;
   const code = TYPE_CODES[type];
   // Omit the tag name when it equals the method name (the common case).
   if (el.methodName === el.tag) {

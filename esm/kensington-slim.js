@@ -27,6 +27,12 @@ const TAG_TYPE_OPTIONS = {
   M: { Klass: ContentTag, namespace: MATH_NS, contentIsLiteral: false },
   L: { Klass: ContentTag, namespace: undefined, contentIsLiteral: true },
   X: { Klass: ContentTag, namespace: undefined, contentIsLiteral: false, supportedNamespaces: [HTML_NS, SVG_NS] },
+  Z: {
+    Klass: ContentTag,
+    namespace: undefined,
+    contentIsLiteral: false,
+    supportedNamespaces: [HTML_NS, SVG_NS, MATH_NS],
+  },
   Y: { Klass: ContentTag, namespace: undefined, contentIsLiteral: true, supportedNamespaces: [HTML_NS, SVG_NS] },
   D: { Klass: HtmlWithDoctypeTag, namespace: undefined, contentIsLiteral: false },
 };
@@ -125,8 +131,8 @@ export default class Kensington {
     return this.createTag(tagName, ContentTag, {});
   }
 
-  createContextualContentTag(tagName) {
-    return this.createTag(tagName, ContentTag, { supportedNamespaces: [HTML_NS, SVG_NS] });
+  createContextualContentTag(tagName, supportedNamespaces = [HTML_NS, SVG_NS]) {
+    return this.createTag(tagName, ContentTag, { supportedNamespaces });
   }
 
   createMathTag(tagName) {

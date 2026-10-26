@@ -933,10 +933,13 @@ describe('namespaces', () => {
     const tt = new Kensington({ validationLevel: 'error' });
     assert.throws(() => tt.div({ ABC: 'value' }), /not allowed/);
   });
-  it('accepts the union of HTML and SVG attributes on contextual tags', () => {
+  it('accepts the union of HTML, SVG, and MathML attributes on contextual tags', () => {
     const tt = new Kensington({ validationLevel: 'error' });
     assert.doesNotThrow(() => tt.title({ fill: 'red', 'xml:space': 'preserve' }).toString());
     assert.doesNotThrow(() => tt.a({ href: '#target', requiredExtensions: 'svg' }).toString());
+    assert.doesNotThrow(() => tt.math(
+      tt.a({ href: '#math-target', mathcolor: 'red', displaystyle: 'true' }, tt.mi('x')),
+    ).toString());
     assert.doesNotThrow(() => tt.script({ href: '/app.js' }).toString());
     assert.doesNotThrow(() => tt.style({ type: 'text/css' }).toString());
   });

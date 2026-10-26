@@ -119,9 +119,10 @@ t.span({ id: 'my-id', title: 'tooltip', tabindex: 0 });
 t.p({ contenteditable: 'true' });
 t.p({ contenteditable: 'false' });
 
-// HTML/SVG shared tag names accept the union of both vocabularies' attributes.
+// Contextual shared tags accept the union of HTML, SVG, and MathML attributes.
 t.title({ fill: 'red', 'xml:space': 'preserve' });
 t.a({ href: '#target', requiredExtensions: 'svg' });
+t.a({ href: '#math-target', mathcolor: 'red', displaystyle: 'true' }, t.mi('x'));
 t.script({ href: '/app.js' });
 t.script({ 'xml:space': 'preserve' });
 t.style({ type: 'text/css' });
