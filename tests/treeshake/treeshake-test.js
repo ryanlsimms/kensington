@@ -63,9 +63,10 @@ describe('tree-shaking', () => {
     // and dom-tracker. Direct mounting retains reconciliation and state preservation, bringing
     // this fixture to ~21.1 KB. The 22 KB budget gives headroom for normal evolution.
     // It also carries the `esm/reactive.js` re-export shim that lets the
-    // slim bundle share signal identity with `kensington/live` (see signal-identity-test.js).
-    // A regression that pulls in the Kensington class would balloon this to roughly the full
-    // slim build size, well past the budget.
+    // slim bundle share reactive state with `kensington/live` (see signal-identity-test.js).
+    // The standalone runtime registry adds a few KB so independently bundled copies can
+    // share scheduler and hydration state. A regression that pulls in the Kensington class
+    // would still balloon this past the budget.
     assert.ok(
       !moduleIds.some(id => id.includes('/tag-classes/') || id.includes('/lib/render/')
         || id.endsWith('/esm/kensington.js')),
@@ -79,8 +80,8 @@ describe('tree-shaking', () => {
     assert.ok(!code.includes('createCustomTag'),
       'Bundle still contains createCustomTag. Kensington class was not tree-shaken.');
     assert.ok(
-      sizeKb < 22,
-      `signal-only slim bundle is ${sizeKb.toFixed(2)} KB, budget is 22 KB. Tree-shaking may have regressed.`,
+      sizeKb < 28,
+      `signal-only slim bundle is ${sizeKb.toFixed(2)} KB, budget is 28 KB. Tree-shaking may have regressed.`,
     );
   });
 
@@ -90,7 +91,7 @@ describe('tree-shaking', () => {
       const { code, moduleIds } = await bundleConsumer(entry, true);
       assert.ok(!moduleIds.some(id => id.endsWith('/runtime-guard.js')));
       assert.ok(!code.includes('crossed reactive runtimes'));
-      assert.ok(moduleIds.some(id => id.endsWith('/runtime-context.js')));
+      assert.ok(code.includes('kensington.reactive.shared-state.2.v1'));
     });
   }
 });

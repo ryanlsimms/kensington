@@ -13,13 +13,6 @@ const devtoolsId = new URL('../../esm/lib/reactive/devtools.js', import.meta.url
 const runtimeGuardId = new URL('../../esm/lib/reactive/runtime-guard.js', import.meta.url).pathname;
 const signalId = new URL('../../esm/lib/reactive/signal.js', import.meta.url).pathname;
 const filterStackId = new URL('../../esm/lib/util/filter-stack.js', import.meta.url).pathname;
-const reactiveDir = new URL('../../esm/lib/reactive/', import.meta.url).pathname;
-const distDir = new URL('../../dist/', import.meta.url).pathname;
-const path = await import('node:path');
-
-function reactiveDirRelativeToDist(id) {
-  return path.relative(distDir, id).split(path.sep).join('/');
-}
 
 const attributesModule = await import(attributesHref);
 const camelCaseNames = JSON.stringify([...new Set(
@@ -57,33 +50,6 @@ export function notifyDomTrack() {}
 export function notifyDomUntrack() {}
 `;
 
-// Every `esm/lib/reactive/*.js` module that carries mutable module-scope
-// state (currentEffect, pending effects, hydration scopes,
-// SSR mode flags, etc.) must be shared by EVERY ESM dist build and every
-// source subpath. A foreign Signal can be recognized by its brand, but a
-// pending update call from another module instance cannot process its private scheduler.
-//
-// DO NOT limit this externalization to the slim build. Both full and slim
-// dist files import these modules via relative paths from `dist/` back into
-// `esm/lib/reactive/`, matching `kensington`, `kensington/reactive`, and
-// `kensington/live`. That guarantees one module instance per resolved file
-// when applications mix entry points.
-// See tests/treeshake/signal-identity-test.js for the regression that
-// covers cross-entry effects and applyPendingReactiveUpdates(), and hydration.spec.js for the
-// same class of bug on `hydration-scope.js`.
-const reactiveExternalPaths = {};
-
-const sharedReactiveCorePlugin = {
-  name: 'shared-reactive-core',
-  resolveId(id) {
-    if (id.startsWith(reactiveDir) && id.endsWith('.js')) {
-      reactiveExternalPaths[id] = reactiveDirRelativeToDist(id);
-      return { id, external: true };
-    }
-    return null;
-  },
-};
-
 const slimPlugin = {
   name: 'slim-build',
   resolveId(id) {
@@ -110,27 +76,28 @@ export function withRuntimeValidation(_level, _logger, fn) {
   },
 };
 
+// Both browser builds include their reactive modules so every dist file is
+// self-contained. Their mutable runtime state is shared with source ESM and
+// other same-major dist copies through shared-state.js's versioned global registry.
 const bundle = await rollup({
   input: entry,
   onwarn(warning, warn) {
     if (warning.code === 'MISSING_EXPORT') {return;}
     warn(warning);
   },
-  plugins: [nodeResolve(), commonjs(), sharedReactiveCorePlugin],
+  plugins: [nodeResolve(), commonjs()],
 });
 
 await bundle.write({
   file: new URL('../../dist/kensington.js', import.meta.url).pathname,
   format: 'esm',
   generatedCode: { constBindings: true },
-  paths: reactiveExternalPaths,
   sourcemap: true,
 });
 
 await bundle.write({
   file: new URL('../../dist/kensington.min.js', import.meta.url).pathname,
   format: 'esm',
-  paths: reactiveExternalPaths,
   plugins: [terser()],
   sourcemap: true,
 });
@@ -141,15 +108,8 @@ const slimBundle = await rollup({
     if (warning.code === 'MISSING_EXPORT') {return;}
     warn(warning);
   },
-  plugins: [nodeResolve(), commonjs(), slimPlugin, sharedReactiveCorePlugin],
+  plugins: [nodeResolve(), commonjs(), slimPlugin],
 });
-
-// `reactiveExternalPaths` (populated by sharedReactiveCorePlugin during both builds) maps absolute
-// source paths to relative `../esm/lib/reactive/<file>.js` specifiers
-// that resolve from `dist/`. Browsers, Node, and bundlers all follow
-// the same path; bundler consumers dedupe by resolved file so full +
-// slim + `kensington/live` + user code share one module instance per file.
-const reactivePathMap = reactiveExternalPaths;
 
 const slimJsPath = new URL('../../dist/kensington.slim.js', import.meta.url).pathname;
 const slimMinPath = new URL('../../dist/kensington.slim.min.js', import.meta.url).pathname;
@@ -158,14 +118,12 @@ await slimBundle.write({
   file: slimJsPath,
   format: 'esm',
   generatedCode: { constBindings: true },
-  paths: reactivePathMap,
   sourcemap: true,
 });
 
 await slimBundle.write({
   file: slimMinPath,
   format: 'esm',
-  paths: reactivePathMap,
   plugins: [terser()],
   sourcemap: true,
 });

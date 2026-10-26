@@ -17,34 +17,58 @@ import {
 import { getCurrentHydrationScope } from './hydration-scope.js';
 import { mapWithKey } from './map-with-key.js';
 import { createRuntimeContext, RUNTIME_OWNER } from './runtime-context.js';
+import { getSharedReactiveState } from './shared-state.js';
 import { renderSignalAsTag } from './signal-render.js';
 import { isSSRMode } from './ssr.js';
 import { throttledError, throttledWarn, warnKeyedInitialMismatch } from './warnings.js';
 
 // Internal bridge used by tag validation. Standalone reactive calls have no checker.
-export const _reactiveRuntime = createRuntimeContext();
+export const _reactiveRuntime = createRuntimeContext({ isolated: import.meta.url.includes('?') });
 
-let currentEffect = null;
-const pending = new Set();
-const runCounts = new Map();
-const asyncTurnCounts = new Map();
+const state = getSharedReactiveState('signal', () => ({
+  currentEffect: null,
+  pending: new Set(),
+  runCounts: new Map(),
+  asyncTurnCounts: new Map(),
+  asyncTurnCountsResetScheduled: false,
+  microtaskTurn: 0,
+  microtaskTurnAdvanceScheduled: false,
+  scheduled: false,
+  notificationDepth: 0,
+  inComputedFn: false,
+  suppressReactiveCheck: false,
+  nextComputedInternal: false,
+  suppressWakeNotify: false,
+  inFlush: false,
+  mapWithKeyInnerDepth: 0,
+  insideConnectedCallbackDepth: 0,
+  stopFns: new WeakMap(),
+  sleepFns: new WeakMap(),
+  wakeFns: new WeakMap(),
+  pendingSleep: new Set(),
+  derivedSignals: new WeakSet(),
+  computedUpdates: new WeakMap(),
+  computedLifecycle: new WeakMap(),
+  pendingComputeds: new Set(),
+  drainingComputeds: false,
+  derivedWriteDepth: 0,
+  currentComputed: null,
+  computedCallSite: null,
+  keyedRegistries: new WeakMap(),
+  keyedComputedRegistries: new WeakMap(),
+  keyedScopeOwners: new WeakMap(),
+  pendingNestedWarning: new WeakMap(),
+}));
+
 const MAX_EFFECT_LOOPS = 100;
 const MAX_ASYNC_EFFECT_TURNS = 500;
-let asyncTurnCountsResetScheduled = false;
-let microtaskTurn = 0;
-let microtaskTurnAdvanceScheduled = false;
-let scheduled = false;
-let notificationDepth = 0;
-let inComputedFn = false;
-let suppressReactiveCheck = false;
+
 // Set by _internalComputed before calling computed(fn) so the new computed's
 // update closure is marked internal. Library-internal wrappers (class-list
 // builder, attribute composition, mapWithKey's per-key inner) should not trip
 // user-facing warnings about out-of-scope reactive references when they read
 // keyed signals owned by user scopes.
-let nextComputedInternal = false;
-let suppressWakeNotify = false;
-let inFlush = false;
+
 // Set true while mapWithKey runs mapFn under a probe to detect whether it reads or creates
 // reactive primitives. A keyed signal/computed creation during the probe forces an upgrade
 // to the reactive path (mapFn re-runs under a full per-key inner computed) so the keyed
@@ -53,62 +77,56 @@ let inFlush = false;
 // or inside the real per-key inner computed). Recursive mapWithKey calls (a row component
 // that maps its own children) are safe because the inner mapFn only runs once per key, so
 // the mapwithkey-in-reactive warning is suppressed for this case.
-let mapWithKeyInnerDepth = 0;
+
 // Non-zero while a trackForConnect callback is executing. Effects created
 // in that scope are auto-marked internal — their lifetime is tied to the
 // DOM node (the caller is expected to stop them in a disconnectedCallback)
 // so the usual out-of-scope-reactive-reference concern does not apply.
-let insideConnectedCallbackDepth = 0;
-export function _enterConnectedCallback() { insideConnectedCallbackDepth++; }
-export function _exitConnectedCallback() { insideConnectedCallbackDepth--; }
-const stopFns = new WeakMap();
+
+export function _enterConnectedCallback() { state.insideConnectedCallbackDepth++; }
+export function _exitConnectedCallback() { state.insideConnectedCallbackDepth--; }
+
 // sleep/wake hooks for auto-disposing computed signals when subscriber count hits zero.
-const sleepFns = new WeakMap();
-const wakeFns = new WeakMap();
+
 // Computed signals whose sleep has been deferred until after the current flush. If the
 // subscriber comes back before the microtask fires (the common case when a DOM-binding
 // effect re-runs), the entry is removed and sleep is canceled. No sleep/wake round-trip.
-const pendingSleep = new Set();
+
 // Tracks signals created by computed()/transform() so .set() can be blocked on them.
-const derivedSignals = new WeakSet();
+
 // Only internal list aggregators coalesce synchronous dependency notifications. Ordinary
 // computeds retain their eager behavior. Reads pull a pending aggregator forward, and the
 // outermost notification drains the remainder before Signal.set() returns.
-const computedUpdates = new WeakMap();
-const computedLifecycle = new WeakMap();
-const pendingComputeds = new Set();
-let drainingComputeds = false;
+
 // Counter rather than boolean so nested computed calls don't prematurely re-enable the guard.
-let derivedWriteDepth = 0;
 
 // Tracks the innermost computed currently running, so signal(initial, key) can scope
 // keyed signal lookups to that computed instance. Saved/restored as a stack across nested
 // computed runs (which are warned against but otherwise tolerated).
-let currentComputed = null;
+
 // Set by Signal.prototype.transform before it calls computed() so the warning fired from
 // inside computed() can use transform-specific wording. Cleared in transform's finally.
-let computedCallSite = null;
+
 // Per-computed registry of keyed signals. Each entry has `signals: Map<key, Signal>` and
 // `accessed: Set<key>`. After each computed run, keys not accessed are stopped and removed,
 // so signals tied to items that have left the list are cleaned up automatically.
-const keyedRegistries = new WeakMap();
+
 // Per-computed registry of keyed inner computeds. Same lifecycle as keyedRegistries.
 // Each entry has `computeds: Map<key, { fnSig: Signal, inner: Signal }>` and `accessed: Set<key>`.
 // fnSig holds the current fn closure; setting it triggers the inner computed to re-run with the
 // updated fn, which handles the case where the fn captures outer-scope variables that changed.
-const keyedComputedRegistries = new WeakMap();
+
 // Maps a keyed inner Signal (signal, computed, or transform created inside a computed
 // callback with a stable key) back to its owner outer computed. Signal.get() warns when
 // something outside the owner subscribes. The owner can stop the inner at any time when
 // its key isn't accessed during a re-run, so external references silently drop subscribers.
-const keyedScopeOwners = new WeakMap();
+
 // Deferred `computed-in-computed` / `transform-in-computed` warnings. An unkeyed nested
 // computed is only a problem when a *non-internal* subscriber attaches (a user effect or
 // user computed). Internal consumers (attribute-composition, class-list, and text/attr
 // binding effects) are safe because their run functions are torn down and rebuilt alongside
 // the inner. We stamp the created inner here and consult on subscribe: fire once if a
 // user subscriber attaches, silently drop if only internal subscribers ever read it.
-const pendingNestedWarning = new WeakMap();
 
 function rethrowAsync(err) {
   queueMicrotask(() => { throw err; });
@@ -122,14 +140,14 @@ function rethrowAsync(err) {
 // Node nextTick callbacks can starve the microtask queue, so either queue may advance
 // the marker. Each scheduled pair advances it only once.
 function scheduleMicrotaskTurnAdvance() {
-  if (microtaskTurnAdvanceScheduled) { return; }
-  microtaskTurnAdvanceScheduled = true;
+  if (state.microtaskTurnAdvanceScheduled) { return; }
+  state.microtaskTurnAdvanceScheduled = true;
   let advanced = false;
   const advance = () => {
     if (advanced) { return; }
     advanced = true;
-    microtaskTurn += 1;
-    microtaskTurnAdvanceScheduled = false;
+    state.microtaskTurn += 1;
+    state.microtaskTurnAdvanceScheduled = false;
   };
   queueMicrotask(advance);
   if (typeof globalThis.process?.nextTick === 'function') {
@@ -138,22 +156,22 @@ function scheduleMicrotaskTurnAdvance() {
 }
 
 function flush() {
-  if (inFlush || pending.size === 0) { return; }
-  if (!asyncTurnCountsResetScheduled) {
-    asyncTurnCountsResetScheduled = true;
-    setTimeout(() => { asyncTurnCounts.clear(); asyncTurnCountsResetScheduled = false; }, 0);
+  if (state.inFlush || state.pending.size === 0) { return; }
+  if (!state.asyncTurnCountsResetScheduled) {
+    state.asyncTurnCountsResetScheduled = true;
+    setTimeout(() => { state.asyncTurnCounts.clear(); state.asyncTurnCountsResetScheduled = false; }, 0);
   }
-  runCounts.clear();
-  inFlush = true;
+  state.runCounts.clear();
+  state.inFlush = true;
   try {
-    while (pending.size > 0) {
-      const runs = [...pending];
+    while (state.pending.size > 0) {
+      const runs = [...state.pending];
       for (const fn of runs) {
         // Keep later readers queued while earlier writers run. Their existing turn
         // already observes those writes; writes after their turn still enqueue them.
-        if (!pending.delete(fn)) { continue; }
-        const count = (runCounts.get(fn) ?? 0) + 1;
-        runCounts.set(fn, count);
+        if (!state.pending.delete(fn)) { continue; }
+        const count = (state.runCounts.get(fn) ?? 0) + 1;
+        state.runCounts.set(fn, count);
         if (count > MAX_EFFECT_LOOPS) {
           throttledError(
             'sync-loop',
@@ -163,11 +181,11 @@ function flush() {
           );
           continue;
         }
-        const previousTurn = asyncTurnCounts.get(fn);
+        const previousTurn = state.asyncTurnCounts.get(fn);
         let asyncTurnCount = previousTurn?.count ?? 0;
-        if (previousTurn?.turn !== microtaskTurn) {
+        if (previousTurn?.turn !== state.microtaskTurn) {
           asyncTurnCount++;
-          asyncTurnCounts.set(fn, { turn: microtaskTurn, count: asyncTurnCount });
+          state.asyncTurnCounts.set(fn, { turn: state.microtaskTurn, count: asyncTurnCount });
         }
         if (asyncTurnCount > MAX_ASYNC_EFFECT_TURNS) {
           throttledError(
@@ -186,47 +204,47 @@ function flush() {
       }
     }
   } finally {
-    inFlush = false;
+    state.inFlush = false;
     scheduleMicrotaskTurnAdvance();
   }
-  runCounts.clear();
+  state.runCounts.clear();
 }
 
 function scheduleRun(fn) {
-  pending.add(fn);
-  if (!scheduled && !inFlush) {
-    scheduled = true;
+  state.pending.add(fn);
+  if (!state.scheduled && !state.inFlush) {
+    state.scheduled = true;
     queueMicrotask(() => {
-      scheduled = false;
+      state.scheduled = false;
       flush();
     });
   }
 }
 
 function notifySubscribers(subscribers, value) {
-  notificationDepth++;
+  state.notificationDepth++;
   try {
     for (const fn of [...subscribers]) {
       if (fn._isEffect) {
         scheduleRun(fn);
       } else if (fn._coalesce) {
-        pendingComputeds.add(fn);
+        state.pendingComputeds.add(fn);
       } else {
         fn(value);
       }
     }
   } finally {
-    notificationDepth--;
-    if (notificationDepth === 0 && !drainingComputeds) {
-      drainingComputeds = true;
+    state.notificationDepth--;
+    if (state.notificationDepth === 0 && !state.drainingComputeds) {
+      state.drainingComputeds = true;
       try {
-        while (pendingComputeds.size > 0) {
-          const update = pendingComputeds.values().next().value;
-          pendingComputeds.delete(update);
+        while (state.pendingComputeds.size > 0) {
+          const update = state.pendingComputeds.values().next().value;
+          state.pendingComputeds.delete(update);
           update();
         }
       } finally {
-        drainingComputeds = false;
+        state.drainingComputeds = false;
       }
     }
   }
@@ -242,24 +260,24 @@ function notifySubscribers(subscribers, value) {
  */
 export function applyPendingReactiveUpdates() {
   _reactiveRuntime.check('applyPendingReactiveUpdates()');
-  if (isSSRMode() || currentEffect !== null || notificationDepth !== 0) { return; }
+  if (isSSRMode() || state.currentEffect !== null || state.notificationDepth !== 0) { return; }
   flush();
 }
 
 function wakeForRead(sig) {
-  if (pendingComputeds.size > 0) {
-    const update = computedUpdates.get(sig);
-    if (pendingComputeds.delete(update)) { update(); }
+  if (state.pendingComputeds.size > 0) {
+    const update = state.computedUpdates.get(sig);
+    if (state.pendingComputeds.delete(update)) { update(); }
   }
-  const wake = wakeFns.get(sig);
+  const wake = state.wakeFns.get(sig);
   if (wake !== undefined) {
-    suppressWakeNotify = true;
+    state.suppressWakeNotify = true;
     const woken = wake();
     if (woken) {
-      const sleep = sleepFns.get(sig);
+      const sleep = state.sleepFns.get(sig);
       if (sleep !== undefined) { sleep(); }
     }
-    suppressWakeNotify = false;
+    state.suppressWakeNotify = false;
   }
 }
 
@@ -271,8 +289,8 @@ export default class Signal {
     _reactiveRuntime.check('signal()');
     this.#value = initial;
     notifySignalCreate(this, initial);
-    if (!suppressReactiveCheck) {
-      if (inComputedFn) {
+    if (!state.suppressReactiveCheck) {
+      if (state.inComputedFn) {
         throttledWarn(
           'signal-in-computed',
           'kensington: signal() called inside a computed or transform callback without a key. ' +
@@ -281,7 +299,7 @@ export default class Signal {
           'but local signal state resets to the initial value. ' +
           'For best performance and to persist local state, pass a stable key as the second argument: signal(initial, key).',
         );
-      } else if (currentEffect !== null) {
+      } else if (state.currentEffect !== null) {
         throttledError(
           'signal-in-effect',
           'kensington: signal() called inside an effect callback. ' +
@@ -294,11 +312,11 @@ export default class Signal {
 
   get() {
     _reactiveRuntime.check('Signal.get()');
-    if (pendingComputeds.size > 0) {
-      const update = computedUpdates.get(this);
-      if (pendingComputeds.delete(update)) { update(); }
+    if (state.pendingComputeds.size > 0) {
+      const update = state.computedUpdates.get(this);
+      if (state.pendingComputeds.delete(update)) { update(); }
     }
-    if (currentEffect !== null && !this.#subscribers.has(currentEffect)) {
+    if (state.currentEffect !== null && !this.#subscribers.has(state.currentEffect)) {
       if (this.#subscribers.size === 0) {
         // Defer to the shared wakeup helper so we also fire _onFirstSubscriber.
         // The inline-only path used to wake computeds but skip the external
@@ -308,14 +326,14 @@ export default class Signal {
         // through #wakeIfSleeping; .get() must too.
         this.#wakeIfSleeping();
       }
-      this.#subscribers.add(currentEffect);
-      currentEffect._reads.add(this);
-      notifySignalEffectSubscription(this, currentEffect._devId, this.#subscribers.size);
+      this.#subscribers.add(state.currentEffect);
+      state.currentEffect._reads.add(this);
+      notifySignalEffectSubscription(this, state.currentEffect._devId, this.#subscribers.size);
       // Fire the deferred computed-in-computed / transform-in-computed warning only when a
       // non-internal subscriber attaches. Internal consumers (attribute, class, or text
       // bindings) tear down alongside the inner on outer re-run and don't leak identity.
-      if (!currentEffect._isInternal) {
-        const nestedKind = pendingNestedWarning.get(this);
+      if (!state.currentEffect._isInternal) {
+        const nestedKind = state.pendingNestedWarning.get(this);
         if (nestedKind !== undefined) {
           const isTransform = nestedKind === 'transform';
           const callName = isTransform ? '.transform()' : 'computed()';
@@ -327,19 +345,21 @@ export default class Signal {
             'subscribers are torn down. Pass a stable key as the second argument to reuse the same inner across re-runs: ' +
             `${keyedCall}.`,
           );
-          pendingNestedWarning.delete(this);
+          state.pendingNestedWarning.delete(this);
         }
       }
-      const ownerSig = keyedScopeOwners.get(this);
+      const ownerSig = state.keyedScopeOwners.get(this);
       // Sibling keyed primitives (created inside the same owner scope) read each other safely.
       // Their lifetime is tied to the same owner, so a drop affects both together. The warning
       // is for genuinely out-of-scope references held outside the owner's sweep.
-      const subscriberOwner = currentComputed === null ? undefined : keyedScopeOwners.get(currentComputed);
+      const subscriberOwner = state.currentComputed === null
+        ? undefined
+        : state.keyedScopeOwners.get(state.currentComputed);
       if (
         ownerSig !== undefined
-        && currentComputed !== ownerSig
+        && state.currentComputed !== ownerSig
         && subscriberOwner !== ownerSig
-        && !currentEffect._isInternal
+        && !state.currentEffect._isInternal
       ) {
         throttledWarn(
           'out-of-scope-reactive-reference',
@@ -349,8 +369,8 @@ export default class Signal {
           'Consume the value inline (call .get() on it, or pass it directly to a tag) instead of passing the instance out.',
         );
       }
-      currentEffect._cleanups.push(this);
-    } else if (currentEffect === null) {
+      state.currentEffect._cleanups.push(this);
+    } else if (state.currentEffect === null) {
       wakeForRead(this);
     }
     return this.#value;
@@ -369,7 +389,7 @@ export default class Signal {
   set(valueOrFn) {
     _reactiveRuntime.check('Signal.set()');
     // Blocks external writes to computed/transform signals; depth > 0 means we're inside an update().
-    if (derivedSignals.has(this) && derivedWriteDepth === 0) {
+    if (state.derivedSignals.has(this) && state.derivedWriteDepth === 0) {
       throw new Error('Cannot call .set() on a computed or derived signal. Use signal() for writable state.');
     }
     if (isSSRMode()) {
@@ -386,7 +406,7 @@ export default class Signal {
     if (Object.is(next, this.#value)) {
       return;
     }
-    if (currentEffect !== null && currentEffect._reads.has(this)) {
+    if (state.currentEffect !== null && state.currentEffect._reads.has(this)) {
       throttledError(
         'set-in-effect',
         'kensington: a signal was read via .get() and written via .set() in the same effect or computed run. ' +
@@ -394,7 +414,7 @@ export default class Signal {
         'Use .value instead of .get() if you need the current value without subscribing.',
       );
     }
-    if (inComputedFn && derivedWriteDepth === 0) {
+    if (state.inComputedFn && state.derivedWriteDepth === 0) {
       throttledError(
         'set-in-computed',
         'kensington: .set() called inside a computed function. ' +
@@ -426,10 +446,10 @@ export default class Signal {
   }
 
   stop() {
-    const fn = stopFns.get(this);
+    const fn = state.stopFns.get(this);
     if (fn !== undefined) {
       fn();
-      stopFns.delete(this);
+      state.stopFns.delete(this);
     }
     this.#subscribers.clear();
     notifySignalStop(this);
@@ -467,7 +487,7 @@ export default class Signal {
   // the same flush should be able to cancel the sleep before it runs, so we queue it as a
   // microtask and a re-subscribe in `get()` removes the pending entry before this fires.
   #sleepOrNotify() {
-    const sleep = sleepFns.get(this);
+    const sleep = state.sleepFns.get(this);
     if (sleep === undefined) {
       notifySignalZeroSubscribers(this);
       if (typeof this._onZeroSubscribers === 'function') { this._onZeroSubscribers(); }
@@ -475,14 +495,14 @@ export default class Signal {
     }
     // A synchronous downstream computed can also release and reacquire a list during
     // notification. Keep its owned rows awake through that transient unsubscribe.
-    if (!inFlush && !(notificationDepth !== 0 && computedLifecycle.has(this))) {
+    if (!state.inFlush && !(state.notificationDepth !== 0 && state.computedLifecycle.has(this))) {
       sleep();
       if (typeof this._onZeroSubscribers === 'function') { this._onZeroSubscribers(); }
       return;
     }
-    pendingSleep.add(this);
+    state.pendingSleep.add(this);
     queueMicrotask(() => {
-      if (!pendingSleep.delete(this)) { return; }
+      if (!state.pendingSleep.delete(this)) { return; }
       sleep();
       if (typeof this._onZeroSubscribers === 'function') { this._onZeroSubscribers(); }
     });
@@ -497,9 +517,9 @@ export default class Signal {
   // alongside the internal computed-sleep machinery; either, both, or
   // neither may be set.
   #wakeIfSleeping() {
-    const wasPending = pendingSleep.delete(this);
+    const wasPending = state.pendingSleep.delete(this);
     if (wasPending) { return; }
-    const wake = wakeFns.get(this);
+    const wake = state.wakeFns.get(this);
     if (wake !== undefined) { wake(); }
     if (typeof this._onFirstSubscriber === 'function') { this._onFirstSubscriber(); }
   }
@@ -517,12 +537,12 @@ function track(run, fn) {
   }
   run._cleanups = [];
   run._reads = new Set();
-  const prev = currentEffect;
-  currentEffect = run;
+  const prev = state.currentEffect;
+  state.currentEffect = run;
   try {
     return _reactiveRuntime.run(run._validation, fn);
   } finally {
-    currentEffect = prev;
+    state.currentEffect = prev;
   }
 }
 
@@ -549,7 +569,7 @@ function createEffect(fn, isInternal = false) {
   // internal so Signal.get() skips the out-of-scope-reactive-reference
   // warning — the subscriber dies with the element, not with any outer
   // computed, so the usual leak concern does not apply.
-  if (!isInternal && insideConnectedCallbackDepth > 0) {
+  if (!isInternal && state.insideConnectedCallbackDepth > 0) {
     isInternal = true;
   }
   let paused = false;
@@ -568,7 +588,7 @@ function createEffect(fn, isInternal = false) {
   run._isInternal = isInternal;
   run._devId = _devId;
   function unsubscribe() {
-    pending.delete(run);
+    state.pending.delete(run);
     const cleanups = run._cleanups;
     for (let i = 0; i < cleanups.length; i++) {
       cleanups[i]._unsubscribeFromRun(run);
@@ -610,22 +630,22 @@ function createEffect(fn, isInternal = false) {
 }
 
 export function effect(fn) {
-  if (mapWithKeyInnerDepth > 0) {
+  if (state.mapWithKeyInnerDepth > 0) {
     throttledError(
       'effect-in-computed',
       'kensington: effect() called inside a mapWithKey mapFn (a computed-like callback). ' +
       'A new effect is started on every re-run and the previous one is never stopped. ' +
       'Create effects outside the mapFn.',
     );
-  } else if (!suppressReactiveCheck) {
-    if (inComputedFn) {
+  } else if (!state.suppressReactiveCheck) {
+    if (state.inComputedFn) {
       throttledError(
         'effect-in-computed',
         'kensington: effect() called inside a computed or transform callback. ' +
         'A new effect is started on every re-run and the previous one is never stopped. ' +
         'Create effects outside the reactive callback.',
       );
-    } else if (currentEffect !== null) {
+    } else if (state.currentEffect !== null) {
       throttledError(
         'effect-in-effect',
         'kensington: effect() called inside an effect callback. ' +
@@ -677,7 +697,7 @@ export function _bindingEffect(sig, fn) {
   function unsubscribe() {
     if (paused) { return; }
     paused = true;
-    pending.delete(run);
+    state.pending.delete(run);
     sig._bindingUnsubscribe(run);
   }
   sig._bindingSubscribe(run);
@@ -736,12 +756,12 @@ export function computed(fn, key) {
   _reactiveRuntime.check('computed()');
   // Keyed path: inside an outer computed with a stable key → reuse the same inner computed
   // across outer re-runs, updating the fn closure each time so captured variables stay fresh.
-  if (key !== undefined && currentComputed !== null) {
-    const owner = currentComputed;
-    let computedReg = keyedComputedRegistries.get(owner);
+  if (key !== undefined && state.currentComputed !== null) {
+    const owner = state.currentComputed;
+    let computedReg = state.keyedComputedRegistries.get(owner);
     if (computedReg === undefined) {
       computedReg = { computeds: new Map(), accessed: new Set() };
-      keyedComputedRegistries.set(owner, computedReg);
+      state.keyedComputedRegistries.set(owner, computedReg);
     }
     if (computedReg.accessed.has(key)) {
       throttledError(
@@ -759,11 +779,11 @@ export function computed(fn, key) {
       // counter. Avoids the issue where Signal.set() treats function arguments as updaters.
       if (existing.fnWrapper.fn !== fn) {
         existing.fnWrapper.fn = fn;
-        derivedWriteDepth++;
+        state.derivedWriteDepth++;
         try {
           existing.versionSig.set(v => v + 1);
         } finally {
-          derivedWriteDepth--;
+          state.derivedWriteDepth--;
         }
       }
       return existing.inner;
@@ -772,17 +792,17 @@ export function computed(fn, key) {
     // then create an inner computed that calls fnWrapper.fn() and re-runs when the version
     // increments. Temporarily clear all reactive context so the recursive computed() call
     // below does not trigger warnings and does not enter the keyed path.
-    const prevSuppress1 = suppressReactiveCheck;
-    suppressReactiveCheck = true;
+    const prevSuppress1 = state.suppressReactiveCheck;
+    state.suppressReactiveCheck = true;
     const versionSig = new Signal(0);
-    suppressReactiveCheck = prevSuppress1;
+    state.suppressReactiveCheck = prevSuppress1;
     const fnWrapper = { fn };
-    const prevInComputedFn = inComputedFn;
-    const prevCurrentComputed = currentComputed;
-    const prevCurrentEffect = currentEffect;
-    inComputedFn = false;
-    currentComputed = null;
-    currentEffect = null;
+    const prevInComputedFn = state.inComputedFn;
+    const prevCurrentComputed = state.currentComputed;
+    const prevCurrentEffect = state.currentEffect;
+    state.inComputedFn = false;
+    state.currentComputed = null;
+    state.currentEffect = null;
     let inner;
     try {
       // Register the inner's owner inside the first call to fnWrapper.fn() so signal reads
@@ -790,18 +810,18 @@ export function computed(fn, key) {
       // (same owner). Without this, the very first run leaks an `out-of-scope-reactive-reference`
       // warning before the outer `keyedScopeOwners.set(inner, owner)` below has fired.
       inner = computed(() => {
-        if (currentComputed !== null && !keyedScopeOwners.has(currentComputed)) {
-          keyedScopeOwners.set(currentComputed, owner);
+        if (state.currentComputed !== null && !state.keyedScopeOwners.has(state.currentComputed)) {
+          state.keyedScopeOwners.set(state.currentComputed, owner);
         }
         versionSig.get();
         return fnWrapper.fn();
       });
     } finally {
-      inComputedFn = prevInComputedFn;
-      currentComputed = prevCurrentComputed;
-      currentEffect = prevCurrentEffect;
+      state.inComputedFn = prevInComputedFn;
+      state.currentComputed = prevCurrentComputed;
+      state.currentEffect = prevCurrentEffect;
     }
-    keyedScopeOwners.set(inner, owner);
+    state.keyedScopeOwners.set(inner, owner);
     computedReg.computeds.set(key, { versionSig, fnWrapper, inner });
     notifySignalMarkKeyed(inner, key);
     return inner;
@@ -814,7 +834,7 @@ export function computed(fn, key) {
   // register a subscription either.
   if (isSSRMode()) {
     const s = new Signal(fn());
-    derivedSignals.add(s);
+    state.derivedSignals.add(s);
     notifySignalMarkComputed(s);
     return s;
   }
@@ -822,10 +842,10 @@ export function computed(fn, key) {
   // see who actually subscribes. Only fire when a non-internal subscriber attaches; internal
   // consumers (attribute/class/text bindings) are safe.
   let deferredNestedKind = null;
-  if (!suppressReactiveCheck) {
-    if (inComputedFn) {
-      deferredNestedKind = computedCallSite === 'transform' ? 'transform' : 'computed';
-    } else if (currentEffect !== null) {
+  if (!state.suppressReactiveCheck) {
+    if (state.inComputedFn) {
+      deferredNestedKind = state.computedCallSite === 'transform' ? 'transform' : 'computed';
+    } else if (state.currentEffect !== null) {
       throttledError(
         'computed-in-effect',
         'kensington: computed() called inside an effect callback. ' +
@@ -834,11 +854,11 @@ export function computed(fn, key) {
       );
     }
   }
-  const prevSuppress = suppressReactiveCheck;
-  suppressReactiveCheck = true;
+  const prevSuppress = state.suppressReactiveCheck;
+  state.suppressReactiveCheck = true;
   const s = new Signal(undefined);
-  suppressReactiveCheck = prevSuppress;
-  if (deferredNestedKind !== null) { pendingNestedWarning.set(s, deferredNestedKind); }
+  state.suppressReactiveCheck = prevSuppress;
+  if (deferredNestedKind !== null) { state.pendingNestedWarning.set(s, deferredNestedKind); }
   notifySignalMarkComputed(s);
   // Tracks the last successfully computed value so notifySignalWake can restore it.
   // Without this, a wake where s.set(result) is a no-op (Object.is match) would leave
@@ -847,15 +867,15 @@ export function computed(fn, key) {
   function update() {
     track(update, () => {
       let result;
-      const prevInComputedFn = inComputedFn;
-      const prevComputed = currentComputed;
-      inComputedFn = true;
-      currentComputed = s;
+      const prevInComputedFn = state.inComputedFn;
+      const prevComputed = state.currentComputed;
+      state.inComputedFn = true;
+      state.currentComputed = s;
       // Reset accessed-key tracking for this run. Any registry entry whose key isn't
       // accessed during this run is swept after the run completes.
-      const registry = keyedRegistries.get(s);
+      const registry = state.keyedRegistries.get(s);
       if (registry !== undefined) { registry.accessed.clear(); }
-      const computedReg = keyedComputedRegistries.get(s);
+      const computedReg = state.keyedComputedRegistries.get(s);
       if (computedReg !== undefined) { computedReg.accessed.clear(); }
       try {
         result = fn();
@@ -863,8 +883,8 @@ export function computed(fn, key) {
         rethrowAsync(err);
         return;
       } finally {
-        inComputedFn = prevInComputedFn;
-        currentComputed = prevComputed;
+        state.inComputedFn = prevInComputedFn;
+        state.currentComputed = prevComputed;
       }
       // Sweep keyed signals that weren't touched this run. Their owning item left the list
       // (or was renamed); stop the signal and drop it from the registry so it can be GC'd.
@@ -887,61 +907,61 @@ export function computed(fn, key) {
         }
       }
       lastResult = result;
-      derivedWriteDepth++;
+      state.derivedWriteDepth++;
       try {
         s.set(result);
       } catch (err) {
         rethrowAsync(err);
       } finally {
-        derivedWriteDepth--;
+        state.derivedWriteDepth--;
       }
     });
   }
   update._cleanups = [];
-  computedUpdates.set(s, update);
+  state.computedUpdates.set(s, update);
   update._validation = _reactiveRuntime.capture();
-  if (nextComputedInternal) {
+  if (state.nextComputedInternal) {
     update._isInternal = true;
-    nextComputedInternal = false;
+    state.nextComputedInternal = false;
   }
   update();
   // sleeping is false initially: the computed is active (subscribed to sources) even though
   // it has no subscribers yet. It becomes true only after losing its last subscriber, at
   // which point sources are unsubscribed and the value is frozen until a new subscriber wakes it.
   let sleeping = false;
-  sleepFns.set(s, () => {
+  state.sleepFns.set(s, () => {
     if (sleeping) { return; }
     sleeping = true;
-    pendingComputeds.delete(update);
+    state.pendingComputeds.delete(update);
     // Suppress during transient wakeForRead reads (.toJSON(), .value, .get() outside reactive
     // context) so serializing a value that contains sleeping computed signals does not emit
     // spurious computed:stop events and trigger unnecessary devtools re-renders.
-    if (!suppressWakeNotify) { notifySignalStop(s); }
+    if (!state.suppressWakeNotify) { notifySignalStop(s); }
     const cleanups = update._cleanups;
     for (let i = 0; i < cleanups.length; i++) {
       cleanups[i]._unsubscribeFromRun(update);
     }
     update._cleanups = [];
-    computedLifecycle.get(s)?.sleep?.();
+    state.computedLifecycle.get(s)?.sleep?.();
   });
-  wakeFns.set(s, () => {
+  state.wakeFns.set(s, () => {
     if (!sleeping) { return false; }
     sleeping = false;
     // Re-add to devtools before update() so notifySignalSet can find the entry.
     // suppressWakeNotify is true when called from wakeForRead (transient read for toJSON/.value),
     // so those reads stay silent and don't produce temporary devtools entries.
-    if (!suppressWakeNotify) { notifySignalWake(s, lastResult); }
+    if (!state.suppressWakeNotify) { notifySignalWake(s, lastResult); }
     update();
     return true;
   });
-  stopFns.set(s, () => {
-    pendingComputeds.delete(update);
-    computedUpdates.delete(s);
-    computedLifecycle.get(s)?.stop?.();
-    computedLifecycle.delete(s);
-    pendingSleep.delete(s);
-    sleepFns.delete(s);
-    wakeFns.delete(s);
+  state.stopFns.set(s, () => {
+    state.pendingComputeds.delete(update);
+    state.computedUpdates.delete(s);
+    state.computedLifecycle.get(s)?.stop?.();
+    state.computedLifecycle.delete(s);
+    state.pendingSleep.delete(s);
+    state.sleepFns.delete(s);
+    state.wakeFns.delete(s);
     const cleanups = update._cleanups;
     for (let i = 0; i < cleanups.length; i++) {
       cleanups[i]._unsubscribeFromRun(update);
@@ -949,24 +969,24 @@ export function computed(fn, key) {
     update._cleanups = [];
     // Stop any keyed signals that this computed owned, so their subscribers are cleared
     // and devtools entries are removed.
-    const registry = keyedRegistries.get(s);
+    const registry = state.keyedRegistries.get(s);
     if (registry !== undefined) {
       for (const sig of registry.signals.values()) {
         sig.stop();
       }
-      keyedRegistries.delete(s);
+      state.keyedRegistries.delete(s);
     }
     // Stop any keyed inner computeds that this computed owned.
-    const computedReg = keyedComputedRegistries.get(s);
+    const computedReg = state.keyedComputedRegistries.get(s);
     if (computedReg !== undefined) {
       for (const { inner, versionSig } of computedReg.computeds.values()) {
         inner.stop();
         versionSig.stop();
       }
-      keyedComputedRegistries.delete(s);
+      state.keyedComputedRegistries.delete(s);
     }
   });
-  derivedSignals.add(s);
+  state.derivedSignals.add(s);
   return s;
 }
 
@@ -993,27 +1013,27 @@ export function computed(fn, key) {
  */
 export function signal(initial, key) {
   const hydrationScope = getCurrentHydrationScope();
-  if (key !== undefined && currentComputed === null && hydrationScope !== null) {
+  if (key !== undefined && state.currentComputed === null && hydrationScope !== null) {
     const scope = hydrationScope;
     const existing = scope.signals.get(key);
     if (existing !== undefined) {
       warnKeyedInitialMismatch(key, scope.initials.get(key), initial);
       return existing;
     }
-    const prevSuppress = suppressReactiveCheck;
-    suppressReactiveCheck = true;
+    const prevSuppress = state.suppressReactiveCheck;
+    state.suppressReactiveCheck = true;
     const sig = new Signal(initial);
-    suppressReactiveCheck = prevSuppress;
+    state.suppressReactiveCheck = prevSuppress;
     scope.signals.set(key, sig);
     scope.initials.set(key, initial);
     return sig;
   }
-  if (key !== undefined && currentComputed !== null) {
-    const owner = currentComputed;
-    let registry = keyedRegistries.get(owner);
+  if (key !== undefined && state.currentComputed !== null) {
+    const owner = state.currentComputed;
+    let registry = state.keyedRegistries.get(owner);
     if (registry === undefined) {
       registry = { signals: new Map(), accessed: new Set(), initials: new Map() };
-      keyedRegistries.set(owner, registry);
+      state.keyedRegistries.set(owner, registry);
     }
     if (registry.accessed.has(key)) {
       throttledError(
@@ -1031,12 +1051,12 @@ export function signal(initial, key) {
     }
     // Suppress the signal-in-computed warning. Keyed signals are the intended pattern;
     // a warning would fire on every fresh key (every item added to a list).
-    const prevSuppress = suppressReactiveCheck;
-    suppressReactiveCheck = true;
+    const prevSuppress = state.suppressReactiveCheck;
+    state.suppressReactiveCheck = true;
     const sig = new Signal(initial);
-    suppressReactiveCheck = prevSuppress;
+    state.suppressReactiveCheck = prevSuppress;
     notifySignalMarkKeyed(sig, key);
-    keyedScopeOwners.set(sig, owner);
+    state.keyedScopeOwners.set(sig, owner);
     registry.signals.set(key, sig);
     registry.initials.set(key, initial);
     return sig;
@@ -1052,12 +1072,12 @@ export function signal(initial, key) {
 // a keyed transform returns the same inner instance across outer re-runs. Same lifecycle as
 // `computed(fn, key)`. Outside a computed the key is ignored.
 Signal.prototype.transform = function transform(fn, key) {
-  const prev = computedCallSite;
-  computedCallSite = 'transform';
+  const prev = state.computedCallSite;
+  state.computedCallSite = 'transform';
   try {
     return computed(() => fn(this.get()), key);
   } finally {
-    computedCallSite = prev;
+    state.computedCallSite = prev;
   }
 };
 
@@ -1066,33 +1086,33 @@ Signal.prototype.transform = function transform(fn, key) {
 // (meant for user mistakes) does not fire when the library itself is intentionally creating
 // an inner computed (e.g. mapWithKey's per-key reactive path).
 export function _internalComputed(fn, options) {
-  const prevInComputedFn = inComputedFn;
-  const prevCurrentEffect = currentEffect;
-  inComputedFn = false;
-  currentEffect = null;
-  nextComputedInternal = true;
+  const prevInComputedFn = state.inComputedFn;
+  const prevCurrentEffect = state.currentEffect;
+  state.inComputedFn = false;
+  state.currentEffect = null;
+  state.nextComputedInternal = true;
   try {
     const result = computed(fn);
     if (options !== undefined && !isSSRMode()) {
-      computedUpdates.get(result)._coalesce = options.coalesce === true;
-      computedLifecycle.set(result, options);
+      state.computedUpdates.get(result)._coalesce = options.coalesce === true;
+      state.computedLifecycle.set(result, options);
     }
     return result;
   } finally {
-    inComputedFn = prevInComputedFn;
-    currentEffect = prevCurrentEffect;
+    state.inComputedFn = prevInComputedFn;
+    state.currentEffect = prevCurrentEffect;
     // computed(fn) consumed the flag; clear it on the throw path too.
-    nextComputedInternal = false;
+    state.nextComputedInternal = false;
   }
 }
 
 export function _isInReactiveContext() {
-  return inComputedFn || currentEffect !== null;
+  return state.inComputedFn || state.currentEffect !== null;
 }
 
-export function _enterMapWithKeyInner() { mapWithKeyInnerDepth++; }
-export function _exitMapWithKeyInner() { mapWithKeyInnerDepth--; }
-export function _isInMapWithKeyInner() { return mapWithKeyInnerDepth > 0; }
+export function _enterMapWithKeyInner() { state.mapWithKeyInnerDepth++; }
+export function _exitMapWithKeyInner() { state.mapWithKeyInnerDepth--; }
+export function _isInMapWithKeyInner() { return state.mapWithKeyInnerDepth > 0; }
 
 Signal.prototype.mapWithKey = mapWithKey;
 

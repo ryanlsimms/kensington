@@ -9,6 +9,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 - MathML `a` tag.
 
+### Changed
+- Browser distribution is back to being self-contained.
+
 ### Fixed
 - Keyed-list reconciliation now preserves row order after certain reorders and inserts.
 

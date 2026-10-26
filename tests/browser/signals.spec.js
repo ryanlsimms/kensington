@@ -1638,6 +1638,89 @@ test('signal prop on a keyed element stays reactive across reconcile cycles', as
 
 // ─── addConnectedCallback / addDisconnectedCallback ──────────────────────────
 
+test('source ESM and dist share DOM lifecycle tracking', async ({ page, bundle }) => {
+  test.skip(bundle === '/esm/index.js', 'source ESM and bundle are the same entry');
+  const result = await page.evaluate(async src => {
+    const NativeMutationObserver = window.MutationObserver;
+    let observerCount = 0;
+    window.MutationObserver = class extends NativeMutationObserver {
+      constructor(callback) {
+        super(callback);
+        observerCount++;
+      }
+    };
+
+    try {
+      const source = await import('/esm/index.js');
+      const dist = await import(src);
+      const disconnected = [];
+
+      function lifecycleTag(api, id) {
+        let resolveConnected;
+        let resolveDisconnected;
+        const connected = new Promise(resolve => { resolveConnected = resolve; });
+        const removed = new Promise(resolve => { resolveDisconnected = resolve; });
+        const tag = api.t.div({ id });
+        tag.addConnectedCallback(() => { resolveConnected(); });
+        tag.addDisconnectedCallback(() => {
+          disconnected.push(id);
+          resolveDisconnected();
+        });
+        return { tag, connected, removed };
+      }
+
+      // The source copy creates the observer first. The dist copy must register its
+      // element in the same tracker so that observer can run its disconnect callback.
+      const sourceLifecycle = lifecycleTag(source, 'source-lifecycle');
+      const sourceElement = sourceLifecycle.tag.toElement();
+      document.body.append(sourceElement);
+      await sourceLifecycle.connected;
+
+      const distLifecycle = lifecycleTag(dist, 'dist-lifecycle');
+      const distElement = distLifecycle.tag.toElement();
+      document.body.append(distElement);
+      await distLifecycle.connected;
+
+      sourceElement.remove();
+      distElement.remove();
+      await Promise.all([sourceLifecycle.removed, distLifecycle.removed]);
+      return { observerCount, disconnected };
+    } finally {
+      window.MutationObserver = NativeMutationObserver;
+    }
+  }, bundle);
+
+  expect(result.observerCount).toBe(1);
+  expect(result.disconnected.sort()).toEqual(['dist-lifecycle', 'source-lifecycle']);
+});
+
+test('dist keyed rendering interoperates with source ESM signals', async ({ page, bundle }) => {
+  test.skip(bundle === '/esm/index.js', 'source ESM and bundle are the same entry');
+  const result = await page.evaluate(async src => {
+    const source = await import('/esm/index.js');
+    const dist = await import(src);
+    const items = source.signal(['A', 'B', 'C', 'D', 'E'].map(id => ({ id })));
+    const rows = items.mapWithKey('id', item => dist.t.li({ 'data-id': item.id }, item.id));
+    const list = dist.t.ul(rows).toElement();
+    document.body.append(list);
+    const originalNodes = new Map(
+      [...list.querySelectorAll('li')].map(node => [node.dataset.id, node]),
+    );
+
+    items.set(['C', 'B', 'E', 'D', 'A'].map(id => ({ id })));
+    source.applyPendingReactiveUpdates();
+
+    const nextNodes = [...list.querySelectorAll('li')];
+    return {
+      order: nextNodes.map(node => node.textContent).join(''),
+      sameNodes: nextNodes.every(node => originalNodes.get(node.dataset.id) === node),
+    };
+  }, bundle);
+
+  expect(result.order).toBe('CBEDA');
+  expect(result.sameNodes).toBe(true);
+});
+
 test('addConnectedCallback fires when element is appended to the DOM', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
     const { t } = await import(src);

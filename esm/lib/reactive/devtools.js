@@ -1,44 +1,42 @@
-let enabled = false;
-let hook = null;
-let nextIsBinding = false;
-let nextBindingLabel = '';
+import { getSharedReactiveState } from './shared-state.js';
+const state = getSharedReactiveState('devtools', () => ({
+  enabled: false,
+  hook: null,
+  nextIsBinding: false,
+  nextBindingLabel: '',
+  signalIds: new WeakMap(),
+  computedSigs: new WeakSet(),
+  computedIds: new Set(),
+  idCounter: 0,
+  pendingZeroSubscribers: new Set(),
+  signalGcRegistry: typeof FinalizationRegistry === 'undefined'
+    ? { register() {}, unregister() {} }
+    : new FinalizationRegistry(id => {
+      if (!state.hook) { return; }
+      state.hook.signals.delete(id);
+      state.hook._emit('update', { type: 'signal:stop', id, isComputed: state.computedIds.has(id) });
+      state.computedIds.delete(id);
+    }),
+}));
 
-const signalIds = new WeakMap();
 // Signals created via computed(). Used to restore isComputed: true when a sleeping computed wakes.
-const computedSigs = new WeakSet();
+
 // Tracks IDs of computed signals for event payloads where only the ID is available (GC callbacks).
-const computedIds = new Set();
-let idCounter = 0;
+
 // IDs of plain signals that have reached zero subscribers; removed from devtools on the next
 // microtask unless the signal re-subscribes first (e.g. during drag-reorder pause/resume).
-const pendingZeroSubscribers = new Set();
 
 // Automatically remove devtools entries for signals that are garbage-collected without
-// an explicit .stop() call. Covers embedded signals (e.g. task.done) that become
-// unreachable when the containing data structure is updated.
-// FinalizationRegistry is not available in all JS runtimes (notably Cloudflare Workers
-// without an opt-in compatibility flag, and some restricted embeddings). When the
-// constructor is missing, we fall back to a stub. The downside is that long-running
-// devtools-enabled sessions might accumulate orphaned signal entries for signals that
-// were GC'd without an explicit .stop(). Acceptable. Devtools is a browser-only feature
-// and the user can refresh.
-const signalGcRegistry = typeof FinalizationRegistry === 'undefined'
-  ? { register() {}, unregister() {} }
-  : new FinalizationRegistry(id => {
-    if (!hook) { return; }
-    hook.signals.delete(id);
-    hook._emit('update', { type: 'signal:stop', id, isComputed: computedIds.has(id) });
-    computedIds.delete(id);
-  });
+// an explicit .stop() call. The cleanup callback lives in the shared runtime state.
 
 export function enableDevtools() {
-  if (enabled) { return; }
+  if (state.enabled) { return; }
   if (typeof window === 'undefined') {
     console.warn('kensington: enableDevtools() has no effect on the server. Call it in browser-only code.');
     return;
   }
-  enabled = true;
-  hook = {
+  state.enabled = true;
+  state.hook = {
     signals: new Map(),
     effects: new Map(),
     bindings: new Map(),
@@ -68,7 +66,7 @@ export function enableDevtools() {
     },
   };
   if (typeof window !== 'undefined') {
-    window.__KENSINGTON_DEVTOOLS__ = hook;
+    window.__KENSINGTON_DEVTOOLS__ = state.hook;
   }
   if (typeof BroadcastChannel !== 'undefined') {
     const ch = new BroadcastChannel('kensington-devtools');
@@ -78,10 +76,10 @@ export function enableDevtools() {
 }
 
 export function notifySignalCreate(sig, value) {
-  if (!enabled) { return; }
-  const id = ++idCounter;
-  signalIds.set(sig, id);
-  hook.signals.set(id, {
+  if (!state.enabled) { return; }
+  const id = ++state.idCounter;
+  state.signalIds.set(sig, id);
+  state.hook.signals.set(id, {
     id,
     value,
     subscriberCount: 0,
@@ -93,28 +91,28 @@ export function notifySignalCreate(sig, value) {
     // devtools is disabled. The early `if (!enabled)` return above skips this path.
     setter: v => { sig.set(v); },
   });
-  signalGcRegistry.register(sig, id);
-  hook._emit('update', { type: 'signal:create', id, isComputed: false });
+  state.signalGcRegistry.register(sig, id);
+  state.hook._emit('update', { type: 'signal:create', id, isComputed: false });
 }
 
 export function notifySignalSet(sig, value, subscriberCount) {
-  if (!enabled) { return; }
-  const id = signalIds.get(sig);
+  if (!state.enabled) { return; }
+  const id = state.signalIds.get(sig);
   if (id === undefined) { return; }
-  const meta = hook.signals.get(id);
+  const meta = state.hook.signals.get(id);
   if (meta === undefined) { return; }
   meta.value = value;
   meta.subscriberCount = subscriberCount;
   meta.setCount++;
-  hook._emit('update', { type: 'signal:set', id, isComputed: computedIds.has(id) });
+  state.hook._emit('update', { type: 'signal:set', id, isComputed: state.computedIds.has(id) });
 }
 
 // Re-adds a sleeping computed to the signals map using its original ID so it reappears
 // in devtools after being woken by a new subscriber. The value is repopulated by the
 // notifySignalSet call that follows immediately from the rerun of update().
 export function notifySignalWake(sig, frozenValue) {
-  if (!enabled) { return; }
-  const id = signalIds.get(sig);
+  if (!state.enabled) { return; }
+  const id = state.signalIds.get(sig);
   if (id === undefined) { return; }
   const meta = {
     id,
@@ -122,45 +120,45 @@ export function notifySignalWake(sig, frozenValue) {
     subscriberCount: 0,
     setCount: 0,
     effectIds: new Set(),
-    isComputed: computedSigs.has(sig),
+    isComputed: state.computedSigs.has(sig),
     setter: null,
   };
-  hook.signals.set(id, meta);
-  hook._emit('update', { type: 'signal:wake', id, isComputed: true });
+  state.hook.signals.set(id, meta);
+  state.hook._emit('update', { type: 'signal:wake', id, isComputed: true });
 }
 
 export function notifySignalMarkKeyed(sig, key) {
-  if (!enabled) { return; }
-  const id = signalIds.get(sig);
+  if (!state.enabled) { return; }
+  const id = state.signalIds.get(sig);
   if (id === undefined) { return; }
-  const meta = hook.signals.get(id);
+  const meta = state.hook.signals.get(id);
   if (meta !== undefined) { meta.key = key; }
-  hook._emit('update', { type: 'signal:mark-keyed', id, key });
+  state.hook._emit('update', { type: 'signal:mark-keyed', id, key });
 }
 
 export function notifySignalMarkComputed(sig) {
-  if (!enabled) { return; }
-  computedSigs.add(sig);
-  const id = signalIds.get(sig);
+  if (!state.enabled) { return; }
+  state.computedSigs.add(sig);
+  const id = state.signalIds.get(sig);
   if (id === undefined) { return; }
-  computedIds.add(id);
-  const meta = hook.signals.get(id);
+  state.computedIds.add(id);
+  const meta = state.hook.signals.get(id);
   if (meta !== undefined) { meta.isComputed = true; }
 }
 
 function getEffectMeta(id) {
-  return hook.effects.get(id) ?? hook.bindings.get(id);
+  return state.hook.effects.get(id) ?? state.hook.bindings.get(id);
 }
 
 export function notifySignalEffectSubscription(sig, effectId, subscriberCount) {
-  if (!enabled) { return; }
-  const id = signalIds.get(sig);
+  if (!state.enabled) { return; }
+  const id = state.signalIds.get(sig);
   if (id === undefined) { return; }
-  const meta = hook.signals.get(id);
+  const meta = state.hook.signals.get(id);
   if (meta === undefined) { return; }
   // Always cancel pending removal. Computed intermediate subscribers (effectId undefined)
   // must still keep the source signal alive in devtools.
-  pendingZeroSubscribers.delete(id);
+  state.pendingZeroSubscribers.delete(id);
   meta.subscriberCount = subscriberCount;
   if (effectId) {
     meta.effectIds.add(effectId);
@@ -170,23 +168,23 @@ export function notifySignalEffectSubscription(sig, effectId, subscriberCount) {
 }
 
 export function notifySignalZeroSubscribers(sig) {
-  if (!enabled) { return; }
-  const id = signalIds.get(sig);
+  if (!state.enabled) { return; }
+  const id = state.signalIds.get(sig);
   if (id === undefined) { return; }
-  if (hook.signals.get(id) === undefined) { return; }
-  pendingZeroSubscribers.add(id);
+  if (state.hook.signals.get(id) === undefined) { return; }
+  state.pendingZeroSubscribers.add(id);
   queueMicrotask(() => {
-    if (!pendingZeroSubscribers.delete(id)) { return; }
-    hook.signals.delete(id);
-    hook._emit('update', { type: 'signal:stop', id, isComputed: false });
+    if (!state.pendingZeroSubscribers.delete(id)) { return; }
+    state.hook.signals.delete(id);
+    state.hook._emit('update', { type: 'signal:stop', id, isComputed: false });
   });
 }
 
 export function notifySignalEffectUnsubscription(sig, effectId, subscriberCount) {
-  if (!enabled) { return; }
-  const id = signalIds.get(sig);
+  if (!state.enabled) { return; }
+  const id = state.signalIds.get(sig);
   if (id === undefined) { return; }
-  const meta = hook.signals.get(id);
+  const meta = state.hook.signals.get(id);
   if (meta === undefined) { return; }
   meta.subscriberCount = subscriberCount;
   if (effectId) {
@@ -197,87 +195,87 @@ export function notifySignalEffectUnsubscription(sig, effectId, subscriberCount)
 }
 
 export function notifySignalStop(sig) {
-  if (!enabled) { return; }
-  const id = signalIds.get(sig);
+  if (!state.enabled) { return; }
+  const id = state.signalIds.get(sig);
   if (id === undefined) { return; }
-  hook.signals.delete(id);
-  hook._emit('update', { type: 'signal:stop', id, isComputed: computedSigs.has(sig) });
-  computedIds.delete(id);
+  state.hook.signals.delete(id);
+  state.hook._emit('update', { type: 'signal:stop', id, isComputed: state.computedSigs.has(sig) });
+  state.computedIds.delete(id);
 }
 
 export function notifyEffectElement(effectId, element) {
-  if (!enabled || effectId === 0) { return; }
+  if (!state.enabled || effectId === 0) { return; }
   const meta = getEffectMeta(effectId);
   if (meta === undefined) { return; }
   meta.elementRef = new WeakRef(element);
 }
 
 export function markNextEffectAsBinding(label) {
-  if (!enabled) { return; }
-  nextIsBinding = true;
-  nextBindingLabel = label ?? '';
+  if (!state.enabled) { return; }
+  state.nextIsBinding = true;
+  state.nextBindingLabel = label ?? '';
 }
 
 export function notifyEffectCreate(fn) {
-  if (!enabled) { return 0; }
-  const isBinding = nextIsBinding;
-  nextIsBinding = false;
-  const label = nextBindingLabel;
-  nextBindingLabel = '';
-  const id = ++idCounter;
+  if (!state.enabled) { return 0; }
+  const isBinding = state.nextIsBinding;
+  state.nextIsBinding = false;
+  const label = state.nextBindingLabel;
+  state.nextBindingLabel = '';
+  const id = ++state.idCounter;
   const src = fn ? fn.toString() : '';
   const meta = { id, state: 'active', runCount: 0, elementRef: null, src, label, depIds: new Set() };
   if (isBinding) {
-    hook.bindings.set(id, meta);
+    state.hook.bindings.set(id, meta);
   } else {
-    hook.effects.set(id, meta);
+    state.hook.effects.set(id, meta);
   }
-  hook._emit('update', { type: 'effect:create', id });
+  state.hook._emit('update', { type: 'effect:create', id });
   return id;
 }
 
 export function notifyEffectRun(id) {
-  if (!enabled || id === 0) { return; }
+  if (!state.enabled || id === 0) { return; }
   const meta = getEffectMeta(id);
   if (meta === undefined) { return; }
   meta.state = 'active';
   meta.runCount++;
-  if (hook.effects.has(id)) { hook._emit('update', { type: 'effect:run', id }); }
+  if (state.hook.effects.has(id)) { state.hook._emit('update', { type: 'effect:run', id }); }
 }
 
 export function notifyEffectPause(id) {
-  if (!enabled || id === 0) { return; }
+  if (!state.enabled || id === 0) { return; }
   const meta = getEffectMeta(id);
   if (meta === undefined) { return; }
   meta.state = 'paused';
-  if (hook.effects.has(id)) { hook._emit('update', { type: 'effect:pause', id }); }
+  if (state.hook.effects.has(id)) { state.hook._emit('update', { type: 'effect:pause', id }); }
 }
 
 export function notifyEffectResume(id) {
-  if (!enabled || id === 0) { return; }
+  if (!state.enabled || id === 0) { return; }
   const meta = getEffectMeta(id);
   if (meta === undefined) { return; }
   meta.state = 'active';
-  if (hook.effects.has(id)) { hook._emit('update', { type: 'effect:resume', id }); }
+  if (state.hook.effects.has(id)) { state.hook._emit('update', { type: 'effect:resume', id }); }
 }
 
 export function notifyEffectStop(id) {
-  if (!enabled || id === 0) { return; }
-  const wasUserEffect = hook.effects.delete(id);
-  if (!wasUserEffect) { hook.bindings.delete(id); }
-  hook._emit('update', { type: 'effect:stop', id });
+  if (!state.enabled || id === 0) { return; }
+  const wasUserEffect = state.hook.effects.delete(id);
+  if (!wasUserEffect) { state.hook.bindings.delete(id); }
+  state.hook._emit('update', { type: 'effect:stop', id });
 }
 
 export function notifyDomTrack() {
-  if (!enabled) { return; }
-  hook.domTrackedCount++;
-  hook._emit('update', { type: 'dom:track', count: hook.domTrackedCount });
+  if (!state.enabled) { return; }
+  state.hook.domTrackedCount++;
+  state.hook._emit('update', { type: 'dom:track', count: state.hook.domTrackedCount });
 }
 
 export function notifyDomUntrack(bindingIds) {
-  if (!enabled) { return; }
-  if (hook.domTrackedCount > 0) { hook.domTrackedCount--; }
-  const event = { type: 'dom:untrack', count: hook.domTrackedCount };
+  if (!state.enabled) { return; }
+  if (state.hook.domTrackedCount > 0) { state.hook.domTrackedCount--; }
+  const event = { type: 'dom:untrack', count: state.hook.domTrackedCount };
   if (bindingIds && bindingIds.length > 0) { event.bindingIds = bindingIds; }
-  hook._emit('update', event);
+  state.hook._emit('update', event);
 }

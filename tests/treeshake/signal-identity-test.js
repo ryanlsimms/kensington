@@ -1,4 +1,4 @@
-// Regression tests for reactive-module identity across full/slim dist files,
+// Regression tests for reactive-state sharing across full/slim dist files,
 // the package root, and `kensington/live`. The original case reproduced a tool-web bug where an app aliases
 // `kensington -> dist/slim/min` (to save ~30 KB in prod) while
 // `kensington/live` still resolves to its source ESM. Two copies of the
@@ -8,10 +8,11 @@
 //
 // The pending queue is module scoped. A call to applyPendingReactiveUpdates()
 // from another copy cannot process it. Every ESM entry point must resolve the same
-// source reactive modules, not merely expose objects with compatible brands.
+// source reactive modules, including scheduler, SSR mode, and hydration scope state.
 
 import assert from 'node:assert/strict';
-import { rmSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { describe, it } from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -108,7 +109,7 @@ async function bundleMixedConsumer() {
   return output[0].code;
 }
 
-describe('reactive-module identity across package entry points', () => {
+describe('reactive-state sharing across package entry points', () => {
   for (const [name, distEntry] of [
     ['full dist', distFull],
     ['minified full dist', distFullMin],
@@ -118,10 +119,6 @@ describe('reactive-module identity across package entry points', () => {
     it(`${name} shares signal tracking and pending updates with the source package root`, async () => {
       const root = await import(pathToFileURL(sourceRoot).href);
       const built = await import(pathToFileURL(distEntry).href);
-
-      assert.strictEqual(built.Signal, root.Signal, `${name} loaded a second Signal module`);
-      assert.strictEqual(built.applyPendingReactiveUpdates, root.applyPendingReactiveUpdates,
-        `${name} loaded a second reactive scheduler`);
 
       const value = built.signal(0);
       const seen = [];
@@ -142,11 +139,74 @@ describe('reactive-module identity across package entry points', () => {
     });
   }
 
+  for (const [name, distEntry] of [
+    ['full dist', distFull],
+    ['minified full dist', distFullMin],
+    ['slim dist', distSlim],
+    ['minified slim dist', distSlimMin],
+  ]) {
+    it(`${name} loads as a standalone file`, () => {
+      const fixturePath = fileURLToPath(
+        new URL(`./standalone-${name.replaceAll(' ', '-')}.generated.mjs`, import.meta.url),
+      );
+      writeFileSync(fixturePath, readFileSync(distEntry));
+      try {
+        const fixtureUrl = pathToFileURL(fixturePath).href;
+        execFileSync(process.execPath, [
+          '--input-type=module',
+          '-e',
+          `const { t } = await import(${JSON.stringify(fixtureUrl)}); `
+            + `if (t.div('standalone').toString() !== '<div>standalone</div>') process.exit(1);`,
+        ]);
+      } finally {
+        rmSync(fixturePath, { force: true });
+      }
+    });
+  }
+
+  for (const [name, distEntry] of [
+    ['full dist', distFull],
+    ['minified full dist', distFullMin],
+    ['slim dist', distSlim],
+    ['minified slim dist', distSlimMin],
+  ]) {
+    it(`${name} shares SSR mode and keyed hydration scopes with source ESM`, async () => {
+      const root = await import(pathToFileURL(sourceRoot).href);
+      const built = await import(pathToFileURL(distEntry).href);
+      const hydrationScope = await import('../../esm/lib/reactive/hydration-scope.js');
+      let effectRuns = 0;
+      let sourceSignal;
+      let bundleSignal;
+      const scopeId = `shared-runtime-${name}`;
+
+      root.renderForHydration(() => {
+        built.effect(() => { effectRuns++; });
+        return root.t.div('ssr');
+      }, {}, scopeId);
+      assert.strictEqual(effectRuns, 0, `${name} must observe source SSR mode`);
+
+      hydrationScope._enterHydrationScope(scopeId);
+      try {
+        sourceSignal = root.signal(1, 'probe');
+      } finally {
+        hydrationScope._exitHydrationScope();
+      }
+      sourceSignal.set(7);
+      hydrationScope._enterHydrationScope(scopeId);
+      try {
+        bundleSignal = built.signal(1, 'probe');
+      } finally {
+        hydrationScope._exitHydrationScope();
+      }
+      assert.strictEqual(bundleSignal, sourceSignal, `${name} must reuse the keyed source signal`);
+      assert.strictEqual(bundleSignal.get(), 7);
+      sourceSignal.stop();
+    });
+  }
+
   it('effect from slim bundle re-runs on set through liveSignal', async () => {
     const code = await bundleMixedConsumer();
-    // Write the bundle to a fixture next to this test so the slim bundle's
-    // `../esm/reactive.js` relative import resolves against the package
-    // layout. A `data:` URL or an OS-temp path has no filesystem context.
+    // Write the mixed consumer beside the test so its source ESM imports resolve normally.
     const fixturePath = fileURLToPath(
       new URL('./signal-identity-fixture.generated.mjs', import.meta.url),
     );
@@ -178,8 +238,8 @@ describe('reactive-module identity across package entry points', () => {
       mod.observedCount,
       2,
       `Expected effect to re-run after set() on a liveSignal, got count=${mod.observedCount}. `
-        + 'The slim bundle and esm/live/client.js each have their own copy of '
-        + 'the reactive-core module. See tests/treeshake/signal-identity-test.js.',
+        + 'The standalone bundle and esm/live/client.js must share reactive state. '
+        + 'See tests/treeshake/signal-identity-test.js.',
     );
   });
 

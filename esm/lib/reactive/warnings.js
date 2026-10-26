@@ -1,17 +1,22 @@
 import filterStack from '../util/filter-stack.js';
+import { getSharedReactiveState } from './shared-state.js';
 
 // Throttled console.error / console.warn used by signal.js and map-with-key.js for repeated
 // runtime diagnostics (loop detection, invalid usage, duplicate keys, etc.). The throttle
 // prevents a hot loop from flooding the devtools console while still surfacing each unique
 // problem on first occurrence within the WARN_THROTTLE_MS window.
 
-const warnLastSeen = new Map();
+const state = getSharedReactiveState('warnings', () => ({
+  warnLastSeen: new Map(),
+  warnedKeyedInitialMismatches: new Set(),
+}));
+
 const WARN_THROTTLE_MS = 1000;
 
 export function throttledError(key, msg) {
   const now = Date.now();
-  if (now - (warnLastSeen.get(key) ?? 0) >= WARN_THROTTLE_MS) {
-    warnLastSeen.set(key, now);
+  if (now - (state.warnLastSeen.get(key) ?? 0) >= WARN_THROTTLE_MS) {
+    state.warnLastSeen.set(key, now);
     const error = filterStack(new Error(msg));
     // Pass message as first arg so test harnesses that capture only the first
     // argument keep working. Pass the Error second so browser DevTools render
@@ -23,21 +28,20 @@ export function throttledError(key, msg) {
 
 export function throttledWarn(key, msg) {
   const now = Date.now();
-  if (now - (warnLastSeen.get(key) ?? 0) >= WARN_THROTTLE_MS) {
-    warnLastSeen.set(key, now);
+  if (now - (state.warnLastSeen.get(key) ?? 0) >= WARN_THROTTLE_MS) {
+    state.warnLastSeen.set(key, now);
     const error = filterStack(new Error(msg));
     console.warn(msg, error);
   }
 }
 
 export function _resetWarningThrottle() {
-  warnLastSeen.clear();
+  state.warnLastSeen.clear();
 }
 
 // Track which keyed-signal name+key pairs have already produced an
 // initial-mismatch warning so the message fires once per offender rather than
 // once per throttle window. Cleared by _resetWarningThrottle for tests.
-const warnedKeyedInitialMismatches = new Set();
 
 function isPrimitiveValue(v) {
   return v === null || v === undefined || (typeof v !== 'object' && typeof v !== 'function');
@@ -61,8 +65,8 @@ export function warnKeyedInitialMismatch(key, originalInitial, newInitial) {
   if (!isPrimitiveValue(originalInitial) || !isPrimitiveValue(newInitial)) { return; }
   if (Object.is(originalInitial, newInitial)) { return; }
   const seenKey = `keyed-initial:${String(key)}`;
-  if (warnedKeyedInitialMismatches.has(seenKey)) { return; }
-  warnedKeyedInitialMismatches.add(seenKey);
+  if (state.warnedKeyedInitialMismatches.has(seenKey)) { return; }
+  state.warnedKeyedInitialMismatches.add(seenKey);
   throttledWarn(
     'keyed-signal-initial-mismatch',
     `kensington: signal(initial, '${String(key)}') was called multiple times with different primitive initial values `
@@ -75,5 +79,5 @@ export function warnKeyedInitialMismatch(key, originalInitial, newInitial) {
 
 // Test-only reset.
 export function _resetKeyedInitialWarnings() {
-  warnedKeyedInitialMismatches.clear();
+  state.warnedKeyedInitialMismatches.clear();
 }

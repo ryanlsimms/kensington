@@ -1,8 +1,11 @@
 // Passive validation context shared by reactive runtimes in accessible windows.
 // The core carries a callback only. Diagnostic policy lives in runtime-guard.js,
-// which slim builds do not load. Each signal.js evaluation creates its own token.
+// which slim builds do not load. ESM copies in the same runtime share one owner token.
+import { getSharedReactiveState } from './shared-state.js';
+
 const CONTEXT_KEY = Symbol.for('kensington.reactive.validation.v1');
 export const RUNTIME_OWNER = Symbol.for('kensington.reactive.owner.v1');
+const runtimeState = getSharedReactiveState('runtime-context', () => ({ token: {} }));
 let context = {};
 
 function findContextHost() {
@@ -32,8 +35,8 @@ try {
   // Non-extensible globals retain a local context.
 }
 
-export function createRuntimeContext() {
-  const token = {};
+export function createRuntimeContext({ isolated = false } = {}) {
+  const token = isolated ? {} : runtimeState.token;
   return {
     token,
     check(operation, owner = token) { context.check?.(owner, operation); },

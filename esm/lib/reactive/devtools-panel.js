@@ -1,3 +1,4 @@
+import { getSharedReactiveState } from './shared-state.js';
 export const PANEL_ID = '__kensington_devtools_panel__';
 
 const HIGHLIGHT_DURATION = 1800;
@@ -209,31 +210,33 @@ const CSS = `
   }
 `;
 
-const activeHighlights = new Map();
-const hoverHighlights = new Set();
+const sharedState = getSharedReactiveState('devtools-panel', () => ({
+  activeHighlights: new Map(),
+  hoverHighlights: new Set(),
+}));
 
 function highlightElements(elements) {
   for (const el of elements) {
-    if (activeHighlights.has(el)) {
-      clearTimeout(activeHighlights.get(el));
+    if (sharedState.activeHighlights.has(el)) {
+      clearTimeout(sharedState.activeHighlights.get(el));
     } else {
       el.style.setProperty('outline', HIGHLIGHT_STYLE, 'important');
       el.style.setProperty('outline-offset', HIGHLIGHT_OFFSET, 'important');
     }
     const id = setTimeout(() => {
-      if (!hoverHighlights.has(el)) {
+      if (!sharedState.hoverHighlights.has(el)) {
         el.style.removeProperty('outline');
         el.style.removeProperty('outline-offset');
       }
-      activeHighlights.delete(el);
+      sharedState.activeHighlights.delete(el);
     }, HIGHLIGHT_DURATION);
-    activeHighlights.set(el, id);
+    sharedState.activeHighlights.set(el, id);
   }
 }
 
 function applyHoverHighlight(elements) {
   for (const el of elements) {
-    hoverHighlights.add(el);
+    sharedState.hoverHighlights.add(el);
     el.style.setProperty('outline', HIGHLIGHT_STYLE, 'important');
     el.style.setProperty('outline-offset', HIGHLIGHT_OFFSET, 'important');
   }
@@ -241,8 +244,8 @@ function applyHoverHighlight(elements) {
 
 function clearHoverHighlight(elements) {
   for (const el of elements) {
-    hoverHighlights.delete(el);
-    if (!activeHighlights.has(el)) {
+    sharedState.hoverHighlights.delete(el);
+    if (!sharedState.activeHighlights.has(el)) {
       el.style.removeProperty('outline');
       el.style.removeProperty('outline-offset');
     }

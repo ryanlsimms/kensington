@@ -1,11 +1,14 @@
 import { stopRangeBetween, stopRemoved } from './dom-tracker.js';
 import { KENSINGTON_KEY } from './map-with-key.js';
 import { captureState, restoreFormState, restoreViewState } from './preserve-state.js';
+import { getSharedReactiveState } from './shared-state.js';
 
 // Reconciliation key per DOM node. Populated when reconcile inserts a new node for a keyed
 // item. Read on the next render via WeakMap. Keys live in JS land so the rendered DOM stays
 // clean of internal bookkeeping.
-const nodeKeys = new WeakMap();
+const sharedState = getSharedReactiveState('reconcile', () => ({
+  nodeKeys: new WeakMap(),
+}));
 
 function itemKey(item) {
   if (item === null || typeof item !== 'object') { return null; }
@@ -102,8 +105,8 @@ function reconcileChildren(parent, endAnchor, items, oldChildren, renderOptions,
   while (oldStart <= oldEnd && newStart <= newEnd) {
     const oldStartNode = oldChildren[oldStart];
     const oldEndNode = oldChildren[oldEnd];
-    const oldStartKey = nodeKeys.get(oldStartNode);
-    const oldEndKey = nodeKeys.get(oldEndNode);
+    const oldStartKey = sharedState.nodeKeys.get(oldStartNode);
+    const oldEndKey = sharedState.nodeKeys.get(oldEndNode);
     const newStartKey = itemKey(items[newStart]);
     const newEndKey = itemKey(items[newEnd]);
 
@@ -163,7 +166,7 @@ function reconcileChildren(parent, endAnchor, items, oldChildren, renderOptions,
       const item = items[newStart++];
       const node = itemToNode(item, renderOptions);
       const key = itemKey(item);
-      if (key !== null) { nodeKeys.set(node, key); }
+      if (key !== null) { sharedState.nodeKeys.set(node, key); }
       parent.insertBefore(node, trailingFence);
     }
     return;
@@ -185,7 +188,7 @@ function reconcileChildren(parent, endAnchor, items, oldChildren, renderOptions,
   const keymap = new Map();
   for (let i = oldStart; i <= oldEnd; i++) {
     const node = oldChildren[i];
-    const key = nodeKeys.get(node);
+    const key = sharedState.nodeKeys.get(node);
     if (key !== undefined) { keymap.set(key, i); }
   }
 
@@ -197,7 +200,7 @@ function reconcileChildren(parent, endAnchor, items, oldChildren, renderOptions,
     let node;
     if (oldIndex === undefined) {
       node = itemToNode(item, renderOptions);
-      if (key !== null) { nodeKeys.set(node, key); }
+      if (key !== null) { sharedState.nodeKeys.set(node, key); }
     } else {
       node = oldChildren[oldIndex];
       oldChildren[oldIndex] = null;
@@ -253,7 +256,7 @@ export function reconcile(parent, startAnchor, endAnchor, newItems, renderOption
   // scroll reads with row replacements forces one layout per row.
   const oldByKey = new Map();
   for (const node of oldChildren) {
-    const key = nodeKeys.get(node);
+    const key = sharedState.nodeKeys.get(node);
     if (key !== undefined) { oldByKey.set(key, node); }
   }
   const states = new Map();
@@ -264,7 +267,7 @@ export function reconcile(parent, startAnchor, endAnchor, newItems, renderOption
   const restored = [];
   function rebuildNode(oldNode, item, key) {
     const fresh = item.toElement(renderOptions);
-    if (key !== undefined && key !== null) { nodeKeys.set(fresh, key); }
+    if (key !== undefined && key !== null) { sharedState.nodeKeys.set(fresh, key); }
     parent.insertBefore(fresh, oldNode);
     oldNode.remove();
     stopRemoved(oldNode);

@@ -1,3 +1,4 @@
+import { getSharedReactiveState } from './shared-state.js';
 // Hydration scope. A per-mount registry of signals and computeds keyed by user-supplied keys.
 // renderForHydration pushes a scope keyed by the mount instance id. Inside the scope,
 // signal(initial, key) and computed(fn, key) look up a per-scope registry instead of creating
@@ -6,30 +7,32 @@
 // inside a computed, hydration scopes do not sweep unaccessed keys per run. They are disposed
 // only when the mount is removed via _disposeHydrationScope.
 
-const hydrationScopes = new Map();
-const hydrationScopeStack = [];
-let currentHydrationScope = null;
+const state = getSharedReactiveState('hydration-scope', () => ({
+  hydrationScopes: new Map(),
+  hydrationScopeStack: [],
+  currentHydrationScope: null,
+}));
 
 export function _enterHydrationScope(scopeId) {
-  let scope = hydrationScopes.get(scopeId);
+  let scope = state.hydrationScopes.get(scopeId);
   if (scope === undefined) {
     scope = { signals: new Map(), computeds: new Map(), initials: new Map() };
-    hydrationScopes.set(scopeId, scope);
+    state.hydrationScopes.set(scopeId, scope);
   }
-  hydrationScopeStack.push(currentHydrationScope);
-  currentHydrationScope = scope;
+  state.hydrationScopeStack.push(state.currentHydrationScope);
+  state.currentHydrationScope = scope;
 }
 
 export function _exitHydrationScope() {
-  currentHydrationScope = hydrationScopeStack.length > 0 ? hydrationScopeStack.pop() : null;
+  state.currentHydrationScope = state.hydrationScopeStack.length > 0 ? state.hydrationScopeStack.pop() : null;
 }
 
 export function _inHydrationScope() {
-  return currentHydrationScope !== null;
+  return state.currentHydrationScope !== null;
 }
 
 export function _disposeHydrationScope(scopeId) {
-  const scope = hydrationScopes.get(scopeId);
+  const scope = state.hydrationScopes.get(scopeId);
   if (scope === undefined) {
     return;
   }
@@ -39,10 +42,10 @@ export function _disposeHydrationScope(scopeId) {
   for (const sig of scope.computeds.values()) {
     sig.stop();
   }
-  hydrationScopes.delete(scopeId);
+  state.hydrationScopes.delete(scopeId);
 }
 
 // Read accessor for signal()/computed() to look up the active scope without owning the state.
 export function getCurrentHydrationScope() {
-  return currentHydrationScope;
+  return state.currentHydrationScope;
 }
