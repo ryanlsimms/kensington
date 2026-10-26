@@ -16,6 +16,25 @@
       "tabindex"
     ],
     "children": [],
+    "tag": "a"
+  },
+  {
+    "attributes": [
+      "autofocus",
+      "class",
+      "dir",
+      "displaystyle",
+      "href",
+      "id",
+      "mathbackground",
+      "mathcolor",
+      "mathsize",
+      "nonce",
+      "scriptlevel",
+      "style",
+      "tabindex"
+    ],
+    "children": [],
     "tag": "annotation"
   },
   {

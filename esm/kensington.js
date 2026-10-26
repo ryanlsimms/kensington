@@ -10,6 +10,7 @@ import VoidTag from './tag-classes/void-tag.js';
 
 const HTML_NAMESPACE = 'http://www.w3.org/1999/xhtml';
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
+const MATH_NAMESPACE = 'http://www.w3.org/1998/Math/MathML';
 
 function addAttributeDefaults(target, defaults) {
   for (const [name, validator] of Object.entries(defaults ?? {})) {
@@ -115,12 +116,12 @@ export default class Kensington {
     });
   }
 
-  createContextualContentTag(tagName, allowedAttributes = {}) {
+  createContextualContentTag(tagName, allowedAttributes = {}, supportedNamespaces = [HTML_NAMESPACE, SVG_NAMESPACE]) {
     return this.createTag(tagName, allowedAttributes, ContentTag, {
       includeGlobalAttributes: true,
       includeGlobalEvents: true,
       includeSvgGlobalAttributes: true,
-      supportedNamespaces: [HTML_NAMESPACE, SVG_NAMESPACE],
+      supportedNamespaces,
     });
   }
 
@@ -306,7 +307,7 @@ export default class Kensington {
   );
 
   /** @returns {ContentTag} */
-  a = this.createContextualContentTag('a', allAttributes.aAttributes);
+  a = this.createContextualContentTag('a', allAttributes.aAttributes, [HTML_NAMESPACE, SVG_NAMESPACE, MATH_NAMESPACE]);
   /** @returns {ContentTag} */
   abbr = this.createContentTag('abbr', allAttributes.abbrAttributes);
   /** @returns {ContentTag} */

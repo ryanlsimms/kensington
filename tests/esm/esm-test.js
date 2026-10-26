@@ -1223,10 +1223,11 @@ describe('namespaces', () => {
 });
 
 describe('context-aware element namespaces', () => {
-  it('accepts the HTML and SVG attribute vocabularies on shared tag names', () => {
+  it('accepts the HTML, SVG, and MathML attribute vocabularies on shared tag names', () => {
     const tt = new Kensington({ validationLevel: 'error' });
     assert.doesNotThrow(() => tt.title({ fill: 'red', 'xml:space': 'preserve' }, 'title'));
     assert.doesNotThrow(() => tt.a({ href: '#target', requiredExtensions: 'svg' }, 'link'));
+    assert.doesNotThrow(() => tt.a({ href: '#target', mathcolor: 'red', displaystyle: 'true' }, tt.mi('x')));
     assert.doesNotThrow(() => tt.script({ href: '/app.js', 'xml:space': 'preserve' }, ''));
   });
 

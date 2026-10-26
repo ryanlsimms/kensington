@@ -469,12 +469,17 @@ type SvgPresentationAttributes = {
 }
 
 type AAttributes = {
+  'displaystyle'?: Reactive<string>;
   'download'?: Reactive<string>;
   'href'?: Reactive<string>;
   'hreflang'?: Reactive<string>;
+  'mathbackground'?: Reactive<string>;
+  'mathcolor'?: Reactive<string>;
+  'mathsize'?: Reactive<string>;
   'ping'?: Reactive<string>;
   'referrerpolicy'?: Reactive<string>;
   'rel'?: Reactive<string>;
+  'scriptlevel'?: Reactive<string>;
   'target'?: Reactive<string>;
   'type'?: Reactive<string>;
   prop?: ContextualPropFor<'a'> | null; persist?: boolean;

@@ -140,9 +140,10 @@ t.span({ id: 'my-id', title: 'tooltip', tabindex: 0 });
 t.p({ contenteditable: 'true' });
 t.p({ contenteditable: 'false' });
 
-// Shared HTML/SVG tag names accept both vocabularies, including reactive values.
+// Shared HTML/SVG/MathML tag names accept their merged attribute vocabularies.
 t.title({ fill: signal('red'), 'xml:space': 'preserve' });
 t.a({ href: '#target', requiredExtensions: 'svg' });
+t.a({ href: '#math-target', mathcolor: 'red', displaystyle: 'true' }, t.mi('x'));
 t.script({ href: '/app.js', 'xml:space': 'preserve' });
 t.style({ type: 'text/css' });
 t.title({ prop: { text: 'HTML title' } });

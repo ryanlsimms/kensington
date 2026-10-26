@@ -8,10 +8,11 @@ const M = 'M';
 const L = 'L';
 const X = 'X';
 const Y = 'Y';
+const Z = 'Z';
 const D = 'D';
 
 export default {
-  a: X,
+  a: Z,
   abbr: C,
   address: C,
   animate: S,

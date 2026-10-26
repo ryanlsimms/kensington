@@ -401,16 +401,18 @@ test('shared names and integration-point children use their actual parent namesp
       t.foreignObject(t.div('html')),
     ]).toElement();
     const math = t.math([
-      t.mi([mglyph(), t.span('html')]),
+      t.a({ mathcolor: 'red' }, t.mi('linked math')),
+      t.mi([mglyph(), t.span('html'), t.a('html link in mi')]),
       t.annotationXml({ encoding: 'text/html' }, t.div('html')),
       t.annotationXml(t.svg()),
     ]).toElement();
     return {
       svg: Array.from(svg.children, el => el.namespaceURI),
       foreignChild: svg.lastElementChild.firstElementChild.namespaceURI,
-      mathTextChildren: Array.from(math.firstElementChild.children, el => el.namespaceURI),
-      annotationHtml: math.children[1].firstElementChild.namespaceURI,
-      annotationSvg: math.children[2].firstElementChild.namespaceURI,
+      mathAnchor: math.firstElementChild.namespaceURI,
+      mathTextChildren: Array.from(math.children[1].children, el => el.namespaceURI),
+      annotationHtml: math.children[2].firstElementChild.namespaceURI,
+      annotationSvg: math.children[3].firstElementChild.namespaceURI,
     };
   }, bundle);
   expect(result.svg.slice(0, 4)).toEqual(Array(4).fill('http://www.w3.org/2000/svg'));
@@ -418,7 +420,9 @@ test('shared names and integration-point children use their actual parent namesp
   expect(result.mathTextChildren).toEqual([
     'http://www.w3.org/1998/Math/MathML',
     'http://www.w3.org/1999/xhtml',
+    'http://www.w3.org/1999/xhtml',
   ]);
+  expect(result.mathAnchor).toBe('http://www.w3.org/1998/Math/MathML');
   expect(result.annotationHtml).toBe('http://www.w3.org/1999/xhtml');
   expect(result.annotationSvg).toBe('http://www.w3.org/2000/svg');
 });
