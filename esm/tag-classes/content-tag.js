@@ -107,6 +107,7 @@ function collectContent(items, seen) {
 export default class ContentTag {
   #connectedCallbacks = [];
   #disconnectedCallbacks = [];
+  #effectCallbacks = [];
   #domElement = null;
 
   constructor(options) {
@@ -197,6 +198,11 @@ export default class ContentTag {
       return { namespace: MATH_NAMESPACE, namespaceExceptions: ANNOTATION_XML_EXCEPTIONS };
     }
     return { namespace };
+  }
+
+  effect(fn) {
+    this.#effectCallbacks.push(fn);
+    return this;
   }
 
   addConnectedCallback(fn) {
@@ -459,10 +465,12 @@ export default class ContentTag {
     // is a persist branch that needs the resume hooks) we can skip the call entirely.
     const needsFinalize = lifecycle !== null
       || persist
+      || this.#effectCallbacks.length > 0
       || this.#connectedCallbacks.length > 0
       || this.#disconnectedCallbacks.length > 0;
     if (needsFinalize) {
       ensureLifecycle().finalize({
+        effectCallbacks: this.#effectCallbacks,
         connectCallbacks: this.#connectedCallbacks,
         disconnectCallbacks: this.#disconnectedCallbacks,
         onCleared: () => { if (this.#domElement === element) { this.#domElement = null; } },

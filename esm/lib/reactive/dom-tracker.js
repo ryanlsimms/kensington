@@ -93,29 +93,51 @@ function visitTemplateContents(node, fn) {
   }
 }
 
-export function stopRemoved(node) {
-  visit(node, stopOne);
-  visitTemplateContents(node, stopOne);
+// Snapshot stop registrations before invoking user code. Parent cleanup may remove
+// descendants or template contents, so a live traversal during teardown can miss them.
+function collectStop(stops, element, entry) {
+  if (entry.stop !== undefined) { stops.push({ element, entry, stop: entry.stop }); }
 }
 
-// Stop tracked effects across an entire sibling range in a single TreeWalker pass. The
-// reconciler's clear path uses this instead of calling stopRemoved() per child: building
-// one walker is cheaper than 1000 walkers, and the walk itself is over the same elements
-// either way. The range is half-open. firstNode is included, endAnchor is excluded.
+function stopCollected(stops) {
+  const callbacks = [];
+  for (const { element, entry, stop } of stops) {
+    if (state.entries.get(element) !== entry || entry.stop !== stop) { continue; }
+    // Detach all captured registrations first. Reentrant teardown must not run
+    // a descendant's cleanup again or consume a newly registered connection.
+    clearStop(entry, element);
+    callbacks.push(stop);
+  }
+  for (const stop of callbacks) { stop(); }
+}
+
+export function stopRemoved(node) {
+  const stops = [];
+  const collect = (element, entry) => collectStop(stops, element, entry);
+  visit(node, collect);
+  visitTemplateContents(node, collect);
+  stopCollected(stops);
+}
+
+// Stop tracked effects across an entire sibling range in a single TreeWalker pass.
+// Capture the full half-open range before any cleanup can mutate its live nodes.
 export function stopRangeBetween(firstNode, endAnchor) {
   if (firstNode === null || firstNode === endAnchor) { return; }
   if (!state.hasAnyTracked) { return; }
   const parent = firstNode.parentNode;
   if (parent === null) { return; }
+  const stops = [];
+  const collect = (element, entry) => collectStop(stops, element, entry);
   const walker = document.createTreeWalker(parent, SHOW_ELEMENT_AND_COMMENT);
   walker.currentNode = firstNode;
   for (let node = firstNode; node !== null && node !== endAnchor; node = walker.nextNode()) {
     const entry = state.entries.get(node);
-    if (entry !== undefined) { stopOne(node, entry); }
+    if (entry !== undefined) { collect(node, entry); }
     if (node.nodeType === 1 && node.localName === 'template') {
-      visitTemplateContents(node, stopOne);
+      visitTemplateContents(node, collect);
     }
   }
+  stopCollected(stops);
 }
 
 function fireConnected(node) {

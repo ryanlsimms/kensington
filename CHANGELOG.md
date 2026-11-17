@@ -7,10 +7,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Added `tag.effect(fn)` for reactive side effects owned by a tag. Effects start on connection, stop on normal removal, and pause/resume with own or inherited `persist: true`.
 - Added `dispatchOnPropChange: true` to opt into bubbling `input` or `change` events after signal-driven form property updates. Events are inferred from the control and property; unsupported combinations report through `validationLevel`.
 
 ### Changed
-- Reactive input and textarea property bindings skip equivalent value updates.
+- Reactive input and textarea property bindings skip value property updates when value already matches.
+
+### Fixed
+- Subtree removal now cleans up tracked descendants and template bindings even when parent teardown changes the DOM.
 
 ## [2.0.0-signals.30] - 2026-10-26
 

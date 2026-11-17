@@ -1226,3 +1226,34 @@ test('hmrReplaceComponent stops effects on the discarded subtree', async ({ page
   expect(runs.after.v1).toBe(runs.before.v1);
   expect(runs.after.v2).toBeGreaterThan(runs.before.v2);
 });
+
+test('tag.effect runs only for the hydrated client mount and stops on its removal', async ({ page: pg, bundle }) => {
+  let serverRuns = 0;
+  function effectWidget() {
+    return t.div({ id: 'effect-hydrated-widget' }, 'SSR').effect(() => { serverRuns++; });
+  }
+  await inject(pg, renderForHydration(effectWidget, {}, 'effectWidget').toString());
+  expect(serverRuns).toBe(0);
+  const seen = await pg.evaluate(async src => {
+    const { registerComponents, t: tg, signal, applyPendingReactiveUpdates } = await import(src);
+    const value = signal(0);
+    const calls = [];
+    let connected;
+    const mounted = new Promise(resolve => { connected = resolve; });
+    registerComponents({
+      effectWidget: () => tg.div({ id: 'effect-hydrated-widget' }, 'Live')
+        .effect(() => { calls.push(value.get()); })
+        .addConnectedCallback(() => { connected(); }),
+    });
+    await mounted;
+    value.set(1);
+    applyPendingReactiveUpdates();
+    document.querySelector('#effect-hydrated-widget').remove();
+    await Promise.resolve();
+    value.set(2);
+    applyPendingReactiveUpdates();
+    return calls;
+  }, bundle);
+  expect(seen).toEqual([0, 1]);
+  expect(serverRuns).toBe(0);
+});

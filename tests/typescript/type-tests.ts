@@ -526,3 +526,28 @@ t.select({ prop: { value: 'a' }, dispatchOnPropChange: false });
 t.input({ dispatchOnPropChange: 'input' });
 // @ts-expect-error - no per-property event map
 t.input({ dispatchOnPropChange: { value: 'input' } });
+
+// Connected callbacks remain chainable; all callback return values are ignored.
+const _ownedInput: VoidTag = t.input().addConnectedCallback<HTMLInputElement>(function setup(el) {
+  this.value = el.value;
+});
+const _ownedDiv: ContentTag = t.div().addConnectedCallback(() => {}).addDisconnectedCallback(() => {});
+// Incidental returns, including functions and promises, remain accepted.
+const _refs: { input?: HTMLInputElement } = {};
+t.input().addConnectedCallback<HTMLInputElement>(el => _refs.input = el);
+t.div().addConnectedCallback(() => 42);
+t.div().addConnectedCallback(() => () => {});
+t.div().addConnectedCallback(async () => () => {});
+const _callbackResults: HTMLElement[] = [];
+t.div().addConnectedCallback(el => _callbackResults.push(el));
+// @ts-expect-error - callback element parameters are still checked
+t.input().addConnectedCallback<HTMLInputElement>((el: string) => {});
+
+// Tag-owned effects preserve tag types and can access a typed live element.
+const _effectInput: VoidTag = t.input().effect<HTMLInputElement>(function update(el) {
+  this.value = el.value;
+});
+const _effectDiv: ContentTag = t.div().effect(() => {}).effect(() => {});
+t.circle().effect<SVGCircleElement>(el => { el.r.baseVal.value = 10; });
+// @ts-expect-error - effect callback receives an element, not a string
+t.div().effect((el: string) => {});

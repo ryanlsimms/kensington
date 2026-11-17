@@ -145,10 +145,19 @@ export class ContentTag {
    */
   getDomElement(): Element | null;
   /**
+   * Registers a signal-tracking effect owned by this tag. Starts on connection,
+   * stops on normal removal, and pauses/resumes with own or inherited \`persist: true\`.
+   * Receives the live element as its first argument and as \`this\` on each run.
+   * Register before \`.toElement()\`. Returns this tag for chaining; never runs during SSR.
+   * Effect-body return values are ignored. Use addDisconnectedCallback for timers,
+   * listeners and other resources that need explicit teardown.
+   */
+  effect<E extends Element = HTMLElement>(fn: (this: E, el: E) => void): this;
+  /**
    * Registers a callback invoked each time this element is inserted into the live DOM.
    * The callback receives the element as both \`this\` and its first argument. Fires on the
-   * initial mount and on every reconnect for \`persist: true\` parents. Returns this
-   * instance for chaining.
+   * initial mount and on every reconnect for \`persist: true\` parents. Callback return
+   * values are ignored. Use addDisconnectedCallback for teardown. Returns this for chaining.
    */
   addConnectedCallback<E extends Element = HTMLElement>(fn: (this: E, el: E) => void): this;
   /**

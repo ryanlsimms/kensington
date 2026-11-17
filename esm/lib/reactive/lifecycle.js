@@ -1,6 +1,12 @@
 import { markNextEffectAsBinding, notifyEffectElement } from './devtools.js';
-import { addOnStop, trackForConnect, trackForStop } from './dom-tracker.js';
-import { _bindingEffect, _enterConnectedCallback, _exitConnectedCallback } from './signal.js';
+import { trackForConnect, trackForStop } from './dom-tracker.js';
+import {
+  _bindingEffect,
+  _enterConnectedCallback,
+  _exitConnectedCallback,
+  _internalEffect,
+  _reactiveRuntime,
+} from './signal.js';
 
 /**
  * Owns the lifecycle of signal effects and connect/disconnect callbacks for a single DOM
@@ -9,10 +15,8 @@ import { _bindingEffect, _enterConnectedCallback, _exitConnectedCallback } from 
  * once with the connect/disconnect callback arrays.
  */
 export function createLifecycle({ element, persist }) {
-  // `effects` holds the bound effects directly rather than per-effect pauseOrStop closures.
-  // Dispatch is one branch in the stop chain (resolved from `persist` once), not one closure
-  // allocated per signalEffect call. On a list with thousands of reactive elements this
-  // removes thousands of closures and the GC pressure that came with them.
+  // Store binding handles directly. One disconnect callback manages all handles,
+  // avoiding per-binding lifecycle registrations and teardown closure chains.
   const effects = [];
   const devIds = [];
   const elementRef = new WeakRef(element);
@@ -39,63 +43,68 @@ export function createLifecycle({ element, persist }) {
       return eff;
     },
 
-    finalize({ connectCallbacks = [], disconnectCallbacks = [], onCleared, onReconnect } = {}) {
-      function registerDisconnectChain() {
-        trackForStop(element, () => {
-          if (persist) {
-            for (let i = 0; i < effects.length; i++) { effects[i].pause(); }
-          } else {
-            for (let i = 0; i < effects.length; i++) { effects[i].stop(); }
-          }
-        }, devIds);
-        if (onCleared) { addOnStop(element, onCleared); }
-        for (const fn of disconnectCallbacks) {
-          addOnStop(element, () => fn.call(element, element));
-        }
+    finalize({ effectCallbacks = [], connectCallbacks = [], disconnectCallbacks = [], onCleared, onReconnect } = {}) {
+      const validation = _reactiveRuntime.capture();
+      let effectsStarted = false;
+      let connected = false;
+      let disconnected = false;
+
+      // User failures are reported without skipping other owners' resource cleanup.
+      function callSafely(fn) {
+        try { fn(); } catch (err) { queueMicrotask(() => { throw err; }); }
       }
 
-      if (effects.length > 0 || disconnectCallbacks.length > 0) {
-        registerDisconnectChain();
-        if (persist) {
-          // Rebuild the stop chain on each removal so disconnect callbacks fire again
-          // on every subsequent removal cycle.
-          const reFireAndRegister = () => {
-            trackForStop(element, () => {});
-            if (onCleared) { addOnStop(element, onCleared); }
-            for (const fn of disconnectCallbacks) {
-              addOnStop(element, () => fn.call(element, element));
-            }
-            addOnStop(element, reFireAndRegister);
-          };
-          addOnStop(element, reFireAndRegister);
+      function disconnect() {
+        connected = false;
+        disconnected = true;
+        for (const eff of effects) {
+          callSafely(() => { if (persist) { eff.pause(); } else { eff.stop(); } });
         }
+        if (onCleared) { callSafely(onCleared); }
+        for (const fn of disconnectCallbacks) { callSafely(() => fn.call(element, element)); }
+        if (persist) { trackForStop(element, disconnect, devIds); }
       }
 
-      const needsConnect = persist || connectCallbacks.length > 0;
-      if (needsConnect) {
-        let initialConnect = true;
+      // Owned effects and connected callbacks can own resources without bindings
+      // or explicit disconnected callbacks, so they also need removal tracking.
+      if (effects.length > 0 || effectCallbacks.length > 0
+        || disconnectCallbacks.length > 0 || connectCallbacks.length > 0) {
+        trackForStop(element, disconnect, devIds);
+      }
+
+      if (persist || effectCallbacks.length > 0 || connectCallbacks.length > 0) {
         trackForConnect(element, () => {
-          if (initialConnect) {
-            initialConnect = false;
-          } else {
-            // On reconnection, restore caller state and resume paused effects, wiring them
-            // into the new stop chain so they pause again on the next removal. Only reached
-            // when persist is true (trackForConnect only re-fires in that case).
-            if (onReconnect) { onReconnect(); }
-            if (persist) {
-              for (const eff of effects) {
-                eff.resume();
-                addOnStop(element, () => eff.pause());
-              }
+          // Mutation records can revisit an element moved within the live document.
+          // Keep the current resources until an actual disconnect is observed.
+          if (connected || !element.isConnected) { return; }
+          connected = true;
+          if (disconnected) {
+            if (onReconnect) { callSafely(onReconnect); }
+            for (const eff of effects) { callSafely(() => eff.resume()); }
+          }
+          if (!effectsStarted) {
+            effectsStarted = true;
+            for (const fn of effectCallbacks) {
+              callSafely(() => {
+                const handle = _reactiveRuntime.run(validation, () => _internalEffect(() => {
+                  const el = elementRef.deref();
+                  if (!el) { handle?.stop(); return; }
+                  fn.call(el, el);
+                }));
+                effects.push(handle);
+                notifyEffectElement(handle._devId, element);
+              });
             }
           }
           for (const fn of connectCallbacks) {
-            _enterConnectedCallback();
-            try {
-              fn.call(element, element);
-            } finally {
-              _exitConnectedCallback();
-            }
+            callSafely(() => {
+              _enterConnectedCallback();
+              try {
+                fn.call(element, element);
+              } finally {
+                _exitConnectedCallback();
+              }
+            });
           }
         }, persist);
       }

@@ -3908,3 +3908,478 @@ test('class array with a signal toggling between two modifier values updates liv
   }, bundle);
   await expect(page.locator('#cls-toggle')).toHaveAttribute('class', 'k-base danger');
 });
+
+// ─── Connected callback return values are ignored ────────────────────────────
+
+for (const persist of [false, true]) {
+  test(`connected callback returns never register cleanup (persist=${persist})`, async ({ page, bundle }) => {
+    const result = await page.evaluate(async ({ src, persistent }) => {
+      const { t } = await import(src);
+      let setups = 0;
+      let ignoredReturns = 0;
+      let disconnects = 0;
+      const tag = t.div({ persist: persistent });
+      tag.addConnectedCallback(() => {
+        setups++;
+        return () => ignoredReturns++;
+      });
+      tag.addConnectedCallback(() => Promise.resolve(() => ignoredReturns++));
+      tag.addDisconnectedCallback(() => { disconnects++; });
+      const el = tag.toElement();
+      for (let cycle = 0; cycle < 2; cycle++) {
+        document.body.append(el);
+        await Promise.resolve();
+        el.remove();
+        await Promise.resolve();
+      }
+      return { setups, ignoredReturns, disconnects };
+    }, { src: bundle, persistent: persist });
+    expect(result).toEqual({ setups: persist ? 2 : 1, ignoredReturns: 0, disconnects: persist ? 2 : 1 });
+  });
+}
+
+// ─── Tag-owned effects ──────────────────────────────────────────────────────
+
+test('tag.effect is chainable, starts on connection and batches reactive reruns', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, applyPendingReactiveUpdates } = await import(src);
+    const value = signal(0);
+    const calls = [];
+    const tag = t.input({ prop: { value: 'ready' } });
+    const chained = tag.effect(function ownedEffect(el) {
+      calls.push([value.get(), el.value, this === el, el.isConnected]);
+    });
+    tag.toString();
+    const el = tag.toElement();
+    const beforeMount = calls.length;
+    document.body.append(el);
+    await Promise.resolve();
+    value.set(1);
+    value.set(2);
+    const beforeFlush = calls.length;
+    applyPendingReactiveUpdates();
+    return { chainable: chained === tag, beforeMount, beforeFlush, calls };
+  }, bundle);
+  expect(result).toEqual({
+    chainable: true,
+    beforeMount: 0,
+    beforeFlush: 1,
+    calls: [[0, 'ready', true, true], [2, 'ready', true, true]],
+  });
+});
+
+test('tag.effect stops on normal removal and starts anew when the tag is rebuilt', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, applyPendingReactiveUpdates } = await import(src);
+    const value = signal(0);
+    const seen = [];
+    const tag = t.div().effect(() => { seen.push(value.get()); });
+    const first = tag.toElement();
+    document.body.append(first);
+    await Promise.resolve();
+    first.remove();
+    await Promise.resolve();
+    value.set(1);
+    applyPendingReactiveUpdates();
+    document.body.append(first);
+    await Promise.resolve();
+    const afterRawInsertion = seen.slice();
+    first.remove();
+    await Promise.resolve();
+    const second = tag.toElement();
+    document.body.append(second);
+    await Promise.resolve();
+    value.set(2);
+    applyPendingReactiveUpdates();
+    return { afterRawInsertion, seen, rebuilt: second !== first };
+  }, bundle);
+  expect(result).toEqual({ afterRawInsertion: [0], seen: [0, 1, 2], rebuilt: true });
+});
+
+for (const inherited of [false, true]) {
+  test(`tag.effect pauses and resumes across persistent connections (inherited=${inherited})`,
+    async ({ page, bundle }) => {
+      const result = await page.evaluate(async ({ src, inheritedPersistence }) => {
+        const { t, signal, applyPendingReactiveUpdates } = await import(src);
+        const value = signal(0);
+        const seen = [];
+        const owner = t.span({ persist: !inheritedPersistence }).effect(() => { seen.push(value.get()); });
+        const tag = inheritedPersistence ? t.div({ persist: true }, owner) : owner;
+        const el = tag.toElement();
+        for (let cycle = 0; cycle < 3; cycle++) {
+          document.body.append(el);
+          await Promise.resolve();
+          el.remove();
+          await Promise.resolve();
+          value.set(cycle + 1);
+          applyPendingReactiveUpdates();
+        }
+        return seen;
+      }, { src: bundle, inheritedPersistence: inherited });
+      expect(result).toEqual([0, 1, 2]);
+    });
+}
+
+test('tag.effect runs before connect callbacks and stops before disconnect callbacks', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, applyPendingReactiveUpdates } = await import(src);
+    const value = signal(0);
+    const calls = [];
+    const tag = t.div();
+    tag.addConnectedCallback(() => {
+      calls.push('connected');
+      return () => calls.push('ignored-return');
+    });
+    tag.effect(() => { calls.push(`first:${value.get()}`); });
+    tag.effect(() => { calls.push(`second:${value.get()}`); });
+    tag.addDisconnectedCallback(() => {
+      calls.push('disconnected');
+      value.set(1);
+      applyPendingReactiveUpdates();
+    });
+    const el = tag.toElement();
+    document.body.append(el);
+    await Promise.resolve();
+    el.remove();
+    await Promise.resolve();
+    return calls;
+  }, bundle);
+  expect(result).toEqual(['first:0', 'second:0', 'connected', 'disconnected']);
+});
+
+test('tag.effect registration inside keyed rows is safe and removal stops only the removed row',
+  async ({ page, bundle }) => {
+    const result = await page.evaluate(async src => {
+      const { t, signal, applyPendingReactiveUpdates } = await import(src);
+      const items = signal([{ id: 'a' }, { id: 'b' }]);
+      const source = signal(0);
+      const calls = [];
+      const diagnostics = [];
+      const originalWarn = console.warn;
+      const originalError = console.error;
+      console.warn = message => diagnostics.push(String(message));
+      console.error = message => diagnostics.push(String(message));
+      try {
+        const list = t.ul(items.mapWithKey('id', item => {
+          const local = signal(item.id, `local-${item.id}`);
+          return t.li(item.id).effect(() => { calls.push([local.get(), source.get()]); });
+        })).toElement();
+        document.body.append(list);
+        await Promise.resolve();
+        calls.length = 0;
+        items.set([{ id: 'b' }]);
+        applyPendingReactiveUpdates();
+        source.set(1);
+        applyPendingReactiveUpdates();
+        const afterRemoval = calls.slice();
+        list.remove();
+        await Promise.resolve();
+        source.set(2);
+        applyPendingReactiveUpdates();
+        return { afterRemoval, calls, diagnostics };
+      } finally {
+        console.warn = originalWarn;
+        console.error = originalError;
+      }
+    }, bundle);
+    expect(result).toEqual({ afterRemoval: [['b', 1]], calls: [['b', 1]], diagnostics: [] });
+  });
+
+test('tag.effect does not start for never-mounted or transiently inserted tags', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t } = await import(src);
+    let runs = 0;
+    const makeTag = () => t.div().effect(() => { runs++; });
+    makeTag().toString();
+    makeTag().toElement();
+    const transient = makeTag().toElement();
+    document.body.append(transient);
+    transient.remove();
+    await Promise.resolve();
+    return runs;
+  }, bundle);
+  expect(result).toBe(0);
+});
+
+test('tag.effect retains its subscription across live document moves', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, applyPendingReactiveUpdates } = await import(src);
+    const value = signal(0);
+    const seen = [];
+    const el = t.div({ persist: true }).effect(() => { seen.push(value.get()); }).toElement();
+    const other = document.createElement('section');
+    document.body.append(el, other);
+    await Promise.resolve();
+    other.append(el);
+    await Promise.resolve();
+    document.body.append(other);
+    await Promise.resolve();
+    const afterMoves = seen.slice();
+    value.set(1);
+    applyPendingReactiveUpdates();
+    return { afterMoves, seen };
+  }, bundle);
+  expect(result).toEqual({ afterMoves: [0], seen: [0, 1] });
+});
+
+test('tag.effect isolates an initial failure and removes its partial subscriptions', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, applyPendingReactiveUpdates } = await import(src);
+    const value = signal(0);
+    const calls = [];
+    let reportError;
+    const reported = new Promise(resolve => { reportError = resolve; });
+    window.addEventListener('error', event => {
+      event.preventDefault();
+      reportError(event.error?.message ?? event.message);
+    });
+    const el = t.div()
+      .effect(() => { calls.push(`bad:${value.get()}`); throw new Error('owned-effect-failure'); })
+      .effect(() => { calls.push(`good:${value.get()}`); })
+      .toElement();
+    document.body.append(el);
+    const error = await reported;
+    value.set(1);
+    applyPendingReactiveUpdates();
+    el.remove();
+    await Promise.resolve();
+    value.set(2);
+    applyPendingReactiveUpdates();
+    return { calls, error };
+  }, bundle);
+  expect(result).toEqual({ calls: ['bad:0', 'good:0', 'good:1'], error: 'owned-effect-failure' });
+});
+
+test('tag.effect retains normal dependency tracking and ignores effect-body cleanup returns',
+  async ({ page, bundle }) => {
+    const result = await page.evaluate(async src => {
+      const { t, signal, applyPendingReactiveUpdates } = await import(src);
+      const left = signal('L');
+      const right = signal('R');
+      const useLeft = signal(true);
+      const seen = [];
+      let ignoredCleanups = 0;
+      const el = t.div().effect(() => {
+        seen.push(useLeft.get() ? left.get() : right.get());
+        return () => ignoredCleanups++;
+      }).toElement();
+      document.body.append(el);
+      await Promise.resolve();
+      right.set('R2');
+      applyPendingReactiveUpdates();
+      useLeft.set(false);
+      applyPendingReactiveUpdates();
+      left.set('L2');
+      applyPendingReactiveUpdates();
+      el.remove();
+      await Promise.resolve();
+      right.set('R3');
+      applyPendingReactiveUpdates();
+      return { seen, ignoredCleanups };
+    }, bundle);
+    expect(result).toEqual({ seen: ['L', 'R2'], ignoredCleanups: 0 });
+  });
+
+test('tag.effect keeps its owning instance validation policy on connection and updates', async ({ page, bundle }) => {
+  test.skip(bundle.includes('.slim'), 'slim only supports validation off');
+  await serveForeignRuntime(page);
+  const result = await page.evaluate(async src => {
+    const { Kensington, signal, applyPendingReactiveUpdates } = await import(src);
+    const foreign = await import('/esm/lib/reactive/signal.js?owned-effect-validation');
+    const foreignValue = foreign.signal('foreign');
+    const trigger = signal(0);
+    const warnings = [];
+    const warn = new Kensington({ validationLevel: 'warn', logger: message => warnings.push(message) });
+    const strict = new Kensington({ validationLevel: 'error' });
+    const off = new Kensington({ validationLevel: 'off' });
+    let reportError;
+    const reported = new Promise(resolve => { reportError = resolve; });
+    window.addEventListener('error', event => {
+      event.preventDefault();
+      reportError(event.error?.message ?? event.message);
+    });
+    let runs = 0;
+    const warningElement = warn.div().effect(() => { trigger.get(); foreignValue.get(); runs++; }).toElement();
+    const strictElement = strict.div().effect(() => { foreignValue.get(); }).toElement();
+    const offElement = off.div().effect(() => { foreignValue.get(); }).toElement();
+    document.body.append(warningElement, strictElement, offElement);
+    const error = await reported;
+    trigger.set(1);
+    applyPendingReactiveUpdates();
+    warningElement.remove();
+    strictElement.remove();
+    offElement.remove();
+    await Promise.resolve();
+    return { warnings, error, runs };
+  }, bundle);
+  expect(result.warnings).toHaveLength(1);
+  expect(result.warnings[0]).toContain('crossed reactive runtimes');
+  expect(result.error).toContain('crossed reactive runtimes');
+  expect(result.runs).toBe(2);
+});
+
+// ─── Teardown traversal must survive user DOM mutations ─────────────────────
+
+test('parent cleanup can empty its subtree without leaking child effects or cleanups', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, applyPendingReactiveUpdates } = await import(src);
+    const value = signal(0);
+    const calls = [];
+    const child = t.span()
+      .effect(() => { calls.push(`effect:${value.get()}`); })
+      .addDisconnectedCallback(() => { calls.push('child-cleanup'); });
+    const root = t.div(child).addDisconnectedCallback(el => {
+      calls.push('parent-cleanup');
+      el.replaceChildren();
+    }).toElement();
+    document.body.append(root);
+    await Promise.resolve();
+    root.remove();
+    await Promise.resolve();
+    await Promise.resolve();
+    value.set(1);
+    applyPendingReactiveUpdates();
+    return calls;
+  }, bundle);
+  expect(result).toEqual(['effect:0', 'parent-cleanup', 'child-cleanup']);
+});
+
+test('range cleanup can remove a following sibling without skipping its owned effects', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, applyPendingReactiveUpdates } = await import(src);
+    const value = signal(0);
+    const calls = [];
+    const first = t.div('first')
+      .effect(() => { calls.push(`first:${value.get()}`); })
+      .addDisconnectedCallback(el => {
+        calls.push('first-cleanup');
+        el.nextElementSibling?.remove();
+      });
+    const second = t.div('second')
+      .effect(() => { calls.push(`second:${value.get()}`); })
+      .addDisconnectedCallback(() => { calls.push('second-cleanup'); });
+    const view = signal([first, second]);
+    document.body.append(t.section(view).toElement());
+    await Promise.resolve();
+    view.set([]);
+    applyPendingReactiveUpdates();
+    const synchronous = calls.slice();
+    await Promise.resolve();
+    value.set(1);
+    applyPendingReactiveUpdates();
+    return { synchronous, final: calls };
+  }, bundle);
+  const calls = ['first:0', 'second:0', 'first-cleanup', 'second-cleanup'];
+  expect(result).toEqual({ synchronous: calls, final: calls });
+});
+
+test('parent cleanup cannot hide nested template bindings from removal teardown', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, applyPendingReactiveUpdates } = await import(src);
+    const value = signal('initial');
+    const template = t.template([
+      t.span({ title: value }, value), t.template(t.em(value)),
+    ]);
+    const root = t.div(template).addDisconnectedCallback(el => {
+      el.querySelector('template').content.replaceChildren();
+      el.replaceChildren();
+    }).toElement();
+    const content = root.querySelector('template').content;
+    const span = content.querySelector('span');
+    const nested = content.querySelector('template').content.querySelector('em');
+    document.body.append(root);
+    await Promise.resolve();
+    root.remove();
+    await Promise.resolve();
+    value.set('after removal');
+    applyPendingReactiveUpdates();
+    return [span.textContent, span.title, nested.textContent];
+  }, bundle);
+  expect(result).toEqual(['initial', 'initial', 'initial']);
+});
+
+test('reentrant keyed removal during parent cleanup consumes child cleanup only once', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, applyPendingReactiveUpdates } = await import(src);
+    const items = signal([{ id: 'a' }, { id: 'b' }]);
+    const value = signal(0);
+    const calls = [];
+    const list = t.ul(items.mapWithKey('id', item => t.li(item.id)
+      .effect(() => { calls.push(`${item.id}:${value.get()}`); })
+      .addDisconnectedCallback(() => { calls.push(`cleanup:${item.id}`); })));
+    const root = t.div(list).addDisconnectedCallback(() => {
+      items.set([]);
+      applyPendingReactiveUpdates();
+    }).toElement();
+    document.body.append(root);
+    await Promise.resolve();
+    root.remove();
+    await Promise.resolve();
+    await Promise.resolve();
+    value.set(1);
+    applyPendingReactiveUpdates();
+    return calls;
+  }, bundle);
+  expect(result).toEqual(['a:0', 'b:0', 'cleanup:a', 'cleanup:b']);
+});
+
+for (const inheritedPersistence of [false, true]) {
+  test(`paired lifecycle callbacks stop manually created effects (persistent=${inheritedPersistence})`,
+    async ({ page, bundle }) => {
+      const result = await page.evaluate(async ({ src, persistent }) => {
+        const { t, signal, effect, applyPendingReactiveUpdates } = await import(src);
+        const value = signal(0);
+        const seen = [];
+        let watcher;
+        const child = t.span();
+        child.addConnectedCallback(() => { watcher = effect(() => { seen.push(value.get()); }); });
+        child.addDisconnectedCallback(() => watcher.stop());
+        const root = t.div({ persist: persistent }, child).toElement();
+        for (let cycle = 0; cycle < 3; cycle++) {
+          document.body.append(root);
+          await Promise.resolve();
+          root.remove();
+          await Promise.resolve();
+          value.set(cycle + 1);
+          applyPendingReactiveUpdates();
+        }
+        return seen;
+      }, { src: bundle, persistent: inheritedPersistence });
+      expect(result).toEqual(inheritedPersistence ? [0, 1, 2] : [0]);
+    });
+}
+
+test('throwing disconnected callbacks do not skip later handlers or break persistent owned effects',
+  async ({ page, bundle }) => {
+    const result = await page.evaluate(async src => {
+      const { t, signal, applyPendingReactiveUpdates } = await import(src);
+      const value = signal(0);
+      const seen = [];
+      const errors = [];
+      const errorSignal = { resolve: null };
+      window.addEventListener('error', event => {
+        event.preventDefault();
+        errors.push(event.error?.message ?? event.message);
+        errorSignal.resolve();
+      });
+      let first = 0;
+      let second = 0;
+      const tag = t.div({ persist: true }).effect(() => { seen.push(value.get()); });
+      tag.addDisconnectedCallback(() => { throw new Error(`disconnect:${++first}`); });
+      tag.addDisconnectedCallback(() => { second++; });
+      const el = tag.toElement();
+      for (let cycle = 0; cycle < 3; cycle++) {
+        document.body.append(el);
+        await Promise.resolve();
+        const reported = new Promise(resolve => { errorSignal.resolve = resolve; });
+        el.remove();
+        await reported;
+        value.set(cycle + 1);
+        applyPendingReactiveUpdates();
+      }
+      return { first, second, errors, seen };
+    }, bundle);
+    expect(result).toEqual({
+      first: 3, second: 3, errors: ['disconnect:1', 'disconnect:2', 'disconnect:3'], seen: [0, 1, 2],
+    });
+  });

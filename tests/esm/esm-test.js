@@ -4585,3 +4585,13 @@ describe('dispatchOnPropChange validation', () => {
     assert.equal(silent.div({ dispatchOnPropChange: true }).toString(), '<div></div>');
   });
 });
+
+describe('tag.effect serialization', () => {
+  it('registers chainable owned effects without running them during SSR', () => {
+    let runs = 0;
+    const component = () => t.div('owned effect').effect(() => { runs++; });
+    assert.equal(component().toString(), '<div>owned effect</div>');
+    assert.ok(renderForHydration(component, {}, 'owned-effect-ssr').toString().includes('owned effect'));
+    assert.equal(runs, 0);
+  });
+});

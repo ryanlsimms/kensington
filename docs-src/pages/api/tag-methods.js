@@ -226,6 +226,16 @@ t.img(attributes?: ImgAttributes): ImgTag`),
         ],
       ],
       [
+        t.code('.effect(fn)'),
+        t.code('this'),
+        [
+          'Registers a signal-tracking effect owned by the tag. Register before .toElement(). ',
+          'Starts on connection, stops on normal removal, and pauses/resumes with own or inherited persist: true. ',
+          'Receives the live element as its first argument and this. Starts/resumes before connected callbacks. ',
+          'Never runs during SSR. Return values are ignored; use addDisconnectedCallback for resource teardown.',
+        ],
+      ],
+      [
         t.code('.addConnectedCallback(fn)'),
         t.code('this'),
         [
@@ -238,7 +248,7 @@ t.img(attributes?: ImgAttributes): ImgTag`),
           '. With ',
           t.code('{ persist: true }'),
           ' the callback re-fires on every re-insertion. ',
-          'Can be called multiple times to register multiple handlers.',
+          'Can be called multiple times to register multiple handlers. ',
         ],
       ],
       [

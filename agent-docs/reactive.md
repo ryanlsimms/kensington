@@ -25,10 +25,11 @@ When imported as ESM from one installed package, the package root, `kensington/r
 
 Runtime Guard diagnostics follow the instance whose tag is rendering. `validationLevel: 'off'` disables the checks, `warn` reports through that instance's logger, and `error` throws through normal reactive error handling. Bindings created during rendering retain this policy when they update. Each child tag establishes its own policy, including off. Standalone signal, computed, effect, and applyPendingReactiveUpdates calls do not inherit an instance setting. Slim builds replace the guard with an off scope wrapper and do not load its diagnostic implementation. The shared core retains only the passive validation context. Disabling diagnostics does not make incompatible reactive graphs work. Loop protection remains independent.
 
-### The six core operations
+### Core operations
 
 - `signal(initial, key?)` — writable state. **Read with `.get()`**, or use `.subscribe()` when the read exists only to trigger an effect; both subscribe the current reactive context if one is active and return the current value. Write with `.set(v)` or `.set(prev => next)`. `.stop()` tears down subscribers. `.transform(fn, key?)` chains a derivation. `.value` exists as a non-subscribing peek; it is the exception, not a peer of `.get()` or `.subscribe()`. See [Reading signals](#reading-signals).
 - `computed(fn, key?)` — derived state. Auto-disposes when it has no subscribers, re-runs when its tracked signals change.
+- `tag.effect(fn)` — registers a tag-owned effect, starts on connection, stops on normal removal, and pauses/resumes with own or inherited persistence. Returns the tag for chaining.
 - `effect(fn)` — side effect (DOM updates, fetches, timers). Returns `{ pause, resume, stop }`. Re-runs when tracked signals change.
 - `applyPendingReactiveUpdates()` immediately processes pending user effects and DOM bindings. Ordinary writes are automatically batched. Call it from application code when the next line needs the updated DOM.
 - `signal.mapWithKey(keyOrProp, mapFn)` — keyed list rendering. Each key owns a stable tag instance. mapFn re-runs for a row when the outer array delivers a new object whose own enumerable fields actually differ (shallow diff). Reorderings with fresh literals of identical content are no-ops, so DOM node identity is preserved.
@@ -39,6 +40,8 @@ For DOM access before the next line, use `applyPendingReactiveUpdates()`. For a 
 ### The one rule that bites: pass a key when inside a reactive callback
 
 Before writing any `signal()` / `computed()` / `.transform()` call, ask: will this call run on the call stack of `computed(fn)`, `signal.transform(fn)`, `mapWithKey(key, mapFn)`'s mapFn, or `effect(fn)` at runtime? If yes, pass a stable key as the second argument. Call-stack matters, not lexical position. A helper called from inside a reactive callback is in the trap even though the call looks top-level in the source.
+
+A key being present does not guarantee uniqueness. For a shared helper that can run more than once in the same rendering scope, require a stable instance key from the caller and derive every local primitive's key from it. Include row identity plus field/role at the call site, then a distinct local suffix inside the helper. See [Shared helper key namespaces](#shared-helper-key-namespaces).
 
 ### Reading signals
 
@@ -884,6 +887,47 @@ const list = items.mapWithKey('id', item => row(item));
 
 The same applies anywhere a helper that creates signals or computeds is called from inside a `computed`, `transform`, `effect`, or `mapFn` body. `mapWithKey` is one common case; **any** `computed(() => ...)` wrapper has the same effect. If you wrap a section of UI in `computed(() => ...)` so it rebuilds when a dimension/layout signal changes, every per-row or per-cell helper called from inside is in the trap. Keys per call site (e.g. `${address}-cls` when the wrapping computed iterates addresses).
 
+### Shared helper key namespaces
+
+**When a helper can be called more than once in the same rendering scope, require a stable instance key.** The caller owns instance identity; the helper owns its local suffixes. Thread the key through nested helpers as well.
+
+A literal-only key such as `'price-label'` inside a shared helper can collide when a row renders both subtotal and tax through that helper. Including only the row id still gives those two calls the same key. Use **row identity + field/role + local primitive label**:
+
+```javascript
+function priceBadge({ key, amount }) {
+  const selected = signal(false, `${key}:selected`);
+  const label = amount.transform(n => n.toFixed(2), `${key}:label`);
+  const className = computed(
+    () => selected.get() ? 'price selected' : 'price',
+    `${key}:class`,
+  );
+  return t.button({
+    class: className,
+    onclick: () => selected.set(value => !value),
+  }, label);
+}
+
+// Declared in a one-shot component body. Each amount is a numeric signal.
+const rows = signal([{ id: 'a', subtotal: signal(12), tax: signal(2) }]);
+const list = rows.mapWithKey('id', row => t.li([
+  priceBadge({ key: `row:${row.id}:subtotal`, amount: row.subtotal }),
+  priceBadge({ key: `row:${row.id}:tax`, amount: row.tax }),
+]));
+```
+
+The two instances now have independent local state and derived values. If `priceBadge` delegates to another reactive helper, pass a child namespace such as `${key}:tooltip`; that helper adds its own local suffixes. Do not discard the caller's namespace in a lower-level helper.
+
+When adding or reviewing a shared reactive helper:
+
+- Require `key` (or an equally explicit instance-key parameter); avoid a shared default such as `key = 'price'`.
+- Derive each `signal`, `computed`, and `.transform` key from that parameter, with a distinct stable suffix per primitive. `computed` and `.transform` share a registry, so they must not reuse a key even when they read different source signals.
+- Check every call site: two instances in one row need different field/role segments. Repeated items in a plain `.map()` inside one computed also need item identity in their instance keys.
+- Preserve the same keys across reruns, immutable row updates and reorderings. Avoid array positions, random values, timestamps and newly allocated objects as identities. An intentional identity change resets the keyed state.
+
+**Scope matters.** Keys are unique within the owning computed, not across the whole application. Each `mapWithKey` row has its own computed scope, so a constant local key can be valid when used exactly once per row scope, as in the preceding `row()` example. Passing explicit namespaces is the safer convention when extracting helpers for reuse. These keys do not replace the list's `mapWithKey` identity or make constructing new primitives inside an effect safe.
+
+**Check identity, not template-literal syntax.** A template literal can still collide (`${row.id}` used for both fields), while a stable string/number parameter or stable object/symbol key can be valid. Requiring a template literal everywhere would reject valid keys without proving uniqueness. The documentation convention above is an agent review requirement for shared helpers; it does not imply a new lint rule.
+
 ### Lazy registries called from reactive callbacks
 
 A common pattern is a module-level "get-or-create" registry. `getCellRaw(address)` returns an existing signal from a `Map`, or creates one on first access.
@@ -1001,7 +1045,7 @@ class MyWidget extends HTMLElement {
 }
 ```
 
-Inside a Kensington component that creates several `effect()` calls, capture each handle and stop them together from the root tag's disconnect callback. The connected callback is the canonical place to create the effects so they only run when the element is live. This pattern composes cleanly with `persist: true`, where the connect callback re-fires on every reconnection:
+Inside a Kensington component, use `tag.effect()` to own reactive side effects. It manages their subscriptions across the tag's mount and removal:
 
 ```javascript
 function searchPanel({ initialQuery }) {
@@ -1012,25 +1056,47 @@ function searchPanel({ initialQuery }) {
     t.ul(results.mapWithKey('id', r => t.li(r.label))),
   ]);
 
-  const effects = [];
-  root.addConnectedCallback(() => {
-    effects.push(effect(() => {
-      const q = query.get();
-      if (!q) { results.set([]); return; }
-      fetch(`/api/search?q=${encodeURIComponent(q)}`).then(r => r.json()).then(results.set);
-    }));
-    effects.push(effect(() => {
-      history.replaceState(null, '', query.get() ? `?q=${encodeURIComponent(query.get())}` : '/');
-    }));
+  root.effect(() => {
+    const q = query.get();
+    if (!q) { results.set([]); return; }
+    fetch(`/api/search?q=${encodeURIComponent(q)}`).then(r => r.json()).then(results.set);
   });
-  root.addDisconnectedCallback(() => {
-    while (effects.length) { effects.pop().stop(); }
+  root.effect(() => {
+    history.replaceState(null, '', query.get() ? `?q=${encodeURIComponent(query.get())}` : '/');
   });
   return root;
 }
 ```
 
-Effects created inside `effect()` calls on `mapWithKey` rows are stopped automatically when their row leaves the DOM. The explicit start/stop pattern above is only needed for effects owned by the component itself rather than by the reconciler.
+For effects on `mapWithKey` rows, call `.effect()` on the row tag. Standalone `effect()` handles still need an explicit `.stop()`, and timers, listeners and in-flight requests need separate teardown through `addDisconnectedCallback`.
+
+## Tag-owned effects
+
+Use `tag.effect(fn)` for a reactive side effect whose lifetime belongs to an element:
+
+```javascript
+const root = t.div([
+  t.input({ prop: { value: query }, oninput: e => query.set(e.target.value) }),
+  resultsList,
+]);
+root.effect(() => search.trigger(query.get()));
+root.addDisconnectedCallback(() => search.stop()); // Cancel timers/requests separately.
+return root;
+```
+
+Or chain it directly: `return t.div(content).effect(() => updateChart(data.get()));`.
+
+- Register before `.toElement()`. Registration returns the same tag and does not run the callback. It is safe inside component functions, `computed`/`transform` callbacks and `mapWithKey` row builders because execution waits for connection.
+- Each run tracks signal dependencies like standalone `effect()`. The live element is passed as both the callback's first argument and `this`. Each tag can own multiple effects.
+- Effects first run after insertion is observed, not when `.effect(fn)` is called. Initialize state needed during rendering directly or with `computed()`; an owned effect cannot supply initial SSR values.
+- Built-in DOM properties are already applied when the first run starts. Owned effects start/resume before connected callbacks, including callbacks that initialize widgets or populate element references. If an effect depends on that setup, create a standalone effect inside the connected callback and stop its handle in `addDisconnectedCallback` instead.
+- Normal removal stops the effect. Direct DOM removal such as `element.remove()` is processed by the mutation observer, so a queued rerun can execute before removal is observed. `applyPendingReactiveUpdates()` does not process lifecycle observers. See [Choosing how to wait](#choosing-how-to-wait) when code must wait for removal teardown.
+- With own or inherited `persist: true`, removal pauses the effect and reconnection resumes it with current signal values. Moves within the connected document do not restart it.
+- `.toString()`, SSR, never-mounted tags, and tags removed before a live connection is observed do not run owned effects. Rebuilding a normally removed tag through `.toElement()` creates new effects for the new element.
+- Errors are reported through normal asynchronous effect error handling without skipping other owned effects. Instance validation applies to initial runs and later updates. An initial run that throws leaves no subscription and is not retried on reconnect; rebuilding the tag creates a new instance.
+- Pausing/stopping an effect only manages its reactive subscriptions. It does not cancel timers, listeners or requests already started by the callback. Register their cancellation with `addDisconnectedCallback`; discard late async results or abort requests as appropriate.
+
+The method returns the tag, not an effect handle. Use standalone `effect()` when you need to manually pause, resume or stop it. Ordinary `effect()` lifecycle rules and lint checks remain unchanged.
 
 ## addConnectedCallback / addDisconnectedCallback
 
@@ -1044,18 +1110,34 @@ function statsPanel() {
     t.p(['Tick ', count, ' times']),
   ]);
   let id;
-  panel.addConnectedCallback(el => { id = setInterval(() => count.set(n => n + 1), 1000); });
-  panel.addDisconnectedCallback(() => { clearInterval(id); });
+  panel.addConnectedCallback(() => {
+    id = setInterval(() => count.set(n => n + 1), 1000);
+  });
+  panel.addDisconnectedCallback(() => clearInterval(id));
   return panel;
 }
 ```
 
 - `fn` for `addConnectedCallback` receives the live element. It runs every time the element is inserted into the DOM (initial mount plus every reconnect for `persist: true` parents).
-- `fn` for `addDisconnectedCallback` runs every time the element is removed.
-- Tag instances are reusable. The returned tag is the same instance across `.toElement()` calls, but each `.toElement()` produces (or reuses) a single DOM element and the connect/disconnect callbacks fire against that element.
-- For one-shot setup that doesn't need a teardown, you can still use `addConnectedCallback` alone (e.g. focus a newly mounted input via `el => el.focus()`).
-- The callback body is a plain function call, NOT inside a reactive scope. Creating `effect()` here is the right pattern when you need to react to a signal for as long as the element is mounted. Capture the stop function and call it from `addDisconnectedCallback`: `let stop; panel.addConnectedCallback(() => { stop = effect(() => { ... }); }); panel.addDisconnectedCallback(() => stop?.());`. The `kensington/no-ignored-effect-return` lint rule recognises this capture-and-stop pattern. Creating `signal()` or `computed()` here is also free of warnings since the callback is not a `computed` body.
-- **Window- or document-level listeners** are wired the same way. `panel.addConnectedCallback(() => { window.addEventListener('keydown', handler); }); panel.addDisconnectedCallback(() => { window.removeEventListener('keydown', handler); });` keeps the listener's lifetime tied to the panel's mount. Useful for global keyboard shortcuts, scroll listeners, `online`/`offline` events, etc. Always pair with a `removeEventListener` in the disconnect callback, since these listeners are not on a node that gets garbage collected with the panel.
+- Callback return values are ignored, including functions and promises. Register teardown explicitly with `addDisconnectedCallback`.
+- With `persist: true` (including inherited persistence), both lifecycle callbacks run on each observed connection/removal cycle. Moves within the connected document keep the current resources.
+- Lifecycle callbacks use the DOM mutation observer. An element never mounted, or inserted and removed before the observer sees a live connection, does not run connected setup. `.toString()` and server rendering do not run lifecycle callbacks.
+- `fn` for `addDisconnectedCallback` runs when the element is removed, after its owned effects and built-in bindings stop or pause. Other callbacks and descendant teardown still run when one callback throws, or when parent teardown removes descendant DOM. Errors are reported asynchronously.
+- Tag instances are reusable. Rebuilding a normally removed tag via `.toElement()` creates a new live element and lifecycle. Raw reinsertion of a removed element requires `persist: true` to reactivate it.
+- For one-shot setup that doesn't need teardown, use `addConnectedCallback` alone (e.g. focus via `el => el.focus()`).
+- The connected callback body runs outside the rendering computation. If a reactive effect requires setup from that callback, capture the handle and stop it explicitly:
+
+  ```javascript
+  let watcher;
+  panel.addConnectedCallback(() => {
+    initializeChart();
+    watcher = effect(() => updateChart(data.get()));
+  });
+  panel.addDisconnectedCallback(() => watcher?.stop());
+  ```
+
+  For ordinary reactive work, prefer `panel.effect(fn)`. Both standalone and tag-owned effect bodies ignore return values. Stopping an effect stops reactive reruns; timers, listeners and requests still need explicit cancellation.
+- **Window- or document-level listeners** use the same pairing: `panel.addConnectedCallback(() => window.addEventListener('keydown', handler)); panel.addDisconnectedCallback(() => window.removeEventListener('keydown', handler));`.
 - **Initial property bindings are already applied when the connected callback runs.** Kensington applies them while building the element, before the connection observer runs. A new signal write made inside the callback still queues a later binding update. If the next line must read that updated property, call `applyPendingReactiveUpdates()` first. If the work should happen after the current callback finishes, use `queueMicrotask`. Neither choice waits for a third party custom element to finish its own asynchronous rendering. Use that element's readiness API when needed.
 
 This is the canonical place for `setInterval`/`setTimeout`, `IntersectionObserver`, `ResizeObserver`, manual focus, `effect()` whose lifetime should match the element's mount, or any imperative DOM API that needs symmetric setup/cleanup tied to element mount/unmount.

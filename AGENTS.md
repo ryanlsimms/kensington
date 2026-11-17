@@ -162,12 +162,13 @@ Common decisions when choosing an API.
 **`effect()` or `addConnectedCallback`?**
 - Side effect tied to a DOM element's mount and unmount (timer, observer, third-party widget init)? Use `addConnectedCallback` and `addDisconnectedCallback`.
 - Side effect that should re-run when signals change (syncing to localStorage, logging)? Use `effect()`. Capture the return and call `.stop()` in a disconnect callback if it should not outlive the element.
-- Both apply? `addConnectedCallback(() => { const e = effect(...); return e.stop; })`. The pattern composes.
+- Effect should live only while a tag is mounted? Use `tag.effect(fn)`. It starts on connection, stops on normal removal, and pauses/resumes with own or inherited `persist: true`. Use `addDisconnectedCallback` for timers, listeners, or request cancellation.
 
 **Does this `signal()` / `computed()` / `.transform()` need a key?**
 - Does the call's call-stack ever pass through `computed(fn)`, `signal.transform(fn)`, `signal.mapWithKey(key, fn)`, or `effect(fn)`? Pass a key.
 - Module-scope or inside a one-shot component function with no surrounding reactive callback? No key needed.
 - Unsure? Pass a key. Safe everywhere. Outside a reactive scope the key is a no-op.
+- Shared helper used more than once in the same rendering scope? Pass a stable instance key that includes row identity and field/role, then derive a distinct key for each primitive: `${key}:selected`, `${key}:label`, `${key}:class`. A row id alone does not distinguish two helpers in that row. See `reactive.md` → Shared helper key namespaces.
 
 **Apply updates now or run code later?**
 
@@ -199,6 +200,7 @@ Granular "I want to…" → exact subdoc section. Use this to go straight to the
 | Debug reactive state with a dev panel | `reactive.md` → DevTools |
 | Fix a `signal-in-computed` warning | `reactive.md` → Reactive primitives inside a computed need a key |
 | Fix a `computed-in-computed` or `transform-in-computed` warning | `reactive.md` → Nested computed and transform without a key |
+| Keep keys unique across shared helper instances | `reactive.md` → Shared helper key namespaces |
 | Prevent a lazy-registry signal from being created inside a computed | `reactive.md` → Lazy registries called from reactive callbacks |
 | Server-render + client takeover, basic setup | `hydration.md` → Hydration |
 | Wrap `renderForHydration` output in a full HTML document | `hydration.md` → Full page template |
@@ -332,6 +334,18 @@ items.set(prev => prev.filter(i => i.id !== 2));
 
 Each `mapWithKey` key owns a stable tag instance. `mapFn` re-runs for a row only when the outer array delivers a new object whose own enumerable fields actually differ (shallow diff by `Object.is`). Reorderings and edits both work through the natural immutable-update pattern (`prev.map(r => r.id === x ? { ...r, foo: v } : r)`). If the signal holds an envelope shape like `{ tabs: [...] }` rather than a plain array, project first: `presence.transform(p => p.tabs, 'tabs').mapWithKey('id', ...)`. See `agent-docs/reactive.md` → Keyed lists for the full rule, per-row local state, and how to drive rows from outside the list.
 
+### Tag-owned effects
+
+Use `tag.effect(fn)` for reactive side effects tied to a tag. Register before `.toElement()`; the callback starts when connected, receives the element, and reruns when signals change. It returns the tag for chaining.
+
+```javascript
+return t.div(content).effect(() => {
+  updateChart(data.get());
+});
+```
+
+Owned effects stop on normal removal. With own or inherited `persist: true`, they pause while disconnected and resume with current signal values. They do not run during SSR, so initialize render-time state directly or with `computed()`. Owned effects run before connected callbacks; use paired lifecycle callbacks if the effect depends on their setup. Use `addDisconnectedCallback` to cancel timers, listeners or requests separately. See `agent-docs/reactive.md` → Tag-owned effects for removal timing and error behavior.
+
 ### Effect with cleanup
 
 ```javascript
@@ -342,13 +356,11 @@ let id;
 panel.addConnectedCallback(() => {
   id = setInterval(() => count.set(n => n + 1), 1000);
 });
-panel.addDisconnectedCallback(() => {
-  clearInterval(id);
-});
+panel.addDisconnectedCallback(() => clearInterval(id));
 document.body.append(panel.toElement());
 ```
 
-`addConnectedCallback` is for any side effect whose lifetime matches a DOM element: timers, `IntersectionObserver`, `ResizeObserver`, third-party widget init, `effect()` calls. Always pair with `addDisconnectedCallback`. See `agent-docs/reactive.md` → addConnectedCallback / addDisconnectedCallback.
+`addConnectedCallback` is for any side effect whose lifetime matches a DOM element: timers, `IntersectionObserver`, `ResizeObserver`, third-party widget init, `effect()` calls. Pair setup with `addDisconnectedCallback` for teardown. See `agent-docs/reactive.md` → addConnectedCallback / addDisconnectedCallback.
 
 ### Static server-rendered page
 
@@ -880,7 +892,7 @@ General Kensington mistakes.
 Coming from React or Svelte. These traps catch agents whose muscle memory is built on a different execution model.
 
 - **The component function does not re-run.** Kensington has no render loop. A component runs once at mount, and signals declared in its body are stable for the tag's lifetime. Do not put logic in the function body that you expect to re-execute when state changes. Put it in a `computed`, an `effect`, or an event handler.
-- **`effect()` does not support a cleanup return value.** Unlike React's `useEffect`, returning a function from the effect body is silently ignored. Intervals, subscriptions, and other resources allocated inside the callback are not cleaned up. For teardown tied to a component's lifetime, use `addConnectedCallback` and `addDisconnectedCallback` on the surrounding tag, or store the return handle from `effect()` and call its `.stop()` in a disconnect callback.
+- **`effect()` does not support a cleanup return value.** Unlike React's `useEffect`, returning a function from the effect body is silently ignored. Intervals, subscriptions, and other resources allocated inside the callback are not cleaned up. For teardown tied to a component's lifetime, use `addDisconnectedCallback` on the surrounding tag, or store the return handle from `effect()` and call its `.stop()` in a disconnect callback.
 - **Do not early-return from a component to conditionally skip rendering.** A component must return one `ContentTag`. For conditional UI, use `null`, `false`, `''`, `undefined`, or `true` items inside a content array (they drop silently), or a `signal` / `computed` / `.transform()` that swaps the subtree in place.
 - **Do not call `signal()` inside a callback that re-runs.** React's `useState(initial)` is hook-tracked across renders. An unkeyed `signal(0)` inside a `computed` body, a `.transform()` callback, or a `mapWithKey` mapFn allocates a new instance on every run and loses its value. Pass a key (`signal(0, 'open')`) or hoist the declaration into the surrounding non-reactive scope.
 - **Do not rely on prop-identity comparisons.** There is no `React.memo`, no `===` cutoff on prop changes, no Svelte assignment-tracking. Reactivity is per-signal. Only the bindings that read a changed signal update. Pass signals (not snapshots) when downstream code needs reactivity.
