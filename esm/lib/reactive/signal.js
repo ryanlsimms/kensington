@@ -60,6 +60,12 @@ const state = getSharedReactiveState('signal', () => ({
   pendingNestedWarning: new WeakMap(),
 }));
 
+// Keep notification state separate. A dedicated microtask also covers their flushes.
+const notifications = getSharedReactiveState('after-reactive-updates', () => ({
+  pending: new Set(),
+  scheduled: false,
+}));
+
 const MAX_EFFECT_LOOPS = 100;
 const MAX_ASYNC_EFFECT_TURNS = 500;
 
@@ -155,8 +161,14 @@ function scheduleMicrotaskTurnAdvance() {
   }
 }
 
+function notifyNextPropertyChange() {
+  const callback = notifications.pending.values().next().value;
+  notifications.pending.delete(callback);
+  try { callback(); } catch (err) { rethrowAsync(err); }
+}
+
 function flush() {
-  if (state.inFlush || state.pending.size === 0) { return; }
+  if (state.inFlush || (state.pending.size === 0 && notifications.pending.size === 0)) { return; }
   if (!state.asyncTurnCountsResetScheduled) {
     state.asyncTurnCountsResetScheduled = true;
     setTimeout(() => { state.asyncTurnCounts.clear(); state.asyncTurnCountsResetScheduled = false; }, 0);
@@ -164,7 +176,11 @@ function flush() {
   state.runCounts.clear();
   state.inFlush = true;
   try {
-    while (state.pending.size > 0) {
+    while (state.pending.size > 0 || notifications.pending.size > 0) {
+      if (state.pending.size === 0) {
+        notifyNextPropertyChange();
+        continue;
+      }
       const runs = [...state.pending];
       for (const fn of runs) {
         // Keep later readers queued while earlier writers run. Their existing turn
@@ -210,12 +226,28 @@ function flush() {
   state.runCounts.clear();
 }
 
-function scheduleRun(fn) {
-  state.pending.add(fn);
+function scheduleFlush() {
   if (!state.scheduled && !state.inFlush) {
     state.scheduled = true;
     queueMicrotask(() => {
       state.scheduled = false;
+      flush();
+    });
+  }
+}
+
+function scheduleRun(fn) {
+  state.pending.add(fn);
+  scheduleFlush();
+}
+
+// Notifications run after bindings/effects settle, within the same loop-protected flush.
+export function _afterReactiveUpdates(fn) {
+  notifications.pending.add(fn);
+  if (!notifications.scheduled) {
+    notifications.scheduled = true;
+    queueMicrotask(() => {
+      notifications.scheduled = false;
       flush();
     });
   }

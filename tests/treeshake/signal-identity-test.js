@@ -301,3 +301,47 @@ describe('reactive-state sharing across package entry points', () => {
     }
   });
 });
+
+// Use an isolated process so the legacy state is installed before any modern copy.
+describe('property notifications with an older scheduler', () => {
+  for (const entry of [sourceRoot, distFull, distFullMin, distSlim, distSlimMin]) {
+    it(`drains notifications after legacy flushes through ${entry}`, () => {
+      const fixtureUrl = new URL('./fixtures/legacy-scheduler.js', import.meta.url).href;
+      const writerUrl = new URL('../../esm/lib/render/prop-events.js', import.meta.url).href;
+      execFileSync(process.execPath, ['--input-type=module', '-e', `
+        import assert from 'node:assert/strict';
+        import { JSDOM } from 'jsdom';
+        const { legacySchedule } = await import(${JSON.stringify(fixtureUrl)});
+        const { window } = new JSDOM('<body></body>');
+        for (const key of ['window', 'document', 'MutationObserver', 'Node', 'Element']) {
+          globalThis[key] = key === 'window' ? window : window[key];
+        }
+        const runtime = await import(${JSON.stringify(pathToFileURL(entry).href)});
+        const { createPropWriter } = await import(${JSON.stringify(writerUrl)});
+        assert.doesNotThrow(() => runtime.applyPendingReactiveUpdates());
+        const value = runtime.signal('a');
+        const el = runtime.t.input({ prop: { value }, dispatchOnPropChange: true }).toElement();
+        document.body.append(el);
+        const events = [];
+        el.addEventListener('input', () => events.push(el.value));
+        legacySchedule(() => value.set('b'));
+        // First the older scheduler runs, then the dedicated notification microtask.
+        await Promise.resolve();
+        await Promise.resolve();
+        assert.deepEqual(events, ['b']);
+        legacySchedule(() => value.set('c'));
+        runtime.applyPendingReactiveUpdates();
+        assert.deepEqual(events, ['b', 'c']);
+        await Promise.resolve();
+        assert.deepEqual(events, ['b', 'c']);
+        // A binding owned directly by an old flush must work without the DOM lifecycle.
+        const write = createPropWriter(el, 'value', true);
+        write(el, 'initial');
+        legacySchedule(() => write(el, 'legacy'));
+        await Promise.resolve();
+        await Promise.resolve();
+        assert.deepEqual(events, ['b', 'c', 'legacy']);
+      `], { cwd: fileURLToPath(new URL('../../', import.meta.url)), stdio: 'pipe' });
+    });
+  }
+});

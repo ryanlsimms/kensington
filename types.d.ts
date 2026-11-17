@@ -482,12 +482,11 @@ type AAttributes = {
   'scriptlevel'?: Reactive<string>;
   'target'?: Reactive<string>;
   'type'?: Reactive<string>;
-  prop?: ContextualPropFor<'a'> | null; persist?: boolean;
-} & SvgPresentationAttributes & SvgConditionalAttributes & SvgXLinkAttributes & NameSpaceAttributes & GlobalAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<ContextualPropFor<'a'>> & SvgPresentationAttributes & SvgConditionalAttributes & SvgXLinkAttributes & NameSpaceAttributes & GlobalAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type AbbrAttributes = { prop?: PropFor<'abbr'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type AbbrAttributes = TagOptions<PropFor<'abbr'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type AddressAttributes = { prop?: PropFor<'address'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type AddressAttributes = TagOptions<PropFor<'address'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type AnimateAttributes = {
   'accumulate'?: Reactive<"none" | "sum">;
@@ -513,8 +512,7 @@ type AnimateAttributes = {
   'restart'?: Reactive<"always" | "never" | "whenNotActive">;
   'to'?: Reactive<string>;
   'values'?: Reactive<string>;
-  prop?: PropFor<'animate'> | null; persist?: boolean;
-} & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'animate'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
 type AnimateMotionAttributes = {
   'accumulate'?: Reactive<"none" | "sum">;
@@ -543,8 +541,7 @@ type AnimateMotionAttributes = {
   'rotate'?: Reactive<string>;
   'to'?: Reactive<string>;
   'values'?: Reactive<string>;
-  prop?: PropFor<'animateMotion'> | null; persist?: boolean;
-} & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'animateMotion'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
 type AnimateTransformAttributes = {
   'accumulate'?: Reactive<"none" | "sum">;
@@ -571,8 +568,7 @@ type AnimateTransformAttributes = {
   'to'?: Reactive<string>;
   'type'?: Reactive<"translate" | "scale" | "rotate" | "skewX" | "skewY">;
   'values'?: Reactive<string>;
-  prop?: PropFor<'animateTransform'> | null; persist?: boolean;
-} & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'animateTransform'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
 type AnnotationAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -588,8 +584,7 @@ type AnnotationAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'annotation'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'annotation'>> & NameSpaceAttributes & GlobalEvents;
 
 type AnnotationXmlAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -606,8 +601,7 @@ type AnnotationXmlAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'annotation-xml'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'annotation-xml'>> & NameSpaceAttributes & GlobalEvents;
 
 type AreaAttributes = {
   'alt'?: Reactive<string>;
@@ -619,12 +613,11 @@ type AreaAttributes = {
   'rel'?: Reactive<string>;
   'shape'?: Reactive<"circle" | "CIRCLE" | "default" | "DEFAULT" | "poly" | "POLY" | "rect" | "RECT">;
   'target'?: Reactive<string>;
-  prop?: PropFor<'area'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'area'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type ArticleAttributes = { prop?: PropFor<'article'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type ArticleAttributes = TagOptions<PropFor<'article'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type AsideAttributes = { prop?: PropFor<'aside'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type AsideAttributes = TagOptions<PropFor<'aside'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type AudioAttributes = {
   'autoplay'?: Reactive<boolean>;
@@ -635,25 +628,22 @@ type AudioAttributes = {
   'muted'?: Reactive<boolean>;
   'preload'?: Reactive<"none" | "metadata" | "auto">;
   'src'?: Reactive<string>;
-  prop?: PropFor<'audio'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'audio'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type BAttributes = { prop?: PropFor<'b'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type BAttributes = TagOptions<PropFor<'b'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type BaseAttributes = {
   'href'?: Reactive<string>;
   'target'?: Reactive<string>;
-  prop?: PropFor<'base'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'base'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type BdiAttributes = { prop?: PropFor<'bdi'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type BdiAttributes = TagOptions<PropFor<'bdi'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type BdoAttributes = { prop?: PropFor<'bdo'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type BdoAttributes = TagOptions<PropFor<'bdo'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type BlockquoteAttributes = {
   'cite'?: Reactive<string>;
-  prop?: PropFor<'blockquote'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'blockquote'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type BodyAttributes = {
   'onafterprint'?: Reactive<string | ((event: Event) => void)>;
@@ -674,10 +664,9 @@ type BodyAttributes = {
   'onstorage'?: Reactive<string | ((event: Event) => void)>;
   'onunhandledrejection'?: Reactive<string | ((event: Event) => void)>;
   'onunload'?: Reactive<string | ((event: Event) => void)>;
-  prop?: PropFor<'body'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'body'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type BrAttributes = { prop?: PropFor<'br'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type BrAttributes = TagOptions<PropFor<'br'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ButtonAttributes = {
   'command'?: Reactive<string>;
@@ -694,82 +683,72 @@ type ButtonAttributes = {
   'popovertargetaction'?: Reactive<"toggle" | "show" | "hide">;
   'type'?: Reactive<"submit" | "SUBMIT" | "reset" | "RESET" | "button" | "BUTTON">;
   'value'?: Reactive<number | string>;
-  prop?: PropFor<'button'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'button'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type CanvasAttributes = {
   'height'?: Reactive<number | `${number}`>;
   'width'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'canvas'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'canvas'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type CaptionAttributes = { prop?: PropFor<'caption'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type CaptionAttributes = TagOptions<PropFor<'caption'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type CircleAttributes = {
   'cx'?: Reactive<number | string>;
   'cy'?: Reactive<number | string>;
   'pathLength'?: Reactive<number | `${number}`>;
   'r'?: Reactive<number | string>;
-  prop?: PropFor<'circle'> | null; persist?: boolean;
-} & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'circle'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type CiteAttributes = { prop?: PropFor<'cite'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type CiteAttributes = TagOptions<PropFor<'cite'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ClipPathAttributes = {
   'externalResourcesRequired'?: Reactive<"true" | "false">;
   'requiredFeatures'?: Reactive<string>;
-  prop?: PropFor<'clipPath'> | null; persist?: boolean;
-} & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'clipPath'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type CodeAttributes = { prop?: PropFor<'code'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type CodeAttributes = TagOptions<PropFor<'code'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ColAttributes = {
   'span'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'col'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'col'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ColgroupAttributes = {
   'span'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'colgroup'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'colgroup'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type DataAttributes = {
   'value'?: Reactive<number | string>;
-  prop?: PropFor<'data'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'data'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type DatalistAttributes = { prop?: PropFor<'datalist'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type DatalistAttributes = TagOptions<PropFor<'datalist'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type DdAttributes = { prop?: PropFor<'dd'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type DdAttributes = TagOptions<PropFor<'dd'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type DefsAttributes = { prop?: PropFor<'defs'> | null; persist?: boolean; } & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type DefsAttributes = TagOptions<PropFor<'defs'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
 type DelAttributes = {
   'cite'?: Reactive<string>;
   'datetime'?: Reactive<string>;
-  prop?: PropFor<'del'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'del'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type DescAttributes = { prop?: PropFor<'desc'> | null; persist?: boolean; } & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type DescAttributes = TagOptions<PropFor<'desc'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
 type DetailsAttributes = {
   'name'?: Reactive<string>;
   'open'?: Reactive<boolean>;
-  prop?: PropFor<'details'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'details'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type DfnAttributes = { prop?: PropFor<'dfn'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type DfnAttributes = TagOptions<PropFor<'dfn'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type DialogAttributes = {
   'open'?: Reactive<boolean>;
-  prop?: PropFor<'dialog'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'dialog'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type DivAttributes = { prop?: PropFor<'div'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type DivAttributes = TagOptions<PropFor<'div'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type DlAttributes = { prop?: PropFor<'dl'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type DlAttributes = TagOptions<PropFor<'dl'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type DtAttributes = { prop?: PropFor<'dt'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type DtAttributes = TagOptions<PropFor<'dt'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type EllipseAttributes = {
   'cx'?: Reactive<number | string>;
@@ -777,97 +756,91 @@ type EllipseAttributes = {
   'pathLength'?: Reactive<number | `${number}`>;
   'rx'?: Reactive<number | string>;
   'ry'?: Reactive<number | string>;
-  prop?: PropFor<'ellipse'> | null; persist?: boolean;
-} & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'ellipse'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type EmAttributes = { prop?: PropFor<'em'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type EmAttributes = TagOptions<PropFor<'em'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type EmbedAttributes = {
   'height'?: Reactive<number | `${number}`>;
   'src'?: Reactive<string>;
   'type'?: Reactive<string>;
   'width'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'embed'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'embed'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type FeBlendAttributes = { prop?: PropFor<'feBlend'> | null; persist?: boolean; } & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeBlendAttributes = TagOptions<PropFor<'feBlend'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type FeColorMatrixAttributes = { prop?: PropFor<'feColorMatrix'> | null; persist?: boolean; } & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeColorMatrixAttributes = TagOptions<PropFor<'feColorMatrix'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type FeComponentTransferAttributes = { prop?: PropFor<'feComponentTransfer'> | null; persist?: boolean; } & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeComponentTransferAttributes = TagOptions<PropFor<'feComponentTransfer'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type FeCompositeAttributes = { prop?: PropFor<'feComposite'> | null; persist?: boolean; } & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeCompositeAttributes = TagOptions<PropFor<'feComposite'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type FeConvolveMatrixAttributes = { prop?: PropFor<'feConvolveMatrix'> | null; persist?: boolean; } & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeConvolveMatrixAttributes = TagOptions<PropFor<'feConvolveMatrix'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type FeDiffuseLightingAttributes = { prop?: PropFor<'feDiffuseLighting'> | null; persist?: boolean; } & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeDiffuseLightingAttributes = TagOptions<PropFor<'feDiffuseLighting'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type FeDisplacementMapAttributes = { prop?: PropFor<'feDisplacementMap'> | null; persist?: boolean; } & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeDisplacementMapAttributes = TagOptions<PropFor<'feDisplacementMap'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type FeDistantLightAttributes = { prop?: PropFor<'feDistantLight'> | null; persist?: boolean; } & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeDistantLightAttributes = TagOptions<PropFor<'feDistantLight'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type FeDropShadowAttributes = { prop?: PropFor<'feDropShadow'> | null; persist?: boolean; } & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeDropShadowAttributes = TagOptions<PropFor<'feDropShadow'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type FeFloodAttributes = { prop?: PropFor<'feFlood'> | null; persist?: boolean; } & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeFloodAttributes = TagOptions<PropFor<'feFlood'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type FeFuncAAttributes = { prop?: PropFor<'feFuncA'> | null; persist?: boolean; } & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeFuncAAttributes = TagOptions<PropFor<'feFuncA'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type FeFuncBAttributes = { prop?: PropFor<'feFuncB'> | null; persist?: boolean; } & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeFuncBAttributes = TagOptions<PropFor<'feFuncB'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type FeFuncGAttributes = { prop?: PropFor<'feFuncG'> | null; persist?: boolean; } & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeFuncGAttributes = TagOptions<PropFor<'feFuncG'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type FeFuncRAttributes = { prop?: PropFor<'feFuncR'> | null; persist?: boolean; } & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeFuncRAttributes = TagOptions<PropFor<'feFuncR'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type FeGaussianBlurAttributes = { prop?: PropFor<'feGaussianBlur'> | null; persist?: boolean; } & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeGaussianBlurAttributes = TagOptions<PropFor<'feGaussianBlur'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
 type FeImageAttributes = {
   'externalResourcesRequired'?: Reactive<"true" | "false">;
-  prop?: PropFor<'feImage'> | null; persist?: boolean;
-} & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'feImage'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type FeMergeAttributes = { prop?: PropFor<'feMerge'> | null; persist?: boolean; } & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeMergeAttributes = TagOptions<PropFor<'feMerge'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type FeMergeNodeAttributes = { prop?: PropFor<'feMergeNode'> | null; persist?: boolean; } & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeMergeNodeAttributes = TagOptions<PropFor<'feMergeNode'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type FeMorphologyAttributes = { prop?: PropFor<'feMorphology'> | null; persist?: boolean; } & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeMorphologyAttributes = TagOptions<PropFor<'feMorphology'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type FeOffsetAttributes = { prop?: PropFor<'feOffset'> | null; persist?: boolean; } & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeOffsetAttributes = TagOptions<PropFor<'feOffset'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type FePointLightAttributes = { prop?: PropFor<'fePointLight'> | null; persist?: boolean; } & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FePointLightAttributes = TagOptions<PropFor<'fePointLight'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type FeSpecularLightingAttributes = { prop?: PropFor<'feSpecularLighting'> | null; persist?: boolean; } & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeSpecularLightingAttributes = TagOptions<PropFor<'feSpecularLighting'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type FeSpotLightAttributes = { prop?: PropFor<'feSpotLight'> | null; persist?: boolean; } & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeSpotLightAttributes = TagOptions<PropFor<'feSpotLight'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type FeTileAttributes = { prop?: PropFor<'feTile'> | null; persist?: boolean; } & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeTileAttributes = TagOptions<PropFor<'feTile'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type FeTurbulenceAttributes = { prop?: PropFor<'feTurbulence'> | null; persist?: boolean; } & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeTurbulenceAttributes = TagOptions<PropFor<'feTurbulence'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
 type FieldsetAttributes = {
   'disabled'?: Reactive<boolean>;
   'form'?: Reactive<string>;
   'name'?: Reactive<string>;
-  prop?: PropFor<'fieldset'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'fieldset'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type FigcaptionAttributes = { prop?: PropFor<'figcaption'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type FigcaptionAttributes = TagOptions<PropFor<'figcaption'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type FigureAttributes = { prop?: PropFor<'figure'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type FigureAttributes = TagOptions<PropFor<'figure'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type FilterAttributes = {
   'externalResourcesRequired'?: Reactive<"true" | "false">;
-  prop?: PropFor<'filter'> | null; persist?: boolean;
-} & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'filter'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type FooterAttributes = { prop?: PropFor<'footer'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type FooterAttributes = TagOptions<PropFor<'footer'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ForeignObjectAttributes = {
   'height'?: Reactive<number | string>;
   'width'?: Reactive<number | string>;
   'x'?: Reactive<number | string>;
   'y'?: Reactive<number | string>;
-  prop?: PropFor<'foreignObject'> | null; persist?: boolean;
-} & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'foreignObject'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
 type FormAttributes = {
   'accept-charset'?: Reactive<string>;
@@ -880,34 +853,33 @@ type FormAttributes = {
   'novalidate'?: Reactive<boolean>;
   'rel'?: Reactive<string>;
   'target'?: Reactive<string>;
-  prop?: PropFor<'form'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'form'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type GAttributes = { prop?: PropFor<'g'> | null; persist?: boolean; } & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type GAttributes = TagOptions<PropFor<'g'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type H1Attributes = { prop?: PropFor<'h1'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type H1Attributes = TagOptions<PropFor<'h1'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type H2Attributes = { prop?: PropFor<'h2'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type H2Attributes = TagOptions<PropFor<'h2'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type H3Attributes = { prop?: PropFor<'h3'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type H3Attributes = TagOptions<PropFor<'h3'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type H4Attributes = { prop?: PropFor<'h4'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type H4Attributes = TagOptions<PropFor<'h4'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type H5Attributes = { prop?: PropFor<'h5'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type H5Attributes = TagOptions<PropFor<'h5'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type H6Attributes = { prop?: PropFor<'h6'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type H6Attributes = TagOptions<PropFor<'h6'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type HeadAttributes = { prop?: PropFor<'head'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type HeadAttributes = TagOptions<PropFor<'head'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type HeaderAttributes = { prop?: PropFor<'header'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type HeaderAttributes = TagOptions<PropFor<'header'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type HgroupAttributes = { prop?: PropFor<'hgroup'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type HgroupAttributes = TagOptions<PropFor<'hgroup'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type HrAttributes = { prop?: PropFor<'hr'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type HrAttributes = TagOptions<PropFor<'hr'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type HtmlAttributes = { prop?: PropFor<'html'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type HtmlAttributes = TagOptions<PropFor<'html'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type IAttributes = { prop?: PropFor<'i'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type IAttributes = TagOptions<PropFor<'i'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type IframeAttributes = {
   'allow'?: Reactive<string>;
@@ -920,8 +892,7 @@ type IframeAttributes = {
   'src'?: Reactive<string>;
   'srcdoc'?: Reactive<string>;
   'width'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'iframe'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'iframe'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ImageAttributes = {
   'crossorigin'?: Reactive<"anonymous" | "use-credentials">;
@@ -931,8 +902,7 @@ type ImageAttributes = {
   'width'?: Reactive<number | string>;
   'x'?: Reactive<number | string>;
   'y'?: Reactive<number | string>;
-  prop?: PropFor<'image'> | null; persist?: boolean;
-} & SvgPresentationAttributes & SvgConditionalAttributes & SvgXLinkAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'image'>> & SvgPresentationAttributes & SvgConditionalAttributes & SvgXLinkAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
 type ImgAttributes = {
   'alt'?: Reactive<string>;
@@ -949,8 +919,7 @@ type ImgAttributes = {
   'srcset'?: Reactive<string>;
   'usemap'?: Reactive<string>;
   'width'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'img'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'img'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type InputAttributes = {
   'accept'?: Reactive<string>;
@@ -987,28 +956,24 @@ type InputAttributes = {
   'type'?: Reactive<"hidden" | "text" | "search" | "tel" | "url" | "email" | "password" | "date" | "month" | "week" | "time" | "datetime-local" | "number" | "range" | "color" | "checkbox" | "radio" | "file" | "submit" | "image" | "reset" | "button">;
   'value'?: Reactive<number | string>;
   'width'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'input'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'input'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type InsAttributes = {
   'cite'?: Reactive<string>;
   'datetime'?: Reactive<string>;
-  prop?: PropFor<'ins'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'ins'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type KbdAttributes = { prop?: PropFor<'kbd'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type KbdAttributes = TagOptions<PropFor<'kbd'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type LabelAttributes = {
   'for'?: Reactive<string>;
-  prop?: PropFor<'label'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'label'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type LegendAttributes = { prop?: PropFor<'legend'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type LegendAttributes = TagOptions<PropFor<'legend'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type LiAttributes = {
   'value'?: Reactive<number | string>;
-  prop?: PropFor<'li'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'li'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type LineAttributes = {
   'pathLength'?: Reactive<number | `${number}`>;
@@ -1016,8 +981,7 @@ type LineAttributes = {
   'x2'?: Reactive<number | string>;
   'y1'?: Reactive<number | string>;
   'y2'?: Reactive<number | string>;
-  prop?: PropFor<'line'> | null; persist?: boolean;
-} & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'line'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
 type LinearGradientAttributes = {
   'gradientTransform'?: Reactive<string>;
@@ -1028,8 +992,7 @@ type LinearGradientAttributes = {
   'x2'?: Reactive<number | string>;
   'y1'?: Reactive<number | string>;
   'y2'?: Reactive<number | string>;
-  prop?: PropFor<'linearGradient'> | null; persist?: boolean;
-} & SvgPresentationAttributes & SvgXLinkAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'linearGradient'>> & SvgPresentationAttributes & SvgXLinkAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
 type LinkAttributes = {
   'as'?: Reactive<string>;
@@ -1048,8 +1011,7 @@ type LinkAttributes = {
   'rel'?: Reactive<string>;
   'sizes'?: Reactive<string>;
   'type'?: Reactive<string>;
-  prop?: PropFor<'link'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'link'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type MactionAttributes = {
   'actiontype'?: Reactive<string>;
@@ -1067,17 +1029,15 @@ type MactionAttributes = {
   'selection'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'maction'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'maction'>> & NameSpaceAttributes & GlobalEvents;
 
-type MainAttributes = { prop?: PropFor<'main'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type MainAttributes = TagOptions<PropFor<'main'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type MapAttributes = {
   'name'?: Reactive<string>;
-  prop?: PropFor<'map'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'map'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type MarkAttributes = { prop?: PropFor<'mark'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type MarkAttributes = TagOptions<PropFor<'mark'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type MarkerAttributes = {
   'markerHeight'?: Reactive<string>;
@@ -1088,13 +1048,11 @@ type MarkerAttributes = {
   'refX'?: Reactive<string>;
   'refY'?: Reactive<string>;
   'viewBox'?: Reactive<string>;
-  prop?: PropFor<'marker'> | null; persist?: boolean;
-} & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'marker'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
 type MaskAttributes = {
   'requiredFeatures'?: Reactive<string>;
-  prop?: PropFor<'mask'> | null; persist?: boolean;
-} & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'mask'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
 type MathAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1112,8 +1070,7 @@ type MathAttributes = {
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'xmlns'?: Reactive<string>;
-  prop?: PropFor<'math'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'math'>> & NameSpaceAttributes & GlobalEvents;
 
 type MencloseAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1130,10 +1087,9 @@ type MencloseAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'menclose'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'menclose'>> & NameSpaceAttributes & GlobalEvents;
 
-type MenuAttributes = { prop?: PropFor<'menu'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type MenuAttributes = TagOptions<PropFor<'menu'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type MerrorAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1149,8 +1105,7 @@ type MerrorAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'merror'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'merror'>> & NameSpaceAttributes & GlobalEvents;
 
 type MetaAttributes = {
   'charset'?: Reactive<"utf-8" | "UTF-8">;
@@ -1159,10 +1114,9 @@ type MetaAttributes = {
   'httpEquiv'?: Reactive<"content-type" | "CONTENT-TYPE" | "default-style" | "DEFAULT-STYLE" | "refresh" | "REFRESH" | "x-ua-compatible" | "X-UA-COMPATIBLE" | "content-security-policy" | "CONTENT-SECURITY-POLICY">;
   'media'?: Reactive<string>;
   'name'?: Reactive<string>;
-  prop?: PropFor<'meta'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'meta'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type MetadataAttributes = { prop?: PropFor<'metadata'> | null; persist?: boolean; } & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type MetadataAttributes = TagOptions<PropFor<'metadata'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
 type MeterAttributes = {
   'high'?: Reactive<number | string>;
@@ -1171,8 +1125,7 @@ type MeterAttributes = {
   'min'?: Reactive<number | string>;
   'optimum'?: Reactive<number | string>;
   'value'?: Reactive<number | string>;
-  prop?: PropFor<'meter'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'meter'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type MfencedAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1191,8 +1144,7 @@ type MfencedAttributes = {
   'separators'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'mfenced'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mfenced'>> & NameSpaceAttributes & GlobalEvents;
 
 type MfracAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1211,8 +1163,7 @@ type MfracAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'mfrac'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mfrac'>> & NameSpaceAttributes & GlobalEvents;
 
 type MiAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1228,8 +1179,7 @@ type MiAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'mi'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mi'>> & NameSpaceAttributes & GlobalEvents;
 
 type MmultiscriptsAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1247,8 +1197,7 @@ type MmultiscriptsAttributes = {
   'subscriptshift'?: Reactive<string>;
   'superscriptshift'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'mmultiscripts'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mmultiscripts'>> & NameSpaceAttributes & GlobalEvents;
 
 type MnAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1264,8 +1213,7 @@ type MnAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'mn'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mn'>> & NameSpaceAttributes & GlobalEvents;
 
 type MoAttributes = {
   'accent'?: Reactive<string>;
@@ -1291,8 +1239,7 @@ type MoAttributes = {
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'symmetric'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'mo'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mo'>> & NameSpaceAttributes & GlobalEvents;
 
 type MoverAttributes = {
   'accent'?: Reactive<string>;
@@ -1309,8 +1256,7 @@ type MoverAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'mover'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mover'>> & NameSpaceAttributes & GlobalEvents;
 
 type MpaddedAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1331,13 +1277,11 @@ type MpaddedAttributes = {
   'tabindex'?: Reactive<number | `${number}`>;
   'voffset'?: Reactive<string>;
   'width'?: Reactive<number | string>;
-  prop?: PropFor<'mpadded'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mpadded'>> & NameSpaceAttributes & GlobalEvents;
 
 type MpathAttributes = {
   'href'?: Reactive<string>;
-  prop?: PropFor<'mpath'> | null; persist?: boolean;
-} & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'mpath'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
 type MphantomAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1353,8 +1297,7 @@ type MphantomAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'mphantom'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mphantom'>> & NameSpaceAttributes & GlobalEvents;
 
 type MprescriptsAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1370,8 +1313,7 @@ type MprescriptsAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'mprescripts'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mprescripts'>> & NameSpaceAttributes & GlobalEvents;
 
 type MrootAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1387,8 +1329,7 @@ type MrootAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'mroot'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mroot'>> & NameSpaceAttributes & GlobalEvents;
 
 type MrowAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1404,8 +1345,7 @@ type MrowAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'mrow'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mrow'>> & NameSpaceAttributes & GlobalEvents;
 
 type MsAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1423,8 +1363,7 @@ type MsAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'ms'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'ms'>> & NameSpaceAttributes & GlobalEvents;
 
 type MspaceAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1442,8 +1381,7 @@ type MspaceAttributes = {
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'width'?: Reactive<number | string>;
-  prop?: PropFor<'mspace'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mspace'>> & NameSpaceAttributes & GlobalEvents;
 
 type MsqrtAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1459,8 +1397,7 @@ type MsqrtAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'msqrt'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'msqrt'>> & NameSpaceAttributes & GlobalEvents;
 
 type MstyleAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1484,8 +1421,7 @@ type MstyleAttributes = {
   'scriptsizemultiplier'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'mstyle'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mstyle'>> & NameSpaceAttributes & GlobalEvents;
 
 type MsubAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1502,8 +1438,7 @@ type MsubAttributes = {
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'subscriptshift'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'msub'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'msub'>> & NameSpaceAttributes & GlobalEvents;
 
 type MsubsupAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1521,8 +1456,7 @@ type MsubsupAttributes = {
   'subscriptshift'?: Reactive<string>;
   'superscriptshift'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'msubsup'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'msubsup'>> & NameSpaceAttributes & GlobalEvents;
 
 type MsupAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1539,8 +1473,7 @@ type MsupAttributes = {
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'superscriptshift'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'msup'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'msup'>> & NameSpaceAttributes & GlobalEvents;
 
 type MtableAttributes = {
   'align'?: Reactive<string>;
@@ -1566,8 +1499,7 @@ type MtableAttributes = {
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'width'?: Reactive<number | string>;
-  prop?: PropFor<'mtable'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mtable'>> & NameSpaceAttributes & GlobalEvents;
 
 type MtdAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1587,8 +1519,7 @@ type MtdAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'mtd'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mtd'>> & NameSpaceAttributes & GlobalEvents;
 
 type MtextAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1604,8 +1535,7 @@ type MtextAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'mtext'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mtext'>> & NameSpaceAttributes & GlobalEvents;
 
 type MtrAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1623,8 +1553,7 @@ type MtrAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'mtr'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mtr'>> & NameSpaceAttributes & GlobalEvents;
 
 type MunderAttributes = {
   'accentunder'?: Reactive<string>;
@@ -1641,8 +1570,7 @@ type MunderAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'munder'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'munder'>> & NameSpaceAttributes & GlobalEvents;
 
 type MunderoverAttributes = {
   'accent'?: Reactive<string>;
@@ -1660,12 +1588,11 @@ type MunderoverAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'munderover'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'munderover'>> & NameSpaceAttributes & GlobalEvents;
 
-type NavAttributes = { prop?: PropFor<'nav'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type NavAttributes = TagOptions<PropFor<'nav'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type NoscriptAttributes = { prop?: PropFor<'noscript'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type NoscriptAttributes = TagOptions<PropFor<'noscript'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ObjectAttributes = {
   'data'?: Reactive<string>;
@@ -1674,44 +1601,38 @@ type ObjectAttributes = {
   'name'?: Reactive<string>;
   'type'?: Reactive<string>;
   'width'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'object'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'object'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type OlAttributes = {
   'reversed'?: Reactive<boolean>;
   'start'?: Reactive<number | `${number}`>;
   'type'?: Reactive<"1" | "a" | "A" | "i" | "I">;
-  prop?: PropFor<'ol'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'ol'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type OptgroupAttributes = {
   'disabled'?: Reactive<boolean>;
   'label'?: Reactive<string>;
-  prop?: PropFor<'optgroup'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'optgroup'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type OptionAttributes = {
   'disabled'?: Reactive<boolean>;
   'label'?: Reactive<string>;
   'selected'?: Reactive<boolean>;
   'value'?: Reactive<number | string>;
-  prop?: PropFor<'option'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'option'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type OutputAttributes = {
   'for'?: Reactive<string>;
   'form'?: Reactive<string>;
   'name'?: Reactive<string>;
-  prop?: PropFor<'output'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'output'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type PAttributes = { prop?: PropFor<'p'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type PAttributes = TagOptions<PropFor<'p'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type PathAttributes = {
   'd'?: Reactive<string>;
   'pathLength'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'path'> | null; persist?: boolean;
-} & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'path'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
 type PatternAttributes = {
   'height'?: Reactive<number | string>;
@@ -1724,35 +1645,30 @@ type PatternAttributes = {
   'width'?: Reactive<number | string>;
   'x'?: Reactive<number | string>;
   'y'?: Reactive<number | string>;
-  prop?: PropFor<'pattern'> | null; persist?: boolean;
-} & SvgPresentationAttributes & SvgXLinkAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'pattern'>> & SvgPresentationAttributes & SvgXLinkAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type PictureAttributes = { prop?: PropFor<'picture'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type PictureAttributes = TagOptions<PropFor<'picture'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type PolygonAttributes = {
   'pathLength'?: Reactive<number | `${number}`>;
   'points'?: Reactive<string>;
-  prop?: PropFor<'polygon'> | null; persist?: boolean;
-} & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'polygon'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
 type PolylineAttributes = {
   'pathLength'?: Reactive<number | `${number}`>;
   'points'?: Reactive<string>;
-  prop?: PropFor<'polyline'> | null; persist?: boolean;
-} & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'polyline'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type PreAttributes = { prop?: PropFor<'pre'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type PreAttributes = TagOptions<PropFor<'pre'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ProgressAttributes = {
   'max'?: Reactive<number | string>;
   'value'?: Reactive<number | string>;
-  prop?: PropFor<'progress'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'progress'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type QAttributes = {
   'cite'?: Reactive<string>;
-  prop?: PropFor<'q'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'q'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type RadialGradientAttributes = {
   'cx'?: Reactive<number | string>;
@@ -1765,8 +1681,7 @@ type RadialGradientAttributes = {
   'href'?: Reactive<string>;
   'r'?: Reactive<number | string>;
   'spreadMethod'?: Reactive<string>;
-  prop?: PropFor<'radialGradient'> | null; persist?: boolean;
-} & SvgPresentationAttributes & SvgXLinkAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'radialGradient'>> & SvgPresentationAttributes & SvgXLinkAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
 type RectAttributes = {
   'height'?: Reactive<number | string>;
@@ -1776,18 +1691,17 @@ type RectAttributes = {
   'width'?: Reactive<number | string>;
   'x'?: Reactive<number | string>;
   'y'?: Reactive<number | string>;
-  prop?: PropFor<'rect'> | null; persist?: boolean;
-} & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'rect'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type RpAttributes = { prop?: PropFor<'rp'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type RpAttributes = TagOptions<PropFor<'rp'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type RtAttributes = { prop?: PropFor<'rt'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type RtAttributes = TagOptions<PropFor<'rt'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type RubyAttributes = { prop?: PropFor<'ruby'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type RubyAttributes = TagOptions<PropFor<'ruby'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type SAttributes = { prop?: PropFor<'s'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type SAttributes = TagOptions<PropFor<'s'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type SampAttributes = { prop?: PropFor<'samp'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type SampAttributes = TagOptions<PropFor<'samp'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ScriptAttributes = {
   'async'?: Reactive<boolean>;
@@ -1802,12 +1716,11 @@ type ScriptAttributes = {
   'src'?: Reactive<string>;
   'type'?: Reactive<string>;
   'xml:space'?: Reactive<"preserve">;
-  prop?: ContextualPropFor<'script'> | null; persist?: boolean;
-} & SvgPresentationAttributes & SvgXLinkAttributes & NameSpaceAttributes & GlobalAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<ContextualPropFor<'script'>> & SvgPresentationAttributes & SvgXLinkAttributes & NameSpaceAttributes & GlobalAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type SearchAttributes = { prop?: PropFor<'search'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type SearchAttributes = TagOptions<PropFor<'search'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type SectionAttributes = { prop?: PropFor<'section'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type SectionAttributes = TagOptions<PropFor<'section'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type SelectAttributes = {
   'autocomplete'?: Reactive<string>;
@@ -1817,10 +1730,9 @@ type SelectAttributes = {
   'name'?: Reactive<string>;
   'required'?: Reactive<boolean>;
   'size'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'select'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'select'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type SelectedcontentAttributes = { prop?: PropFor<'selectedcontent'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type SelectedcontentAttributes = TagOptions<PropFor<'selectedcontent'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type SemanticsAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1836,8 +1748,7 @@ type SemanticsAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'semantics'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'semantics'>> & NameSpaceAttributes & GlobalEvents;
 
 type SetAttributes = {
   'attributeName'?: Reactive<string>;
@@ -1855,15 +1766,13 @@ type SetAttributes = {
   'repeatDur'?: Reactive<string>;
   'restart'?: Reactive<"always" | "never" | "whenNotActive">;
   'to'?: Reactive<string>;
-  prop?: PropFor<'set'> | null; persist?: boolean;
-} & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'set'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
 type SlotAttributes = {
   'name'?: Reactive<string>;
-  prop?: PropFor<'slot'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'slot'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type SmallAttributes = { prop?: PropFor<'small'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type SmallAttributes = TagOptions<PropFor<'small'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type SourceAttributes = {
   'height'?: Reactive<number | `${number}`>;
@@ -1873,30 +1782,27 @@ type SourceAttributes = {
   'srcset'?: Reactive<string>;
   'type'?: Reactive<string>;
   'width'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'source'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'source'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type SpanAttributes = { prop?: PropFor<'span'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type SpanAttributes = TagOptions<PropFor<'span'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type StopAttributes = {
   'offset'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'stop'> | null; persist?: boolean;
-} & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'stop'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type StrongAttributes = { prop?: PropFor<'strong'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type StrongAttributes = TagOptions<PropFor<'strong'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type StyleAttributes = {
   'blocking'?: Reactive<string>;
   'media'?: Reactive<string>;
   'type'?: Reactive<string>;
-  prop?: ContextualPropFor<'style'> | null; persist?: boolean;
-} & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<ContextualPropFor<'style'>> & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type SubAttributes = { prop?: PropFor<'sub'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type SubAttributes = TagOptions<PropFor<'sub'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type SummaryAttributes = { prop?: PropFor<'summary'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type SummaryAttributes = TagOptions<PropFor<'summary'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type SupAttributes = { prop?: PropFor<'sup'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type SupAttributes = TagOptions<PropFor<'sup'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type SvgAttributes = {
   'height'?: Reactive<number | string>;
@@ -1908,10 +1814,9 @@ type SvgAttributes = {
   'x'?: Reactive<number | string>;
   'xmlns'?: Reactive<string>;
   'y'?: Reactive<number | string>;
-  prop?: PropFor<'svg'> | null; persist?: boolean;
-} & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'svg'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type SwitchAttributes = { prop?: PropFor<'switch'> | null; persist?: boolean; } & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type SwitchAttributes = TagOptions<PropFor<'switch'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
 type SymbolAttributes = {
   'height'?: Reactive<number | string>;
@@ -1922,19 +1827,17 @@ type SymbolAttributes = {
   'width'?: Reactive<number | string>;
   'x'?: Reactive<number | string>;
   'y'?: Reactive<number | string>;
-  prop?: PropFor<'symbol'> | null; persist?: boolean;
-} & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'symbol'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type TableAttributes = { prop?: PropFor<'table'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type TableAttributes = TagOptions<PropFor<'table'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type TbodyAttributes = { prop?: PropFor<'tbody'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type TbodyAttributes = TagOptions<PropFor<'tbody'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type TdAttributes = {
   'colspan'?: Reactive<number | `${number}`>;
   'headers'?: Reactive<string>;
   'rowspan'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'td'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'td'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type TemplateAttributes = {
   'for'?: Reactive<string>;
@@ -1944,8 +1847,7 @@ type TemplateAttributes = {
   'shadowrootmode'?: Reactive<"open" | "closed">;
   'shadowrootserializable'?: Reactive<boolean>;
   'shadowrootslotassignment'?: Reactive<"named" | "manual">;
-  prop?: PropFor<'template'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'template'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type TextAttributes = {
   'dx'?: Reactive<string>;
@@ -1955,8 +1857,7 @@ type TextAttributes = {
   'textLength'?: Reactive<string>;
   'x'?: Reactive<number | string>;
   'y'?: Reactive<number | string>;
-  prop?: PropFor<'text'> | null; persist?: boolean;
-} & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'text'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
 type TextareaAttributes = {
   'autocomplete'?: Reactive<string>;
@@ -1972,8 +1873,7 @@ type TextareaAttributes = {
   'required'?: Reactive<boolean>;
   'rows'?: Reactive<number | `${number}`>;
   'wrap'?: Reactive<"soft" | "hard">;
-  prop?: PropFor<'textarea'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'textarea'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type TextPathAttributes = {
   'href'?: Reactive<string>;
@@ -1984,10 +1884,9 @@ type TextPathAttributes = {
   'spacing'?: Reactive<string>;
   'startOffset'?: Reactive<string>;
   'textLength'?: Reactive<string>;
-  prop?: PropFor<'textPath'> | null; persist?: boolean;
-} & SvgPresentationAttributes & SvgConditionalAttributes & SvgXLinkAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'textPath'>> & SvgPresentationAttributes & SvgConditionalAttributes & SvgXLinkAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type TfootAttributes = { prop?: PropFor<'tfoot'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type TfootAttributes = TagOptions<PropFor<'tfoot'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ThAttributes = {
   'abbr'?: Reactive<string>;
@@ -1995,19 +1894,17 @@ type ThAttributes = {
   'headers'?: Reactive<string>;
   'rowspan'?: Reactive<number | `${number}`>;
   'scope'?: Reactive<"row" | "ROW" | "col" | "COL" | "rowgroup" | "ROWGROUP" | "colgroup" | "COLGROUP">;
-  prop?: PropFor<'th'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'th'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type TheadAttributes = { prop?: PropFor<'thead'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type TheadAttributes = TagOptions<PropFor<'thead'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type TimeAttributes = {
   'datetime'?: Reactive<string>;
-  prop?: PropFor<'time'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'time'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type TitleAttributes = { prop?: ContextualPropFor<'title'> | null; persist?: boolean; } & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type TitleAttributes = TagOptions<ContextualPropFor<'title'>> & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type TrAttributes = { prop?: PropFor<'tr'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type TrAttributes = TagOptions<PropFor<'tr'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type TrackAttributes = {
   'default'?: Reactive<boolean>;
@@ -2015,8 +1912,7 @@ type TrackAttributes = {
   'label'?: Reactive<string>;
   'src'?: Reactive<string>;
   'srclang'?: Reactive<string>;
-  prop?: PropFor<'track'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'track'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type TspanAttributes = {
   'dx'?: Reactive<string>;
@@ -2026,12 +1922,11 @@ type TspanAttributes = {
   'textLength'?: Reactive<string>;
   'x'?: Reactive<number | string>;
   'y'?: Reactive<number | string>;
-  prop?: PropFor<'tspan'> | null; persist?: boolean;
-} & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'tspan'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type UAttributes = { prop?: PropFor<'u'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type UAttributes = TagOptions<PropFor<'u'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
-type UlAttributes = { prop?: PropFor<'ul'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type UlAttributes = TagOptions<PropFor<'ul'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type UseAttributes = {
   'height'?: Reactive<number | string>;
@@ -2039,10 +1934,9 @@ type UseAttributes = {
   'width'?: Reactive<number | string>;
   'x'?: Reactive<number | string>;
   'y'?: Reactive<number | string>;
-  prop?: PropFor<'use'> | null; persist?: boolean;
-} & SvgPresentationAttributes & SvgConditionalAttributes & SvgXLinkAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'use'>> & SvgPresentationAttributes & SvgConditionalAttributes & SvgXLinkAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type VarAttributes = { prop?: PropFor<'var'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type VarAttributes = TagOptions<PropFor<'var'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type VideoAttributes = {
   'autoplay'?: Reactive<boolean>;
@@ -2057,16 +1951,14 @@ type VideoAttributes = {
   'preload'?: Reactive<"none" | "metadata" | "auto">;
   'src'?: Reactive<string>;
   'width'?: Reactive<number | `${number}`>;
-  prop?: PropFor<'video'> | null; persist?: boolean;
-} & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'video'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ViewAttributes = {
   'preserveAspectRatio'?: Reactive<string>;
   'viewBox'?: Reactive<string>;
-  prop?: PropFor<'view'> | null; persist?: boolean;
-} & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'view'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
 
-type WbrAttributes = { prop?: PropFor<'wbr'> | null; persist?: boolean; } & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type WbrAttributes = TagOptions<PropFor<'wbr'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
 type ColgroupContentItem = ColTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean;
 type ColgroupContent = ColgroupContentItem | readonly ColgroupContent[];
@@ -2112,6 +2004,16 @@ export type Content = ContentItem | readonly Content[];
 
 export type UniversalAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
+/** Kensington options shared by built-in and custom element methods. */
+type TagOptions<P> = {
+  /** Assign DOM properties directly, using the element's property types. */
+  prop?: P | null;
+  /** Dispatch inferred DOM events after signal-driven form property changes. Default false. */
+  dispatchOnPropChange?: boolean;
+  /** Pause reactive bindings on removal and resume them on reconnection. Default false. */
+  persist?: boolean;
+};
+
 /**
  * The type of a custom element method created with `createCustomTag`.
  * `T` is the element's specific attribute object type; global and namespace attributes
@@ -2124,7 +2026,7 @@ export type UniversalAttributes = NameSpaceAttributes & GlobalAttributes & Globa
  * }
  */
 export interface ContentMethod<T = {}> {
-  (attributes: T & UniversalAttributes & { prop?: PropFor<string> | null; persist?: boolean }, content?: Content): ContentTag;
+  (attributes: T & UniversalAttributes & TagOptions<PropFor<string>>, content?: Content): ContentTag;
   (content?: Content): ContentTag;
 }
 

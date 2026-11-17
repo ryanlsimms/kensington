@@ -317,6 +317,59 @@ userInput.set('');  // el.value resets immediately via the live effect
 const vid = t.video({ src: '/intro.mp4', prop: { muted: true, playbackRate: 1.5 } });
 ```
 
+### Opt-in DOM events after property updates
+
+Property assignment normally does not dispatch DOM events. Use the boolean `dispatchOnPropChange` option when an existing form listener needs to observe signal-driven field updates:
+
+```javascript
+const amount = signal('10');
+const field = t.input({
+  name: 'amount',
+  type: 'number',
+  prop: { value: amount },
+  dispatchOnPropChange: true,
+  oninput: e => amount.set(e.currentTarget.value),
+});
+const form = t.form({ oninput: e => recalculate(new FormData(e.currentTarget)) }, field);
+```
+
+The default is `false`. Only booleans are supported; no event-name strings or maps.
+
+| Element/property | Dispatched event |
+|---|---|
+| Editable input `value` (text, search, tel, url, email, password, number, range, date, datetime-local, month, time, week, color) | `input` |
+| Textarea `value` | `input` |
+| Select `value` | `change` |
+| Checkbox or radio `checked` | `change` |
+
+**Validation and supported controls**
+
+- Hidden, file and button inputs are excluded. Unknown input types follow the browser's text fallback.
+- Checkbox/radio `value`, `disabled`, `selectedIndex`, and arbitrary custom-element properties do not trigger notifications.
+- A combination with no supported property uses `validationLevel`: `off` ignores it, `warn` reports it, and `error` throws.
+- Validation checks the initial input type. Dispatch uses the final DOM type after the batch settles, regardless of write order.
+
+**Notification timing**
+
+- Events run after pending effects and DOM bindings settle, including when calling `applyPendingReactiveUpdates()`.
+- Each handler's signal writes settle before the next field notification, with normal loop protection. Handlers run outside reactive dependency tracking.
+- Notifications coalesce per binding. Events use the standard `Event` interface with `bubbles: true`, `composed: true`, and `isTrusted: false`.
+
+**Events are suppressed for**
+
+- Initial rendering, hydration, and static property assignments.
+- A final DOM property equal to its pre-update value, including browser coercion that leaves it unchanged. Selects compare the complete selected option state, including option indices and values.
+- Elements disconnected before dispatch.
+- Ordinary typing reflected back through a signal when the DOM already holds that value; the original user event already bubbles.
+
+**Radio groups:** only the property explicitly written by the binding is reported. A radio button implicitly unchecked by the browser does not emit an additional event. Form listeners should read the resulting group state.
+
+The option never appears in serialized HTML. For custom elements, use their documented event API or explicit `dispatchEvent()` calls. To observe application state regardless of DOM changes, observe the signals directly.
+
+Select `value` assignments always run to preserve native selection behavior, including multiple selections and duplicate option values. A selection change can dispatch `change` even when the scalar `select.value` remains the same.
+
+Initial property assignments always run to preserve native form default/reset behavior. Subsequent equivalent input and textarea form-value writes are skipped even without this option, reducing caret disruption. Number-valued signals on number inputs preserve equivalent numeric spellings such as `2.0`; deliberate formatting changes can still move the caret. A string draft remains the recommended way to preserve intermediate edits.
+
 **Editing a number through a text input.** `HTMLInputElement.value` is typed `string` in `lib.dom`, so a `Signal<number>` can't bind to `prop: { value: ... }` directly. The canonical pattern is a string draft signal plus a numeric source signal, with a commit step that parses on blur or Enter:
 
 ```javascript

@@ -48,9 +48,9 @@ function attrType(name, type) {
 }
 
 function attributesType({ attributes = [], globalTypes, tag }) {
-  const propField = `prop?: PropFor<'${tag}'> | null; persist?: boolean;`;
+  const tagOptions = `TagOptions<PropFor<'${tag}'>>`;
   if (!attributes.length) {
-    return [`{ ${propField} }`, ...globalTypes].join(' & ');
+    return [tagOptions, ...globalTypes].join(' & ');
   }
 
   return [`{
@@ -62,8 +62,7 @@ function attributesType({ attributes = [], globalTypes, tag }) {
     }
     return lines;
   }).join('\n  ')}
-  ${propField}
-}`, ...globalTypes].join(' & ');
+}`, tagOptions, ...globalTypes].join(' & ');
 }
 
 function sharedAttributesType(attributes) {
@@ -87,7 +86,7 @@ function svgAttributesType({
   tag,
 }) {
   const propType = svgContextual ? 'ContextualPropFor' : 'PropFor';
-  const propField = `prop?: ${propType}<'${tag}'> | null; persist?: boolean;`;
+  const tagOptions = `TagOptions<${propType}<'${tag}'>>`;
   const ownTypes = attributes.length
     ? [`{\n  ${attributes.flatMap(a => {
       const lines = [`'${a.name}'?: ${attrType(a.name, a.type)};`];
@@ -96,8 +95,8 @@ function svgAttributesType({
         lines.push(`'${camelName}'?: ${attrType(a.name, a.type)};`);
       }
       return lines;
-    }).join('\n  ')}\n  ${propField}\n}`]
-    : [`{ ${propField} }`];
+    }).join('\n  ')}\n}`, tagOptions]
+    : [tagOptions];
   const sharedTypes = ['SvgPresentationAttributes'];
   if (includeSvgConditionalAttributes) { sharedTypes.push('SvgConditionalAttributes'); }
   if (includeSvgXLinkAttributes) { sharedTypes.push('SvgXLinkAttributes'); }
@@ -366,6 +365,16 @@ export type Content = ContentItem | readonly Content[];
 
 export type UniversalAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
 
+/** Kensington options shared by built-in and custom element methods. */
+type TagOptions<P> = {
+  /** Assign DOM properties directly, using the element's property types. */
+  prop?: P | null;
+  /** Dispatch inferred DOM events after signal-driven form property changes. Default false. */
+  dispatchOnPropChange?: boolean;
+  /** Pause reactive bindings on removal and resume them on reconnection. Default false. */
+  persist?: boolean;
+};
+
 /**
  * The type of a custom element method created with \`createCustomTag\`.
  * \`T\` is the element's specific attribute object type; global and namespace attributes
@@ -378,7 +387,7 @@ export type UniversalAttributes = NameSpaceAttributes & GlobalAttributes & Globa
  * }
  */
 export interface ContentMethod<T = {}> {
-  (attributes: T & UniversalAttributes & { prop?: PropFor<string> | null; persist?: boolean }, content?: Content): ContentTag;
+  (attributes: T & UniversalAttributes & TagOptions<PropFor<string>>, content?: Content): ContentTag;
   (content?: Content): ContentTag;
 }
 

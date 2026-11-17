@@ -4553,3 +4553,35 @@ describe('_enterConnectedCallback / _exitConnectedCallback', () => {
     e.stop();
   });
 });
+
+describe('dispatchOnPropChange validation', () => {
+  it('accepts supported bindings and omits the option from HTML', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.equal(tt.input({ prop: { value: 'a', disabled: false }, dispatchOnPropChange: true }).toString(), '<input>');
+    assert.doesNotThrow(() => tt.input({ type: 'checkbox', prop: { checked: true }, dispatchOnPropChange: true }));
+    assert.doesNotThrow(() => tt.select({ prop: { value: 'a' }, dispatchOnPropChange: true }));
+    assert.doesNotThrow(() => tt.textarea({ prop: { value: 'a' }, dispatchOnPropChange: true }));
+    assert.equal(tt.div({ dispatchOnPropChange: false }).toString(), '<div></div>');
+  });
+  it('rejects non-boolean options', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    for (const flag of ['input', { value: 'input' }, signal(true)]) {
+      assert.throws(() => tt.input({ prop: { value: 'a' }, dispatchOnPropChange: flag }), /invalid attribute/);
+    }
+  });
+  it('reports unsupported elements, input types, and property combinations', () => {
+    const messages = [];
+    const tt = new Kensington({ validationLevel: 'warn', logger: m => messages.push(m) });
+    tt.div({ prop: { textContent: 'a' }, dispatchOnPropChange: true });
+    tt.input({ prop: { disabled: true }, dispatchOnPropChange: true });
+    tt.input({ type: 'file', prop: { value: '' }, dispatchOnPropChange: true });
+    tt.input({ type: 'checkbox', prop: { value: 'a' }, dispatchOnPropChange: true });
+    tt.createCustomTag('my-input')({ prop: { value: 'a' }, dispatchOnPropChange: true });
+    assert.equal(messages.length, 5);
+    assert.ok(messages.every(m => m.includes('no supported property bindings')));
+    const strict = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => strict.div({ dispatchOnPropChange: true }), /no supported property bindings/);
+    const silent = new Kensington({ validationLevel: 'off', logger: () => assert.fail('unexpected warning') });
+    assert.equal(silent.div({ dispatchOnPropChange: true }).toString(), '<div></div>');
+  });
+});

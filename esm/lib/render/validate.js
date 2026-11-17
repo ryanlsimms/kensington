@@ -2,6 +2,7 @@ import { isKensingtonSignal } from '../reactive/signal.js';
 import showInvalid from '../util/show-invalid.js';
 import { styleObjectToCss } from '../util/style-utils.js';
 import { camelToKebab } from '../util/text-utils.js';
+import { propChangeEvent } from './prop-events.js';
 
 export function isValidStyleValue(v) {
   return [null, undefined, false].includes(v) || ['string', 'number'].includes(typeof v); // null/undefined/false are valid. They're silently omitted at render time, not errors
@@ -13,7 +14,7 @@ export function isValidNamespaceAttribute(tag, attr) {
 }
 
 export function attributeIsValid(tag, attr) {
-  if (attr === 'on' || attr === 'prop' || attr === 'persist') { return true; }
+  if (attr === 'on' || attr === 'prop' || attr === 'persist' || attr === 'dispatchOnPropChange') { return true; }
   return tag.allowedAttributeMap.has(attr) ||
     tag.allowedAttributeMap.has(camelToKebab(attr)) ||
     isValidNamespaceAttribute(tag, attr) ||
@@ -49,7 +50,7 @@ export function validateAttributeByType(type, value) {
 }
 
 export function attributeValueIsValid(tag, attr, value) {
-  if (attr === 'persist') {
+  if (attr === 'persist' || attr === 'dispatchOnPropChange') {
     return value === true || value === false || value === undefined || value === null;
   }
   if (attr === 'on' || attr === 'prop') {
@@ -100,6 +101,14 @@ export function attributeValueIsValid(tag, attr, value) {
 }
 
 export function validate(tag) {
+  if (tag.attributes.dispatchOnPropChange === true) {
+    const props = tag.prop;
+    const rawType = props?.type ?? tag.attributes.type;
+    const type = isKensingtonSignal(rawType) ? rawType.value : rawType;
+    if (!props || !Object.keys(props).some(key => propChangeEvent(tag.tagName, type, key))) {
+      showInvalid(`dispatchOnPropChange has no supported property bindings on <${tag.tagName}>. No events will be dispatched.`, tag.validationLevel, tag.logger);
+    }
+  }
   const unallowedAttributes = tag.skipElementAttributeValidation
     ? []
     : Object.keys(tag.attributes).filter(attr => !attributeIsValid(tag, attr));

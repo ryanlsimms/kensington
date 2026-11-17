@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- Added `dispatchOnPropChange: true` to opt into bubbling `input` or `change` events after signal-driven form property updates. Events are inferred from the control and property; unsupported combinations report through `validationLevel`.
+
+### Changed
+- Reactive input and textarea property bindings skip equivalent value updates.
+
 ## [2.0.0-signals.30] - 2026-10-26
 
 ### Added

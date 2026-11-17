@@ -518,3 +518,11 @@ t.input({ prop: { _instance: {}, myCustomFlag: true } });
 
 // read-only and non-existent properties are allowed by TypeScript (via string index);
 // runtime validates existence and writability via validationLevel
+
+// Automatic DOM notifications are a boolean opt-in.
+t.input({ prop: { value: 'hello' }, dispatchOnPropChange: true });
+t.select({ prop: { value: 'a' }, dispatchOnPropChange: false });
+// @ts-expect-error - no event-name shorthand
+t.input({ dispatchOnPropChange: 'input' });
+// @ts-expect-error - no per-property event map
+t.input({ dispatchOnPropChange: { value: 'input' } });

@@ -656,6 +656,8 @@ t.video({ src: '/intro.mp4', prop: { muted: true, playbackRate: 1.5 } }).toEleme
 
 `prop` is silently ignored in `.toString()`. Known properties on the element's DOM interface are typed in TypeScript. Expando properties (arbitrary string keys) are also accepted. Property existence and writability are validated at render time via `validationLevel`.
 
+Set `dispatchOnPropChange: true` alongside `prop` to notify delegated form listeners after signal-driven changes. Editable input and textarea `value` changes dispatch `input`; select `value` and checkbox/radio `checked` changes dispatch `change`. Events bubble and cross shadow roots. Initial bindings, unchanged values, unrelated properties and disconnected elements do not dispatch. Unsupported combinations use `validationLevel`; the option is omitted from HTML. See `agent-docs/reactive.md` → DOM properties with `prop` for details.
+
 For SSR/hydration plus custom elements: `prop` interacts with `renderForHydration` and upgraded custom elements in specific ways. See `agent-docs/reactive.md` → DOM properties with `prop`.
 
 ## Content rules

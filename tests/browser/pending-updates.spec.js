@@ -294,3 +294,403 @@ test('automatic batching continues after manually applying DOM updates', async (
   }, bundle);
   expect(result).toEqual({ before: 'b', after: 'd' });
 });
+
+test('prop notifications batch, bubble and suppress echoes', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, applyPendingReactiveUpdates } = await import(src);
+    const amount = signal('1');
+    const sibling = signal('2');
+    const disabled = signal(false);
+    const events = [];
+    const form = t.form({ oninput: e => {
+      events.push([e.target.value, e.currentTarget.elements.other.value, e.bubbles, e.composed, e.isTrusted]);
+    } }, [
+      t.input({
+        name: 'amount',
+        prop: { value: amount, disabled },
+        dispatchOnPropChange: true,
+        oninput: e => amount.set(e.target.value),
+      }),
+      t.input({ name: 'other', prop: { value: sibling } }),
+    ]).toElement();
+    document.body.append(form);
+    const mounted = events.length;
+    amount.set('3');
+    sibling.set('4');
+    applyPendingReactiveUpdates();
+    const programmatic = events.splice(0);
+    form.elements.amount.value = '5';
+    form.elements.amount.dispatchEvent(new Event('input', { bubbles: true }));
+    applyPendingReactiveUpdates();
+    const userEvents = events.splice(0).length;
+    disabled.set(true);
+    amount.set('6');
+    amount.set('5');
+    applyPendingReactiveUpdates();
+    return {
+      mounted, programmatic, userEvents, extra: events.length, serialized: form.outerHTML.includes('dispatch'),
+    };
+  }, bundle);
+  expect(result).toEqual({
+    mounted: 0, programmatic: [['3', '4', true, true, false]], userEvents: 1, extra: 0, serialized: false,
+  });
+});
+
+test('prop notifications infer control events and are opt in', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, applyPendingReactiveUpdates } = await import(src);
+    const events = [];
+    const values = [];
+    const specs = [
+      ['input', 'text', 'value', 'input'],
+      ['input', 'number', 'value', 'input'],
+      ['input', 'checkbox', 'checked', 'change'],
+      ['input', 'radio', 'checked', 'change'],
+      ['textarea', null, 'value', 'input'],
+      ['select', null, 'value', 'change'],
+    ];
+    for (const [tag, type, property, event] of specs) {
+      const value = signal(property === 'checked' ? false : '1');
+      const options = tag === 'select' ? [t.option({ value: '1' }, 'One'), t.option({ value: '2' }, 'Two')] : undefined;
+      const el = t[tag]({
+        ...(type ? { type } : {}), prop: { [property]: value }, dispatchOnPropChange: true,
+      }, options).toElement();
+      el.addEventListener(event, () => events.push(`${tag}:${type}:${event}`));
+      document.body.append(el);
+      values.push([value, property === 'checked' ? true : '2']);
+    }
+    for (const flag of [undefined, false]) {
+      const value = signal('1');
+      const el = t.input({
+        prop: { value }, dispatchOnPropChange: flag, oninput: () => events.push('unexpected'),
+      }).toElement();
+      document.body.append(el);
+      values.push([value, '2']);
+    }
+    for (const [value, next] of values) { value.set(next); }
+    await Promise.resolve(); // Verify the automatic flush too.
+    applyPendingReactiveUpdates();
+    return events;
+  }, bundle);
+  expect(result).toEqual([
+    'input:text:input',
+    'input:number:input',
+    'input:checkbox:change',
+    'input:radio:change',
+    'textarea:null:input',
+    'select:null:change',
+  ]);
+});
+
+test('prop writes preserve equivalent numeric edits and text selection without opting in', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, applyPendingReactiveUpdates } = await import(src);
+    const value = signal('abc');
+    const number = signal(1);
+    const text = t.input({ prop: { value } }).toElement();
+    const numeric = t.input({ type: 'number', prop: { value: number } }).toElement();
+    document.body.append(text, numeric);
+    text.focus();
+    text.value = 'abxc';
+    text.setSelectionRange(3, 3);
+    value.set('abxc');
+    numeric.value = '2.0';
+    number.set(2);
+    applyPendingReactiveUpdates();
+    return [text.selectionStart, numeric.value];
+  }, bundle);
+  expect(result).toEqual([3, '2.0']);
+});
+
+test('prop notifications skip normalized no-ops and detached elements', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, applyPendingReactiveUpdates } = await import(src);
+    const value = signal('');
+    let events = 0;
+    const el = t.input({
+      type: 'number', prop: { value }, dispatchOnPropChange: true, oninput: () => events++,
+    }).toElement();
+    document.body.append(el);
+    value.set('invalid');
+    applyPendingReactiveUpdates();
+    const normalized = events;
+    value.set('2');
+    el.remove();
+    applyPendingReactiveUpdates();
+    return [normalized, events];
+  }, bundle);
+  expect(result).toEqual([0, 0]);
+});
+
+test('prop notification handlers can update signals without subscribing their binding', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, effect, applyPendingReactiveUpdates } = await import(src);
+    const value = signal('a');
+    const unrelated = signal(0);
+    let events = 0;
+    const el = t.input({ prop: { value },
+      dispatchOnPropChange: true,
+      oninput: () => {
+        unrelated.get();
+        events++;
+        if (value.get() === 'b') { value.set('c'); }
+      } }).toElement();
+    document.body.append(el);
+    value.set('b');
+    applyPendingReactiveUpdates();
+    unrelated.set(1);
+    applyPendingReactiveUpdates();
+    const consumer = effect(() => unrelated.get());
+    consumer.stop();
+    return [events, el.value];
+  }, bundle);
+  expect(result).toEqual([2, 'c']);
+});
+
+test('prop events cross shadow roots and coalesce net-zero effects', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, effect, applyPendingReactiveUpdates } = await import(src);
+    const value = signal('a');
+    const host = document.createElement('div');
+    document.body.append(host);
+    const shadow = host.attachShadow({ mode: 'open' });
+    let events = 0;
+    host.addEventListener('input', () => events++);
+    shadow.append(t.input({ prop: { value }, dispatchOnPropChange: true }).toElement());
+    const undo = effect(() => {
+      if (value.get() === 'b') { value.set('a'); }
+    });
+    value.set('b');
+    applyPendingReactiveUpdates();
+    const netZero = events;
+    undo.stop();
+    value.set('c');
+    applyPendingReactiveUpdates();
+    return [netZero, events];
+  }, bundle);
+  expect(result).toEqual([0, 1]);
+});
+
+test('prop event feedback remains bounded by reactive loop protection', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, applyPendingReactiveUpdates } = await import(src);
+    const value = signal('a');
+    let events = 0;
+    const el = t.input({
+      prop: { value },
+      dispatchOnPropChange: true,
+      oninput: () => { events++; value.set(value.get() === 'a' ? 'b' : 'a'); },
+    }).toElement();
+    document.body.append(el);
+    value.set('b');
+    applyPendingReactiveUpdates();
+    el.remove();
+    return events;
+  }, bundle);
+  expect(result).toBeGreaterThan(1);
+  expect(result).toBeLessThanOrEqual(100);
+});
+
+test('prop dispatch preserves coercion and avoids unrelated getters', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, applyPendingReactiveUpdates } = await import(src);
+    const value = signal('start');
+    const select = t.select({ prop: { value }, dispatchOnPropChange: true }, [
+      t.option({ value: '' }, 'Empty'),
+      t.option({ value: 'null' }, 'Null'),
+      t.option({ value: 'undefined' }, 'Undefined'),
+      t.option({ value: 'start' }, 'Start'),
+    ]).toElement();
+    document.body.append(select);
+    value.set(null);
+    applyPendingReactiveUpdates();
+    const nullValue = select.value;
+    value.set(undefined);
+    applyPendingReactiveUpdates();
+    const undefinedValue = select.value;
+    const custom = signal(1);
+    const div = t.div({ prop: { custom } }).toElement();
+    document.body.append(div);
+    let assigned;
+    Object.defineProperty(div, 'custom', {
+      get() { throw new Error('property getter must not be read'); },
+      set(v) { assigned = v; },
+    });
+    custom.set(2);
+    applyPendingReactiveUpdates();
+    return [nullValue, undefinedValue, assigned];
+  }, bundle);
+  expect(result).toEqual(['null', 'undefined', 2]);
+});
+
+test('prop notification handlers settle sibling changes before the next notification', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, applyPendingReactiveUpdates } = await import(src);
+    const a = signal('a');
+    const b = signal('b');
+    const seen = [];
+    const form = t.form([
+      t.input({ prop: { value: a }, dispatchOnPropChange: true, oninput: () => b.set('handler') }),
+      t.input({
+        prop: { value: b },
+        dispatchOnPropChange: true,
+        oninput: e => seen.push([e.target.value, b.get()]),
+      }),
+    ]).toElement();
+    document.body.append(form);
+    a.set('A');
+    b.set('B');
+    applyPendingReactiveUpdates();
+    return seen;
+  }, bundle);
+  expect(result).toEqual([['handler', 'handler']]);
+});
+
+test('initial prop writes protect live values from later default attributes', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, applyPendingReactiveUpdates } = await import(src);
+    const results = [];
+    for (const dispatchOnPropChange of [false, true]) {
+      const defaultValue = signal('');
+      const defaultChecked = signal(false);
+      const value = signal('');
+      const checked = signal(false);
+      let events = 0;
+      const form = t.form({ oninput: () => events++, onchange: () => events++ }, [
+        t.input({ value: defaultValue, prop: { value }, dispatchOnPropChange }),
+        t.input({ type: 'checkbox', checked: defaultChecked, prop: { checked }, dispatchOnPropChange }),
+      ]).toElement();
+      document.body.append(form);
+      defaultValue.set('new default');
+      defaultChecked.set(true);
+      applyPendingReactiveUpdates();
+      results.push([form.elements[0].value, form.elements[1].checked, events]);
+      form.reset();
+      results.push([form.elements[0].value, form.elements[1].checked]);
+    }
+    return results;
+  }, bundle);
+  expect(result).toEqual([['', false, 0], ['new default', true], ['', false, 0], ['new default', true]]);
+});
+
+const inputTypeTransitions = [
+  { property: 'value', unsupportedType: 'checkbox', supportedType: 'text', initial: 'a', next: 'b', last: 'c' },
+  { property: 'checked', unsupportedType: 'text', supportedType: 'checkbox', initial: false, next: true, last: false },
+];
+
+for (const typeBinding of ['attribute', 'property']) {
+  for (const propertyFirst of [true, false]) {
+    for (const transition of inputTypeTransitions) {
+      const order = propertyFirst ? 'before' : 'after';
+      test(`prop event: ${transition.property} changes ${order} type ${typeBinding}`, async ({ page, bundle }) => {
+        const result = await page.evaluate(async ({ src, caseData }) => {
+          const { t, signal, applyPendingReactiveUpdates } = await import(src);
+          const { property, unsupportedType, supportedType, initial, next, last } = caseData.transition;
+          const type = signal(unsupportedType);
+          const value = signal(initial);
+          let events = 0;
+          const el = t.input({
+            ...(caseData.typeBinding === 'attribute' ? { type } : {}),
+            prop: { [property]: value, ...(caseData.typeBinding === 'property' ? { type } : {}) },
+            dispatchOnPropChange: true,
+            oninput: () => events++,
+            onchange: () => events++,
+          }).toElement();
+          document.body.append(el);
+
+          function update(nextValue, nextType) {
+            const writes = [() => value.set(nextValue), () => type.set(nextType)];
+            if (!caseData.propertyFirst) { writes.reverse(); }
+            for (const write of writes) { write(); }
+            applyPendingReactiveUpdates();
+          }
+
+          update(next, supportedType);
+          const supportedEvents = events;
+          update(last, unsupportedType);
+          return { supportedEvents, unsupportedEvents: events - supportedEvents };
+        }, { src: bundle, caseData: { typeBinding, propertyFirst, transition } });
+        expect(result).toEqual({ supportedEvents: 1, unsupportedEvents: 0 });
+      });
+    }
+  }
+}
+
+for (const dispatchOnPropChange of [false, true]) {
+  test(`multiple select value writes reconcile all selected options (dispatch=${dispatchOnPropChange})`,
+    async ({ page, bundle }) => {
+      const result = await page.evaluate(async ({ src, dispatchEvents }) => {
+        const { t, signal, applyPendingReactiveUpdates } = await import(src);
+        const value = signal('b');
+        let events = 0;
+        const form = t.form({ onchange: () => events++ }, t.select({
+          name: 'choice', multiple: true, prop: { value }, dispatchOnPropChange: dispatchEvents,
+        }, [
+          t.option({ value: 'a' }, 'A'), t.option({ value: 'b' }, 'B'), t.option({ value: 'c' }, 'C'),
+        ])).toElement();
+        document.body.append(form);
+        const select = form.elements.choice;
+        select.options[0].selected = true;
+        select.options[1].selected = false;
+        select.options[2].selected = true;
+        value.set('a');
+        applyPendingReactiveUpdates();
+        const afterChange = { selected: new FormData(form).getAll('choice'), events };
+        value.set('b');
+        value.set('a');
+        applyPendingReactiveUpdates();
+        return { afterChange, afterNoOp: events };
+      }, { src: bundle, dispatchEvents: dispatchOnPropChange });
+      const expectedEvents = dispatchOnPropChange ? 1 : 0;
+      expect(result).toEqual({
+        afterChange: { selected: ['a'], events: expectedEvents }, afterNoOp: expectedEvents,
+      });
+    });
+
+  test(`select value writes choose the first duplicate option (dispatch=${dispatchOnPropChange})`,
+    async ({ page, bundle }) => {
+      const result = await page.evaluate(async ({ src, dispatchEvents }) => {
+        const { t, signal, applyPendingReactiveUpdates } = await import(src);
+        const value = signal('b');
+        let events = 0;
+        const select = t.select({
+          prop: { value }, dispatchOnPropChange: dispatchEvents, onchange: () => events++,
+        }, [
+          t.option({ value: 'a' }, 'First A'),
+          t.option({ value: 'a' }, 'Second A'),
+          t.option({ value: 'b' }, 'B'),
+        ]).toElement();
+        document.body.append(select);
+        select.selectedIndex = 1;
+        value.set('a');
+        applyPendingReactiveUpdates();
+        return { value: select.value, selectedIndex: select.selectedIndex, events };
+      }, { src: bundle, dispatchEvents: dispatchOnPropChange });
+      expect(result).toEqual({ value: 'a', selectedIndex: 0, events: dispatchOnPropChange ? 1 : 0 });
+    });
+}
+
+test('select notifications coalesce using the complete final selection', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { t, signal, effect, applyPendingReactiveUpdates } = await import(src);
+    const value = signal('b');
+    let events = 0;
+    const select = t.select({
+      multiple: true, prop: { value }, dispatchOnPropChange: true, onchange: () => events++,
+    }, [
+      t.option({ value: 'a' }, 'A'), t.option({ value: 'b' }, 'B'), t.option({ value: 'c' }, 'C'),
+    ]).toElement();
+    document.body.append(select);
+    select.options[0].selected = true;
+    select.options[1].selected = false;
+    select.options[2].selected = true;
+    const restoreSelection = effect(() => {
+      if (value.get() === 'a') { select.options[2].selected = true; }
+    });
+    value.set('a');
+    applyPendingReactiveUpdates();
+    restoreSelection.stop();
+    return { events, selected: Array.from(select.selectedOptions, option => option.value) };
+  }, bundle);
+  expect(result).toEqual({ events: 0, selected: ['a', 'c'] });
+});

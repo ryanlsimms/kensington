@@ -235,6 +235,49 @@ t.input({ prop: { checked: isChecked } });       // typed: boolean
 t.video({ prop: { muted: true, playbackRate: 1.5 } });  // typed: HTMLVideoElement props
 t.div({ prop: { _instance: component } });       // expando: accepted as unknown`),
 
+    t.h3({ id: 'dispatch-on-prop-change' }, 'dispatchOnPropChange'),
+    t.p([
+      'Boolean, default false. Opt into bubbling DOM events after signal-driven form property updates. ',
+      'Editable input and textarea value changes dispatch input; select value and checkbox/radio checked changes dispatch change. ',
+      'Hidden, file and button inputs are excluded. Other properties, including disabled, do not trigger events.',
+    ]),
+    code('javascript', `const amount = signal('10');
+t.input({
+  type: 'number',
+  prop: { value: amount },
+  dispatchOnPropChange: true,
+  oninput: e => amount.set(e.currentTarget.value),
+});`),
+    t.p('Notification timing:'),
+    t.ul([
+      t.li('Events run after pending bindings and effects settle, including with applyPendingReactiveUpdates().'),
+      t.li('Handler updates settle before the next notification, with loop protection and no reactive tracking.'),
+      t.li('Notifications coalesce per binding. Events have bubbles and composed enabled, and isTrusted is false.'),
+    ]),
+    t.p('Events are suppressed for:'),
+    t.ul([
+      t.li('Initial rendering, hydration, and static property assignments.'),
+      t.li('Unchanged final DOM values, including browser coercion that leaves the value unchanged.'),
+      t.li('Elements disconnected before dispatch.'),
+      t.li('Ordinary typing reflected through a signal when the DOM value already matches.'),
+    ]),
+    t.p([
+      'Select value assignments always run to preserve native selection behavior. ',
+      'Notifications compare selected option indices and values, so a selection change can notify even when select.value matches.',
+    ]),
+    t.p('Validation:'),
+    t.ul([
+      t.li('Custom elements and unsupported bindings use validationLevel: off ignores, warn reports, error throws.'),
+      t.li('Validation checks the initial input type; dispatch uses the final DOM type after the batch settles.'),
+    ]),
+    t.p([
+      'Radio groups: a radio button implicitly unchecked by the browser does not emit an additional event. ',
+      'Form listeners should read the resulting group state.',
+    ]),
+    t.p([
+      'The option is omitted from HTML. Use explicit dispatchEvent() for custom behavior, or observe signals for state changes.',
+    ]),
+
     t.h3({ id: 'render-for-hydration' }, 'renderForHydration'),
     code('typescript', `import { renderForHydration } from 'kensington';
 

@@ -40,6 +40,7 @@ export function apiSidebar() {
           t.li(t.a({ href: '#api-map-with-key' }, 'signal.mapWithKey')),
           t.li(t.a({ href: '#api-effect' }, 'effect()')),
           t.li(t.a({ href: '#prop-key' }, 'prop key')),
+          t.li(t.a({ href: '#dispatch-on-prop-change' }, 'dispatchOnPropChange')),
           t.li(t.a({ href: '#render-for-hydration' }, 'renderForHydration()')),
           t.li(t.a({ href: '#register-components' }, 'registerComponents()')),
         ]),

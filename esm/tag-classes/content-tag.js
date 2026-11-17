@@ -12,6 +12,7 @@ import {
   setDomAttribute,
   SVG_NAMESPACE,
 } from '../lib/render/namespaces.js';
+import { createPropWriter } from '../lib/render/prop-events.js';
 import {
   attributeArray,
   attributeString,
@@ -445,7 +446,8 @@ export default class ContentTag {
           continue;
         }
         if (isKensingtonSignal(propValue)) {
-          ensureLifecycle().signalEffect(propValue, (el, val) => { el[propName] = val; }, `prop:${propName}`);
+          const writeProperty = createPropWriter(element, propName, this.attributes.dispatchOnPropChange === true);
+          ensureLifecycle().signalEffect(propValue, writeProperty, `prop:${propName}`);
         } else {
           element[propName] = propValue;
         }

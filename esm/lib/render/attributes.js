@@ -60,7 +60,7 @@ export function attributesArrayFromObject(obj, options = {}) {
     if (!attr.trim()) {
       continue;
     }
-    if (attr === 'on' || attr === 'prop' || attr === 'persist') {
+    if (attr === 'on' || attr === 'prop' || attr === 'persist' || attr === 'dispatchOnPropChange') {
       continue;
     }
     let val;
