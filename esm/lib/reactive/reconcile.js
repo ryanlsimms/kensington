@@ -1,4 +1,5 @@
 import { stopRangeBetween, stopRemoved } from './dom-tracker.js';
+import { keyedElements, moveBefore } from './keyed-dom.js';
 import { KENSINGTON_KEY } from './map-with-key.js';
 import { captureState, restoreFormState, restoreViewState } from './preserve-state.js';
 import { getSharedReactiveState } from './shared-state.js';
@@ -21,16 +22,20 @@ function itemKey(item) {
   return null;
 }
 
+function itemRenderOptions(item, options) {
+  return item[KENSINGTON_KEY] === undefined || options?._keyedRow ? options : { ...options, _keyedRow: true };
+}
+
 function itemToNode(item, renderOptions) {
   if (item !== null && item !== undefined && typeof item.toElement === 'function') {
     const cached = item.getDomElement?.();
     if (cached && typeof item._resolveNamespace === 'function') {
       const namespace = item._resolveNamespace(renderOptions?._parentContext);
       if (cached.namespaceURI !== namespace) {
-        return item.toElement(renderOptions);
+        return item.toElement(itemRenderOptions(item, renderOptions));
       }
     }
-    return cached ?? item.toElement(renderOptions);
+    return cached ?? item.toElement(itemRenderOptions(item, renderOptions));
   }
   if (item === null || item === undefined || item === false) {
     return document.createTextNode('');
@@ -38,13 +43,12 @@ function itemToNode(item, renderOptions) {
   return document.createTextNode(String(item));
 }
 
-// True when the tag for a matched key is a fresh instance whose own DOM doesn't back the
-// live node. That happens when mapWithKey's per-key computed re-ran because mapFn touched a
-// signal that changed. The reconciler treats it as a rebuild.
-function tagNeedsRebuild(item, node) {
+// A matched key can produce a new tag when the row renderer runs again.
+function tagNeedsUpdate(item, node) {
   if (item === null || typeof item !== 'object') { return false; }
   if (item._isKensingtonTag !== true) { return false; }
   if (typeof item.getDomElement !== 'function') { return false; }
+  if (keyedElements.get(node)?.tag === item) { return false; }
   const cached = item.getDomElement();
   return cached !== node && cached !== item; // cached === item shows up for tags that don't render to a single node
 }
@@ -95,7 +99,7 @@ function isTextItem(item) {
   return item === null || typeof item !== 'object' || typeof item.toElement !== 'function';
 }
 
-function reconcileChildren(parent, endAnchor, items, oldChildren, renderOptions, rebuildNode) {
+function reconcileChildren(parent, endAnchor, items, oldChildren, renderOptions, updateNode) {
   let oldStart = 0;
   let oldEnd = oldChildren.length - 1;
   let newStart = 0;
@@ -116,16 +120,15 @@ function reconcileChildren(parent, endAnchor, items, oldChildren, renderOptions,
       oldStart++;
       newStart++;
     } else if (oldStartKey === newStartKey && oldStartKey !== undefined) {
-      // Prefix match. Rebuild only when the new tag is a fresh instance for the key.
-      if (tagNeedsRebuild(items[newStart], oldStartNode)) {
-        oldChildren[oldStart] = rebuildNode(oldStartNode, items[newStart], oldStartKey);
+      if (tagNeedsUpdate(items[newStart], oldStartNode)) {
+        oldChildren[oldStart] = updateNode(oldStartNode, items[newStart], oldStartKey);
       }
       oldStart++;
       newStart++;
     } else if (oldEndKey === newEndKey && oldEndKey !== undefined) {
       // Suffix match.
-      if (tagNeedsRebuild(items[newEnd], oldEndNode)) {
-        oldChildren[oldEnd] = rebuildNode(oldEndNode, items[newEnd], oldEndKey);
+      if (tagNeedsUpdate(items[newEnd], oldEndNode)) {
+        oldChildren[oldEnd] = updateNode(oldEndNode, items[newEnd], oldEndKey);
       }
       trailingFence = oldChildren[oldEnd];
       oldEnd--;
@@ -133,22 +136,22 @@ function reconcileChildren(parent, endAnchor, items, oldChildren, renderOptions,
     } else if (oldStartKey === newEndKey && oldStartKey !== undefined) {
       // Head moved to tail.
       let node = oldStartNode;
-      if (tagNeedsRebuild(items[newEnd], oldStartNode)) {
-        node = rebuildNode(oldStartNode, items[newEnd], oldStartKey);
+      if (tagNeedsUpdate(items[newEnd], oldStartNode)) {
+        node = updateNode(oldStartNode, items[newEnd], oldStartKey);
         oldChildren[oldStart] = node;
       }
-      parent.insertBefore(node, oldEndNode.nextSibling);
+      moveBefore(parent, node, oldEndNode.nextSibling);
       trailingFence = node;
       oldStart++;
       newEnd--;
     } else if (oldEndKey === newStartKey && oldEndKey !== undefined) {
       // Tail moved to head. The js-framework-benchmark swap test lives here.
       let node = oldEndNode;
-      if (tagNeedsRebuild(items[newStart], oldEndNode)) {
-        node = rebuildNode(oldEndNode, items[newStart], oldEndKey);
+      if (tagNeedsUpdate(items[newStart], oldEndNode)) {
+        node = updateNode(oldEndNode, items[newStart], oldEndKey);
         oldChildren[oldEnd] = node;
       }
-      parent.insertBefore(node, oldStartNode);
+      moveBefore(parent, node, oldStartNode);
       oldEnd--;
       newStart++;
     } else {
@@ -201,15 +204,16 @@ function reconcileChildren(parent, endAnchor, items, oldChildren, renderOptions,
     if (oldIndex === undefined) {
       node = itemToNode(item, renderOptions);
       if (key !== null) { sharedState.nodeKeys.set(node, key); }
+      parent.insertBefore(node, insertRef);
     } else {
       node = oldChildren[oldIndex];
       oldChildren[oldIndex] = null;
       keymap.delete(key);
-      if (tagNeedsRebuild(item, node)) {
-        node = rebuildNode(node, item, key);
+      if (tagNeedsUpdate(item, node)) {
+        node = updateNode(node, item, key);
       }
+      moveBefore(parent, node, insertRef);
     }
-    parent.insertBefore(node, insertRef);
     insertRef = node;
   }
 
@@ -252,33 +256,37 @@ export function reconcile(parent, startAnchor, endAnchor, newItems, renderOption
     oldChildren.push(node);
   }
 
-  // Read state for every replacement before the first connected-DOM write. Alternating
-  // scroll reads with row replacements forces one layout per row.
-  const oldByKey = new Map();
-  for (const node of oldChildren) {
-    const key = sharedState.nodeKeys.get(node);
-    if (key !== undefined) { oldByKey.set(key, node); }
-  }
+  // Batch layout reads for rows that need replacement. In-place updates do not
+  // need to capture browser state.
+  const oldByKey = new Map(oldChildren.map(node => [sharedState.nodeKeys.get(node), node]));
   const states = new Map();
   for (const item of items) {
     const old = oldByKey.get(itemKey(item));
-    if (old && tagNeedsRebuild(item, old)) { states.set(old, captureState(old)); }
+    if (old && tagNeedsUpdate(item, old)
+      && !item._canPatchKeyedElement?.(old, itemRenderOptions(item, renderOptions))) {
+      states.set(old, captureState(old));
+    }
   }
   const restored = [];
-  function rebuildNode(oldNode, item, key) {
-    const fresh = item.toElement(renderOptions);
-    if (key !== undefined && key !== null) { sharedState.nodeKeys.set(fresh, key); }
+  function updateNode(oldNode, item, key) {
+    const options = itemRenderOptions(item, renderOptions);
+    const saved = states.get(oldNode);
+    if (!saved) {
+      const updated = item._patchKeyedElement?.(oldNode, options);
+      if (updated) { return updated; }
+    }
+    const state = saved ?? captureState(oldNode);
+    const fresh = item.toElement(options);
+    sharedState.nodeKeys.set(fresh, key);
     parent.insertBefore(fresh, oldNode);
     oldNode.remove();
     stopRemoved(oldNode);
-    restored.push([fresh, states.get(oldNode)]);
+    restored.push([fresh, state]);
     return fresh;
   }
   try {
-    reconcileChildren(parent, endAnchor, items, oldChildren, renderOptions, rebuildNode);
+    reconcileChildren(parent, endAnchor, items, oldChildren, renderOptions, updateNode);
   } finally {
-    // Form and open-state writes can invalidate layout. Finish all of them before
-    // restoring focus/scroll, which can force the browser to calculate layout.
     for (const [node, state] of restored) { restoreFormState(node, state); }
     for (const [node, state] of restored) { restoreViewState(node, state); }
   }

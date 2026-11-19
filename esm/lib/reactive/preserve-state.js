@@ -1,8 +1,6 @@
-// State preservation for keyed-list reconciliation. When the reconciler discovers that a
-// keyed node's signal references have changed (a fresh signal instance, e.g. an unkeyed
-// signal() created inside a computed), it must build a new DOM element so the new signal
-// can drive it. Patching the existing node in place would leave its effects subscribed to
-// the old signal, breaking interactivity.
+import { keyedElements } from './keyed-dom.js';
+
+// State preservation for keyed elements that cannot be updated in place.
 //
 // To make the swap less disruptive we capture user-visible DOM state from the old node
 // just before removal and re-apply it to the new node after insertion. The mapping
@@ -70,7 +68,7 @@ export function captureState(root) {
     if (active !== null && active !== document.body && root.contains(active)) {
       const path = pathTo(root, active);
       if (path !== null) {
-        state.focus = { path };
+        state.focus = { path, tag: active.tagName };
         if (typeof active.selectionStart === 'number') {
           state.focus.selectionStart = active.selectionStart;
           state.focus.selectionEnd = active.selectionEnd;
@@ -87,38 +85,46 @@ export function captureState(root) {
     }
     const tag = node.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA') {
-      const entry = { path, value: node.value };
+      const entry = { path, tag, type: node.type, value: node.value, props: keyedElements.get(node)?.props };
       if (typeof node.checked === 'boolean') { entry.checked = node.checked; }
       if (typeof node.indeterminate === 'boolean') { entry.indeterminate = node.indeterminate; }
       state.inputs.push(entry);
     } else if (tag === 'SELECT') {
-      state.inputs.push({ path, value: node.value });
+      state.inputs.push({ path, tag, type: node.type, value: node.value, props: keyedElements.get(node)?.props });
     } else if (tag === 'DETAILS' || tag === 'DIALOG') {
-      state.openables.push({ path, open: node.open });
+      state.openables.push({ path, tag, open: node.open, props: keyedElements.get(node)?.props });
     }
   }, null);
 
   return state;
 }
 
+function shouldRestore(node, entry, property) {
+  const props = keyedElements.get(node)?.props;
+  return !props?.has(property)
+    || (entry.props?.has(property) && Object.is(entry.props.get(property), props.get(property)));
+}
+
 export function restoreFormState(root, state) {
   for (const entry of state.inputs) {
     const node = resolvePath(root, entry.path);
-    if (node === null) { continue; }
-    const tag = node.tagName;
+    const { tag, type } = entry;
+    if (node?.tagName !== tag || node.type !== type) { continue; }
     if (tag === 'INPUT' || tag === 'TEXTAREA') {
-      if (node.type !== 'checkbox' && node.type !== 'radio') {
+      if (type !== 'checkbox' && type !== 'radio' && type !== 'file' && shouldRestore(node, entry, 'value')) {
         node.value = entry.value;
       }
-      if (entry.checked !== undefined) { node.checked = entry.checked; }
-      if (entry.indeterminate !== undefined) { node.indeterminate = entry.indeterminate; }
-    } else if (tag === 'SELECT') {
+      if (entry.checked !== undefined && shouldRestore(node, entry, 'checked')) { node.checked = entry.checked; }
+      if (entry.indeterminate !== undefined && shouldRestore(node, entry, 'indeterminate')) {
+        node.indeterminate = entry.indeterminate;
+      }
+    } else if (tag === 'SELECT' && shouldRestore(node, entry, 'value') && shouldRestore(node, entry, 'selectedIndex')) {
       node.value = entry.value;
     }
   }
   for (const entry of state.openables) {
     const node = resolvePath(root, entry.path);
-    if (node === null) { continue; }
+    if (node?.tagName !== entry.tag || !shouldRestore(node, entry, 'open')) { continue; }
     node.open = entry.open;
   }
 }
@@ -126,7 +132,7 @@ export function restoreFormState(root, state) {
 export function restoreViewState(root, state) {
   if (state.focus !== null) {
     const node = resolvePath(root, state.focus.path);
-    if (node !== null && typeof node.focus === 'function') {
+    if (node?.tagName === state.focus.tag && typeof node.focus === 'function') {
       try {
         node.focus({ preventScroll: true });
       } catch {

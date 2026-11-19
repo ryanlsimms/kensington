@@ -1,5 +1,9 @@
-import { markContentTracked } from '../lib/reactive/dom-tracker.js';
+import { markContentTracked, stopTracked } from '../lib/reactive/dom-tracker.js';
+import {
+  hasExpectedChildren, keyedElements, removeSlot, updateKeyedChildren,
+} from '../lib/reactive/keyed-dom.js';
 import { createLifecycle } from '../lib/reactive/lifecycle.js';
+import { captureState, restoreState } from '../lib/reactive/preserve-state.js';
 import { reconcile } from '../lib/reactive/reconcile.js';
 import { withRuntimeValidation } from '../lib/reactive/runtime-guard.js';
 import { isKensingtonSignal } from '../lib/reactive/signal.js';
@@ -102,6 +106,15 @@ function collectContent(items, seen) {
     out.push(items);
   }
   return out;
+}
+
+function compatibleSlots(old, next) {
+  if (old === next) { return true; }
+  if (isKensingtonSignal(old)) { return isKensingtonSignal(next); }
+  if (isKensingtonTag(old)) {
+    return old._isKensingtonContentTag && old.tagName === next?.tagName;
+  }
+  return !isKensingtonTag(next) && !isKensingtonSignal(next);
 }
 
 export default class ContentTag {
@@ -266,7 +279,43 @@ export default class ContentTag {
     return withRuntimeValidation(this.validationLevel, this.logger, () => this.#toElement(options));
   }
 
-  #toElement({ _inheritPersist = false, _parentContext, _parentElement }) {
+  _canPatchKeyedElement(element, options = {}) {
+    const previous = keyedElements.get(element);
+    if (!previous || !(previous.tag instanceof ContentTag) || this.#domElement
+      || !this.#canReuseElement(options)
+      || !previous.tag.#canReuseElement(options)
+      || element.localName !== this.tagName
+      || element.namespaceURI !== this._resolveNamespace(options._parentContext)
+      || !hasExpectedChildren(element, previous.children)) {
+      return false;
+    }
+    // Replacing the element is the only general way to reset an omitted DOM
+    // property, which may be an expando or have a native setter.
+    return [...previous.props.keys()].every(name => this.prop && Object.hasOwn(this.prop, name));
+  }
+
+  #canReuseElement({ _inheritPersist }) {
+    return this.toElement === ContentTag.prototype.toElement
+      && !(_inheritPersist || this.persist || this.#connectedCallbacks.length
+      || this.#disconnectedCallbacks.length || this.#effectCallbacks.length
+      || (this.contentIsLiteral && this.tagName !== 'textarea')
+      || this.tagName === 'template' || this.tagName.includes('-')
+      || this.attributes?.is || this.styleProps || isKensingtonSignal(this.attributes?.style)
+      || (this.prop && Object.hasOwn(this.prop, 'outerHTML')));
+  }
+
+  _patchKeyedElement(element, options = {}) {
+    if (!this._canPatchKeyedElement(element, options)) { return null; }
+    const previous = keyedElements.get(element);
+    return withRuntimeValidation(this.validationLevel, this.logger, () => {
+      stopTracked(element);
+      previous.tag.#domElement = null;
+      return this.#toElement(options, element, previous);
+    });
+  }
+
+  #toElement({ _inheritPersist = false, _parentContext, _parentElement, _keyedRow = false },
+    existingElement, previous) {
     const persist = this.persist || _inheritPersist;
     const namespace = this._resolveNamespace(_parentContext);
     if (this.#domElement && this.#domElement.namespaceURI !== namespace) {
@@ -294,9 +343,9 @@ export default class ContentTag {
     }
     this.validateContent();
     const ownerDocument = _parentElement?.ownerDocument ?? document;
-    const element = namespace === HTML_NAMESPACE
+    const element = existingElement ?? (namespace === HTML_NAMESPACE
       ? ownerDocument.createElement(this.tagName)
-      : ownerDocument.createElementNS(namespace, this.tagName);
+      : ownerDocument.createElementNS(namespace, this.tagName));
     // A template's children live in its inert DocumentFragment, not in the element's
     // ordinary child list. Appending to the element directly produces invisible light-DOM
     // children that are omitted from template.innerHTML/outerHTML and cloning.
@@ -311,6 +360,24 @@ export default class ContentTag {
     let lifecycle = null;
     const ensureLifecycle = () => (lifecycle ??= createLifecycle({ element, persist }));
     let hasSignalContent = false;
+    const rendered = _keyedRow ? { tag: this, attrs: new Map(), events: [], props: new Map(), children: [] } : null;
+    const writeAttribute = (el, name, value) => {
+      if (previous?.attrs.get(name) !== value) { setDomAttribute(el, name, value); }
+      rendered?.attrs.set(name, value);
+    };
+    const removeAttribute = (el, name) => {
+      removeDomAttribute(el, name);
+      rendered?.attrs.delete(name);
+    };
+    const listen = (name, handler) => {
+      element.addEventListener(name, handler);
+      rendered?.events.push([name, handler]);
+    };
+    if (previous) {
+      for (const [name, handler] of previous.events) {
+        element.removeEventListener(name, handler);
+      }
+    }
 
     for (const [attrName, attrValue] of this.attributeArray()) {
       if (attrName === SUBTREE_SIGNAL_KEY) {
@@ -363,12 +430,12 @@ export default class ContentTag {
             }
             for (const [n, v] of next) {
               if (prevAttrs.get(n) !== v) {
-                setDomAttribute(el, n, v);
+                writeAttribute(el, n, v);
               }
             }
             for (const old of prevAttrs.keys()) {
               if (!next.has(old)) {
-                removeDomAttribute(el, old);
+                removeAttribute(el, old);
               }
             }
             prevAttrs.clear();
@@ -376,19 +443,24 @@ export default class ContentTag {
           }, `${prefix}(signal)`);
         }
       } else if (/^on[a-z]/.test(attrName) && typeof attrValue === 'function') {
-        element.addEventListener(attrName.slice(2), attrValue);
+        listen(attrName.slice(2), attrValue);
       } else if (isKensingtonSignal(attrValue)) {
         ensureLifecycle().signalEffect(attrValue, (el, val) => {
           if (val === false || val === null || val === undefined) {
-            removeDomAttribute(el, attrName);
+            removeAttribute(el, attrName);
           } else if (val === true) {
-            setDomAttribute(el, attrName, '');
+            writeAttribute(el, attrName, '');
           } else {
-            setDomAttribute(el, attrName, String(val));
+            writeAttribute(el, attrName, String(val));
           }
         }, attrName);
       } else {
-        setDomAttribute(element, attrName, attrValue);
+        writeAttribute(element, attrName, attrValue);
+      }
+    }
+    if (previous) {
+      for (const name of previous.attrs.keys()) {
+        if (!rendered.attrs.has(name)) { removeDomAttribute(element, name); }
       }
     }
 
@@ -396,7 +468,7 @@ export default class ContentTag {
     if (events !== null && typeof events === 'object' && !Array.isArray(events)) {
       for (const [eventName, handler] of Object.entries(events)) {
         if (typeof handler === 'function') {
-          element.addEventListener(eventName, handler);
+          listen(eventName, handler);
         }
       }
     }
@@ -419,32 +491,64 @@ export default class ContentTag {
       _inheritPersist: persist,
       _parentContext: childContext,
       _parentElement: contentParent,
+      _keyedRow,
     };
-    for (let node of this.content) { // let, not const. node is reassigned to preserveSpaces(node) below
-      if (isKensingtonTag(node)) {
-        contentParent.append(node.toElement(childOpts));
-        continue;
-      }
-      if (isKensingtonSignal(node)) {
+    const renderChild = (item, old, before) => {
+      let first;
+      let last;
+      let state;
+      if (isKensingtonSignal(item)) {
         hasSignalContent = true;
-        const startAnchor = ownerDocument.createComment('');
-        const endAnchor = ownerDocument.createComment('');
-        contentParent.append(startAnchor, endAnchor);
-        ensureLifecycle().signalEffect(node, (_el, val) => {
-          reconcile(contentParent, startAnchor, endAnchor, Array.isArray(val) ? val : [val], childOpts);
+        if (old && isKensingtonSignal(old.item)) {
+          ({ first, last } = old);
+          old = null;
+        } else {
+          first = contentParent.insertBefore(ownerDocument.createComment(''), before);
+          last = contentParent.insertBefore(ownerDocument.createComment(''), before);
+        }
+        ensureLifecycle().signalEffect(item, (_el, val) => {
+          reconcile(contentParent, first, last, Array.isArray(val) ? val : [val], childOpts);
         }, '(content)');
-        continue;
+      } else if (isKensingtonTag(item)) {
+        if (old?.item === item) { return old; }
+        const updated = old && item._patchKeyedElement?.(old.first, childOpts);
+        if (updated) { return { item, first: updated, last: updated }; }
+        if (old?.first.nodeType === 1 && old.first === old.last && compatibleSlots(old.item, item)) {
+          state = captureState(old.first);
+        }
+        const node = item.toElement(childOpts);
+        first = node.nodeType === 11 ? node.firstChild : node;
+        last = node.nodeType === 11 ? node.lastChild : node;
+        contentParent.insertBefore(node, before);
+      } else {
+        const text = !this.contentIsLiteral && typeof item === 'string' ? preserveSpaces(item) : String(item);
+        if (old?.first.nodeType === 3 && old.first === old.last && !isKensingtonTag(old.item)) {
+          if (old.first.data !== text) { old.first.data = text; }
+          return { item, first: old.first, last: old.last };
+        }
+        first = contentParent.insertBefore(ownerDocument.createTextNode(text), before);
+        last = first;
       }
-      if (!this.contentIsLiteral && typeof node === 'string') { // literal tags (script/style) need exact spacing preserved. Only convert for regular tags
-        node = preserveSpaces(node);
+      if (old) { removeSlot(old); }
+      if (state && first?.nodeType === 1 && first === last) { restoreState(first, state); }
+      return rendered && { item, first, last };
+    };
+    if (previous) {
+      rendered.children = updateKeyedChildren(this.content, previous.children, compatibleSlots, renderChild);
+    } else {
+      for (const item of this.content) {
+        const child = renderChild(item, null, null);
+        if (rendered) { rendered.children.push(child); }
       }
-      contentParent.append(ownerDocument.createTextNode(String(node))); // String() handles Symbols. + or template literals would throw
     }
 
     // `prop` is applied AFTER children. Several DOM properties depend on the live child set
     // (e.g. <select>.value needs its <option> children present, <textarea>.value can be
     // overridden by the text node child if applied first). Setting prop after content avoids
     // these race-on-mount issues without changing the API.
+    const preserveProp = (name, value) => previous?.props.has(name)
+      && Object.is(previous.props.get(name), value)
+      && (this.tagName !== 'select' || name !== 'value');
     if (this.prop) {
       for (const [propName, propValue] of Object.entries(this.prop)) {
         if (propName in element && !isPropWritable(element, propName)) {
@@ -453,9 +557,13 @@ export default class ContentTag {
         }
         if (isKensingtonSignal(propValue)) {
           const writeProperty = createPropWriter(element, propName, this.attributes.dispatchOnPropChange === true);
-          ensureLifecycle().signalEffect(propValue, writeProperty, `prop:${propName}`);
+          ensureLifecycle().signalEffect(propValue, (el, value) => {
+            writeProperty(el, value, preserveProp(propName, value));
+            rendered?.props.set(propName, value);
+          }, `prop:${propName}`);
         } else {
-          element[propName] = propValue;
+          if (!preserveProp(propName, propValue)) { element[propName] = propValue; }
+          rendered?.props.set(propName, propValue);
         }
       }
     }
@@ -482,6 +590,8 @@ export default class ContentTag {
       markContentTracked(element);
     }
 
+    if (rendered) { keyedElements.set(element, rendered); }
+    previous = undefined;
     this.#domElement = element;
     return element;
   }

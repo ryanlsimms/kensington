@@ -32,7 +32,7 @@ Runtime Guard diagnostics follow the instance whose tag is rendering. `validatio
 - `tag.effect(fn)` — registers a tag-owned effect, starts on connection, stops on normal removal, and pauses/resumes with own or inherited persistence. Returns the tag for chaining.
 - `effect(fn)` — side effect (DOM updates, fetches, timers). Returns `{ pause, resume, stop }`. Re-runs when tracked signals change.
 - `applyPendingReactiveUpdates()` immediately processes pending user effects and DOM bindings. Ordinary writes are automatically batched. Call it from application code when the next line needs the updated DOM.
-- `signal.mapWithKey(keyOrProp, mapFn)` — keyed list rendering. Each key owns a stable tag instance. mapFn re-runs for a row when the outer array delivers a new object whose own enumerable fields actually differ (shallow diff). Reorderings with fresh literals of identical content are no-ops, so DOM node identity is preserved.
+- `signal.mapWithKey(keyOrProp, mapFn)` — keyed list rendering. The key identifies the row. The mapper reruns when a row field or a signal it reads changes. Kensington updates compatible DOM in place and preserves focus when rows move.
 - `tag.addConnectedCallback(el => …)` / `addDisconnectedCallback(() => …)` — lifecycle hooks tied to the live DOM element.
 
 For DOM access before the next line, use `applyPendingReactiveUpdates()`. For a callback that must run later, use `queueMicrotask(callback)`. To yield within an async function, use `await Promise.resolve()` only when a microtask boundary is what you need. These are different operations. Read [Choosing how to wait](#choosing-how-to-wait) before replacing one with another.
@@ -694,7 +694,7 @@ t.tbody(rows);
 
 `signal.mapWithKey(keyOrProp, mapFn)` is a method on `Signal<Item[]>` (and `ReadonlySignal<Item[]>`). The receiver MUST hold the array directly. For an envelope shape like `Signal<{ tabs: Tab[] }>`, project the array first: `presence.transform(p => p.tabs, 'presence-tabs').mapWithKey('id', tab => ...)`. See the "envelope around a list" note below.
 
-`signal.mapWithKey(keyOrProp, mapFn)` returns a `ReadonlySignal<Tag[]>`. The first argument is either a property name string (the common case) or a function that extracts the key. Each key owns a stable tag instance that the reconciler reuses across renders. mapFn re-runs for a row when the outer array delivers a new object AND that row's own enumerable fields actually differ (shallow diff by `Object.is`). A fresh literal with identical content is a no-op — same tag, same DOM node, same focus/scroll/input state. Keys live on the tag instance via a Kensington-internal property and are read by the reconciler via a `WeakMap`. They do not appear in the rendered DOM.
+`signal.mapWithKey(keyOrProp, mapFn)` returns a `ReadonlySignal<Tag[]>`. The first argument is either a property name string (the common case) or a function that extracts the key. Use a stable key such as the item's ID. `mapFn` receives the item and reruns when any of its own enumerable fields changes (compared with `Object.is`) or a signal the mapper reads changes. A new object with identical fields reuses the previous tag. When the mapper returns a new tag, Kensington updates compatible elements in place and preserves focus when moving a row. Tags that own lifecycle callbacks or use `persist` retain their replacement behavior.
 
 Both forms of the first argument:
 
@@ -749,7 +749,7 @@ When the `mapFn` body creates per-row signals or computeds, those calls need a k
 
 ## Updating a row after it's been rendered
 
-The natural pattern works: replace the row in the outer array with a new object that has the updated fields, and `mapWithKey` re-runs `mapFn` for that row only. The wrapper shallow-diffs the new item against the previous one; any field that fails `Object.is` (including a nested-object ref change) fires the row.
+Replace the row in the outer array with a new object containing the updated fields. `mapWithKey` reruns `mapFn` for that row and applies changes to the retained DOM. For example, changing a position label preserves what the user is typing in a separate input. A changed `prop.value` or `prop.checked` writes the new value to that control.
 
 ```javascript
 const items = signal(initialTickets);

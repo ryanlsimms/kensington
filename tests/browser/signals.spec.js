@@ -380,7 +380,7 @@ test('removed row text binding stops after reconciliation', async ({ page, bundl
     const sharedContent = signal('hello');
     const items = signal([{ id: 1, revision: 0 }]);
     const rows = items.mapWithKey(item => item.id, item =>
-      t.li({ dataKey: item.id }, [sharedContent]),
+      t.li({ dataKey: item.id }, [sharedContent]).addDisconnectedCallback(() => {}),
     );
     document.body.append(t.ul({ id: 'content-effect-cleanup' }, rows).toElement());
     const oldRow = document.querySelector('#content-effect-cleanup li');
@@ -3492,7 +3492,7 @@ test('reconcile swap of distant items (1 and N-2 in a 10-item list)', async ({ p
   expect(result.stamps).toEqual([0, 8, 2, 3, 4, 5, 6, 7, 1, 9]);
 });
 
-test('reconcile keeps every five-row keyed-list permutation in order', async ({ page, bundle }) => {
+test('reconcile keeps order and focus across five-row keyed-list permutations', async ({ page, bundle }) => {
   const mismatches = await page.evaluate(async src => {
     const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const permutations = values => {
@@ -3503,16 +3503,34 @@ test('reconcile keeps every five-row keyed-list permutation in order', async ({ 
       );
     };
 
-    const initial = ['A', 'B', 'C', 'D', 'E'];
+    const ids = ['A', 'B', 'C', 'D', 'E'];
+    const initial = ids.map(id => ({ id }));
+    const orders = permutations(ids);
     const failures = [];
-    for (const order of permutations(initial)) {
-      const items = signal(initial.map(id => ({ id })));
-      const list = t.ul(items.mapWithKey('id', item => t.li(item.id))).toElement();
+    for (const mode of ['default', 'fallback']) {
+      const items = signal(initial);
+      const list = t.ul(items.mapWithKey('id', item => t.li({ id: item.id }, t.input()))).toElement();
       document.body.append(list);
-      items.set(order.map(id => ({ id })));
-      applyPendingReactiveUpdates();
-      const shown = [...list.querySelectorAll('li')].map(li => li.textContent).join('');
-      if (shown !== order.join('')) { failures.push({ expected: order.join(''), actual: shown }); }
+      if (mode === 'fallback') { Object.defineProperty(list, 'moveBefore', { value: undefined }); }
+      const input = list.querySelector('#C input');
+      input.value = 'draft';
+      input.focus();
+      input.setSelectionRange(1, 4);
+      let blurs = 0;
+      input.addEventListener('blur', () => blurs++);
+
+      for (const order of orders) {
+        items.set(order.map(id => ({ id })));
+        applyPendingReactiveUpdates();
+        const actual = [...list.children].map(li => li.id).join('');
+        const focused = document.activeElement === input;
+        const selection = [input.selectionStart, input.selectionEnd];
+        if (actual !== order.join('') || !focused || blurs || selection[0] !== 1 || selection[1] !== 4) {
+          failures.push({ mode, expected: order.join(''), actual, focused, blurs, selection });
+        }
+        items.set(initial);
+        applyPendingReactiveUpdates();
+      }
       list.remove();
     }
     return failures;
@@ -3630,9 +3648,9 @@ test('binding-effect on a persist parent pauses on removal and resumes on reinse
 // ─── mapWithKey reactive mapFn ─────────────────────────────────────────────
 // mapFn runs inside a per-key inner computed. Signal reads inside mapFn track at the
 // per-key level, so a change to an external signal re-runs only the affected rows'
-// mapFns and the reconciler rebuilds those rows in place via preserve-state.
+// mapFns and the reconciler updates the matching DOM.
 
-test('signal read inside mapFn triggers a row rebuild when the signal changes', async ({ page, bundle }) => {
+test('signal read inside mapFn updates the row when the signal changes', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
     const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const showCount = signal(false);
@@ -3658,10 +3676,245 @@ test('signal read inside mapFn triggers a row rebuild when the signal changes', 
   expect(result.texts).toEqual(['a (3)', 'b (7)']);
 });
 
-test('row rebuild preserves the full preserve-state capture set', async ({ page, bundle }) => {
-  // Exercise every kind of user-visible state preserve-state.js captures across a single
-  // mapWithKey reactive re-emit: input value, checkbox checked + indeterminate, select
-  // value, textarea value, details.open, dialog.open, and scrollTop on a scrollable div.
+test('plain-object keyed row edits and reorders preserve DOM and use current fields', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
+    const rows = signal([
+      { id: 'a', position: 1, label: 'Alpha', checked: false, note: 'Old note' },
+      { id: 'b', position: 2, label: 'Beta', checked: true, note: '' },
+    ]);
+    const editing = signal(false);
+    const positionsSeen = [];
+    const list = t.ul(rows.mapWithKey('id', row => t.li({ id: row.id, title: row.note || undefined }, [
+      t.input({ class: 'draft' }),
+      t.input({
+        class: 'position',
+        prop: { value: String(row.position) },
+        on: { keydown: () => positionsSeen.push(row.position) },
+      }),
+      t.input({ type: 'checkbox', prop: { checked: row.checked } }),
+      editing.get() ? t.input({ class: 'label', value: row.label }) : t.span({ class: 'label' }, row.label),
+    ]))).toElement();
+    document.body.append(list);
+    const firstRow = list.firstElementChild;
+    const draft = firstRow.querySelector('.draft');
+    const position = firstRow.querySelector('.position');
+    const checkbox = firstRow.querySelector('[type="checkbox"]');
+    draft.value = 'unsaved text';
+    draft.focus();
+    draft.setSelectionRange(2, 6);
+    let blurs = 0;
+    draft.addEventListener('blur', () => blurs++);
+    // Also exercise the focus fallback on engines with a native moveBefore.
+    Object.defineProperty(list, 'moveBefore', { value: undefined });
+
+    rows.set(([first, second]) => [
+      { ...second, position: 1 },
+      { ...first, position: 2, label: 'Edited', checked: true, note: '' },
+    ]);
+    applyPendingReactiveUpdates();
+    const label = firstRow.querySelector('.label').textContent;
+    position.dispatchEvent(new KeyboardEvent('keydown'));
+
+    editing.set(true);
+    applyPendingReactiveUpdates();
+    return {
+      sameRow: firstRow === list.lastElementChild,
+      sameDraft: draft === firstRow.querySelector('.draft'),
+      samePosition: position === firstRow.querySelector('.position'),
+      sameCheckbox: checkbox === firstRow.querySelector('[type="checkbox"]'),
+      focus: document.activeElement === draft,
+      blurs,
+      selection: [draft.selectionStart, draft.selectionEnd],
+      draft: draft.value,
+      position: position.value,
+      checked: checkbox.checked,
+      positionsSeen,
+      title: firstRow.getAttribute('title'),
+      label,
+      editingValue: firstRow.querySelector('input.label')?.value,
+    };
+  }, bundle);
+  expect(result).toEqual({
+    sameRow: true,
+    sameDraft: true,
+    samePosition: true,
+    sameCheckbox: true,
+    focus: true,
+    blurs: 0,
+    selection: [2, 6],
+    draft: 'unsaved text',
+    position: '2',
+    checked: true,
+    positionsSeen: [2],
+    title: null,
+    label: 'Edited',
+    editingValue: 'Edited',
+  });
+});
+
+test('retained keyed elements use the latest bindings and stop them on removal', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
+    const first = signal('same');
+    const next = signal('same');
+    const rows = signal([{ id: 1, source: first }]);
+    const list = t.ul(rows.mapWithKey('id', item => t.li({ title: item.source }, [
+      t.input({ prop: { value: item.source }, dispatchOnPropChange: true }),
+      t.span(item.source),
+    ]))).toElement();
+    document.body.append(list);
+    const row = list.firstElementChild;
+    const input = row.querySelector('input');
+    const events = [];
+    input.addEventListener('input', () => events.push(input.value));
+    input.value = 'draft';
+
+    rows.set([{ id: 1, source: next }]);
+    applyPendingReactiveUpdates();
+    const afterRetarget = input.value;
+    first.set('obsolete');
+    applyPendingReactiveUpdates();
+    const afterOldSource = [row.title, row.textContent, input.value];
+    next.set('current');
+    applyPendingReactiveUpdates();
+    const afterNewSource = [row.title, row.textContent, input.value];
+    const sameRow = row === list.firstElementChild;
+    const sameInput = input === row.querySelector('input');
+
+    rows.set([]);
+    applyPendingReactiveUpdates();
+    next.set('removed');
+    applyPendingReactiveUpdates();
+    return { sameRow, sameInput, afterRetarget, afterOldSource, afterNewSource, events, afterRemoval: input.value };
+  }, bundle);
+  expect(result).toEqual({
+    sameRow: true,
+    sameInput: true,
+    afterRetarget: 'draft',
+    afterOldSource: ['same', 'same', 'draft'],
+    afterNewSource: ['current', 'current', 'current'],
+    events: ['current'],
+    afterRemoval: 'current',
+  });
+});
+
+test('a retained keyed select applies its value after its options change', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { applyPendingReactiveUpdates, signal, t } = await import(src);
+    const rows = signal([{ id: 1, choices: ['a'], selected: 'b' }]);
+    const host = t.div(rows.mapWithKey('id', row => t.select(
+      { prop: { value: row.selected } },
+      row.choices.map(choice => t.option({ value: choice }, choice)),
+    ))).toElement();
+    document.body.append(host);
+    const select = host.querySelector('select');
+    const values = [select.value];
+
+    rows.set([{ id: 1, choices: ['a', 'b'], selected: 'b' }]);
+    applyPendingReactiveUpdates();
+    values.push(select.value);
+    rows.set([{ id: 1, choices: ['c'], selected: 'c' }]);
+    applyPendingReactiveUpdates();
+    values.push(select.value);
+
+    return {
+      values,
+      sameSelect: select === host.querySelector('select'),
+      options: [...select.options].map(option => option.value),
+    };
+  }, bundle);
+  expect(result).toEqual({ values: ['', 'b', 'c'], sameSelect: true, options: ['c'] });
+});
+
+test('rerendering a parent keyed row reconciles its nested list and drops old bindings', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { applyPendingReactiveUpdates, signal, t } = await import(src);
+    const before = signal([{ id: 'a', label: 'Before' }, { id: 'b', label: 'Removed' }]);
+    const after = signal([{ id: 'c', label: 'Added' }, { id: 'a', label: 'After' }]);
+    const parents = signal([{ id: 1, heading: '', children: before }]);
+    const host = t.div(parents.mapWithKey('id', parent => t.section([
+      parent.heading && t.h2(parent.heading),
+      t.ul(parent.children.mapWithKey('id', child => t.li({ id: child.id }, [
+        t.input(),
+        t.span(child.label),
+      ]))),
+    ]))).toElement();
+    document.body.append(host);
+    const list = host.querySelector('ul');
+    const child = list.querySelector('#a');
+    const input = child.querySelector('input');
+    input.value = 'draft';
+    input.focus();
+    const labels = () => [...list.children].map(li => li.textContent);
+
+    parents.set([{ id: 1, heading: 'Group', children: after }]);
+    applyPendingReactiveUpdates();
+    const afterParentUpdate = labels();
+    before.set([{ id: 'b', label: 'Obsolete' }]);
+    applyPendingReactiveUpdates();
+    const afterOldSourceUpdate = labels();
+    after.set([{ id: 'a', label: 'Current' }]);
+    applyPendingReactiveUpdates();
+
+    return {
+      sameList: list === host.querySelector('ul'),
+      sameChild: child === list.firstElementChild,
+      sameInput: input === child.querySelector('input'),
+      focused: document.activeElement === input,
+      draft: input.value,
+      heading: host.querySelector('h2')?.textContent,
+      afterParentUpdate,
+      afterOldSourceUpdate,
+      children: labels(),
+    };
+  }, bundle);
+  expect(result).toEqual({
+    sameList: true,
+    sameChild: true,
+    sameInput: true,
+    focused: true,
+    draft: 'draft',
+    heading: 'Group',
+    afterParentUpdate: ['Added', 'After'],
+    afterOldSourceUpdate: ['Added', 'After'],
+    children: ['Current'],
+  });
+});
+
+test('keyed rows with lifecycle callbacks rebuild and use new property values', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { applyPendingReactiveUpdates, t, signal } = await import(src);
+    const rows = signal([{ id: 1, position: '1' }]);
+    const calls = [];
+    const list = t.ul(rows.mapWithKey('id', row => t.li([
+      t.input({ prop: { value: row.position } }),
+      t.input(),
+    ])
+      .addConnectedCallback(() => calls.push(`connected ${row.position}`))
+      .addDisconnectedCallback(() => calls.push(`disconnected ${row.position}`)))).toElement();
+    document.body.append(list);
+    await Promise.resolve();
+    const before = list.firstElementChild;
+    before.lastElementChild.value = 'draft';
+    rows.set([{ id: 1, position: '2' }]);
+    applyPendingReactiveUpdates();
+    await Promise.resolve();
+    const after = list.firstElementChild;
+    return {
+      replaced: before !== after,
+      values: [...after.querySelectorAll('input')].map(input => input.value),
+      calls,
+    };
+  }, bundle);
+  expect(result).toEqual({
+    replaced: true,
+    values: ['2', 'draft'],
+    calls: ['connected 1', 'disconnected 1', 'connected 2'],
+  });
+});
+
+test('keyed row updates preserve form, open, and scroll state', async ({ page, bundle }) => {
   const result = await page.evaluate(async src => {
     const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const decorate = signal(false);
@@ -3757,7 +4010,7 @@ test('restoreState drops state gracefully when the new tree shape mismatches', a
   expect(errors).toEqual([]);
 });
 
-test('row rebuild preserves focus and input value', async ({ page, bundle }) => {
+test('a keyed row update preserves focus and input value', async ({ page, bundle }) => {
   await page.evaluate(async src => {
     const { applyPendingReactiveUpdates, t, signal } = await import(src);
     const decorate = signal(false);

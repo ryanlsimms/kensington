@@ -56,7 +56,9 @@ export function createPropWriter({ localName, namespaceURI }, property, dispatch
     || (localName === 'textarea' || localName === 'select') && property === 'value'
   );
   if (!isFormProperty) {
-    return (element, value) => { element[property] = value; };
+    return (element, value, preserve = false) => {
+      if (!preserve) { element[property] = value; }
+    };
   }
 
   const isSelect = localName === 'select';
@@ -76,7 +78,11 @@ export function createPropWriter({ localName, namespaceURI }, property, dispatch
     }
   };
 
-  return (element, value) => {
+  return (element, value, preserve = false) => {
+    if (preserve) {
+      initialized = true;
+      return;
+    }
     const shouldNotify = dispatchEvents && initialized;
     const before = shouldNotify ? readState(element) : null;
     const eventType = eventTypeForElement(element, property);

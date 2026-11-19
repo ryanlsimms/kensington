@@ -128,7 +128,7 @@ test('row replacements capture all scroll state before DOM writes', async ({ pag
     const rows = items.mapWithKey('id', item => t.div({ style: { height: '40px', overflow: 'auto' } }, [
       t.input({ value: item.label }),
       t.div({ style: { height: '300px' } }, item.label),
-    ]));
+    ]).addDisconnectedCallback(() => {}));
     const host = t.section(rows).toElement();
     document.body.append(host);
     const input = host.querySelector('input');

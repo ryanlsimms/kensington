@@ -29,11 +29,11 @@ t.ul(items.transform(arr => arr.map(item => t.li(item.name)))).toElement();`),
     ]),
     t.p([
       t.code('signal.mapWithKey(keyOrProp, mapFn)'),
-      ' is the optimized form. Each key owns a stable tag instance whose DOM node the reconciler reuses across reorderings, adds, and removes. When the outer array delivers a new object for a key, ',
+      ' uses a stable identifier for each row. When the outer array delivers a new object for a key, ',
       t.code('mapFn'),
       ' re-runs only if that row\'s own enumerable fields actually changed (shallow diff by ',
       t.code('Object.is'),
-      '). A fresh object literal with identical content is a no-op — same tag instance, same DOM node, same focus/scroll/input state.',
+      '). Signals the mapper reads can also trigger an update. Kensington applies changes to compatible elements in place and preserves focus when a row moves.',
     ]),
     code('javascript', `const items = signal([
   { id: 1, name: 'Apple' },
