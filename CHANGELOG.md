@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Reactive input and textarea property bindings skip value property updates when value already matches.
 
 ### Fixed
+- Computed and transform runs dispose their unkeyed signals, derivations, and nested keyed lists when replaced, including resources that never acquired a subscriber.
 - Keyed list updates retain compatible DOM elements and preserve focus on reorder. Changed `prop` values take precedence over captured form state.
 - Subtree removal now cleans up tracked descendants and template bindings even when parent teardown changes the DOM.
 

@@ -49,9 +49,17 @@ test('pending updates are linked from both sidebars and the documented example w
   await page.route(/https:\/\/(?:cdn\.jsdelivr\.net|fonts\.googleapis\.com|db\.onlinewebfonts\.com)\//, route => route.abort());
   await page.goto('http://127.0.0.1:4000/?page=api');
   await page.locator('a[href="#api-apply-pending-reactive-updates"]').click();
-  await expect(page.locator('#api-apply-pending-reactive-updates')).toBeInViewport();
+  const apiHeading = page.locator('#api-apply-pending-reactive-updates');
+  // The heading can enter the viewport while smooth scrolling is still moving
+  // the next link. Wait for the anchor's final scroll position before clicking.
+  await expect.poll(() => apiHeading.evaluate(heading => {
+    const margin = parseFloat(getComputedStyle(heading).scrollMarginTop);
+    return Math.abs(heading.getBoundingClientRect().top - margin);
+  })).toBeLessThan(2);
+  await expect(apiHeading).toBeInViewport();
   await expect(page.locator('#api-batch')).toHaveCount(0);
-  await page.getByRole('link', { name: 'Update timing', exact: true }).click();
+  await page.locator('[data-page-content="api"]').getByRole('link', { name: 'Update timing', exact: true }).click();
+  await expect(page).toHaveURL(url => url.searchParams.get('page') === 'reactivity');
   await expect(page.locator('#signals-batching')).toBeInViewport();
   await page.locator('a[href="#apply-pending-reactive-updates"]').click();
   await expect(page.locator('#apply-pending-reactive-updates')).toBeInViewport();

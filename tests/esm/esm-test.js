@@ -2698,6 +2698,82 @@ describe('computed signal', () => {
   });
 });
 
+describe('computed run ownership', () => {
+  it('disposes unused computeds and transforms after a rerun and after stop', () => {
+    const page = signal('first');
+    const shared = signal(0);
+    const updates = [];
+    const view = page.transform(name => {
+      computed(() => { updates.push(['computed', name, shared.get()]); });
+      shared.transform(value => { updates.push(['transform', name, value]); });
+      return name;
+    });
+
+    page.set('second');
+    assert.strictEqual(view.get(), 'second');
+    updates.length = 0;
+    shared.set(1);
+    assert.deepStrictEqual(updates, [['computed', 'second', 1], ['transform', 'second', 1]]);
+
+    view.stop();
+    updates.length = 0;
+    shared.set(2);
+    assert.deepStrictEqual(updates, []);
+  });
+
+  it('disposes nested list subscriptions when their owning run is replaced', () => {
+    const section = signal('first');
+    const items = signal([{ id: 1 }]);
+    const updates = [];
+    const view = section.transform(name => items.mapWithKey('id', ({ id }) => {
+      updates.push([name, id]);
+      return t.li(id);
+    }));
+    section.set('second');
+    updates.length = 0;
+    items.set([{ id: 2 }]);
+    assert.deepStrictEqual(updates, [['second', 2]]);
+
+    view.stop();
+    items.set([{ id: 3 }]);
+    assert.deepStrictEqual(updates, [['second', 2]]);
+  });
+
+  it('skips a disposed inner computation still in the source notification snapshot', () => {
+    const revision = signal(0);
+    const updates = [];
+    const view = revision.transform(current => {
+      computed(() => { updates.push([current, revision.get()]); });
+      return current;
+    });
+    revision.set(1);
+    assert.deepStrictEqual(updates, [[0, 0], [1, 1]]);
+    view.stop();
+  });
+
+  it('keeps keyed local state across runs and detaches subscribers from unkeyed state', () => {
+    const page = signal('first');
+    const view = page.transform(name => ({ local: signal(name), shared: signal(0, 'shared') }));
+    const first = view.get();
+    // Internal consumers are allowed to attach to a run-local signal.
+    const values = [];
+    const watch = _internalEffect(() => { values.push(first.local.get()); });
+    first.shared.set(5);
+
+    page.set('second');
+    const second = view.get();
+    assert.notStrictEqual(first.local, second.local);
+    assert.strictEqual(second.local.get(), 'second');
+    assert.strictEqual(first.shared, second.shared);
+    assert.strictEqual(second.shared.get(), 5);
+    first.local.set('obsolete');
+    applyPendingReactiveUpdates();
+    assert.deepStrictEqual(values, ['first']);
+    watch.stop();
+    view.stop();
+  });
+});
+
 // ─── computed auto-dispose ──────────────────────────────────────────────────
 
 describe('computed auto-dispose', () => {
@@ -4299,7 +4375,7 @@ describe('reactive context warnings', () => {
         [Symbol.for('marker')]: item.id,
       });
       const e = effect(() => { items.mapWithKey('id', fakeTag); });
-      assert.match(warns.join('\n'), /mapWithKey called inside a computed or effect/);
+      assert.match(warns.join('\n'), /mapWithKey called inside an effect/);
       e.stop();
     } finally {
       console.warn = origWarn;
@@ -4323,7 +4399,7 @@ describe('reactive context warnings', () => {
       });
       result.get();
       assert.equal(
-        warns.filter(w => /mapWithKey called inside a computed or effect/.test(w)).length,
+        warns.filter(w => /mapWithKey called inside/.test(w)).length,
         0,
         `unexpected mapwithkey-in-reactive warnings: ${warns.join(' | ')}`,
       );

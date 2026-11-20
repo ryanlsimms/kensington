@@ -37,11 +37,9 @@ Runtime Guard diagnostics follow the instance whose tag is rendering. `validatio
 
 For DOM access before the next line, use `applyPendingReactiveUpdates()`. For a callback that must run later, use `queueMicrotask(callback)`. To yield within an async function, use `await Promise.resolve()` only when a microtask boundary is what you need. These are different operations. Read [Choosing how to wait](#choosing-how-to-wait) before replacing one with another.
 
-### The one rule that bites: pass a key when inside a reactive callback
+### Use a key for state that should survive a rerender
 
-Before writing any `signal()` / `computed()` / `.transform()` call, ask: will this call run on the call stack of `computed(fn)`, `signal.transform(fn)`, `mapWithKey(key, mapFn)`'s mapFn, or `effect(fn)` at runtime? If yes, pass a stable key as the second argument. Call-stack matters, not lexical position. A helper called from inside a reactive callback is in the trap even though the call looks top-level in the source.
-
-A key being present does not guarantee uniqueness. For a shared helper that can run more than once in the same rendering scope, require a stable instance key from the caller and derive every local primitive's key from it. Include row identity plus field/role at the call site, then a distinct local suffix inside the helper. See [Shared helper key namespaces](#shared-helper-key-namespaces).
+A computed, transform, or keyed row owns the unkeyed reactive resources its callback creates, including resources allocated by a helper. Use a stable key for state that needs to survive multiple runs. Keep shared state in the surrounding component or module scope.
 
 ### Reading signals
 
@@ -106,7 +104,7 @@ import { renderForHydration, registerComponents } from 'kensington';
 
 ## Signal API
 
-> **Before you write `signal()`, `computed()`, or `.transform()`, ask one question:** is this call going to run on the call stack of a `computed`, `transform`, `mapWithKey` `mapFn`, or any helper function called from one of those? If yes, **pass a key as the second argument**. The key scopes the instance to the surrounding reactive callback so it is reused across re-runs instead of recreated. Without a key the warning fires, DOM nodes get replaced when outer state changes, and per-row local state silently resets. See [Reactive primitives inside a computed need a key](#reactive-primitives-inside-a-computed-need-a-key) for the full rule, the wrong/right helper pair, and which keys collide. The most common failure mode is a row component like `function row(item) { const open = signal(false); ... }` invoked from a `mapWithKey` mapFn — the `signal()` looks top-level in the source but runs inside the per-key computed at execution time.
+> **Decide whether the state should survive a rerender.** A callback owns unkeyed resources for the current run. Give state like an open row toggle a stable key when its value should survive the row renderer running again. The same rule applies to helpers the renderer calls.
 
 ```javascript
 const n = signal(0);
@@ -718,16 +716,16 @@ The function form is the right choice when the array elements are strings/number
 
 Calling `.mapWithKey()` on a derived signal works the same way the writable form does. The canonical "derive a slice then list-map" pattern is `const visible = items.transform(list => list.filter(p), 'visible'); visible.mapWithKey('id', row)` or `computed(() => items.get().filter(p), 'visible').mapWithKey('id', row)`. The per-key cache still keys off `id`; the underlying derivation triggers reconciliation when the slice changes.
 
-For recursive structures like trees, calling `mapWithKey` inside another `mapWithKey`'s `mapFn` is the canonical pattern. The outer `mapFn` runs once per key (cached), so the inner `mapWithKey` is constructed once per row and lives as long as the cached row tag. The `mapwithkey-in-reactive` warning is suppressed in this case. The warning still fires when `mapWithKey` is called inside an arbitrary `computed` or `effect` body that re-runs on every dependency change.
+For recursive structures like trees, call `mapWithKey` inside another `mapWithKey`'s `mapFn`. A nested list belongs to the run that creates it and is stopped when the outer row rerenders or is removed. Create the list at a longer-lived scope if its per-key cache should survive outer rerenders. Calling `mapWithKey` inside an `effect()` still warns.
 
-**Conditional subtrees that contain a keyed list.** The natural pattern for "show this only when X" is `computed(() => visible.get() ? buildSubtree() : null)`. If `buildSubtree()` contains a `mapWithKey` call, every flip of `visible` rebuilds the whole per-key cache and trips the `mapwithkey-in-reactive` warning. Don't do that. Two safe patterns instead:
+**Conditional subtrees that contain a keyed list.** With `computed(() => visible.get() ? buildSubtree() : null)`, a list created inside `buildSubtree()` gets a fresh cache each time the subtree opens. If the cache should survive, use one of these patterns:
 
 - **Display toggle.** Always build the subtree once. Toggle its visibility with `style: { display: visible.transform(v => v ? 'block' : 'none', 'subtree-display') }`. The DOM stays mounted; the per-key cache stays warm; CSS handles the hide. Costs the initial mount but avoids rebuild churn on every toggle.
 - **Lift the mapWithKey out.** Build the keyed list once at component scope: `const rows = items.mapWithKey('id', mapFn)`. Pass `rows` into the conditional: `computed(() => visible.get() ? t.div(rows) : null)`. The list is constructed once; the conditional just decides whether to render the wrapper around it.
 
 Display toggle is the right choice when the subtree includes form fields whose unsaved state you want to preserve across toggles. Lifting the mapWithKey is the right choice when the wrapper itself differs across branches (e.g. a tabbed view where each tab renders a different `mapWithKey` source).
 
-A recursive component function called from inside its own `mapWithKey` body runs on the call stack of a per-key `computed`. Any `signal()`, `computed()`, or `.transform()` it creates therefore needs a key, even though the call sites look like top-level code in a plain helper. See [Reactive primitives inside a computed need a key](#reactive-primitives-inside-a-computed-need-a-key) for the wrong/right helper pair.
+A recursive component called from its own `mapWithKey` body runs in the per-key computed. Give its local state a key if the state should survive a rerender of that row.
 
 In TypeScript, a recursive component function that returns a tag and is also called from inside its own `mapWithKey` body needs an explicit return-type annotation. Without one, `tsc` reports TS7023 ("implicitly has return type 'any' because it is referenced directly or indirectly in one of its return expressions"). Annotate the return as `ContentTag` (or the more specific tag class) and import the type from `kensington`.
 
@@ -745,7 +743,7 @@ function nodeRow(node: TreeNode): ContentTag {
 
 For drag-and-drop sortable lists where DOM nodes are moved via `insertBefore`, add `persist: true` to each item tag so signal effects survive the move. See **Cleanup** below.
 
-When the `mapFn` body creates per-row signals or computeds, those calls need a key. See [Reactive primitives inside a computed need a key](#reactive-primitives-inside-a-computed-need-a-key). To address per-row state from outside the row (for example, a search handler that expands ancestors of a hit), see [Addressing per-row state from outside the row](#addressing-per-row-state-from-outside-the-row).
+Use stable keys for per-row state that should survive a rerender. To access per-row state from outside the row, see [Addressing per-row state from outside the row](#addressing-per-row-state-from-outside-the-row).
 
 ## Updating a row after it's been rendered
 
@@ -823,69 +821,23 @@ async function expandToReveal(ancestorIds: string[]) {
 
 The signals in the registry are not keyed (no second argument). They are owned by the module, not by a `mapWithKey` scope, so the `out-of-scope-reactive-reference` warning does not apply. The trade-off is that the registry is never garbage-collected automatically; remove entries when a node is permanently deleted. Use this pattern only when the registry-keyed lookups are needed from outside the rendering pipeline. For self-contained list rows whose state nobody outside reads or writes, keep using `signal(initial, key)` inside the `mapWithKey` `mapFn`.
 
-## Reactive primitives inside a computed need a key
+## Reactive primitives inside a computed need a key to persist
 
-**Decision check before writing any `signal()`, `computed()`, or `.transform()` call.** Will this call run on the call stack of a reactive callback (`computed(fn)`, `signal.transform(fn)`, `signal.mapWithKey(key, mapFn)`'s mapFn, or `effect(fn)`) at runtime? If yes, pass a key as the second argument. This is call-stack, not lexical. If a helper function does the creation and the helper is called from inside one of those callbacks, the runtime walks the call stack and counts the creation as "inside" the reactive scope. The lexical position in the source does not matter.
-
-When in doubt, pass a key. Passing a key outside a reactive context is a no-op; missing a key inside one is a silent UX bug (per-row local state resets on every outer re-run). The key must be unique within the surrounding reactive callback's run. Use item identity (`item.id`) plus a local label when needed (`${item.id}-cls`, `${item.id}-matches`).
-
-The worked example below shows the lexical case. The wrong/right helper pair after it shows the call-stack case, which is how most real code is structured.
+Unkeyed signals, derived signals, and lists created during a computed run are disposed when the run is replaced or the computed stops. If a render throws, Kensington disposes the unkeyed resources created by the failed run while retaining the previously returned view. Use a distinct stable key for each stateful instance that should persist across runs.
 
 ```javascript
-const items  = signal([{ id: 'a', name: 'Apple', cat: 'fruit' }, { id: 'b', name: 'Bagel', cat: 'bread' }]);
-const filter = signal('fruit');
+const items = signal([{ id: 'a', name: 'Apple' }, { id: 'b', name: 'Bagel' }]);
 
 const list = items.mapWithKey('id', item => {
-  // Keyed signal. Per-item local interactive state.
-  const highlight = signal(false, item.id);
-  // Keyed computed. Derived value that reads multiple signals.
-  // Key combines the item id with a label so it does not collide with
-  // any other keyed computed or transform in this mapFn run.
-  const cls = computed(() => [
-    filter.get() === item.cat && 'match',
-    highlight.get() && 'starred',
-  ].filter(Boolean).join(' '), `${item.id}-cls`);
-  // Keyed transform. Single-source derivation, chained off the filter signal.
-  // Different label so it does not collide with `cls`.
-  const matches = filter.transform(f => f === item.cat ? 'in-filter' : 'out', `${item.id}-matches`);
-  return t.li({
-    class: cls,
-    data: { state: matches },
-    onclick: () => highlight.set(v => !v),
-  }, item.name);
+  // The selection survives row updates.
+  const selected = signal(false, 'selected');
+  // This binding belongs to the current run.
+  const label = selected.transform(on => on ? '★ ' + item.name : item.name);
+  return t.li({ onclick: () => selected.set(on => !on) }, label);
 });
-
-t.ul(list);
 ```
 
-**The helper-function trap.** Most real code factors each row into a component-style helper rather than writing the body inline. The rule still applies because the helper runs on the call stack of the `mapFn`. Here is the same example refactored into a helper, with the keys it needs to keep working.
-
-```javascript
-// Wrong. row() is a plain function, so the signal/computed/transform calls
-// look top-level, but row() is called from inside mapWithKey's mapFn, which
-// runs inside a per-key computed. Each one fires a runtime warning.
-function row(item) {
-  const highlight = signal(false);                                        // signal-in-computed
-  const cls       = computed(() => highlight.get() ? 'starred' : '');     // computed-in-computed
-  const matches   = filter.transform(f => f === item.cat ? 'in' : 'out'); // transform-in-computed
-  return t.li({ class: cls, data: { state: matches } }, item.name);
-}
-const list = items.mapWithKey('id', item => row(item));
-
-// Right. Same helper, with keys. Each key is unique inside the per-key computed
-// run for this row (the outer mapWithKey scope is already keyed by item.id,
-// so a short local label like 'highlight' is enough). Inner state survives
-// outer re-runs.
-function row(item) {
-  const highlight = signal(false, 'highlight');
-  const cls       = computed(() => highlight.get() ? 'starred' : '', 'cls');
-  const matches   = filter.transform(f => f === item.cat ? 'in' : 'out', 'matches');
-  return t.li({ class: cls, data: { state: matches } }, item.name);
-}
-const list = items.mapWithKey('id', item => row(item));
-```
-
-The same applies anywhere a helper that creates signals or computeds is called from inside a `computed`, `transform`, `effect`, or `mapFn` body. `mapWithKey` is one common case; **any** `computed(() => ...)` wrapper has the same effect. If you wrap a section of UI in `computed(() => ...)` so it rebuilds when a dimension/layout signal changes, every per-row or per-cell helper called from inside is in the trap. Keys per call site (e.g. `${address}-cls` when the wrapping computed iterates addresses).
+A helper inherits the computed run that calls it. When one renderer calls the same helper multiple times, give the retained state from each helper instance a distinct key.
 
 ### Shared helper key namespaces
 
@@ -944,7 +896,7 @@ function getCellRaw(address) {
 }
 ```
 
-The registry's intent is "the signal lives at module scope, shared across the app." Calling it from outside any reactive scope (a click handler, top-level mount code, an effect callback) is fine. Calling it from inside a reactive callback (`computed`, `transform`, `mapWithKey` mapFn) where the address has not yet been seeded triggers the lazy `signal()` call inside the reactive callback, which fires the `signal-in-computed` warning.
+A module-level registry owns shared state independently of any render. Seed its entries outside reactive callbacks so a renderer can access the registry without creating a run-local signal that will be disposed on the next render.
 
 Passing a key to the lazy `signal()` is the wrong fix here. The key would scope the signal to the surrounding computed's keyed registry, but the whole point of the module-level Map is to be the owner. Scoping to the computed's registry means the signal disappears when the outer computed re-runs and sweeps unaccessed keys.
 
@@ -997,7 +949,7 @@ The same rule applies to mode/grouping toggles (`groupMode.set('project')` resha
 
 **Key types.** Any value usable in a `Map`: `string`, `number`, `symbol`, or `object` (exported as `SignalKey`). Object keys require a stable reference across outer re-runs. Immutable-update patterns that clone the item produce a new reference, so prefer `item.id`.
 
-**Duplicates and unkeyed fallback.** Two calls with the same key in the same outer run share a single instance and log a `throttledError`. Calls without a key still work but the inner is re-created on every re-run (state resets, orphans accumulate in the devtools Signals tab, and the library logs a `console.warn`).
+**Duplicates and unkeyed fallback.** Two calls with the same key in one run share an instance and log a diagnostic. An unkeyed call creates a fresh instance for the current run, and Kensington disposes the previous instance when the run is replaced.
 
 ## Cleanup
 
@@ -1289,45 +1241,9 @@ effect(() => {
 
 ### Nested computed and transform without a key
 
-An unkeyed `computed()` or `.transform()` call inside a `computed` or `transform` callback creates a new derived signal on every outer re-run. That is fine when the inner value is consumed inline by an attribute, class, text, or prop slot. Those consumers are internal binding effects; they tear down and rebuild alongside the inner, so no identity is leaked and the warning stays silent.
+Unkeyed derived signals belong to the run that creates them. Read them in that run or use them as tag bindings. Kensington disposes them even when they never acquired a subscriber.
 
-The `computed-in-computed` / `transform-in-computed` warning fires only when a **user-code subscriber** attaches to the inner. That means a user `effect(() => inner.get())`, or a user `computed(() => ...inner.get()...)` that reads it. In those cases the outer's re-run tears down the inner and creates a fresh one, but the user subscriber is still attached to the dead reference (or must resubscribe to the new one). Pass a stable key so the same inner is reused across re-runs and the user subscription stays valid.
-
-Both `computed(fn, key)` and `signal.transform(fn, key)` accept a stable key as a second argument, used the same way as keyed `signal(initial, key)`. Inside an outer `computed` (including `mapWithKey`'s per-key `mapFn`), the same inner instance is returned across re-runs. Two paths fix the issue. Pass a key so the inner is reused. Or precompute the derived signal once when the item is created and reuse it directly.
-
-```javascript
-// Wrong. done.transform() runs unkeyed on every list re-render inside a plain map.
-// Each item creates a fresh inner computed that immediately sleeps, accumulating
-// orphans in the devtools Signals tab on every list update.
-const rows = tasks.transform(list =>
-  list.map(({ id, text, done }) => {
-    const itemClass = done.transform(d => d ? 'task-item done' : 'task-item');
-    return t.li({ class: itemClass }, text);
-  })
-);
-
-// Correct (option 1). Pass a stable key to .transform() inside mapWithKey's mapFn so
-// the inner transform is reused across outer re-runs. Same shape as signal(initial, key).
-const rows = tasks.mapWithKey('id', ({ id, text, done }) => {
-  const itemClass = done.transform(d => d ? 'task-item done' : 'task-item', id);
-  return t.li({ class: itemClass }, text);
-});
-
-// Correct (option 2). Create itemClass once when the task is created and store it on
-// the object. mapWithKey keeps the same tag instance per id, so the same signal
-// reference drives the same live element across every re-render.
-function makeTask(text) {
-  const done = signal(false);
-  return {
-    id: Date.now(),
-    text,
-    done,
-    itemClass: done.transform(d => d ? 'task-item done' : 'task-item'),
-  };
-}
-
-const rows = tasks.mapWithKey('id', ({ text, itemClass }) => t.li({ class: itemClass }, text));
-```
+`computed-in-computed` and `transform-in-computed` warn when user code outside the creating run subscribes to an unkeyed derivation. Create shared derivations in the surrounding component or module. A stable key lets a derivation retain its identity across runs of its owner, and the owner still controls its lifetime.
 
 ### Do not call `effect()` from inside a function that gets called from a `.map()`, `.transform()`, or `computed()` callback
 

@@ -66,6 +66,8 @@ const notifications = getSharedReactiveState('after-reactive-updates', () => ({
   scheduled: false,
 }));
 
+const runOwners = getSharedReactiveState('computed-run-owners', () => new WeakMap());
+
 const MAX_EFFECT_LOOPS = 100;
 const MAX_ASYNC_EFFECT_TURNS = 500;
 
@@ -126,13 +128,6 @@ export function _exitConnectedCallback() { state.insideConnectedCallbackDepth--;
 // callback with a stable key) back to its owner outer computed. Signal.get() warns when
 // something outside the owner subscribes. The owner can stop the inner at any time when
 // its key isn't accessed during a re-run, so external references silently drop subscribers.
-
-// Deferred `computed-in-computed` / `transform-in-computed` warnings. An unkeyed nested
-// computed is only a problem when a *non-internal* subscriber attaches (a user effect or
-// user computed). Internal consumers (attribute-composition, class-list, and text/attr
-// binding effects) are safe because their run functions are torn down and rebuilt alongside
-// the inner. We stamp the created inner here and consult on subscribe: fire once if a
-// user subscriber attaches, silently drop if only internal subscribers ever read it.
 
 function rethrowAsync(err) {
   queueMicrotask(() => { throw err; });
@@ -303,14 +298,37 @@ function wakeForRead(sig) {
   }
   const wake = state.wakeFns.get(sig);
   if (wake !== undefined) {
+    const previous = state.suppressWakeNotify;
     state.suppressWakeNotify = true;
-    const woken = wake();
-    if (woken) {
-      const sleep = state.sleepFns.get(sig);
-      if (sleep !== undefined) { sleep(); }
+    try {
+      if (wake()) { state.sleepFns.get(sig)?.(); }
+    } finally {
+      state.suppressWakeNotify = previous;
     }
-    state.suppressWakeNotify = false;
   }
+}
+
+export function _ownRunResource(resource, kind) {
+  if (state.inComputedFn && !state.currentEffect?._isEffect) {
+    (state.runResources ??= []).push(resource);
+    runOwners.set(resource, state.currentComputed);
+    if (kind) { state.pendingNestedWarning.set(resource, kind); }
+  }
+  return resource;
+}
+
+function stopRunResources(resources) {
+  if (resources === undefined) { return; }
+  for (let i = resources.length - 1; i >= 0; i--) { resources[i].stop(); }
+}
+
+function subscribesWithinRun(resource) {
+  const owner = runOwners.get(resource);
+  for (let consumer = state.currentComputed; consumer;) {
+    if (consumer === owner) { return true; }
+    consumer = runOwners.get(consumer) ?? state.keyedScopeOwners.get(consumer);
+  }
+  return false;
 }
 
 export default class Signal {
@@ -321,24 +339,11 @@ export default class Signal {
     _reactiveRuntime.check('signal()');
     this.#value = initial;
     notifySignalCreate(this, initial);
-    if (!state.suppressReactiveCheck) {
-      if (state.inComputedFn) {
-        throttledWarn(
-          'signal-in-computed',
-          'kensington: signal() called inside a computed or transform callback without a key. ' +
-          'The DOM node will be replaced when outer state changes. ' +
-          'Focus, scroll, input value, and selection are preserved across the replacement, ' +
-          'but local signal state resets to the initial value. ' +
-          'For best performance and to persist local state, pass a stable key as the second argument: signal(initial, key).',
-        );
-      } else if (state.currentEffect !== null) {
-        throttledError(
-          'signal-in-effect',
-          'kensington: signal() called inside an effect callback. ' +
-          'A new signal is created on every effect re-run. ' +
-          'Create signals outside the effect and pass them in.',
-        );
-      }
+    if (!state.suppressReactiveCheck && state.currentEffect?._isEffect) {
+      throttledError(
+        'signal-in-effect',
+        'kensington: signal() called inside an effect callback. Create signals outside the effect and pass them in.',
+      );
     }
   }
 
@@ -361,21 +366,15 @@ export default class Signal {
       this.#subscribers.add(state.currentEffect);
       state.currentEffect._reads.add(this);
       notifySignalEffectSubscription(this, state.currentEffect._devId, this.#subscribers.size);
-      // Fire the deferred computed-in-computed / transform-in-computed warning only when a
-      // non-internal subscriber attaches. Internal consumers (attribute, class, or text
-      // bindings) tear down alongside the inner on outer re-run and don't leak identity.
+      // Run-local resources are safe to consume in the same scope or through a DOM binding.
       if (!state.currentEffect._isInternal) {
         const nestedKind = state.pendingNestedWarning.get(this);
-        if (nestedKind !== undefined) {
-          const isTransform = nestedKind === 'transform';
-          const callName = isTransform ? '.transform()' : 'computed()';
-          const keyedCall = isTransform ? 'signal.transform(fn, key)' : 'computed(fn, key)';
+        if (nestedKind !== undefined && !subscribesWithinRun(this)) {
+          const callName = nestedKind === 'transform' ? '.transform()' : `${nestedKind}()`;
           throttledWarn(
-            isTransform ? 'transform-in-computed' : 'computed-in-computed',
-            `kensington: ${callName} created inside a computed or transform callback ` +
-            'without a key is being subscribed to by user code. A fresh inner is allocated on every outer re-run and its ' +
-            'subscribers are torn down. Pass a stable key as the second argument to reuse the same inner across re-runs: ' +
-            `${keyedCall}.`,
+            `${nestedKind}-in-computed`,
+            `kensington: ${callName} created without a key is being subscribed to by user code outside its run. ` +
+            'Move shared state outside the callback or use a stable key for state reused across runs.',
           );
           state.pendingNestedWarning.delete(this);
         }
@@ -478,6 +477,7 @@ export default class Signal {
   }
 
   stop() {
+    runOwners.delete(this);
     const fn = state.stopFns.get(this);
     if (fn !== undefined) {
       fn();
@@ -870,9 +870,7 @@ export function computed(fn, key) {
     notifySignalMarkComputed(s);
     return s;
   }
-  // We defer the nested `computed-in-computed` / `transform-in-computed` warning until we
-  // see who actually subscribes. Only fire when a non-internal subscriber attaches; internal
-  // consumers (attribute/class/text bindings) are safe.
+  // Defer warning about an unkeyed nested derivation until a subscriber outside its own run attaches.
   let deferredNestedKind = null;
   if (!state.suppressReactiveCheck) {
     if (state.inComputedFn) {
@@ -890,19 +888,25 @@ export function computed(fn, key) {
   state.suppressReactiveCheck = true;
   const s = new Signal(undefined);
   state.suppressReactiveCheck = prevSuppress;
-  if (deferredNestedKind !== null) { state.pendingNestedWarning.set(s, deferredNestedKind); }
+  _ownRunResource(s, deferredNestedKind);
   notifySignalMarkComputed(s);
   // Tracks the last successfully computed value so notifySignalWake can restore it.
   // Without this, a wake where s.set(result) is a no-op (Object.is match) would leave
   // the devtools entry at value: undefined from notifySignalWake forever.
   let lastResult;
+  let resources;
+  let stopped = false;
   function update() {
+    if (stopped) { return; }
     track(update, () => {
       let result;
+      let nextResources;
       const prevInComputedFn = state.inComputedFn;
       const prevComputed = state.currentComputed;
+      const prevResources = state.runResources;
       state.inComputedFn = true;
       state.currentComputed = s;
+      state.runResources = undefined;
       // Reset accessed-key tracking for this run. Any registry entry whose key isn't
       // accessed during this run is swept after the run completes.
       const registry = state.keyedRegistries.get(s);
@@ -912,12 +916,22 @@ export function computed(fn, key) {
       try {
         result = fn();
       } catch (err) {
+        stopRunResources(state.runResources);
         rethrowAsync(err);
         return;
       } finally {
+        nextResources = state.runResources;
         state.inComputedFn = prevInComputedFn;
         state.currentComputed = prevComputed;
+        state.runResources = prevResources;
       }
+      if (stopped) {
+        stopRunResources(nextResources);
+        return;
+      }
+      const previousResources = resources;
+      resources = nextResources;
+      stopRunResources(previousResources);
       // Sweep keyed signals that weren't touched this run. Their owning item left the list
       // (or was renamed); stop the signal and drop it from the registry so it can be GC'd.
       if (registry !== undefined) {
@@ -975,6 +989,13 @@ export function computed(fn, key) {
     }
     update._cleanups = [];
     state.computedLifecycle.get(s)?.sleep?.();
+    if (state.suppressWakeNotify) {
+      // A direct read may return a fresh tag whose bindings will be mounted later.
+      for (const resource of resources ?? []) { state.sleepFns.get(resource)?.(); }
+    } else {
+      stopRunResources(resources);
+      resources = undefined;
+    }
   });
   state.wakeFns.set(s, () => {
     if (!sleeping) { return false; }
@@ -987,6 +1008,9 @@ export function computed(fn, key) {
     return true;
   });
   state.stopFns.set(s, () => {
+    stopped = true;
+    stopRunResources(resources);
+    resources = undefined;
     state.pendingComputeds.delete(update);
     state.computedUpdates.delete(s);
     state.computedLifecycle.get(s)?.stop?.();
@@ -1081,19 +1105,14 @@ export function signal(initial, key) {
       warnKeyedInitialMismatch(key, registry.initials.get(key), initial);
       return existing;
     }
-    // Suppress the signal-in-computed warning. Keyed signals are the intended pattern;
-    // a warning would fire on every fresh key (every item added to a list).
-    const prevSuppress = state.suppressReactiveCheck;
-    state.suppressReactiveCheck = true;
     const sig = new Signal(initial);
-    state.suppressReactiveCheck = prevSuppress;
     notifySignalMarkKeyed(sig, key);
     state.keyedScopeOwners.set(sig, owner);
     registry.signals.set(key, sig);
     registry.initials.set(key, initial);
     return sig;
   }
-  return new Signal(initial);
+  return _ownRunResource(new Signal(initial), 'signal');
 }
 
 // Defined here rather than in the class body because transform calls computed, and computed
@@ -1138,13 +1157,10 @@ export function _internalComputed(fn, options) {
   }
 }
 
-export function _isInReactiveContext() {
-  return state.inComputedFn || state.currentEffect !== null;
-}
+export function _isInEffect() { return state.currentEffect?._isEffect === true; }
 
 export function _enterMapWithKeyInner() { state.mapWithKeyInnerDepth++; }
 export function _exitMapWithKeyInner() { state.mapWithKeyInnerDepth--; }
-export function _isInMapWithKeyInner() { return state.mapWithKeyInnerDepth > 0; }
 
 Signal.prototype.mapWithKey = mapWithKey;
 

@@ -2840,7 +2840,9 @@ test('keyed local signal preserves input focus and value across outer re-render'
   expect(result.selectionEnd).toBe(4);
 });
 
-test('warns when signal() is called inside a computed without a key', async ({ page, bundle }) => {
+test('unkeyed signals and computeds can be used within their own computed run without warnings', async ({
+  page, bundle,
+}) => {
   const warnings = await page.evaluate(async src => {
     const { signal, computed } = await import(src);
     const messages = [];
@@ -2850,13 +2852,90 @@ test('warns when signal() is called inside a computed without a key', async ({ p
     const c = computed(() => {
       trigger.get();
       const local = signal(false);
-      return local.get();
+      const derived = computed(() => !local.get());
+      return derived.get();
     });
     c.get();
+    c.stop();
     console.warn = orig;
     return messages;
   }, bundle);
-  expect(warnings.some(w => w.includes('signal() called inside a computed'))).toBe(true);
+  expect(warnings).toEqual([]);
+});
+
+test('a failed transform stops its new subscriptions and keeps the previous view live', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { applyPendingReactiveUpdates, computed, signal, t } = await import(src);
+    const pageName = signal('first');
+    const shared = signal(0);
+    const updates = [];
+    const errors = [];
+    window.addEventListener('error', event => {
+      errors.push(event.error.message);
+      event.preventDefault();
+    }, { once: true });
+
+    const view = pageName.transform(name => {
+      const summary = computed(() => {
+        const value = shared.get();
+        updates.push([name, value]);
+        return `${name}: ${value}`;
+      });
+      if (name === 'bad') { throw new Error('failed to render'); }
+      return t.p(summary);
+    });
+    const host = t.main(view).toElement();
+    document.body.append(host);
+
+    pageName.set('bad');
+    await Promise.resolve();
+    updates.length = 0;
+    shared.set(1);
+    applyPendingReactiveUpdates();
+    const afterFailure = { text: host.textContent, updates: [...updates] };
+    pageName.set('last');
+    applyPendingReactiveUpdates();
+    updates.length = 0;
+    shared.set(2);
+    applyPendingReactiveUpdates();
+    return { errors, afterFailure, recovered: { text: host.textContent, updates } };
+  }, bundle);
+  expect(result).toEqual({
+    errors: ['failed to render'],
+    afterFailure: { text: 'first: 1', updates: [['first', 1]] },
+    recovered: { text: 'last: 2', updates: [['last', 2]] },
+  });
+});
+
+test('removing a transformed view stops unused work and a detached snapshot can mount', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { applyPendingReactiveUpdates, computed, signal, t } = await import(src);
+    const pageName = signal('first');
+    const shared = signal(0);
+    const unused = [];
+    const view = pageName.transform(name => {
+      computed(() => { unused.push([name, shared.get()]); });
+      return t.p(shared.transform(value => `${name}: ${value}`));
+    });
+    const host = t.main(view).toElement();
+    document.body.append(host);
+    host.remove();
+    await Promise.resolve();
+
+    unused.length = 0;
+    shared.set(1);
+    applyPendingReactiveUpdates();
+    const afterRemoval = [...unused];
+
+    pageName.set('snapshot');
+    const snapshot = view.get().toElement();
+    document.body.append(snapshot);
+    unused.length = 0;
+    shared.set(2);
+    applyPendingReactiveUpdates();
+    return { afterRemoval, afterSnapshot: unused, text: snapshot.textContent };
+  }, bundle);
+  expect(result).toEqual({ afterRemoval: [], afterSnapshot: [], text: 'snapshot: 2' });
 });
 
 test('signal() with a key does not warn inside a computed', async ({ page, bundle }) => {

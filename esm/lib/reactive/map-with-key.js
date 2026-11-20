@@ -3,8 +3,8 @@ import {
   _exitMapWithKeyInner,
   _internalComputed,
   _internalEffect,
-  _isInMapWithKeyInner,
-  _isInReactiveContext,
+  _isInEffect,
+  _ownRunResource,
   signal,
 } from './signal.js';
 import { throttledError, throttledWarn } from './warnings.js';
@@ -61,10 +61,10 @@ export function mapWithKey(keyOrProp, mapFn) {
   if (typeof mapFn !== 'function') {
     throw new TypeError('mapWithKey: second argument must be a function (mapFn)');
   }
-  if (_isInReactiveContext() && !_isInMapWithKeyInner()) {
+  if (_isInEffect()) {
     throttledWarn(
       'mapwithkey-in-reactive',
-      'kensington: mapWithKey called inside a computed or effect callback. ' +
+      'kensington: mapWithKey called inside an effect callback. ' +
       'The whole per-key registry is rebuilt on every outer re-run, defeating the cache. ' +
       'Call mapWithKey at the top level (where you would call signal()) and pass the result into reactive contexts.',
     );
@@ -72,7 +72,7 @@ export function mapWithKey(keyOrProp, mapFn) {
   const cache = new Map();
   let previous = [];
 
-  return _internalComputed(() => {
+  return _ownRunResource(_internalComputed(() => {
     const items = this.get();
     const result = new Array(items.length);
     const seen = new Set();
@@ -147,5 +147,5 @@ export function mapWithKey(keyOrProp, mapFn) {
       }
       cache.clear();
     },
-  });
+  }));
 }

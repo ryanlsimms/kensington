@@ -165,9 +165,8 @@ Common decisions when choosing an API.
 - Effect should live only while a tag is mounted? Use `tag.effect(fn)`. It starts on connection, stops on normal removal, and pauses/resumes with own or inherited `persist: true`. Use `addDisconnectedCallback` for timers, listeners, or request cancellation.
 
 **Does this `signal()` / `computed()` / `.transform()` need a key?**
-- Does the call's call-stack ever pass through `computed(fn)`, `signal.transform(fn)`, `signal.mapWithKey(key, fn)`, or `effect(fn)`? Pass a key.
-- Module-scope or inside a one-shot component function with no surrounding reactive callback? No key needed.
-- Unsure? Pass a key. Safe everywhere. Outside a reactive scope the key is a no-op.
+- Need the same instance across runs of a `computed`, `transform`, or `mapWithKey` row builder? Pass a stable key. An unkeyed primitive is local to the run that creates it and is disposed when that run is replaced.
+- Need state shared across components or reachable outside the render? Create it in the surrounding component or module scope. Create state used by an `effect()` before the effect starts.
 - Shared helper used more than once in the same rendering scope? Pass a stable instance key that includes row identity and field/role, then derive a distinct key for each primitive: `${key}:selected`, `${key}:label`, `${key}:class`. A row id alone does not distinguish two helpers in that row. See `reactive.md` → Shared helper key namespaces.
 
 **Apply updates now or run code later?**
@@ -198,7 +197,7 @@ Granular "I want to…" → exact subdoc section. Use this to go straight to the
 | Make drag-and-drop reordering preserve signal effects | `reactive.md` → Cleanup → `persist: true` |
 | Show a loading spinner while data fetches | `reactive.md` → Loading state |
 | Debug reactive state with a dev panel | `reactive.md` → DevTools |
-| Fix a `signal-in-computed` warning | `reactive.md` → Reactive primitives inside a computed need a key |
+| Fix a `signal-in-computed` warning | `reactive.md` → Reactive primitives inside a computed need a key to persist |
 | Fix a `computed-in-computed` or `transform-in-computed` warning | `reactive.md` → Nested computed and transform without a key |
 | Keep keys unique across shared helper instances | `reactive.md` → Shared helper key namespaces |
 | Prevent a lazy-registry signal from being created inside a computed | `reactive.md` → Lazy registries called from reactive callbacks |
@@ -240,17 +239,17 @@ Each runtime warning ID gets a one-line fix sketch and a pointer to the section 
 | `set-in-effect` | A signal is both read with `.get()` or `.subscribe()` and written with `.set()` in the same effect run | Read once at the top into a local. Compute the new value. Only call `.set()` when it differs | `reactive.md` → Do not read and write the same signal in the same effect or computed run |
 | `set-in-computed` | `.set()` was called inside a computed body | `computed` is for derivation only. Move the write to an `effect` or event handler | `reactive.md` → Do not call `.set()` inside a `computed` body |
 | `set-during-ssr` | `.set()` was called inside `renderForHydration` | SSR is read-only over signals. Push canonical values via `liveServer.set(name, value)` outside any render path | `hydration.md` → Server-render functions must be read-only over signals |
-| `signal-in-computed` | `signal()` called inside a computed without a key | Pass a key as the second arg, for example `signal(initial, 'open')`, or `signal(initial, \`open-${item.id}\`)` inside `mapWithKey` | `reactive.md` → Reactive primitives inside a computed need a key |
-| `signal-in-effect` | `signal()` called inside an effect (recreated each run) | Move the `signal()` declaration outside the effect. Effects re-run, signals should not | `reactive.md` → Reactive primitives inside a computed need a key |
-| `transform-in-computed` | `.transform()` inside a computed without a key **and a user `effect`/`computed` subscribes to the inner**. Silent when only attribute/class/text/prop bindings read the inner | Pass a key as the second arg, for example `sig.transform(fn, 'label')` | `reactive.md` → Nested computed and transform without a key |
-| `computed-in-computed` | `computed()` inside a computed without a key **and a user `effect`/`computed` subscribes to the inner**. Silent when only attribute/class/text/prop bindings read the inner | Pass a key as the second arg, for example `computed(fn, 'total')` | `reactive.md` → Nested computed and transform without a key |
+| `signal-in-computed` | Code outside the creating run subscribes to an unkeyed signal | Move shared state to an outer scope or use a key for state reused within the owning computed | `reactive.md` → Reactive primitives inside a computed need a key to persist |
+| `signal-in-effect` | `signal()` called inside an effect (recreated each run) | Move the `signal()` declaration outside the effect | `reactive.md` → Reactive primitives inside a computed need a key to persist |
+| `transform-in-computed` | Code outside the creating run subscribes to an unkeyed transform | Move the transform to the shared scope or use a key for reuse within the owning computed | `reactive.md` → Nested computed and transform without a key |
+| `computed-in-computed` | Code outside the creating run subscribes to an unkeyed computed | Move the computed to the shared scope or use a key for reuse within the owning computed | `reactive.md` → Nested computed and transform without a key |
 | `computed-in-effect` | `computed()` called inside an effect (orphaned each run) | Move the `computed()` declaration outside the effect. Effects act, computeds derive | `reactive.md` → Do not call `effect()` from inside a function called from a reactive callback |
 | `effect-in-computed` | `effect()` called inside a computed (orphaned each run) | Move the `effect()` declaration out of the computed body. Computeds are for derivation; side effects go in `effect`, `addConnectedCallback`, or event handlers | `reactive.md` → same section |
 | `effect-in-effect` | `effect()` called inside another effect | Hoist the inner `effect()` out. If cleanup is needed, store its `.stop` and call it from the outer scope | `reactive.md` → same section |
 | `duplicate-keyed-signal` | Two `signal(initial, key)` calls with the same key in one computed run | Make the key unique per call site. Interpolate the item id, for example `signal(false, \`open-${item.id}\`)` | `reactive.md` → Reactive primitives inside a computed need a key |
 | `duplicate-keyed-computed` | Two `computed(fn, key)` calls with the same key in one computed run | Make the key unique per call site. Same fix as above | `reactive.md` → Reactive primitives inside a computed need a key |
 | `out-of-scope-reactive-reference` | A keyed signal or computed is consumed from outside its owning scope | Read the keyed primitive inside its own scope. To address a row from outside, use the documented row-handle pattern | `reactive.md` → Addressing per-row state from outside the row |
-| `mapwithkey-in-reactive` | `mapWithKey` called inside a computed or effect | Call `mapWithKey` at the binding site (directly in content or in an attribute slot), not from inside a reactive callback | `reactive.md` → Keyed lists |
+| `mapwithkey-in-reactive` | `mapWithKey` called inside an effect | Build the list outside the effect and pass it into tag content | `reactive.md` → Keyed lists |
 | `mapwithkey-duplicate-key` | Two items in a `mapWithKey` source share a key | Ensure the key field is unique per item. If the source has natural duplicates, use a stable composite key | `reactive.md` → Keyed lists |
 
 Full runnable example apps live in the `examples/` directory of the GitHub repo (https://github.com/ryanlsimms/kensington/tree/master/examples). Browseable docs at https://kensingtonjs.com.
@@ -774,15 +773,11 @@ const t = new Kensington({
 });
 ```
 
-## Reactive data — the one rule that matters at this level
+## Reactive data and ownership
 
-If the project uses signals, you must obey one rule. The full guide is in [`agent-docs/reactive.md`](agent-docs/reactive.md) — read that subdoc before writing any reactive code beyond the trivial. This section exists only so the rule is impossible to miss.
+Read [`agent-docs/reactive.md`](agent-docs/reactive.md) before writing reactive code. Each computed or transform run owns its unkeyed signals, derived signals, and lists, including resources created by helpers it calls. Use a stable key for per-row or component state that needs to survive a rerender. Keep shared state in the surrounding component or module scope.
 
-**Before writing any `signal()`, `computed()`, or `.transform()` call, ask: will this call run on the call stack of a `computed(fn)`, `signal.transform(fn)`, `signal.mapWithKey(key, fn)`'s mapFn, or `effect(fn)` at runtime?** If yes, pass a key as the second argument. This is call-stack, not lexical. A helper function `function row(item) { const open = signal(false) }` called from a `mapWithKey` mapFn is in the trap even though the `signal()` looks top-level in the source.
-
-When in doubt, pass a key. Passing a key outside a reactive context is a no-op; missing a key inside one is a silent UX bug where per-row local state resets on every outer re-run.
-
-**Tooling does this enforcement for you**: use `kensington.configs.strict` from `kensington-eslint-plugin` (covered above) and chain `kensington-check-reactive` into your `lint` script for cross-file coverage. Together they catch every shape of the trap, including the helper-function case the lexical rules miss.
+Existing versions of `kensington-eslint-plugin` may still flag unkeyed resources created inside a renderer. Keys retain state across runs, so adding one to silence a lint warning can change behavior.
 
 The minimum imports:
 
@@ -887,14 +882,14 @@ General Kensington mistakes.
 - Do not skip `.toString()` when passing to HTTP framework response methods
 - Do not use `onclick="string"` for DOM usage. Pass a function; string handlers only serialize in `.toString()`
 - For drag-and-drop sortable lists, add `persist: true` to the item tag, not the container. Without it, `insertBefore` reorders fire a remove event that permanently stops the item's signal effects (class updates, checked state, etc. all break silently after the first drag). `persist: true` causes effects to pause on removal and resume on re-insertion instead.
-- For per-row local state inside a list mapping, use the keyed form. `signal(initial, item.id)` inside the surrounding `computed` callback returns the same instance per key across re-runs. Without a key, the DOM node is replaced on every outer re-render (focus, scroll, input value, and selection are copied over, but local signal state resets to the initial value).
+- For per-row local state that should survive a list update, use the keyed form. `signal(initial, item.id)` returns the same instance across runs. An unkeyed signal starts fresh when the row renderer reruns.
 
 Coming from React or Svelte. These traps catch agents whose muscle memory is built on a different execution model.
 
 - **The component function does not re-run.** Kensington has no render loop. A component runs once at mount, and signals declared in its body are stable for the tag's lifetime. Do not put logic in the function body that you expect to re-execute when state changes. Put it in a `computed`, an `effect`, or an event handler.
 - **`effect()` does not support a cleanup return value.** Unlike React's `useEffect`, returning a function from the effect body is silently ignored. Intervals, subscriptions, and other resources allocated inside the callback are not cleaned up. For teardown tied to a component's lifetime, use `addDisconnectedCallback` on the surrounding tag, or store the return handle from `effect()` and call its `.stop()` in a disconnect callback.
 - **Do not early-return from a component to conditionally skip rendering.** A component must return one `ContentTag`. For conditional UI, use `null`, `false`, `''`, `undefined`, or `true` items inside a content array (they drop silently), or a `signal` / `computed` / `.transform()` that swaps the subtree in place.
-- **Do not call `signal()` inside a callback that re-runs.** React's `useState(initial)` is hook-tracked across renders. An unkeyed `signal(0)` inside a `computed` body, a `.transform()` callback, or a `mapWithKey` mapFn allocates a new instance on every run and loses its value. Pass a key (`signal(0, 'open')`) or hoist the declaration into the surrounding non-reactive scope.
+- **Decide whether state should reset.** An unkeyed `signal(0)` inside a `computed`, `transform`, or `mapWithKey` callback allocates a fresh instance each run. For state that should survive, pass a key like `signal(0, 'open')` or create it in the surrounding component.
 - **Do not rely on prop-identity comparisons.** There is no `React.memo`, no `===` cutoff on prop changes, no Svelte assignment-tracking. Reactivity is per-signal. Only the bindings that read a changed signal update. Pass signals (not snapshots) when downstream code needs reactivity.
 - **DOM access is not a ref object.** There is no ref that fills in after mount. Get the live element by capturing the return of the tag's `toElement()`, or via `addConnectedCallback(el => { ... })` where `el` is the live DOM node passed in. For a stable handle inside a component, declare a `let ref;` outside the tag and assign in the connect callback.
 - **Two-way binding is two one-way bindings.** `bind:value` / `v-model` style does not exist. Pair `prop: { value: sig }` with `oninput: e => sig.set(e.target.value)` (or `onchange` for selects and checkboxes).
