@@ -1,7 +1,9 @@
+import { __slim__, isNameOnlyAttribute } from '../../attributes.js';
 import { isKensingtonSignal } from '../reactive/signal.js';
 import showInvalid from '../util/show-invalid.js';
 import { styleObjectToCss } from '../util/style-utils.js';
-import { camelToKebab } from '../util/text-utils.js';
+import { camelToKebab, getAttrName } from '../util/text-utils.js';
+import { normalizeBooleanAttribute } from './boolean-attributes.js';
 import { propChangeEvent } from './prop-events.js';
 
 export function isValidStyleValue(v) {
@@ -10,15 +12,27 @@ export function isValidStyleValue(v) {
 
 export function isValidNamespaceAttribute(tag, attr) {
   const match = attr.match(/[^A-Z|-]+/u); // characters before first uppercase or hyphen
-  return match !== null && tag.namespaces.includes(match[0]); // null when attr starts with a hyphen or is all-uppercase
+  return match !== null && tag.namespaces.includes(match[0]);
 }
 
 export function attributeIsValid(tag, attr) {
-  if (attr === 'on' || attr === 'prop' || attr === 'persist' || attr === 'dispatchOnPropChange') { return true; }
-  return tag.allowedAttributeMap.has(attr) ||
-    tag.allowedAttributeMap.has(camelToKebab(attr)) ||
+  if (tag.skipElementAttributeValidation ||
+      attr === 'aria' || attr === 'on' || attr === 'prop' || attr === 'persist' || attr === 'dispatchOnPropChange') {
+    return true;
+  }
+  const name = getAttrName(attr, '', tag.allowedAttributeMap);
+  return tag.allowedAttributeMap.has(name) ||
+    isNameOnlyAttribute(name) ||
     isValidNamespaceAttribute(tag, attr) ||
-    camelToKebab(attr) in tag.additionalGlobalAttributes;
+    Object.hasOwn(tag.additionalGlobalAttributes, name);
+}
+
+export function validateAttributeNames(tag, names) {
+  const unallowedAttributes = names.filter(attr => !attributeIsValid(tag, attr));
+  if (unallowedAttributes.length) {
+    showInvalid(`attribute(s): ${unallowedAttributes.join(', ')} not allowed for ${tag.tagName}`, tag.validationLevel, tag.logger);
+  }
+  return unallowedAttributes;
 }
 
 export function validateAttributeByType(type, value) {
@@ -68,7 +82,7 @@ export function attributeValueIsValid(tag, attr, value) {
     return false;
   }
   if (isValidNamespaceAttribute(tag, attr)) {
-    return true; // namespace attrs (data-*, aria-*) have no type spec in the map. Any value is accepted
+    return true; // Open namespaces have no value validation.
   }
   if (tag.skipElementAttributeValidation) {
     return true; // no allow-list was passed to createCustomTag. Any attribute value is accepted
@@ -94,31 +108,17 @@ export function attributeValueIsValid(tag, attr, value) {
     return true;
   }
   const kebab = camelToKebab(attr);
+  if (!__slim__ && attr === 'aria') { return true; } // Object shorthand names are checked after expansion.
   const type = tag.allowedAttributeMap.get(attr)
     ?? tag.allowedAttributeMap.get(kebab)
     ?? tag.additionalGlobalAttributes[kebab];
-  return validateAttributeByType(type, value);
+  if (!__slim__ && type === undefined && isNameOnlyAttribute(kebab)) { return true; }
+  const normalized = normalizeBooleanAttribute(kebab, value);
+  return validateAttributeByType(type, value)
+    || (normalized !== value && validateAttributeByType(type, normalized));
 }
 
-export function validate(tag) {
-  if (tag.attributes.dispatchOnPropChange === true) {
-    const props = tag.prop;
-    const rawType = props?.type ?? tag.attributes.type;
-    const type = isKensingtonSignal(rawType) ? rawType.value : rawType;
-    if (!props || !Object.keys(props).some(key => propChangeEvent(tag.tagName, type, key))) {
-      showInvalid(`dispatchOnPropChange has no supported property bindings on <${tag.tagName}>. No events will be dispatched.`, tag.validationLevel, tag.logger);
-    }
-  }
-  const unallowedAttributes = tag.skipElementAttributeValidation
-    ? []
-    : Object.keys(tag.attributes).filter(attr => !attributeIsValid(tag, attr));
-  if (unallowedAttributes.length) {
-    showInvalid(`attribute(s): ${unallowedAttributes.join(', ')} not allowed for ${tag.tagName}`, tag.validationLevel, tag.logger);
-  }
-
-  const invalidAttributeValues = Object.entries(tag.attributes).filter(([attr, value]) => {
-    return !unallowedAttributes.includes(attr) && !attributeValueIsValid(tag, attr, value); // skip value check for already-flagged attrs to avoid double-reporting
-  });
+function reportInvalidAttributeValues(tag, invalidAttributeValues) {
   if (invalidAttributeValues.length) {
     const attrString = invalidAttributeValues.map(([attr, value]) => {
       if (attr === 'style' && value !== null && typeof value === 'object' && !Array.isArray(value)) { // !Array.isArray. typeof [] === 'object'
@@ -139,4 +139,49 @@ export function validate(tag) {
     const message = `invalid attribute \`${attrString}\` given for element \`${tag.tagName}\``;
     showInvalid(message, tag.validationLevel, tag.logger);
   }
+}
+
+export function expandedAttributeValidator({
+  additionalGlobalAttributes, allowedAttributeMap, logger, namespaces,
+  skipElementAttributeValidation, tagName, validationLevel,
+}) {
+  if (__slim__ || validationLevel === 'off' || skipElementAttributeValidation) { return undefined; }
+  // Keep the validation context without retaining the tag and its element.
+  const context = {
+    additionalGlobalAttributes,
+    allowedAttributeMap,
+    logger,
+    namespaces,
+    tagName,
+    validationLevel,
+  };
+  const validatePairs = (pairs, rawAttributes) => {
+    const names = [];
+    for (const [key, value] of pairs) {
+      if (typeof key === 'string') { names.push(key); }
+      else if (value.isStyle) { names.push(value.prefix); }
+    }
+    const unallowed = validateAttributeNames(context, names);
+    const invalid = rawAttributes.filter(([name, value]) => !unallowed.includes(name)
+      && attributeIsValid(context, name) && !attributeValueIsValid(context, name, value));
+    reportInvalidAttributeValues(context, invalid);
+  };
+  return prefix => (prefix === 'aria' || prefix.startsWith('aria-')) ? validatePairs : undefined;
+}
+
+export function validate(tag) {
+  if (tag.attributes.dispatchOnPropChange === true) {
+    const props = tag.prop;
+    const rawType = props?.type ?? tag.attributes.type;
+    const type = isKensingtonSignal(rawType) ? rawType.value : rawType;
+    if (!props || !Object.keys(props).some(key => propChangeEvent(tag.tagName, type, key))) {
+      showInvalid(`dispatchOnPropChange has no supported property bindings on <${tag.tagName}>. No events will be dispatched.`, tag.validationLevel, tag.logger);
+    }
+  }
+  const unallowedAttributes = validateAttributeNames(tag, Object.keys(tag.attributes));
+
+  const invalidAttributeValues = Object.entries(tag.attributes).filter(([attr, value]) => {
+    return !unallowedAttributes.includes(attr) && !attributeValueIsValid(tag, attr, value);
+  });
+  reportInvalidAttributeValues(tag, invalidAttributeValues);
 }

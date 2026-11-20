@@ -6,6 +6,8 @@ export default function showInvalid(message, validationLevel, logger) {
     throw error;
   }
   if (validationLevel === 'warn') {
-    logger(error.stack);
+    const stack = error.stack ?? '';
+    // Firefox's stack contains the frames without the diagnostic message.
+    logger(stack.includes(message) ? stack : `${error}\n${stack}`.trimEnd());
   }
 }

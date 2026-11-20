@@ -1,4 +1,5 @@
-import { markContentTracked, stopTracked } from '../lib/reactive/dom-tracker.js';
+import { __slim__ } from '../attributes.js';
+import { markContentTracked, stopRemoved, stopTracked } from '../lib/reactive/dom-tracker.js';
 import {
   hasExpectedChildren, keyedElements, removeSlot, updateKeyedChildren,
 } from '../lib/reactive/keyed-dom.js';
@@ -6,8 +7,11 @@ import { createLifecycle } from '../lib/reactive/lifecycle.js';
 import { captureState, restoreState } from '../lib/reactive/preserve-state.js';
 import { reconcile } from '../lib/reactive/reconcile.js';
 import { withRuntimeValidation } from '../lib/reactive/runtime-guard.js';
-import { isKensingtonSignal } from '../lib/reactive/signal.js';
-import { attributesArrayFromObject, SUBTREE_SIGNAL_KEY } from '../lib/render/attributes.js';
+import { _bindingEffect, isKensingtonSignal } from '../lib/reactive/signal.js';
+import {
+  bindAttributeObject, preflightAttributeSnapshots, prepareAttributeBindings, SUBTREE_SIGNAL_KEY,
+} from '../lib/render/attributes.js';
+import { normalizeBooleanAttribute } from '../lib/render/boolean-attributes.js';
 import {
   HTML_NAMESPACE,
   MATH_NAMESPACE,
@@ -27,6 +31,7 @@ import { createStyleWriter } from '../lib/render/style-writer.js';
 import {
   attributeIsValid,
   attributeValueIsValid,
+  expandedAttributeValidator,
   isValidNamespaceAttribute,
   validate,
   validateAttributeByType,
@@ -41,6 +46,8 @@ const MATH_TEXT_EXCEPTIONS = Object.freeze({
   mglyph: MATH_NAMESPACE,
 });
 const ANNOTATION_XML_EXCEPTIONS = Object.freeze({ svg: HTML_NAMESPACE });
+let keyedAttributePreparation;
+let hasStrictAttributeValidation = false;
 
 function ownEnumerableValue(obj, key) {
   try {
@@ -117,6 +124,30 @@ function compatibleSlots(old, next) {
   return !isKensingtonTag(next) && !isKensingtonSignal(next);
 }
 
+function preflightKeyedAttributes(tag, preparation, subscriptions) {
+  if (preparation.has(tag) || tag.getDomElement()?.isConnected) { return; }
+  const entry = {};
+  preparation.set(tag, entry);
+  withRuntimeValidation(tag.validationLevel, tag.logger, () => {
+    if (tag.validationLevel === 'error') {
+      entry.attributes = tag.attributeArray();
+      const validator = expandedAttributeValidator(tag);
+      entry.snapshots = preflightAttributeSnapshots(entry.attributes, validator, subscriptions);
+    }
+    const visit = item => {
+      if (isKensingtonTag(item) && typeof item.attributeArray === 'function') {
+        preflightKeyedAttributes(item, preparation, subscriptions);
+      } else if (Array.isArray(item)) {
+        for (const child of item) { visit(child); }
+      } else if (isKensingtonSignal(item) && !preparation.has(item)) {
+        preparation.set(item, null);
+        subscriptions.push(_bindingEffect(item, visit));
+      }
+    };
+    for (const item of tag.content) { visit(item); }
+  });
+}
+
 export default class ContentTag {
   #connectedCallbacks = [];
   #disconnectedCallbacks = [];
@@ -155,6 +186,7 @@ export default class ContentTag {
     this.indentationLevel = options.indentationLevel ?? 2;
     this.namespaces = options.namespaces;
     this.validationLevel = options.validationLevel;
+    if (!__slim__ && this.validationLevel === 'error') { hasStrictAttributeValidation = true; }
     this.logger = options.logger;
     this.content = collectContent(options.content);
     this.namespacePolicy = options.namespacePolicy ?? {
@@ -308,9 +340,21 @@ export default class ContentTag {
     if (!this._canPatchKeyedElement(element, options)) { return null; }
     const previous = keyedElements.get(element);
     return withRuntimeValidation(this.validationLevel, this.logger, () => {
-      stopTracked(element);
-      previous.tag.#domElement = null;
-      return this.#toElement(options, element, previous);
+      if (__slim__ || !hasStrictAttributeValidation || keyedAttributePreparation) {
+        return this.#toElement(options, element, previous);
+      }
+      const preparation = new Map();
+      const subscriptions = [];
+      try {
+        preflightKeyedAttributes(this, preparation, subscriptions);
+        keyedAttributePreparation = preparation;
+        return this.#toElement(options, element, previous);
+      } finally {
+        keyedAttributePreparation = undefined;
+        for (const subscription of subscriptions.reverse()) {
+          try { subscription.stop(); } catch (error) { queueMicrotask(() => { throw error; }); }
+        }
+      }
     });
   }
 
@@ -373,15 +417,22 @@ export default class ContentTag {
       element.addEventListener(name, handler);
       rendered?.events.push([name, handler]);
     };
+    const preparation = __slim__ ? undefined : keyedAttributePreparation?.get(this);
+    const attributes = __slim__ ? this.attributeArray() : (preparation?.attributes ?? this.attributeArray());
+    const preparedBindings = __slim__ ? undefined : prepareAttributeBindings(
+      attributes, ensureLifecycle, expandedAttributeValidator(this), preparation?.snapshots,
+    );
     if (previous) {
+      stopTracked(element);
+      previous.tag.#domElement = null;
       for (const [name, handler] of previous.events) {
         element.removeEventListener(name, handler);
       }
     }
 
-    for (const [attrName, attrValue] of this.attributeArray()) {
+    for (const [attrName, attrValue] of attributes) {
       if (attrName === SUBTREE_SIGNAL_KEY) {
-        const { signal, prefix, attrsSet, isStyle } = attrValue;
+        const { signal, prefix, isStyle } = attrValue;
         if (isStyle) {
           // style: signal-yielding-object. On each emission, diff per-property
           // against the previous emission. New/changed: setProperty. Missing: removeProperty.
@@ -410,23 +461,20 @@ export default class ContentTag {
             for (const p of next) { prevProps.add(p); }
           }, `${prefix}(signal)`);
         } else {
-          // Namespace subtree (data/aria/hx/...). On each emission, recursively
-          // expand the snapshot into kebab-name attribute pairs with the established
-          // prefix, then diff against the previous set.
+          // Expand each object snapshot into prefixed attribute pairs and diff them
+          // against the previous set.
           const prevAttrs = new Map();
-          ensureLifecycle().signalEffect(signal, (el, val) => {
+          const apply = (el, pairs) => {
             const next = new Map();
-            if (val !== null && typeof val === 'object' && !Array.isArray(val)) {
-              const pairs = attributesArrayFromObject(val, { attrsSet, encode: false, prefix });
-              for (const [n, v] of pairs) {
-                if (n === SUBTREE_SIGNAL_KEY) { continue; } // nested subtree-signal sampled at outer emission, not re-subscribed
-                let resolved = v;
-                if (isKensingtonSignal(resolved)) {
-                  try { resolved = resolved.value; } catch { resolved = null; }
-                }
-                if (resolved === false || resolved === null || resolved === undefined) { continue; }
-                next.set(n, resolved === true ? '' : String(resolved));
+            for (const [n, v] of pairs) {
+              if (n === SUBTREE_SIGNAL_KEY) { continue; }
+              let resolved = v;
+              if (isKensingtonSignal(resolved)) {
+                try { resolved = resolved.value; } catch { resolved = null; }
               }
+              resolved = normalizeBooleanAttribute(n, resolved);
+              if (resolved === false || resolved === null || resolved === undefined) { continue; }
+              next.set(n, resolved === true ? '' : String(resolved));
             }
             for (const [n, v] of next) {
               if (prevAttrs.get(n) !== v) {
@@ -440,12 +488,19 @@ export default class ContentTag {
             }
             prevAttrs.clear();
             for (const [n, v] of next) { prevAttrs.set(n, v); }
-          }, `${prefix}(signal)`);
+          };
+          const prepared = preparedBindings?.get(attrValue);
+          if (prepared) {
+            prepared(apply);
+          } else {
+            bindAttributeObject(attrValue, ensureLifecycle(), apply);
+          }
         }
       } else if (/^on[a-z]/.test(attrName) && typeof attrValue === 'function') {
         listen(attrName.slice(2), attrValue);
       } else if (isKensingtonSignal(attrValue)) {
-        ensureLifecycle().signalEffect(attrValue, (el, val) => {
+        ensureLifecycle().signalEffect(attrValue, (el, value) => {
+          const val = normalizeBooleanAttribute(attrName, value);
           if (val === false || val === null || val === undefined) {
             removeAttribute(el, attrName);
           } else if (val === true) {
@@ -536,9 +591,17 @@ export default class ContentTag {
     if (previous) {
       rendered.children = updateKeyedChildren(this.content, previous.children, compatibleSlots, renderChild);
     } else {
-      for (const item of this.content) {
-        const child = renderChild(item, null, null);
-        if (rendered) { rendered.children.push(child); }
+      try {
+        for (const item of this.content) {
+          const child = renderChild(item, null, null);
+          if (rendered) { rendered.children.push(child); }
+        }
+      } catch (error) {
+        // The parent has not registered its bindings yet, and detached children
+        // will not trigger removal observation.
+        lifecycle?.stopBindings();
+        stopRemoved(contentParent);
+        throw error;
       }
     }
 

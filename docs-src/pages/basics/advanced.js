@@ -54,14 +54,8 @@ export function basicsAdvanced() {
             t.td([t.code("{ class: ['foo', 'bar'] }"), ' → ', t.code('class="foo bar"')]),
           ]),
           t.tr([
-            t.td('data-* and aria-*'),
-            t.td([
-              'Always allowed on every element, along with all ',
-              t.a({ href: 'https://html.spec.whatwg.org/multipage/dom.html#global-attributes' }, [
-                'global HTML attributes',
-              ]),
-              '.',
-            ]),
+            t.td('data-*'),
+            t.td(['Use any attribute name starting with ', t.code('data-'), '.']),
           ]),
           t.tr([t.td('style as object'), t.td([
             t.p([
@@ -261,16 +255,20 @@ t.svg({ xmlns: 'http://www.w3.org/2000/svg', 'xmlns:xlink': 'http://www.w3.org/1
       t.ul([
         t.li([
           t.strong('Attribute names:'),
-          ' checked against the HTML/SVG/MathML spec. ',
+          ' checked against the HTML, SVG, MathML, and WAI-ARIA 1.2 specifications. ',
           t.code('data-*'),
-          ', ',
-          t.code('aria-*'),
-          ', ',
+          ' and prefixes added via ',
           t.code('additionalNamespaces'),
-          ', and ',
+          ' accept arbitrary names. Register individual newer ARIA names through ',
           t.code('additionalGlobalAttributes'),
-          ' are always allowed.',
+          ' or use ',
+          t.code("additionalNamespaces: 'aria'"),
+          ' to accept arbitrary names with that prefix',
+          '. The ',
+          t.code('aria'),
+          ' shorthand accepts an object or a signal yielding an object. Kensington checks the resulting names when it renders and when the signal updates.',
         ]),
+        t.li('Custom elements created without an attribute list accept arbitrary attribute names.'),
         t.li([
           t.strong('Attribute values:'),
           ' checked against allowed types/literals (e.g. ',

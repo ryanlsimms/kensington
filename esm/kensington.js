@@ -35,7 +35,7 @@ export default class Kensington {
   /**
    * @param {object} [options]
    * @param {Record<string, *>} [options.additionalGlobalAttributes] - Extra attributes allowed on all elements, e.g. `{ enterkeyhint: ['enter', 'done', 'go', 'next', 'previous', 'search', 'send'] }`.
-   * @param {string | string[]} [options.additionalNamespaces] - Extra attribute namespaces, e.g. `'hx'` for htmx.
+   * @param {string | string[]} [options.additionalNamespaces] - Extra open prefixes, e.g. `'hx'` for htmx. Register additional ARIA names via `additionalGlobalAttributes`.
    * @param {'off' | 'warn' | 'error'} [options.validationLevel] - Tag validation and rendered reactive runtime diagnostics.
    * @param {number} [options.indentationLevel] - Spaces per indent level. Default: 2.
    * @param {function} [options.logger] - Function called with warning messages when `validationLevel` is `'warn'`. Default: `console.log`.
@@ -75,7 +75,7 @@ export default class Kensington {
       this.additionalGlobalAttributes[camelToKebab(k)] = v;
     }
     this.indentationLevel = indentationLevel;
-    this.namespaces = ['data', 'aria'].concat(additionalNamespaces);
+    this.namespaces = ['data'].concat(additionalNamespaces);
     this.validationLevel = validationLevel;
     this.logger = logger;
   }

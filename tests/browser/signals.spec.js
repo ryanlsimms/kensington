@@ -161,6 +161,59 @@ test('signal as boolean attribute toggles presence live', async ({ page, bundle 
   await expect(page.locator('#sig-bool')).not.toHaveAttribute('checked');
 });
 
+test('live attributes convert boolean tokens and remove nullish values', async ({ page, bundle }) => {
+  const states = await page.evaluate(async src => {
+    const { applyPendingReactiveUpdates, signal, t } = await import(src);
+    const value = signal(false);
+    const button = t.button({
+      ariaPressed: value,
+      aria: { expanded: value },
+      draggable: value,
+      spellcheck: value,
+      contenteditable: value,
+      translate: value,
+      writingsuggestions: value,
+      disabled: value,
+    }, 'Toggle').toElement();
+    const matchingString = t.button({
+      'aria-pressed': 'false',
+      aria: { expanded: 'false' },
+      draggable: 'false',
+      spellcheck: 'false',
+      contenteditable: 'false',
+      translate: 'no',
+      writingsuggestions: 'false',
+    }, 'Toggle').toElement();
+    document.body.append(button);
+    const names = [
+      'aria-pressed',
+      'aria-expanded',
+      'draggable',
+      'spellcheck',
+      'contenteditable',
+      'translate',
+      'writingsuggestions',
+      'disabled',
+    ];
+    const read = () => names.map(name => button.getAttribute(name));
+    const initial = read();
+    const sameAsString = button.outerHTML === matchingString.outerHTML;
+    value.set(true);
+    applyPendingReactiveUpdates();
+    const enabled = read();
+    value.set(null);
+    applyPendingReactiveUpdates();
+    const absent = read();
+    return { initial, sameAsString, enabled, absent };
+  }, bundle);
+  expect(states).toEqual({
+    initial: ['false', 'false', 'false', 'false', 'false', 'no', 'false', null],
+    sameAsString: true,
+    enabled: ['true', 'true', 'true', 'true', 'true', 'yes', 'true', ''],
+    absent: Array(8).fill(null),
+  });
+});
+
 test('subtree-signal at data: flattens initial value and applies diff updates', async ({ page, bundle }) => {
   await page.evaluate(async src => {
     const { t, signal } = await import(src);
@@ -207,15 +260,246 @@ test('subtree-signal at style: per-property diff updates and clears', async ({ p
 test('subtree-signal at aria: flattens and diffs across emissions', async ({ page, bundle }) => {
   await page.evaluate(async src => {
     const { t, signal } = await import(src);
-    window.ariaSig = signal({ label: 'Close', expanded: 'false' });
+    window.ariaSig = signal(null);
     document.body.append(t.button({ id: 'subtree-aria', aria: window.ariaSig }, 'x').toElement());
+    window.ariaSig.set({ label: 'Close', expanded: signal(false) });
   }, bundle);
   await expect(page.locator('#subtree-aria')).toHaveAttribute('aria-label', 'Close');
   await expect(page.locator('#subtree-aria')).toHaveAttribute('aria-expanded', 'false');
-  await page.evaluate(() => window.ariaSig.set({ label: 'Close dialog', pressed: 'true' }));
+  await page.evaluate(() => window.ariaSig.set({ label: 'Close dialog', pressed: true }));
   await expect(page.locator('#subtree-aria')).toHaveAttribute('aria-label', 'Close dialog');
   await expect(page.locator('#subtree-aria')).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#subtree-aria')).not.toHaveAttribute('aria-expanded', /.*/);
+  await page.evaluate(() => window.ariaSig.set(undefined));
+  await expect(page.locator('#subtree-aria')).not.toHaveAttribute('aria-pressed');
+  await expect(page.locator('#subtree-aria')).not.toHaveAttribute('aria-label');
+});
+
+test('validates unknown ARIA names introduced by a live object signal', async ({ page, bundle }) => {
+  test.skip(bundle.includes('slim'), 'slim build requires validationLevel: "off"');
+  const result = await page.evaluate(async src => {
+    const { default: Kensington, applyPendingReactiveUpdates, signal } = await import(src);
+    const messages = [];
+    const warn = new Kensington({ validationLevel: 'warn', logger: message => messages.push(message) });
+    const strict = new Kensington({ validationLevel: 'error' });
+    const openAria = new Kensington({ validationLevel: 'error', additionalNamespaces: ['aria'] });
+    const aria = signal({ label: 'Close' });
+    const warningButton = warn.button({ aria }).toElement();
+    const strictButton = strict.button({ aria }).toElement();
+    const customButton = strict.createCustomTag('my-button')({ aria }).toElement();
+    const openAriaButton = openAria.button({ aria }).toElement();
+    document.body.append(warningButton, strictButton, customButton, openAriaButton);
+
+    const error = new Promise(resolve => {
+      window.addEventListener('error', event => {
+        event.preventDefault();
+        resolve(event.error?.message ?? event.message);
+      }, { once: true });
+    });
+    aria.set({ label: 'Rejected label', labl: 'Close' });
+    const errorMessage = await error;
+    const invalidUpdate = {
+      warningAttribute: warningButton.getAttribute('aria-labl'),
+      strictAttribute: strictButton.getAttribute('aria-labl'),
+      customAttribute: customButton.getAttribute('aria-labl'),
+      openAriaAttribute: openAriaButton.getAttribute('aria-labl'),
+      previousLabel: strictButton.getAttribute('aria-label'),
+    };
+
+    aria.set({ labelledby: 'title' });
+    applyPendingReactiveUpdates();
+    return { messages, errorMessage, invalidUpdate, recoveredLabel: strictButton.getAttribute('aria-labelledby') };
+  }, bundle);
+
+  expect(result.messages).toHaveLength(1);
+  expect(result.messages[0]).toContain('aria-labl');
+  expect(result.errorMessage).toContain('aria-labl');
+  expect(result.invalidUpdate).toEqual({
+    warningAttribute: 'Close',
+    strictAttribute: null,
+    customAttribute: 'Close',
+    openAriaAttribute: 'Close',
+    previousLabel: 'Close',
+  });
+  expect(result.recoveredLabel).toBe('title');
+});
+
+test('rejects an invalid initial ARIA object before installing other attribute bindings', async ({ page, bundle }) => {
+  test.skip(bundle.includes('slim'), 'slim build requires validationLevel: "off"');
+  const result = await page.evaluate(async src => {
+    const { default: Kensington, signal } = await import(src);
+    const strict = new Kensington({
+      validationLevel: 'error', additionalGlobalAttributes: { 'aria-label-extra': String },
+    });
+    const title = signal('Ready');
+    const earlierAria = signal({ extra: 'Allowed' });
+    const aria = signal({ label: 'Initial' });
+    let activeAriaBindings = 0;
+    let titleSubscriptions = 0;
+    title._onFirstSubscriber = () => { titleSubscriptions++; };
+    earlierAria._onFirstSubscriber = () => { activeAriaBindings++; };
+    earlierAria._onZeroSubscribers = () => { activeAriaBindings--; };
+    // The first subscription may produce a different value than an untracked read.
+    aria._onFirstSubscriber = () => aria.set({ labl: 'Typo' });
+    const button = strict.button({ title, ariaLabel: earlierAria, aria });
+    const errors = [];
+    for (let i = 0; i < 2; i++) {
+      try { button.toElement(); } catch (error) { errors.push(error.message); }
+    }
+    const failedMountSubscriptions = titleSubscriptions;
+    const failedMountAriaBindings = activeAriaBindings;
+    aria._onFirstSubscriber = undefined;
+    aria.set({ label: 'Fixed' });
+    const element = button.toElement();
+    return {
+      errors,
+      failedMountSubscriptions,
+      failedMountAriaBindings,
+      titleSubscriptions,
+      label: element.getAttribute('aria-label'),
+    };
+  }, bundle);
+
+  expect(result.errors).toHaveLength(2);
+  expect(result.errors.every(message => message.includes('aria-labl'))).toBe(true);
+  expect(result.failedMountSubscriptions).toBe(0);
+  expect(result.failedMountAriaBindings).toBe(0);
+  expect(result.titleSubscriptions).toBe(1);
+  expect(result.label).toBe('Fixed');
+});
+
+test('releases parent and sibling bindings when a child rejects its initial ARIA object', async ({ page, bundle }) => {
+  test.skip(bundle.includes('slim'), 'slim build requires validationLevel: "off"');
+  const result = await page.evaluate(async src => {
+    const { default: Kensington, signal } = await import(src);
+    const strict = new Kensington({ validationLevel: 'error' });
+    const title = signal('Ready');
+    let active = false;
+    title._onFirstSubscriber = () => { active = true; };
+    title._onZeroSubscribers = () => { active = false; };
+    const child = strict.button({ aria: signal({ labl: 'Typo' }) });
+    const parent = strict.div({ title }, [strict.span({ title }), child]);
+    let message;
+    try { parent.toElement(); } catch (error) { message = error.message; }
+    return { active, message };
+  }, bundle);
+
+  expect(result.message).toContain('aria-labl');
+  expect(result.active).toBe(false);
+});
+
+test('a rejected keyed ARIA update preserves the previous row bindings', async ({ page, bundle }) => {
+  test.skip(bundle.includes('slim'), 'slim build requires validationLevel: "off"');
+  const result = await page.evaluate(async src => {
+    const { default: Kensington, applyPendingReactiveUpdates, signal } = await import(src);
+    const strict = new Kensington({ validationLevel: 'error' });
+    const original = signal({ label: 'Original' });
+    const items = signal([{ id: 1, aria: original, title: 'Before' }]);
+    const host = strict.div(items.mapWithKey('id', row => strict.button({
+      title: row.title, aria: row.aria,
+    }, 'Save'))).toElement();
+    document.body.append(host);
+    const button = host.querySelector('button');
+    const error = new Promise(resolve => {
+      window.addEventListener('error', event => {
+        event.preventDefault();
+        resolve(event.error?.message ?? event.message);
+      }, { once: true });
+    });
+    items.set([{ id: 1, aria: signal({ labl: 'Typo' }), title: 'Rejected' }]);
+    const errorMessage = await error;
+    original.set({ label: 'Still live' });
+    applyPendingReactiveUpdates();
+    const afterRejection = [button.title, button.getAttribute('aria-label')];
+
+    items.set([{ id: 1, aria: signal({ label: 'Fixed' }), title: 'New' }]);
+    applyPendingReactiveUpdates();
+    return {
+      errorMessage,
+      afterRejection,
+      sameButton: host.querySelector('button') === button,
+      afterRecovery: [button.title, button.getAttribute('aria-label')],
+    };
+  }, bundle);
+
+  expect(result.errorMessage).toContain('aria-labl');
+  expect(result.afterRejection).toEqual(['Before', 'Still live']);
+  expect(result.sameButton).toBe(true);
+  expect(result.afterRecovery).toEqual(['New', 'Fixed']);
+});
+
+test('a descendant with an invalid ARIA value leaves the entire keyed row intact', async ({ page, bundle }) => {
+  test.skip(bundle.includes('slim'), 'slim build requires validationLevel: "off"');
+  const result = await page.evaluate(async src => {
+    const { default: Kensington, applyPendingReactiveUpdates, signal } = await import(src);
+    const strict = new Kensington({
+      validationLevel: 'error', additionalGlobalAttributes: { 'aria-label': ['Before', 'After'] },
+    });
+    const items = signal([{ id: 1, title: 'Before', aria: signal({ label: 'Before' }) }]);
+    const host = strict.div(items.mapWithKey('id', row => strict.section({ title: row.title }, [
+      strict.span(row.title),
+      strict.div(signal(strict.button({ aria: row.aria }))),
+    ]))).toElement();
+    document.body.append(host);
+    const row = host.querySelector('section');
+    const button = row.querySelector('button');
+    const snapshot = () => [row.title, row.querySelector('span').textContent, button.getAttribute('aria-label')];
+    const error = new Promise(resolve => {
+      window.addEventListener('error', event => {
+        event.preventDefault();
+        resolve(event.error?.message ?? event.message);
+      }, { once: true });
+    });
+    items.set([{ id: 1, title: 'Rejected', aria: signal({ label: 'Invalid' }) }]);
+    const errorMessage = await error;
+    const rejected = snapshot();
+    let reads = 0;
+    const finalAria = signal({ get label() { reads++; return 'After'; } });
+    items.set([{ id: 1, title: 'After', aria: finalAria }]);
+    applyPendingReactiveUpdates();
+    const label = row.querySelector('button').getAttribute('aria-label');
+    return { errorMessage, rejected, title: row.title, label, reads };
+  }, bundle);
+
+  expect(result.errorMessage).toContain('invalid attribute');
+  expect(result.rejected).toEqual(['Before', 'Before', 'Before']);
+  expect(result.title).toBe('After');
+  expect(result.label).toBe('After');
+  expect(result.reads).toBe(1);
+});
+
+test('reads each ARIA and data object getter once per mount and update', async ({ page, bundle }) => {
+  const result = await page.evaluate(async src => {
+    const { default: Kensington, applyPendingReactiveUpdates, signal } = await import(src);
+    const engine = new Kensington({
+      validationLevel: src.includes('slim') ? 'off' : 'error',
+      additionalGlobalAttributes: { 'aria-description': String },
+    });
+    const reads = { aria: 0, data: 0 };
+    const snapshot = (slot, description) => {
+      let read = false;
+      return {
+        get description() {
+          reads[slot]++;
+          if (read) { return { typo: 'Unknown' }; }
+          read = true;
+          return description;
+        },
+      };
+    };
+    const aria = signal(snapshot('aria', 'Before'));
+    const data = signal(snapshot('data', 'Before'));
+    const button = engine.button({ aria, data }).toElement();
+    document.body.append(button);
+    const descriptions = () => ['aria-description', 'data-description'].map(name => button.getAttribute(name));
+    const before = descriptions();
+    aria.set(snapshot('aria', 'After'));
+    data.set(snapshot('data', 'After'));
+    applyPendingReactiveUpdates();
+    return { before, after: descriptions(), reads };
+  }, bundle);
+
+  expect(result).toEqual({ before: ['Before', 'Before'], after: ['After', 'After'], reads: { aria: 2, data: 2 } });
 });
 
 test('subtree-signal yielding empty object then non-empty adds attributes correctly', async ({ page, bundle }) => {

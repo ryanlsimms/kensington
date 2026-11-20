@@ -139,6 +139,17 @@ t.div({ class: ['foo', 'bar'] });
 t.span({ id: 'my-id', title: 'tooltip', tabindex: 0 });
 t.p({ contenteditable: 'true' });
 t.p({ contenteditable: 'false' });
+t.p({ contenteditable: true, draggable: false, spellcheck: true, translate: false });
+const optionalAttributeState = signal<boolean | null | undefined>(false);
+t.p({
+  'aria-pressed': optionalAttributeState,
+  aria: { expanded: optionalAttributeState },
+  contenteditable: optionalAttributeState,
+  draggable: optionalAttributeState,
+  spellcheck: null,
+  translate: optionalAttributeState,
+  writingsuggestions: optionalAttributeState,
+});
 
 // Shared HTML/SVG/MathML tag names accept their merged attribute vocabularies.
 t.title({ fill: signal('red'), 'xml:space': 'preserve' });
@@ -225,6 +236,9 @@ t.div({ hxBoost: 'true' });
 t.div({ hxTarget: '#result', hxSwap: 'outerHTML' });
 t.button({ type: 'button', hxPost: '/api/submit' });
 t.div({ 'aria-label': 'close' });
+t.button({ 'aria-pressed': false }, 'Toggle');
+t.button({ ariaPressed: null }, 'Toggle');
+t.div({ 'aria-custom': 'example' });
 t.div({ 'data-testid': 'header' });
 
 // ─── on key ──────────────────────────────────────────────────────────────────

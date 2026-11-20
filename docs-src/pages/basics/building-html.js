@@ -33,7 +33,7 @@ t.meta({ charset: 'utf-8' });`),
       t.code('true'),
       ', omitted when ',
       t.code('false'),
-      '.',
+      '. ARIA states and HTML enumerated attributes with true/false tokens use explicit "true" or "false". For example, this applies to draggable, spellcheck, contenteditable, and writingsuggestions. The translate attribute uses "yes" or "no".',
     ]),
     code('javascript', `t.div({ id: 'app', class: ['card', 'shadow'] });         // class as array
 t.input({ type: 'checkbox', checked: true });            // boolean attribute
@@ -42,8 +42,6 @@ t.div({ dataBsToggle: 'collapse' });                     // camelCase → data-b
     t.p([
       'For the full reference including nested objects, ',
       t.code('data-*'),
-      ', ',
-      t.code('aria-*'),
       ', event handlers, and DOM properties, see ',
       t.a({ href: '#options' }, 'Attributes & options'),
       ' in the Advanced section.',

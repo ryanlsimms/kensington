@@ -99,7 +99,6 @@ export const searchIndex = [
       'options',
       'style',
       'data',
-      'aria',
       'boolean',
       'camelcase',
       'kebab',

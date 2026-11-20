@@ -70,7 +70,7 @@ export default class Kensington {
       this.additionalGlobalAttributes[camelToKebab(k)] = v;
     }
     this.indentationLevel = indentationLevel;
-    this.namespaces = ['data', 'aria'].concat(additionalNamespaces);
+    this.namespaces = ['data'].concat(additionalNamespaces);
     this.logger = logger;
 
     // Bind real instance methods so destructuring (`const { div } = t`) works the same as

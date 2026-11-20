@@ -21,6 +21,7 @@ export default function buildAttributes({
   elements,
   globalAttributes,
   globalEvents,
+  nameOnlyAttributes,
   svgConditionalAttributes,
   svgGlobalAttributes,
   svgGlobalEvents,
@@ -28,6 +29,10 @@ export default function buildAttributes({
   svgXLinkAttributes,
 }) {
   const hasSvgPresentation = svgPresentationAttrTypes?.length > 0;
+  const names = [...nameOnlyAttributes].sort().map(name => {
+    if (!/^[a-z][a-z0-9-]*$/.test(name)) { throw new Error(`Invalid attribute name: ${name}`); }
+    return `  '${name}',`;
+  });
 
   return `function cloneAttributeValidators(...attributeMaps) {
   const cloned = {};
@@ -41,6 +46,14 @@ export default function buildAttributes({
 
 export const __slim__ = false;
 export const camelCaseNames = [];
+
+const nameOnlyAttributes = new Set([
+${names.join('\n')}
+]);
+
+export function isNameOnlyAttribute(name) {
+  return nameOnlyAttributes.has(name);
+}
 
 export const globalAttributes = {
   ${globalAttributes.map(a => `'${a.name}': ${a.value},`).join('\n  ')}

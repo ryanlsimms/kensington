@@ -23,7 +23,7 @@ const camelCaseNames = JSON.stringify([...new Set(
 
 // The slim bundle swaps these source files inside rollup:
 // - esm/kensington.js (huge generated class) -> esm/kensington-slim.js (small Proxy class)
-// - esm/attributes.js (per-tag spec maps) -> a stub that only exports __slim__ and camelCaseNames
+// - esm/attributes.js -> a stub with the tag naming data and a no-op for name-only validation
 // - esm/lib/reactive/devtools.js -> a stub of no-op exports (devtools are a dev-only feature)
 // - esm/lib/util/filter-stack.js -> an identity stub (stack filtering is a dev-only DX feature)
 // - esm/lib/reactive/runtime-guard.js -> an off scope wrapper without diagnostic code
@@ -62,7 +62,11 @@ const slimPlugin = {
   },
   load(id) {
     if (id === '\0slim-attributes') {
-      return `export const __slim__ = true;\nexport const camelCaseNames = new Set(${camelCaseNames});`;
+      return `
+export const __slim__ = true;
+export const camelCaseNames = new Set(${camelCaseNames});
+export function isNameOnlyAttribute() { return false; }
+`;
     }
     if (id === '\0slim-devtools') { return slimDevtoolsStub; }
     if (id === '\0slim-runtime-guard') {

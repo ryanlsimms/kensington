@@ -214,8 +214,9 @@ type ContextualPropFor<Tag extends string> =
   | (Tag extends keyof SVGElementTagNameMap ? ElementProps<SVGElementTagNameMap[Tag]> : never);
 
 /**
- * Extend this interface via module augmentation to allow additional attribute namespaces.
- * `data-*` and `aria-*` are always allowed without augmentation.
+ * Extend this interface via module augmentation to add open prefixes such as `hx`.
+ * TypeScript accepts `data-*`, ARIA attributes, and the `aria` shorthand by default.
+ * Runtime ARIA validation recognizes WAI-ARIA 1.2 names and names in `additionalGlobalAttributes`.
  *
  * @example
  * declare module 'kensington' {
@@ -226,7 +227,8 @@ type ContextualPropFor<Tag extends string> =
  * // t.div({ hxBoost: 'true' }) is now valid
  */
 export interface NameSpaceAttributes {
-  [key: `${"data" | "aria"}${string}`]: Reactive<string | object>
+  [key: `data${string}`]: Reactive<string | object>;
+  [key: `aria${string}`]: Reactive<string | object | boolean | null | undefined>;
 }
 
 export type GlobalAttributes = {
@@ -235,9 +237,9 @@ export type GlobalAttributes = {
   autocorrect?: Reactive<"on" | "off">;
   autofocus?: Reactive<boolean>;
   class?: Reactive<string | ClassValue[]>;
-  contenteditable?: Reactive<"true" | "false" | "plaintext-only">;
+  contenteditable?: Reactive<"true" | "false" | "plaintext-only" | boolean | null | undefined>;
   dir?: Reactive<"ltr" | "LTR" | "rtl" | "RTL" | "auto" | "AUTO">;
-  draggable?: Reactive<"true" | "false">;
+  draggable?: Reactive<"true" | "false" | boolean | null | undefined>;
   enterkeyhint?: Reactive<"enter" | "done" | "go" | "next" | "previous" | "search" | "send">;
   headingoffset?: Reactive<number | `${number}`>;
   headingreset?: Reactive<boolean>;
@@ -256,12 +258,12 @@ export type GlobalAttributes = {
   popover?: Reactive<"auto" | "manual" | "hint">;
   role?: Reactive<string>;
   slot?: Reactive<string>;
-  spellcheck?: Reactive<"true" | "false">;
+  spellcheck?: Reactive<"true" | "false" | boolean | null | undefined>;
   style?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   tabindex?: Reactive<number | `${number}`>;
   title?: Reactive<string>;
-  translate?: Reactive<"yes" | "no">;
-  writingsuggestions?: Reactive<"true" | "false">;
+  translate?: Reactive<"yes" | "no" | boolean | null | undefined>;
+  writingsuggestions?: Reactive<"true" | "false" | boolean | null | undefined>;
 }
 
 export type GlobalEvents = {
@@ -2063,6 +2065,7 @@ type KebabCase<S extends string> = S extends `${infer H}${infer T}` ? H extends 
  * - camelCase keys convert to kebab-case: `{ dataBsToggle: 'x' }` → `data-bs-toggle="x"`
  * - nested objects flatten to kebab-case: `{ data: { id: '1' } }` → `data-id="1"`
  * - boolean attributes: `{ checked: true }` → `checked`. `{ checked: false }` → omitted
+ * - boolean ARIA states and supported HTML enumerated attributes use explicit tokens
  * - `class` accepts a string or string array: `{ class: ['a', 'b'] }` → `class="a b"`
  *
  * @example
@@ -2083,7 +2086,7 @@ export class Kensington {
   constructor(options?: {
     /** Allow extra attributes on all elements, e.g. `{ enterkeyhint: ['enter', 'done', 'go', 'next', 'previous', 'search', 'send'] }`. */
     additionalGlobalAttributes?: Record<string, unknown>;
-    /** Allow additional attribute namespaces, e.g. `'hx'` for htmx `hx-*` attributes. */
+    /** Add open attribute prefixes, e.g. `'hx'` for htmx. Register individual ARIA names via `additionalGlobalAttributes`. */
     additionalNamespaces?: string | string[];
     /** Spaces per indentation level. Default: 2. Set to 0 to disable indentation. */
     indentationLevel?: number;

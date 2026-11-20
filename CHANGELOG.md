@@ -12,11 +12,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 - Reactive input and textarea property bindings skip value property updates when value already matches.
+- ARIA attributes are treated as specific attributes rather than a namespace.
 
 ### Fixed
+- Explicit boolean attribute tokens, including `aria-pressed="false"` and `translate="no"`.
 - Computed and transform runs dispose their unkeyed signals, derivations, and nested keyed lists when replaced, including resources that never acquired a subscriber.
 - Keyed list updates retain compatible DOM elements and preserve focus on reorder. Changed `prop` values take precedence over captured form state.
+- Keyed-row preservation on descendant validation errors.
 - Subtree removal now cleans up tracked descendants and template bindings even when parent teardown changes the DOM.
+- Failed renders release bindings that were already installed on the abandoned subtree.
+- Missing validation warning messages in Firefox.
 
 ## [2.0.0-signals.30] - 2026-10-26
 
@@ -122,7 +127,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - Client transport controls: `reconnect()`, `disconnect()`, `pauseSend()` / `resumeSend()`, `unsubscribe(name)`, `onFrame` callback, `ReconnectOptions.maxRetries`.
   - Server: `heartbeatInterval` (default 30s), `onSocketClose(ctx, ws)`, `policyOf(name)`.
   - Structural `AttachedWebSocket` / `AttachedWebSocketServer` types re-exported so consumers don't cast through `ws.WebSocket`.
-- `style`, `data`, `aria`, and other namespaced-attribute slots accept `Signal<Object>` at any depth.
+- Whole-object signals work with `style`, the `aria` shorthand, and nested attribute objects such as `{ data: { bs: signal(...) } }`.
 - `isKensingtonSignal` exported from the package root.
 - `addConnectedCallback<E>` / `addDisconnectedCallback<E>` are now generic over the element type.
 

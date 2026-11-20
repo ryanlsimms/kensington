@@ -20,6 +20,7 @@ import {
   svgGlobalAttributes,
 } from 'kensington/attributes';
 
+import { isNameOnlyAttribute } from '../../esm/attributes.js';
 import {
   _disposeHydrationScope,
   _enterHydrationScope,
@@ -34,6 +35,8 @@ import {
 } from '../../esm/lib/reactive/signal.js';
 import { _resetWarningThrottle } from '../../esm/lib/reactive/warnings.js';
 import { attributesArrayFromObject } from '../../esm/lib/render/attributes.js';
+import buildBooleanAttributes, { collectBooleanAttributeTokens } from '../../generate/build-boolean-attributes.js';
+import { parseAriaData } from '../../generate/fetch/fetch-aria-data.js';
 
 // ─── content tag ───────────────────────────────────────────────────────────
 
@@ -488,6 +491,152 @@ describe('void tag', () => {
 // ─── attributes ────────────────────────────────────────────────────────────
 
 describe('attributes', () => {
+  it('parses ARIA definitions with and without value tables', async () => {
+    const { JSDOM } = await import('jsdom');
+    const { document } = new JSDOM(`
+      <section id="state_prop_def">
+        <section id="aria-label"><h4>aria-label</h4></section>
+        <section id="aria-pressed">
+          <table class="value-descriptions">
+            <tbody><tr><th>true</th></tr><tr><th>false (default):</th></tr></tbody>
+          </table>
+        </section>
+        <section id="unrelated"></section>
+      </section>
+    `).window;
+
+    assert.deepStrictEqual(parseAriaData(document), [
+      { attribute: 'aria-label', value: [] },
+      { attribute: 'aria-pressed', value: ['true', 'false'] },
+    ]);
+  });
+  it('accepts every ARIA name from the WAI-ARIA 1.2 snapshot', () => {
+    const aria = JSON.parse(fs.readFileSync(new URL('../../generate/fetched-data/aria.json', import.meta.url), 'utf8'));
+    const tt = new Kensington({ validationLevel: 'error' });
+
+    assert.strictEqual(aria.length, 48);
+    assert.strictEqual(new Set(aria.map(({ attribute }) => attribute)).size, aria.length);
+    for (const { attribute } of aria) {
+      assert.ok(isNameOnlyAttribute(attribute));
+      assert.strictEqual(tt.div({ [attribute]: 'example' }).toString(), `<div ${attribute}="example"></div>`);
+    }
+    assert.strictEqual(
+      tt.button({ ariaLabel: 'Close', aria: { describedby: 'hint', pressed: false }, dataUnknown: 'ok' }).toString(),
+      '<button aria-label="Close" aria-describedby="hint" aria-pressed="false" data-unknown="ok"></button>',
+    );
+  });
+  it('rejects unknown direct, camelCase, and nested ARIA names in error mode', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    assert.throws(() => tt.div({ 'aria-labl': 'Close' }), /aria-labl/);
+    assert.throws(() => tt.div({ ariaLabl: 'Close' }), /ariaLabl/);
+    assert.throws(() => tt.div({ aria: { labl: 'Close' } }).toString(), /aria-labl/);
+    assert.throws(() => tt.div({ aria: { label: { extra: 'Close' } } }).toString(), /aria-label-extra/);
+    assert.throws(() => tt.div({ aria: { style: signal({ color: 'red' }) } }).toString(), /aria-style/);
+    assert.throws(() => tt.svg({ 'aria-labl': 'Close' }), /aria-labl/);
+  });
+  it('accepts arbitrary attributes in every ARIA form on custom tags without an allowlist', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    const custom = tt.createCustomTag('my-button');
+    const expected = '<my-button custom="ok" aria-labl="Close"></my-button>';
+    assert.strictEqual(custom({ custom: 'ok', 'aria-labl': 'Close' }).toString(), expected);
+    assert.strictEqual(custom({ custom: 'ok', ariaLabl: 'Close' }).toString(), expected);
+    assert.strictEqual(custom({ custom: 'ok', aria: { labl: 'Close' } }).toString(), expected);
+    assert.strictEqual(custom({ custom: 'ok', aria: signal({ labl: 'Close' }) }).toString(), expected);
+  });
+  it('applies global ARIA names across element namespaces and preserves open attribute namespaces', () => {
+    const tt = new Kensington({
+      validationLevel: 'error', additionalNamespaces: ['hx'],
+    });
+    assert.deepStrictEqual(tt.namespaces, ['data', 'hx']);
+    assert.strictEqual(tt.circle({ ariaLabel: 'Circle' }).toString(), '<circle aria-label="Circle"></circle>');
+    assert.strictEqual(tt.mfrac({ aria: { label: 'Fraction' } }).toString(), '<mfrac aria-label="Fraction"></mfrac>');
+    assert.strictEqual(
+      tt.div({ dataUnknown: 'one', hxUnknown: 'two' }).toString(),
+      '<div data-unknown="one" hx-unknown="two"></div>',
+    );
+    assert.throws(() => tt.mfrac({ ariaLabl: 'Fraction' }), /ariaLabl/);
+    const custom = tt.createCustomTag('my-button', { 'aria-description': String });
+    const expected = '<my-button aria-description="More help"></my-button>';
+    assert.strictEqual(custom({ ariaDescription: 'More help' }).toString(), expected);
+    assert.strictEqual(custom({ aria: signal({ description: 'More help' }) }).toString(), expected);
+    assert.throws(() => custom({ 'aria-descriptin': 'More help' }), /aria-descriptin/);
+    assert.throws(() => custom({ aria: { descriptin: 'More help' } }).toString(), /aria-descriptin/);
+  });
+  it('accepts arbitrary ARIA names when aria is configured as an additional namespace', () => {
+    const tt = new Kensington({ validationLevel: 'error', additionalNamespaces: 'aria' });
+    const expected = '<button aria-description="More help"></button>';
+    assert.strictEqual(tt.button({ 'aria-description': 'More help' }).toString(), expected);
+    assert.strictEqual(tt.button({ ariaDescription: 'More help' }).toString(), expected);
+    assert.strictEqual(tt.button({ aria: { description: 'More help' } }).toString(), expected);
+    assert.strictEqual(tt.button({ aria: signal({ description: 'More help' }) }).toString(), expected);
+    assert.throws(() => tt.button({ unlisted: 'More help' }), /unlisted/);
+  });
+  it('warns once for each static unknown ARIA name and keeps rendering it', () => {
+    const messages = [];
+    const tt = new Kensington({ validationLevel: 'warn', logger: message => messages.push(message) });
+    const attrs = { 'aria-labl': 'Close', aria: { descriptionby: 'hint' } };
+    const expected = '<button aria-labl="Close" aria-descriptionby="hint"></button>';
+
+    assert.strictEqual(tt.button(attrs).toString(), expected);
+    assert.strictEqual(messages.length, 2);
+    assert.match(messages[0], /aria-labl/);
+    assert.match(messages[1], /aria-descriptionby/);
+    assert.strictEqual(t.button(attrs).toString(), expected);
+  });
+  it('validates the current ARIA object signal when serializing', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    const aria = signal({ label: 'Close' });
+    const button = tt.button({ aria });
+
+    assert.strictEqual(button.toString(), '<button aria-label="Close"></button>');
+    aria.set({ labl: 'Close' });
+    assert.throws(() => button.toString(), /aria-labl/);
+    aria.set({ labelledby: 'title' });
+    assert.strictEqual(button.toString(), '<button aria-labelledby="title"></button>');
+  });
+  it('accepts explicitly configured ARIA names across direct and nested options', () => {
+    const tt = new Kensington({
+      validationLevel: 'error',
+      additionalGlobalAttributes: { ariaDescription: String },
+    });
+    const expected = '<button aria-description="More help"></button>';
+    assert.strictEqual(tt.button({ 'aria-description': 'More help' }).toString(), expected);
+    assert.strictEqual(tt.button({ ariaDescription: 'More help' }).toString(), expected);
+    assert.strictEqual(tt.button({ aria: { description: 'More help' } }).toString(), expected);
+    const aria = signal(null);
+    const button = tt.button({ aria });
+    aria.set({ description: 'More help' });
+    assert.strictEqual(button.toString(), expected);
+    aria.set({ descriptin: 'More help' });
+    assert.throws(() => button.toString(), /aria-descriptin/);
+  });
+  it('validates and serializes the same getter result for plain and reactive ARIA objects', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    for (const wrap of [value => value, signal]) {
+      let reads = 0;
+      const aria = wrap({
+        get label() { return ++reads === 1 ? 'Close' : { extra: 'Unknown' }; },
+      });
+      const button = tt.button({ aria });
+      assert.strictEqual(button.toString(), '<button aria-label="Close"></button>');
+      assert.strictEqual(reads, 1);
+      assert.throws(() => button.toString(), /aria-label-extra/);
+      assert.strictEqual(reads, 2);
+    }
+  });
+  it('ships a boolean-token lookup generated from the HTML and ARIA snapshots', () => {
+    const html = JSON.parse(fs.readFileSync(new URL('../../generate/fetched-data/html.json', import.meta.url), 'utf8'));
+    const aria = JSON.parse(fs.readFileSync(new URL('../../generate/fetched-data/aria.json', import.meta.url), 'utf8'));
+    const generated = fs.readFileSync(new URL('../../esm/lib/render/boolean-attributes.js', import.meta.url), 'utf8');
+    const tokens = collectBooleanAttributeTokens(html.attributes, aria);
+
+    assert.strictEqual(tokens.get('aria-pressed'), 'true/false');
+    assert.strictEqual(tokens.get('translate'), 'yes/no');
+    assert.strictEqual(tokens.get('writingsuggestions'), 'true/false');
+    assert.strictEqual(tokens.has('aria-label'), false);
+    assert.strictEqual(tokens.has('checked'), false);
+    assert.strictEqual(generated, buildBooleanAttributes(tokens));
+  });
   it('converts camelCase to kebab-case', () => {
     assert.strictEqual(t.div({ dataBsTarget: 'abc' }).toString(), '<div data-bs-target="abc"></div>');
   });
@@ -507,6 +656,42 @@ describe('attributes', () => {
   });
   it('aria attributes', () => {
     assert.strictEqual(t.div({ ariaLabel: 'abc' }).toString(), '<div aria-label="abc"></div>');
+  });
+  it('renders boolean ARIA states and HTML enumerated attributes as explicit tokens', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    const expected = '<button aria-pressed="false" aria-expanded="true" draggable="true"'
+      + ' spellcheck="false" contenteditable="false" translate="no"'
+      + ' writingsuggestions="false" disabled>Toggle</button>';
+    assert.strictEqual(tt.button({
+      'aria-pressed': false,
+      ariaExpanded: true,
+      draggable: true,
+      spellcheck: false,
+      contenteditable: false,
+      translate: false,
+      writingsuggestions: false,
+      disabled: true,
+    }, 'Toggle').toString(), expected);
+    assert.strictEqual(tt.button({
+      'aria-pressed': 'false',
+      ariaExpanded: 'true',
+      draggable: 'true',
+      spellcheck: 'false',
+      contenteditable: 'false',
+      translate: 'no',
+      writingsuggestions: 'false',
+      disabled: true,
+    }, 'Toggle').toString(), expected);
+  });
+  it('accepts nested ARIA states and preserves their other tokens', () => {
+    const tag = t.div({
+      aria: { pressed: false, checked: 'mixed', hidden: null, expanded: undefined },
+      contenteditable: 'plaintext-only',
+      translate: true,
+      data: { flag: true, absent: false },
+    });
+    assert.strictEqual(tag.toString(), '<div aria-pressed="false" aria-checked="mixed"'
+      + ' contenteditable="plaintext-only" translate="yes" data-flag></div>');
   });
   it('encodes attribute values', () => {
     assert.strictEqual(t.a({ href: 'http://x.com?a=1&b=2' }).toString(), '<a href="http://x.com?a=1&#x26;b=2"></a>');
@@ -1279,6 +1464,33 @@ describe('additionalGlobalAttributes', () => {
     assert.doesNotThrow(() => tt.input({ enterkeyhint: 'enter' }));
     assert.throws(() => tt.input({ enterkeyhint: 'invalid' }), /invalid attribute/);
   });
+  it('uses explicit ARIA value validators for both registered and standard names', () => {
+    const tt = new Kensington({
+      validationLevel: 'error',
+      additionalGlobalAttributes: { ariaDescription: ['Help'], ariaPressed: ['false'] },
+    });
+    assert.strictEqual(
+      tt.button({ ariaDescription: 'Help', 'aria-pressed': false }).toString(),
+      '<button aria-description="Help" aria-pressed="false"></button>',
+    );
+    assert.throws(() => tt.button({ ariaDescription: 'Other' }), /invalid attribute.*ariaDescription/);
+    assert.throws(() => tt.button({ 'aria-pressed': true }), /invalid attribute.*aria-pressed/);
+  });
+  it('validates the original values in plain and reactive ARIA shorthands', () => {
+    const tt = new Kensington({
+      validationLevel: 'error',
+      additionalGlobalAttributes: { 'aria-label': ['Help'], 'aria-pressed': Boolean },
+    });
+    const good = { label: 'Help', pressed: false };
+    const expected = '<button aria-label="Help" aria-pressed="false"></button>';
+    assert.strictEqual(tt.button({ aria: good }).toString(), expected);
+    const aria = signal(good);
+    const button = tt.button({ aria });
+    assert.strictEqual(button.toString(), expected);
+    assert.throws(() => tt.button({ aria: { label: 'Other' } }).toString(), /invalid attribute.*aria-label/);
+    aria.set({ label: 'Help', pressed: 'false' });
+    assert.throws(() => button.toString(), /invalid attribute.*aria-pressed/);
+  });
   it('normalizes camelCase keys to kebab-case', () => {
     const tt = new Kensington({ validationLevel: 'error', additionalGlobalAttributes: { myAttr: String } });
     assert.strictEqual(tt.div({ myAttr: 'val' }).toString(), '<div my-attr="val"></div>');
@@ -1306,6 +1518,12 @@ describe('custom tags', () => {
     }
     const tt = new Custom({ validationLevel: 'error' });
     assert.strictEqual(tt.customElement().toString(), '<custom-element></custom-element>');
+  });
+  it('uses custom tag validators for ARIA values', () => {
+    const tt = new Kensington({ validationLevel: 'error' });
+    const custom = tt.createCustomTag('my-button', { 'aria-label': ['Open'] });
+    assert.strictEqual(custom({ ariaLabel: 'Open' }).toString(), '<my-button aria-label="Open"></my-button>');
+    assert.throws(() => custom({ ariaLabel: 'Close' }), /invalid attribute.*ariaLabel/);
   });
   it('validates attribute type', () => {
     class CustomBad extends Kensington {
@@ -1490,8 +1708,12 @@ describe('slim build', () => {
       assert.doesNotThrow(() => new SlimKensington({ logger: () => {} }));
     });
     it('accepts additionalNamespaces', () => {
-      const k = new SlimKensington({ additionalNamespaces: ['hx'] });
+      const k = new SlimKensington({ additionalNamespaces: ['aria', 'hx'] });
       assert.deepStrictEqual(k.namespaces, ['data', 'aria', 'hx']);
+      assert.strictEqual(
+        k.button({ aria: signal({ pressed: false }) }).toString(),
+        '<button aria-pressed="false"></button>',
+      );
     });
   });
 
@@ -1720,7 +1942,7 @@ describe('slim build', () => {
 describe('bundle sizes', () => {
   const BUDGETS = [
     { path: '../../dist/kensington.min.js', maxKb: 200 },
-    { path: '../../dist/kensington.slim.min.js', maxKb: 70 },
+    { path: '../../dist/kensington.slim.min.js', maxKb: 70.8 },
   ];
   for (const { path, maxKb } of BUDGETS) {
     it(`${path.replace('../../dist/', '')} stays under ${maxKb} KB`, () => {
@@ -1732,6 +1954,12 @@ describe('bundle sizes', () => {
       );
     });
   }
+  it('omits the name-only attribute table from the slim bundles', () => {
+    for (const file of ['kensington.slim.js', 'kensington.slim.min.js']) {
+      const bundle = fs.readFileSync(new URL(`../../dist/${file}`, import.meta.url), 'utf8');
+      assert.doesNotMatch(bundle, /aria-activedescendant|aria-valuetext/);
+    }
+  });
 });
 
 // ─── htmlWithDocType ───────────────────────────────────────────────────────
@@ -1864,6 +2092,17 @@ describe('signal', () => {
     assert.strictEqual(t.input({ checked: s }).toString(), '<input checked>');
     s.set(false);
     assert.strictEqual(t.input({ checked: s }).toString(), '<input>');
+  });
+  it('signal booleans snapshot explicit attribute tokens in toString()', () => {
+    const value = signal(false);
+    const tag = t.button({ ariaPressed: value, draggable: value, translate: value, disabled: value });
+    assert.strictEqual(tag.toString(), '<button aria-pressed="false" draggable="false" translate="no"></button>');
+    value.set(true);
+    assert.strictEqual(
+      tag.toString(), '<button aria-pressed="true" draggable="true" translate="yes" disabled></button>',
+    );
+    value.set(undefined);
+    assert.strictEqual(tag.toString(), '<button></button>');
   });
   it('signal holding array snapshots items in toString()', () => {
     const items = signal([t.li('one'), t.li('two')]);
@@ -2012,7 +2251,7 @@ describe('signal', () => {
 
 // ─── subtree-signal attributes ─────────────────────────────────────────────
 // Signals that yield objects can sit at any depth inside `style`, `data`,
-// `aria`, or any other namespaced-attribute slot. toString resolves the
+// an open attribute namespace, or the `aria` shorthand. toString resolves the
 // signal's current value and flattens to attribute pairs. (toElement diff
 // behavior is exercised by tests/browser/signals.spec.js.)
 
@@ -2022,7 +2261,7 @@ describe('subtree-signal attributes (toString)', () => {
     assert.strictEqual(t.div({ data: s }).toString(), '<div data-foo="bar" data-count="3"></div>');
   });
   it('top-level aria: Signal<Object> flattens to aria-* attributes', () => {
-    const s = signal({ label: 'Close', expanded: 'false' });
+    const s = signal({ label: 'Close', expanded: signal(false) });
     assert.strictEqual(t.button({ aria: s }).toString(), '<button aria-label="Close" aria-expanded="false"></button>');
   });
   it('nested data: { bs: Signal<Object> } flattens to data-bs-* attributes', () => {

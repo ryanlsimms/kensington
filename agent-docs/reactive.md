@@ -267,7 +267,7 @@ A `Signal<Tag | null>` passed as content works the same way the single-tag case 
 
 ### Whole-object signals on attribute slots
 
-`style`, `data`, `aria`, and any namespaced attribute can take a `Signal<Object>` at any nesting depth, not just per-leaf signals on individual properties.
+`style`, open namespaces such as `data`, and the `aria` shorthand accept whole-object signals as well as per-property signals. Open namespaces also accept whole-object signals inside nested objects.
 
 ```javascript
 // Per-property (still works). Only the changed property writes to the DOM.
@@ -282,20 +282,26 @@ t.div({ style: position });
 const bsState = signal({ toggle: 'collapse', target: '#pane' });
 t.div({ data: { bs: bsState } });       // → data-bs-toggle="collapse" data-bs-target="#pane"
 
-// And at the top level.
+// At the top level.
 const cursorData = signal({ x: 10, y: 20, color: 'red' });
 t.div({ data: cursorData });            // → data-x="10" data-y="20" data-color="red"
+
+// The aria shorthand expands to standard attribute names.
+const saveAria = signal({ label: 'Save', pressed: false });
+t.button({ aria: saveAria });          // → aria-label="Save" aria-pressed="false"
 ```
+
+Kensington checks the ARIA names produced by each snapshot when validation is enabled. Register individual names beyond WAI-ARIA 1.2 through `additionalGlobalAttributes`.
 
 `prop` and `on` deliberately do NOT support whole-object signals. Use per-property signals there (`prop: { value: sig, disabled: another }`, `on: { input: handler }`). Removal semantics for those slots are undefined when a property disappears from a new signal emission.
 
 When a signal-yielded object contains *other* signals as values, those inner signals are sampled (via `.value`, no subscription) at outer-emission time. The outer signal owns the subscription. If you want inner signals to drive updates independently, use the per-property form instead.
 
-Use `.transform(String)` when an attribute expects a string but the signal holds a non-string value:
+Pass a boolean signal directly to ARIA states that accept boolean tokens. Kensington writes explicit `"true"` and `"false"` values. A nullish signal value removes the attribute.
 
 ```javascript
 const liked = signal(false);
-t.button({ ariaPressed: liked.transform(String) }, '♥');
+t.button({ ariaPressed: liked }, '♥');
 ```
 
 ## DOM properties with `prop`

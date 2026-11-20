@@ -1,7 +1,9 @@
-import { _internalComputed, isKensingtonSignal } from '../reactive/signal.js';
+import { __slim__ } from '../../attributes.js';
+import { _bindingEffect, _internalComputed, isKensingtonSignal } from '../reactive/signal.js';
 import he from '../util/he.js';
 import { styleObjectToCss } from '../util/style-utils.js';
 import { getAttrName } from '../util/text-utils.js';
+import { normalizeBooleanAttribute } from './boolean-attributes.js';
 
 // Marker used as the first element of an attribute pair when the value is a
 // signal yielding an object. The pair shape is
@@ -48,11 +50,12 @@ function deriveClassList(parts) {
 }
 
 export function attributesArrayFromObject(obj, options = {}) {
-  const { encode, prefix = '' } = options;
+  const { encode, prefix = '', validatorForPrefix } = options;
+  const validate = !__slim__ && prefix && validatorForPrefix?.(prefix);
+  const rawAttributes = !__slim__ && (options.rawAttributes ?? (validate ? [] : undefined));
   const attrsSet = options.attrsSet ?? new Map();
-  // `seen` is only needed when an attribute value is a nested plain object (the data:/aria:
-  // namespace expansion path). Most attributes are primitives or signals, so defer the
-  // WeakSet allocation until we actually encounter a recursable value.
+  // Only nested plain objects need cycle detection. Most attributes are primitives or
+  // signals, so allocate the WeakSet when the first nested object is expanded.
   let seen = options.seen;
   const result = [];
 
@@ -69,12 +72,18 @@ export function attributesArrayFromObject(obj, options = {}) {
     } catch {
       continue;
     }
-    if (val === false || val === null || val === undefined
-      || (typeof val === 'number' && !isFinite(val))) { // NaN/Infinity treated as absent, same as false/null
+    if (val === null || val === undefined) { continue; }
+    if (typeof val === 'number' && !isFinite(val)) {
+      if (!__slim__ && rawAttributes) { rawAttributes.push([getAttrName(attr, prefix, attrsSet), val]); }
       continue;
     }
     const attrName = getAttrName(attr, prefix, attrsSet);
+    if (rawAttributes && (typeof val !== 'object' || Array.isArray(val) || isKensingtonSignal(val))) {
+      rawAttributes.push([attrName, val]);
+    }
+    val = normalizeBooleanAttribute(attrName, val);
 
+    if (val === false) { continue; }
     if (val === true) {
       result.push([attrName, '']); // empty string signals the string builder to emit a bare attribute name (e.g. disabled, checked)
       continue;
@@ -89,12 +98,14 @@ export function attributesArrayFromObject(obj, options = {}) {
     if (isKensingtonSignal(val)) {
       let current;
       try { current = val.value; } catch { current = null; }
-      const isObjectValued = current !== null && typeof current === 'object' && !Array.isArray(current);
-      if (isObjectValued || attr === 'style') {
+      const isObjectValued = current && typeof current === 'object' && !Array.isArray(current);
+      if (isObjectValued || attrName === 'aria' || attr === 'style') {
         const isStyle = attr === 'style';
         result.push([SUBTREE_SIGNAL_KEY, { signal: val, prefix: attrName, attrsSet, encode, isStyle }]);
-        continue;
+      } else {
+        result.push([attrName, val]);
       }
+      continue;
     }
     if (attr === 'style' && val !== null && typeof val === 'object' && !Array.isArray(val)) { // !Array.isArray: typeof [] === 'object'
       let hasSignal = false;
@@ -116,10 +127,6 @@ export function attributesArrayFromObject(obj, options = {}) {
           result.push([attrName, css]);
         }
       }
-      continue;
-    }
-    if (isKensingtonSignal(val)) {
-      result.push([attrName, val]);
       continue;
     }
     if (attr === 'class' && Array.isArray(val)) {
@@ -152,7 +159,14 @@ export function attributesArrayFromObject(obj, options = {}) {
         continue;
       }
       seen.add(val);
-      result.push(...attributesArrayFromObject(val, { attrsSet, encode, prefix: attrName, seen }));
+      result.push(...attributesArrayFromObject(val, {
+        attrsSet,
+        encode,
+        prefix: attrName,
+        seen,
+        validatorForPrefix: prefix ? undefined : validatorForPrefix,
+        ...(!__slim__ && rawAttributes ? { rawAttributes } : {}),
+      }));
       seen.delete(val); // delete after recursing so the same object can appear under sibling keys
       continue;
     }
@@ -162,17 +176,91 @@ export function attributesArrayFromObject(obj, options = {}) {
       }
       continue;
     }
-    if (encode) {
-      result.push([attrName, he.encode(val.toString())]); // val is a string/number primitive at this point. All other types handled above
-    } else {
-      result.push([attrName, val.toString()]);
-    }
+    const value = String(val);
+    result.push([attrName, encode ? he.encode(value) : value]);
   }
+  if (validate) { validate(result, rawAttributes); }
   return result;
 }
 
+function expandAttributeSnapshot(value, { prefix, attrsSet }, validate) {
+  const rawAttributes = !__slim__ && validate ? [] : undefined;
+  const pairs = value && typeof value === 'object' && !Array.isArray(value)
+    ? attributesArrayFromObject(value, {
+      prefix, attrsSet, encode: false, ...(!__slim__ && rawAttributes ? { rawAttributes } : {}),
+    })
+    : [];
+  if (!__slim__) { validate?.(pairs, rawAttributes); }
+  return pairs;
+}
+
+export function bindAttributeObject(details, lifecycle, apply, validate, preparedSnapshot) {
+  const { signal, prefix } = details;
+  lifecycle.signalEffect(signal, (el, value) => {
+    const pairs = !__slim__ && preparedSnapshot && Object.is(preparedSnapshot.value, value)
+      ? preparedSnapshot.pairs
+      : expandAttributeSnapshot(value, details, validate);
+    if (!__slim__) { preparedSnapshot = undefined; }
+    apply(el, pairs);
+  }, `${prefix}(signal)`);
+}
+
+function* attributeSignalsToValidate(attributes, validatorForPrefix) {
+  for (const [name, details] of attributes) {
+    if (name !== SUBTREE_SIGNAL_KEY || details.isStyle) { continue; }
+    const validate = validatorForPrefix(details.prefix);
+    if (validate) { yield [details, validate]; }
+  }
+}
+
+// Validate the first emission before changing the element or stopping the previous
+// row's bindings. Subscribing can wake a computed and change that first value.
+// Keep a subscription until the render takes over so a sleeping computed's
+// validated value survives the handoff to the DOM binding.
+export function preflightAttributeSnapshots(attributes, validatorForPrefix, subscriptions) {
+  if (!validatorForPrefix) { return undefined; }
+  let snapshots;
+  for (const [details, validate] of attributeSignalsToValidate(attributes, validatorForPrefix)) {
+    const snapshot = {};
+    subscriptions.push(_bindingEffect(details.signal, value => {
+      snapshot.pairs = expandAttributeSnapshot(value, details, validate);
+      snapshot.value = value;
+    }));
+    (snapshots ??= new Map()).set(details, snapshot);
+  }
+  return snapshots;
+}
+
+export function prepareAttributeBindings(attributes, ensureLifecycle, validatorForPrefix, snapshots) {
+  if (__slim__ || !validatorForPrefix) { return undefined; }
+  let lifecycle;
+  let bindings;
+  try {
+    for (const [details, validate] of attributeSignalsToValidate(attributes, validatorForPrefix)) {
+      let apply;
+      let initial;
+      lifecycle ??= ensureLifecycle();
+      bindAttributeObject(details, lifecycle, (el, pairs) => {
+        if (apply) { apply(el, pairs); }
+        else { initial = [el, pairs]; }
+      }, validate, snapshots?.get(details));
+      (bindings ??= new Map()).set(details, writer => {
+        apply = writer;
+        if (initial) {
+          apply(...initial);
+          initial = undefined;
+        }
+      });
+    }
+  } catch (error) {
+    lifecycle?.stopBindings();
+    throw error;
+  }
+  return bindings;
+}
+
 export function attributesStringFromObject(obj, options = {}) {
-  const { onFunction, encode } = options;
+  const { onFunction, encode, validatorForPrefix } = options;
   let result = '';
   const subtreeSignalToString = rawVal => {
     const { signal, prefix, attrsSet, isStyle } = rawVal;
@@ -185,7 +273,7 @@ export function attributesStringFromObject(obj, options = {}) {
       const css = styleObjectToCss(resolveStyleSignals(snapshot));
       return css ? `${prefix}="${encode ? he.encode(css) : css}"` : '';
     }
-    return attributesStringFromObject(snapshot, { onFunction, encode, attrsSet, prefix });
+    return attributesStringFromObject(snapshot, { onFunction, encode, attrsSet, prefix, validatorForPrefix });
   };
   for (const [name, rawVal] of attributesArrayFromObject(obj, options)) {
     if (name === SUBTREE_SIGNAL_KEY) {
@@ -198,7 +286,7 @@ export function attributesStringFromObject(obj, options = {}) {
     }
     let val = rawVal;
     if (isKensingtonSignal(val)) {
-      val = val.get();
+      val = normalizeBooleanAttribute(name, val.get());
       if (val === false || val === null || val === undefined) {
         continue;
       }

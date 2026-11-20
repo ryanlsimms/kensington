@@ -6,6 +6,7 @@ import { parseAll } from '@webref/idl';
 
 import buildAttributes from '../build-attributes.js';
 import buildAttributesDeclarations from '../build-attributes-declarations.js';
+import buildBooleanAttributes, { collectBooleanAttributeTokens } from '../build-boolean-attributes.js';
 import buildDeclarations from '../build-declarations.js';
 import buildKensington from '../build-kensington.js';
 import buildSvgElementCase from '../build-svg-element-case.js';
@@ -17,6 +18,8 @@ import parseIdlTypes from '../parse-idl-types.js';
 const { default: htmlData } = await import('../fetched-data/html.json', { with: { type: 'json' } });
 const { default: svgData } = await import('../fetched-data/svg.json', { with: { type: 'json' } });
 const { default: mathData } = await import('../fetched-data/math.json', { with: { type: 'json' } });
+const { default: ariaData } = await import('../fetched-data/aria.json', { with: { type: 'json' } });
+const booleanAttributeTokens = collectBooleanAttributeTokens(htmlData.attributes, ariaData);
 
 const cssData = await listAll();
 const cssPropertyTypes = parseCssPropertyTypes(cssData.properties, cssData.types);
@@ -40,7 +43,7 @@ const {
   svgGlobalEvents,
   svgPresentationAttrTypes,
   svgXLinkAttributes,
-} = parseData(htmlData, svgData, mathData, { cssPropertyTypes, cssPropertyNames, idlTypes });
+} = parseData(htmlData, svgData, mathData, { booleanAttributeTokens, cssPropertyTypes, cssPropertyNames, idlTypes });
 
 const declarationsContent = buildDeclarations({
   attributes,
@@ -62,6 +65,7 @@ const attributesContent = buildAttributes({
   elements,
   globalAttributes,
   globalEvents,
+  nameOnlyAttributes: ariaData.map(({ attribute }) => attribute),
   svgConditionalAttributes,
   svgGlobalAttributes,
   svgGlobalEvents,
@@ -77,6 +81,11 @@ fs.writeFileSync(path.resolve(import.meta.dirname, '../../types.d.ts'), declarat
 fs.writeFileSync(path.resolve(import.meta.dirname, '../../attributes.d.ts'), attributesDeclarationsContent, 'utf8');
 fs.writeFileSync(path.resolve(import.meta.dirname, '../../esm/kensington.js'), kensingtonClassContent, 'utf8');
 fs.writeFileSync(path.resolve(import.meta.dirname, '../../esm/attributes.js'), attributesContent, 'utf8');
+fs.writeFileSync(
+  path.resolve(import.meta.dirname, '../../esm/lib/render/boolean-attributes.js'),
+  buildBooleanAttributes(booleanAttributeTokens),
+  'utf8',
+);
 fs.writeFileSync(path.resolve(import.meta.dirname, '../../esm/tag-info.js'), tagInfoContent, 'utf8');
 fs.writeFileSync(path.resolve(import.meta.dirname, '../../bin/lib/svg-element-case.js'), svgElementCaseContent, 'utf8');
 

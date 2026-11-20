@@ -71,7 +71,9 @@ function resolveChildren(children) {
   return { strict, resolved: [...new Set(resolved)] };
 }
 
-export default function parseData(htmlData, svgData, mathData, { cssPropertyTypes, cssPropertyNames, idlTypes } = {}) {
+export default function parseData(htmlData, svgData, mathData, {
+  booleanAttributeTokens, cssPropertyTypes, cssPropertyNames, idlTypes,
+} = {}) {
   const { svgAttributes, svgElements } = svgData;
   const { attributes, globalEvents, htmlElements } = htmlData;
 
@@ -207,7 +209,7 @@ export default function parseData(htmlData, svgData, mathData, { cssPropertyType
     const [value, type] = getAttributeType(attr);
     return {
       name: attr.attribute,
-      type,
+      type: booleanAttributeTokens?.has(attr.attribute) ? `${type} | boolean | null | undefined` : type,
       value,
     };
   }

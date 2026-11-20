@@ -8,6 +8,11 @@ import {
   _reactiveRuntime,
 } from './signal.js';
 
+// User failures are reported without skipping other owners' resource cleanup.
+function callSafely(fn) {
+  try { fn(); } catch (err) { queueMicrotask(() => { throw err; }); }
+}
+
 /**
  * Owns the lifecycle of signal effects and connect/disconnect callbacks for a single DOM
  * element, including the persist mechanism that pauses effects on removal and resumes them
@@ -21,7 +26,7 @@ export function createLifecycle({ element, persist }) {
   const devIds = [];
   const elementRef = new WeakRef(element);
 
-  return {
+  const lifecycle = {
     /**
      * Create a signal-tracking effect bound to this element. The effect self-stops if the
      * element is garbage-collected. It pauses on removal and resumes on reconnect when
@@ -43,22 +48,23 @@ export function createLifecycle({ element, persist }) {
       return eff;
     },
 
+    stopBindings() {
+      for (const eff of effects) { callSafely(() => eff.stop()); }
+    },
+
     finalize({ effectCallbacks = [], connectCallbacks = [], disconnectCallbacks = [], onCleared, onReconnect } = {}) {
       const validation = _reactiveRuntime.capture();
       let effectsStarted = false;
       let connected = false;
       let disconnected = false;
 
-      // User failures are reported without skipping other owners' resource cleanup.
-      function callSafely(fn) {
-        try { fn(); } catch (err) { queueMicrotask(() => { throw err; }); }
-      }
-
       function disconnect() {
         connected = false;
         disconnected = true;
-        for (const eff of effects) {
-          callSafely(() => { if (persist) { eff.pause(); } else { eff.stop(); } });
+        if (persist) {
+          for (const eff of effects) { callSafely(() => eff.pause()); }
+        } else {
+          lifecycle.stopBindings();
         }
         if (onCleared) { callSafely(onCleared); }
         for (const fn of disconnectCallbacks) { callSafely(() => fn.call(element, element)); }
@@ -110,4 +116,5 @@ export function createLifecycle({ element, persist }) {
       }
     },
   };
+  return lifecycle;
 }

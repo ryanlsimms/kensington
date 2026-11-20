@@ -6,6 +6,7 @@ import showInvalid from '../util/show-invalid.js';
 import { LINE_BREAK_TEST_REGEX, preserveSpaces } from '../util/text-utils.js';
 import { attributesArrayFromObject, attributesStringFromObject } from './attributes.js';
 import stringifyContentArray from './stringify-content-array.js';
+import { expandedAttributeValidator } from './validate.js';
 
 const SCRIPT_CLOSE_RE = /<\/script>/i;
 
@@ -38,13 +39,21 @@ export function attributeString(tag) {
     : attrName => showInvalid(`function value for attribute \`${attrName}\` is not supported in toString()`, tag.validationLevel, tag.logger);
   const attrString = attributesStringFromObject(
     tag.attributes,
-    { attrsSet: tag.allowedAttributeMap, encode: true, onFunction },
+    {
+      attrsSet: tag.allowedAttributeMap,
+      encode: true,
+      onFunction,
+      validatorForPrefix: expandedAttributeValidator(tag),
+    },
   );
   return attrString ? ` ${attrString}` : '';
 }
 
 export function attributeArray(tag) {
-  return attributesArrayFromObject(tag.attributes, { attrsSet: tag.allowedAttributeMap, encode: false }); // encode: false. setAttribute handles its own encoding. encode: true is only needed for toString()
+  // setAttribute handles its own encoding.
+  return attributesArrayFromObject(tag.attributes, {
+    attrsSet: tag.allowedAttributeMap, encode: false, validatorForPrefix: expandedAttributeValidator(tag),
+  });
 }
 
 export function renderToString(tag, parentContext) {

@@ -1,0 +1,296 @@
+[
+  {
+    "attribute": "aria-activedescendant",
+    "value": []
+  },
+  {
+    "attribute": "aria-atomic",
+    "value": [
+      "false",
+      "true"
+    ]
+  },
+  {
+    "attribute": "aria-autocomplete",
+    "value": [
+      "inline",
+      "list",
+      "both",
+      "none"
+    ]
+  },
+  {
+    "attribute": "aria-busy",
+    "value": [
+      "false",
+      "true"
+    ]
+  },
+  {
+    "attribute": "aria-checked",
+    "value": [
+      "false",
+      "mixed",
+      "true",
+      "undefined"
+    ]
+  },
+  {
+    "attribute": "aria-colcount",
+    "value": []
+  },
+  {
+    "attribute": "aria-colindex",
+    "value": []
+  },
+  {
+    "attribute": "aria-colspan",
+    "value": []
+  },
+  {
+    "attribute": "aria-controls",
+    "value": []
+  },
+  {
+    "attribute": "aria-current",
+    "value": [
+      "page",
+      "step",
+      "location",
+      "date",
+      "time",
+      "true",
+      "false"
+    ]
+  },
+  {
+    "attribute": "aria-describedby",
+    "value": []
+  },
+  {
+    "attribute": "aria-details",
+    "value": []
+  },
+  {
+    "attribute": "aria-disabled",
+    "value": [
+      "false",
+      "true"
+    ]
+  },
+  {
+    "attribute": "aria-dropeffect",
+    "value": [
+      "copy",
+      "execute",
+      "link",
+      "move",
+      "none",
+      "popup"
+    ]
+  },
+  {
+    "attribute": "aria-errormessage",
+    "value": []
+  },
+  {
+    "attribute": "aria-expanded",
+    "value": [
+      "false",
+      "true",
+      "undefined"
+    ]
+  },
+  {
+    "attribute": "aria-flowto",
+    "value": []
+  },
+  {
+    "attribute": "aria-grabbed",
+    "value": [
+      "false",
+      "true",
+      "undefined"
+    ]
+  },
+  {
+    "attribute": "aria-haspopup",
+    "value": [
+      "false",
+      "true",
+      "menu",
+      "listbox",
+      "tree",
+      "grid",
+      "dialog"
+    ]
+  },
+  {
+    "attribute": "aria-hidden",
+    "value": [
+      "false",
+      "true",
+      "undefined"
+    ]
+  },
+  {
+    "attribute": "aria-invalid",
+    "value": [
+      "grammar",
+      "false",
+      "spelling",
+      "true"
+    ]
+  },
+  {
+    "attribute": "aria-keyshortcuts",
+    "value": []
+  },
+  {
+    "attribute": "aria-label",
+    "value": []
+  },
+  {
+    "attribute": "aria-labelledby",
+    "value": []
+  },
+  {
+    "attribute": "aria-level",
+    "value": []
+  },
+  {
+    "attribute": "aria-live",
+    "value": [
+      "assertive",
+      "off",
+      "polite"
+    ]
+  },
+  {
+    "attribute": "aria-modal",
+    "value": [
+      "false",
+      "true"
+    ]
+  },
+  {
+    "attribute": "aria-multiline",
+    "value": [
+      "false",
+      "true"
+    ]
+  },
+  {
+    "attribute": "aria-multiselectable",
+    "value": [
+      "false",
+      "true"
+    ]
+  },
+  {
+    "attribute": "aria-orientation",
+    "value": [
+      "horizontal",
+      "undefined",
+      "vertical"
+    ]
+  },
+  {
+    "attribute": "aria-owns",
+    "value": []
+  },
+  {
+    "attribute": "aria-placeholder",
+    "value": []
+  },
+  {
+    "attribute": "aria-posinset",
+    "value": []
+  },
+  {
+    "attribute": "aria-pressed",
+    "value": [
+      "false",
+      "mixed",
+      "true",
+      "undefined"
+    ]
+  },
+  {
+    "attribute": "aria-readonly",
+    "value": [
+      "false",
+      "true"
+    ]
+  },
+  {
+    "attribute": "aria-relevant",
+    "value": [
+      "additions",
+      "additions text",
+      "all",
+      "removals",
+      "text"
+    ]
+  },
+  {
+    "attribute": "aria-required",
+    "value": [
+      "false",
+      "true"
+    ]
+  },
+  {
+    "attribute": "aria-roledescription",
+    "value": []
+  },
+  {
+    "attribute": "aria-rowcount",
+    "value": []
+  },
+  {
+    "attribute": "aria-rowindex",
+    "value": []
+  },
+  {
+    "attribute": "aria-rowspan",
+    "value": []
+  },
+  {
+    "attribute": "aria-selected",
+    "value": [
+      "false",
+      "true",
+      "undefined"
+    ]
+  },
+  {
+    "attribute": "aria-setsize",
+    "value": []
+  },
+  {
+    "attribute": "aria-sort",
+    "value": [
+      "ascending",
+      "descending",
+      "none",
+      "other"
+    ]
+  },
+  {
+    "attribute": "aria-valuemax",
+    "value": []
+  },
+  {
+    "attribute": "aria-valuemin",
+    "value": []
+  },
+  {
+    "attribute": "aria-valuenow",
+    "value": []
+  },
+  {
+    "attribute": "aria-valuetext",
+    "value": []
+  }
+]
