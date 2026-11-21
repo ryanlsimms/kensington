@@ -3,7 +3,9 @@ import parseTable from '../utils/parse-table.js';
 
 export default async function fetchHtmlData() {
   const dom = await fetchAsDom('https://html.spec.whatwg.org/multipage/indices.html');
-  const elements = parseTable(dom.querySelector('table:has(caption)'), 'tag', [['children', 5], ['attributes', 6]]);
+  const elements = parseTable(dom.querySelector('table:has(caption)'), 'tag', [
+    ['children', 5], ['attributes', 6], ['interfaces', 7],
+  ]);
   const attributes = parseTable(dom.querySelector('#attributes-1'), 'attribute', [['elements', 2], ['value', 4]]);
   const events = parseTable(dom.querySelector('#ix-event-handlers'), 'event', [['elements', 2]]);
   const globalEvents = events.filter(e => e.elements[0] === 'HTML elements').map(e => e.event);

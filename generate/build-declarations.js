@@ -16,7 +16,6 @@ const EVENT_TYPES = {
   onkeypress: 'KeyboardEvent',
   onkeyup: 'KeyboardEvent',
   onbeforeinput: 'InputEvent',
-  oninput: 'InputEvent',
   onblur: 'FocusEvent',
   onfocus: 'FocusEvent',
   ondrag: 'DragEvent',
@@ -27,14 +26,12 @@ const EVENT_TYPES = {
   ondragstart: 'DragEvent',
   ondrop: 'DragEvent',
   onwheel: 'WheelEvent',
-  onerror: 'ErrorEvent',
   onsubmit: 'SubmitEvent',
   oncopy: 'ClipboardEvent',
   oncut: 'ClipboardEvent',
   onpaste: 'ClipboardEvent',
   onformdata: 'FormDataEvent',
   onsecuritypolicyviolation: 'SecurityPolicyViolationEvent',
-  onprogress: 'ProgressEvent',
 };
 
 function attrType(name, type) {
@@ -103,10 +100,29 @@ function svgAttributesType({
   return [...ownTypes, ...sharedTypes, ...globalTypes].join(' & ');
 }
 
+function elementType(el) {
+  const tag = `'${el.tag}'`;
+  if (el.tagType === 'Math') { return 'MathMLElement'; }
+  if (el.tagType === 'SvgContent') { return `SvgElementFor<${tag}>`; }
+  const types = [`HtmlElementFor<${tag}>`];
+  if (el.svgContextual) { types.push(`SvgElementFor<${tag}>`); }
+  if (el.mathContextual) { types.push('MathMLElement'); }
+  return types.join(' | ');
+}
+
+function elementAttributes(el) {
+  const element = elementType(el);
+  const globalTypes = el.globalTypes.map(type =>
+    type === 'GlobalEvents' || type === 'SvgGlobalEvents' ? `${type}<${element}>` : type);
+  const definition = { ...el, globalTypes };
+  return el.tagType === 'SvgContent' || el.svgContextual ? svgAttributesType(definition) : attributesType(definition);
+}
+
 export default function buildDeclarations({
   elements,
   globalAttributes,
   globalEvents,
+  htmlElementFallbacks,
   svgConditionalAttributes,
   svgGlobalAttributes,
   svgGlobalEvents,
@@ -133,9 +149,9 @@ export default function buildDeclarations({
  * Returned by content element methods (div, p, span, …).
  * Call \`.toString()\` to get the HTML string, or \`.toElement()\` to create a live DOM node.
  */
-export class ContentTag {
+export class ContentTag<ElementType extends Element = Element> {
   toString(): string;
-  toElement(): Element;
+  toElement(): ElementType;
   mount(target: string | Element): void;
   /**
    * Returns the live DOM element produced by the most recent \`.toElement()\` call when that
@@ -143,7 +159,7 @@ export class ContentTag {
    * operations like focus or scroll after a keyboard event, or for reconciler-aware code
    * that needs to inspect the current node.
    */
-  getDomElement(): Element | null;
+  getDomElement(): ElementType | null;
   /**
    * Registers a signal-tracking effect owned by this tag. Starts on connection,
    * stops on normal removal, and pauses/resumes with own or inherited \`persist: true\`.
@@ -173,7 +189,7 @@ export class ContentTag {
  * Returned by void element methods (br, hr, input, img, …).
  * Void elements have no closing tag and accept no content argument.
  */
-export class VoidTag extends ContentTag {
+export class VoidTag<E extends Element = Element> extends ContentTag<E> {
   toString(): string;
 }
 
@@ -200,7 +216,7 @@ export class CommentTag {
   getDomElement(): Comment | null;
 }
 
-${brandedElements.map(el => `export class ${el.pascalTag}Tag extends ${el.returnTagType === 'Void' ? 'Void' : 'Content'}Tag { private readonly _k: '${el.tag}' }`).join('\n')}
+${brandedElements.map(el => `export class ${el.pascalTag}Tag extends ${el.returnTagType === 'Void' ? 'Void' : 'Content'}Tag<${elementType(el)}> { private readonly _k: '${el.tag}' }`).join('\n')}
 
 /**
  * Key used to scope a \`signal()\`, \`computed()\`, or \`.transform()\` call to its surrounding
@@ -290,16 +306,24 @@ type ReactiveStyleProperties = {
   [key: \`--\${string}\`]: Reactive<string | number>;
 };
 
+/** Spec-derived instance members for HTML tags missing from the build's DOM map. */
+${htmlElementFallbacks}
+type HtmlElementFor<Tag extends string> =
+  Tag extends keyof HTMLElementTagNameMap ? HTMLElementTagNameMap[Tag] :
+  Tag extends keyof HtmlElementFallbacks ? HtmlElementFallbacks[Tag] : HTMLElement;
+type SvgElementFor<Tag extends string> =
+  Tag extends keyof SVGElementTagNameMap ? SVGElementTagNameMap[Tag] : SVGElement;
+
 type ElementInterface<Tag extends string> =
   Tag extends keyof HTMLElementTagNameMap ? HTMLElementTagNameMap[Tag] :
   Tag extends keyof SVGElementTagNameMap ? SVGElementTagNameMap[Tag] :
-  HTMLElement;
+  HtmlElementFor<Tag>;
 type ElementProps<ElementType> = {
   [K in keyof ElementType]?: ElementType[K] | ReadonlySignal<ElementType[K]>
 } & { [key: string]: unknown };
 type PropFor<Tag extends string> = ElementProps<ElementInterface<Tag>>;
 type ContextualPropFor<Tag extends string> =
-  | (Tag extends keyof HTMLElementTagNameMap ? ElementProps<HTMLElementTagNameMap[Tag]> : never)
+  | (Tag extends keyof HTMLElementTagNameMap | keyof HtmlElementFallbacks ? ElementProps<HtmlElementFor<Tag>> : never)
   | (Tag extends keyof SVGElementTagNameMap ? ElementProps<SVGElementTagNameMap[Tag]> : never);
 
 /**
@@ -324,16 +348,34 @@ export type GlobalAttributes = {
   ${globalAttributes.map(a => `${a.name}?: ${attrType(a.name, a.type)};`).join('\n  ')}
 }
 
-export type GlobalEvents = {
-  ${globalEvents.map(e => `${e}?: string | ((event: ${EVENT_TYPES[e] ?? 'Event'}) => void);`).join('\n  ')}
-  on?: Record<string, (event: any) => void>;
+/** The DOM supplies currentTarget during dispatch. Capture it before awaiting in a handler. */
+type BoundEvent<T extends Event, E extends EventTarget | null> = T & { readonly currentTarget: E };
+type EventMapFor<E extends EventTarget | null> =
+  E extends SVGElement ? SVGElementEventMap :
+  E extends MathMLElement ? MathMLElementEventMap :
+  HTMLElementEventMap;
+type LegacyEventHandlers = Record<string, (event: any) => void>;
+// Form updates and resource or media notifications can dispatch plain DOM events.
+type EventHandlers<E extends EventTarget | null> = {
+  [K in keyof EventMapFor<E>]?: (event: BoundEvent<
+    K extends 'abort' | 'error' | 'input' | 'progress' | 'resize' ? Event : EventMapFor<E>[K] & Event, E
+  >) => void;
+} & LegacyEventHandlers;
+
+// A custom event can use a standard name. Try this overload after the inferred DOM handlers.
+type WithLegacyOn<Attributes> = Omit<Attributes, 'on'> & { on?: LegacyEventHandlers };
+
+export type GlobalEvents<E extends EventTarget | null = EventTarget | null> = {
+  ${globalEvents.map(e => `${e}?: string | ((event: BoundEvent<${EVENT_TYPES[e] ?? 'Event'}, E>) => void);`).join('\n  ')}
+  on?: Element extends E ? LegacyEventHandlers : EventHandlers<E>;
 }
 type SvgGlobalAttributes = {
   ${sharedAttributesType(svgGlobalAttributes)}
 }
 
-type SvgGlobalEvents = {
-  ${sharedAttributesType(svgGlobalEvents)}
+type SvgGlobalEvents<E extends Element> = {
+  ${svgGlobalEvents.map(({ name }) =>
+    `'${name}'?: Reactive<string | ((event: BoundEvent<Event, E>) => void)>;`).join('\n  ')}
 }
 
 type SvgConditionalAttributes = {
@@ -355,7 +397,7 @@ type SvgPresentationAttributes = {
   }).join('\n  ')}
 }
 ` : ''}
-${elements.map(e => `type ${e.attributesTypeName} = ${e.tagType === 'SvgContent' || e.svgContextual ? svgAttributesType(e) : attributesType(e)};`).join('\n\n')}
+${elements.map(e => `type ${e.attributesTypeName} = ${elementAttributes(e)};`).join('\n\n')}
 
 ${strictContainers.map(el => {
   const extras = ['LiteralTag', 'CommentTag', 'ReadonlySignal<any>', 'null', 'undefined', 'boolean'];
@@ -374,7 +416,8 @@ ${strictContainers.map(el => {
 export type ContentItem = ContentTag | VoidTag | LiteralTag | CommentTag | ReadonlySignal<any> | string | number | boolean | null | undefined;
 export type Content = ContentItem | readonly Content[];
 
-export type UniversalAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+export type UniversalAttributes<E extends EventTarget | null = EventTarget | null> =
+  NameSpaceAttributes & GlobalAttributes & GlobalEvents<E>;
 
 /** Kensington options shared by built-in and custom element methods. */
 type TagOptions<P> = {
@@ -385,6 +428,8 @@ type TagOptions<P> = {
   /** Pause reactive bindings on removal and resume them on reconnection. Default false. */
   persist?: boolean;
 };
+
+type CustomTagAttributes<E extends Element> = UniversalAttributes<E> & TagOptions<PropFor<string>>;
 
 /**
  * The type of a custom element method created with \`createCustomTag\`.
@@ -397,9 +442,10 @@ type TagOptions<P> = {
  *     this.createCustomTag('my-card', { 'card-type': ['primary', 'secondary'] });
  * }
  */
-export interface ContentMethod<T = {}> {
-  (attributes: T & UniversalAttributes & TagOptions<PropFor<string>>, content?: Content): ContentTag;
-  (content?: Content): ContentTag;
+export interface ContentMethod<T = {}, E extends Element = Element> {
+  (attributes: T & CustomTagAttributes<E>, content?: Content): ContentTag<E>;
+  (attributes: T & WithLegacyOn<CustomTagAttributes<E>>, content?: Content): ContentTag<E>;
+  (content?: Content): ContentTag<E>;
 }
 
 type PrimitiveConstructor = StringConstructor | NumberConstructor | BooleanConstructor | FunctionConstructor;
@@ -477,7 +523,9 @@ export class Kensington {
   createCustomTag<const A extends Record<string, AttributeValue> = Record<never, AttributeValue>>(
     tagName: string,
     allowedAttributes?: A
-  ): ContentMethod<{ [K in keyof A as K | CamelCase<K & string> | KebabCase<K & string>]?: Reactive<ResolveAttrValue<A[K]>> }>
+  ): ContentMethod<{
+    [K in keyof A as K | CamelCase<K & string> | KebabCase<K & string>]?: Reactive<ResolveAttrValue<A[K]>>
+  }, HTMLElement>
 
   /**
    * Embeds a raw markup string verbatim into the output. Live DOM fragments are
@@ -508,18 +556,24 @@ export class Kensington {
    * @example
    * t.htmlWithDocType({ lang: 'en' }, t.body('hello')).toString();
    */
-  htmlWithDocType(attributes: HtmlAttributes, content?: ${htmlContentType}): ContentTag;
-  htmlWithDocType(content?: ${htmlContentType}): ContentTag;
+  htmlWithDocType(attributes: HtmlAttributes, content?: ${htmlContentType}): ContentTag<HTMLHtmlElement>;
+  htmlWithDocType(attributes: WithLegacyOn<HtmlAttributes>, content?: ${htmlContentType}): ContentTag<HTMLHtmlElement>;
+  htmlWithDocType(content?: ${htmlContentType}): ContentTag<HTMLHtmlElement>;
 
   ${elements.flatMap(el => {
+    const attributes = el.attributesTypeName;
     if (el.returnTagType === 'Void') {
-      const retType = el.branded ? `${el.pascalTag}Tag` : 'VoidTag';
-      return [`${el.methodName}(attributes?: ${el.attributesTypeName}): ${retType};`];
+      const retType = el.branded ? `${el.pascalTag}Tag` : `VoidTag<${elementType(el)}>`;
+      return [
+        `${el.methodName}(attributes?: ${attributes}): ${retType};`,
+        `${el.methodName}(attributes?: WithLegacyOn<${attributes}>): ${retType};`,
+      ];
     }
-    const retType = el.branded ? `${el.pascalTag}Tag` : 'ContentTag';
+    const retType = el.branded ? `${el.pascalTag}Tag` : `ContentTag<${elementType(el)}>`;
     const contentType = el.strictChildren ? `${el.pascalTag}Content` : 'Content';
     return [
-      `${el.methodName}(attributes: ${el.attributesTypeName}, content?: ${contentType}): ${retType};`,
+      `${el.methodName}(attributes: ${attributes}, content?: ${contentType}): ${retType};`,
+      `${el.methodName}(attributes: WithLegacyOn<${attributes}>, content?: ${contentType}): ${retType};`,
       `${el.methodName}(content?: ${contentType}): ${retType};`,
     ];
   }).join('\n  ')}

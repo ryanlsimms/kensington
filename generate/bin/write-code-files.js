@@ -8,6 +8,7 @@ import buildAttributes from '../build-attributes.js';
 import buildAttributesDeclarations from '../build-attributes-declarations.js';
 import buildBooleanAttributes, { collectBooleanAttributeTokens } from '../build-boolean-attributes.js';
 import buildDeclarations from '../build-declarations.js';
+import buildHtmlElementFallbacks from '../build-html-element-fallbacks.js';
 import buildKensington from '../build-kensington.js';
 import buildSvgElementCase from '../build-svg-element-case.js';
 import buildTagInfo from '../build-tag-info.js';
@@ -45,11 +46,14 @@ const {
   svgXLinkAttributes,
 } = parseData(htmlData, svgData, mathData, { booleanAttributeTokens, cssPropertyTypes, cssPropertyNames, idlTypes });
 
+const htmlElementFallbacks = buildHtmlElementFallbacks(elements, idlData.html ?? []);
+
 const declarationsContent = buildDeclarations({
   attributes,
   elements,
   globalAttributes,
   globalEvents,
+  htmlElementFallbacks,
   svgConditionalAttributes,
   svgGlobalAttributes,
   svgGlobalEvents,

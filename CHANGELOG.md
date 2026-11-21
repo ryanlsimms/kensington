@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 - Reactive input and textarea property bindings skip value property updates when value already matches.
 - ARIA attributes are treated as specific attributes rather than a namespace.
+- Tag-specific DOM return types and spec-derived HTML element type fallbacks.
 
 ### Fixed
 - Explicit boolean attribute tokens, including `aria-pressed="false"` and `translate="no"`.

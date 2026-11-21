@@ -120,7 +120,7 @@
     "test-esm": "node --test \"./tests/esm/esm-test.js\" \"./tests/esm/live-test.js\" \"./tests/esm/pending-updates-test.js\"",
     "test-cjs": "node --test \"./tests/cjs/cjs-test.js\"",
     "test-node-minimum": "node ./tests/node-minimum-smoke.mjs",
-    "test-ts": "tsc --noEmit -p tests/typescript/tsconfig.json && echo 'TypeScript types OK'",
+    "test-ts": "tsc --noEmit -p tests/typescript/tsconfig.json && node --test tests/typescript/element-fallbacks-test.js",
     "test-cli": "node --test \"./tests/html-to-kensington-test.js\"",
     "test-treeshake": "node --test \"./tests/treeshake/treeshake-test.js\" \"./tests/treeshake/signal-identity-test.js\"",
     "benchmark": "node tests/benchmark.js",

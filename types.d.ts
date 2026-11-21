@@ -4,9 +4,9 @@ import type * as csstype from 'csstype';
  * Returned by content element methods (div, p, span, …).
  * Call `.toString()` to get the HTML string, or `.toElement()` to create a live DOM node.
  */
-export class ContentTag {
+export class ContentTag<ElementType extends Element = Element> {
   toString(): string;
-  toElement(): Element;
+  toElement(): ElementType;
   mount(target: string | Element): void;
   /**
    * Returns the live DOM element produced by the most recent `.toElement()` call when that
@@ -14,7 +14,7 @@ export class ContentTag {
    * operations like focus or scroll after a keyboard event, or for reconciler-aware code
    * that needs to inspect the current node.
    */
-  getDomElement(): Element | null;
+  getDomElement(): ElementType | null;
   /**
    * Registers a signal-tracking effect owned by this tag. Starts on connection,
    * stops on normal removal, and pauses/resumes with own or inherited `persist: true`.
@@ -44,7 +44,7 @@ export class ContentTag {
  * Returned by void element methods (br, hr, input, img, …).
  * Void elements have no closing tag and accept no content argument.
  */
-export class VoidTag extends ContentTag {
+export class VoidTag<E extends Element = Element> extends ContentTag<E> {
   toString(): string;
 }
 
@@ -71,47 +71,47 @@ export class CommentTag {
   getDomElement(): Comment | null;
 }
 
-export class BodyTag extends ContentTag { private readonly _k: 'body' }
-export class ButtonTag extends ContentTag { private readonly _k: 'button' }
-export class CaptionTag extends ContentTag { private readonly _k: 'caption' }
-export class ColTag extends VoidTag { private readonly _k: 'col' }
-export class ColgroupTag extends ContentTag { private readonly _k: 'colgroup' }
-export class DdTag extends ContentTag { private readonly _k: 'dd' }
-export class DivTag extends ContentTag { private readonly _k: 'div' }
-export class DlTag extends ContentTag { private readonly _k: 'dl' }
-export class DtTag extends ContentTag { private readonly _k: 'dt' }
-export class H1Tag extends ContentTag { private readonly _k: 'h1' }
-export class H2Tag extends ContentTag { private readonly _k: 'h2' }
-export class H3Tag extends ContentTag { private readonly _k: 'h3' }
-export class H4Tag extends ContentTag { private readonly _k: 'h4' }
-export class H5Tag extends ContentTag { private readonly _k: 'h5' }
-export class H6Tag extends ContentTag { private readonly _k: 'h6' }
-export class HeadTag extends ContentTag { private readonly _k: 'head' }
-export class HgroupTag extends ContentTag { private readonly _k: 'hgroup' }
-export class HrTag extends VoidTag { private readonly _k: 'hr' }
-export class HtmlTag extends ContentTag { private readonly _k: 'html' }
-export class ImgTag extends VoidTag { private readonly _k: 'img' }
-export class LegendTag extends ContentTag { private readonly _k: 'legend' }
-export class LiTag extends ContentTag { private readonly _k: 'li' }
-export class MenuTag extends ContentTag { private readonly _k: 'menu' }
-export class NoscriptTag extends ContentTag { private readonly _k: 'noscript' }
-export class OlTag extends ContentTag { private readonly _k: 'ol' }
-export class OptgroupTag extends ContentTag { private readonly _k: 'optgroup' }
-export class OptionTag extends ContentTag { private readonly _k: 'option' }
-export class PTag extends ContentTag { private readonly _k: 'p' }
-export class PictureTag extends ContentTag { private readonly _k: 'picture' }
-export class ScriptTag extends ContentTag { private readonly _k: 'script' }
-export class SelectTag extends ContentTag { private readonly _k: 'select' }
-export class SourceTag extends VoidTag { private readonly _k: 'source' }
-export class TableTag extends ContentTag { private readonly _k: 'table' }
-export class TbodyTag extends ContentTag { private readonly _k: 'tbody' }
-export class TdTag extends ContentTag { private readonly _k: 'td' }
-export class TemplateTag extends ContentTag { private readonly _k: 'template' }
-export class TfootTag extends ContentTag { private readonly _k: 'tfoot' }
-export class ThTag extends ContentTag { private readonly _k: 'th' }
-export class TheadTag extends ContentTag { private readonly _k: 'thead' }
-export class TrTag extends ContentTag { private readonly _k: 'tr' }
-export class UlTag extends ContentTag { private readonly _k: 'ul' }
+export class BodyTag extends ContentTag<HtmlElementFor<'body'>> { private readonly _k: 'body' }
+export class ButtonTag extends ContentTag<HtmlElementFor<'button'>> { private readonly _k: 'button' }
+export class CaptionTag extends ContentTag<HtmlElementFor<'caption'>> { private readonly _k: 'caption' }
+export class ColTag extends VoidTag<HtmlElementFor<'col'>> { private readonly _k: 'col' }
+export class ColgroupTag extends ContentTag<HtmlElementFor<'colgroup'>> { private readonly _k: 'colgroup' }
+export class DdTag extends ContentTag<HtmlElementFor<'dd'>> { private readonly _k: 'dd' }
+export class DivTag extends ContentTag<HtmlElementFor<'div'>> { private readonly _k: 'div' }
+export class DlTag extends ContentTag<HtmlElementFor<'dl'>> { private readonly _k: 'dl' }
+export class DtTag extends ContentTag<HtmlElementFor<'dt'>> { private readonly _k: 'dt' }
+export class H1Tag extends ContentTag<HtmlElementFor<'h1'>> { private readonly _k: 'h1' }
+export class H2Tag extends ContentTag<HtmlElementFor<'h2'>> { private readonly _k: 'h2' }
+export class H3Tag extends ContentTag<HtmlElementFor<'h3'>> { private readonly _k: 'h3' }
+export class H4Tag extends ContentTag<HtmlElementFor<'h4'>> { private readonly _k: 'h4' }
+export class H5Tag extends ContentTag<HtmlElementFor<'h5'>> { private readonly _k: 'h5' }
+export class H6Tag extends ContentTag<HtmlElementFor<'h6'>> { private readonly _k: 'h6' }
+export class HeadTag extends ContentTag<HtmlElementFor<'head'>> { private readonly _k: 'head' }
+export class HgroupTag extends ContentTag<HtmlElementFor<'hgroup'>> { private readonly _k: 'hgroup' }
+export class HrTag extends VoidTag<HtmlElementFor<'hr'>> { private readonly _k: 'hr' }
+export class HtmlTag extends ContentTag<HtmlElementFor<'html'>> { private readonly _k: 'html' }
+export class ImgTag extends VoidTag<HtmlElementFor<'img'>> { private readonly _k: 'img' }
+export class LegendTag extends ContentTag<HtmlElementFor<'legend'>> { private readonly _k: 'legend' }
+export class LiTag extends ContentTag<HtmlElementFor<'li'>> { private readonly _k: 'li' }
+export class MenuTag extends ContentTag<HtmlElementFor<'menu'>> { private readonly _k: 'menu' }
+export class NoscriptTag extends ContentTag<HtmlElementFor<'noscript'>> { private readonly _k: 'noscript' }
+export class OlTag extends ContentTag<HtmlElementFor<'ol'>> { private readonly _k: 'ol' }
+export class OptgroupTag extends ContentTag<HtmlElementFor<'optgroup'>> { private readonly _k: 'optgroup' }
+export class OptionTag extends ContentTag<HtmlElementFor<'option'>> { private readonly _k: 'option' }
+export class PTag extends ContentTag<HtmlElementFor<'p'>> { private readonly _k: 'p' }
+export class PictureTag extends ContentTag<HtmlElementFor<'picture'>> { private readonly _k: 'picture' }
+export class ScriptTag extends ContentTag<HtmlElementFor<'script'> | SvgElementFor<'script'>> { private readonly _k: 'script' }
+export class SelectTag extends ContentTag<HtmlElementFor<'select'>> { private readonly _k: 'select' }
+export class SourceTag extends VoidTag<HtmlElementFor<'source'>> { private readonly _k: 'source' }
+export class TableTag extends ContentTag<HtmlElementFor<'table'>> { private readonly _k: 'table' }
+export class TbodyTag extends ContentTag<HtmlElementFor<'tbody'>> { private readonly _k: 'tbody' }
+export class TdTag extends ContentTag<HtmlElementFor<'td'>> { private readonly _k: 'td' }
+export class TemplateTag extends ContentTag<HtmlElementFor<'template'>> { private readonly _k: 'template' }
+export class TfootTag extends ContentTag<HtmlElementFor<'tfoot'>> { private readonly _k: 'tfoot' }
+export class ThTag extends ContentTag<HtmlElementFor<'th'>> { private readonly _k: 'th' }
+export class TheadTag extends ContentTag<HtmlElementFor<'thead'>> { private readonly _k: 'thead' }
+export class TrTag extends ContentTag<HtmlElementFor<'tr'>> { private readonly _k: 'tr' }
+export class UlTag extends ContentTag<HtmlElementFor<'ul'>> { private readonly _k: 'ul' }
 
 /**
  * Key used to scope a `signal()`, `computed()`, or `.transform()` call to its surrounding
@@ -201,16 +201,24 @@ type ReactiveStyleProperties = {
   [key: `--${string}`]: Reactive<string | number>;
 };
 
+/** Spec-derived instance members for HTML tags missing from the build's DOM map. */
+type HtmlElementFallbacks = {};
+type HtmlElementFor<Tag extends string> =
+  Tag extends keyof HTMLElementTagNameMap ? HTMLElementTagNameMap[Tag] :
+  Tag extends keyof HtmlElementFallbacks ? HtmlElementFallbacks[Tag] : HTMLElement;
+type SvgElementFor<Tag extends string> =
+  Tag extends keyof SVGElementTagNameMap ? SVGElementTagNameMap[Tag] : SVGElement;
+
 type ElementInterface<Tag extends string> =
   Tag extends keyof HTMLElementTagNameMap ? HTMLElementTagNameMap[Tag] :
   Tag extends keyof SVGElementTagNameMap ? SVGElementTagNameMap[Tag] :
-  HTMLElement;
+  HtmlElementFor<Tag>;
 type ElementProps<ElementType> = {
   [K in keyof ElementType]?: ElementType[K] | ReadonlySignal<ElementType[K]>
 } & { [key: string]: unknown };
 type PropFor<Tag extends string> = ElementProps<ElementInterface<Tag>>;
 type ContextualPropFor<Tag extends string> =
-  | (Tag extends keyof HTMLElementTagNameMap ? ElementProps<HTMLElementTagNameMap[Tag]> : never)
+  | (Tag extends keyof HTMLElementTagNameMap | keyof HtmlElementFallbacks ? ElementProps<HtmlElementFor<Tag>> : never)
   | (Tag extends keyof SVGElementTagNameMap ? ElementProps<SVGElementTagNameMap[Tag]> : never);
 
 /**
@@ -266,79 +274,96 @@ export type GlobalAttributes = {
   writingsuggestions?: Reactive<"true" | "false" | boolean | null | undefined>;
 }
 
-export type GlobalEvents = {
-  onauxclick?: string | ((event: MouseEvent) => void);
-  onbeforeinput?: string | ((event: InputEvent) => void);
-  onbeforematch?: string | ((event: Event) => void);
-  onbeforetoggle?: string | ((event: Event) => void);
-  onblur?: string | ((event: FocusEvent) => void);
-  oncancel?: string | ((event: Event) => void);
-  oncanplay?: string | ((event: Event) => void);
-  oncanplaythrough?: string | ((event: Event) => void);
-  onchange?: string | ((event: Event) => void);
-  onclick?: string | ((event: MouseEvent) => void);
-  onclose?: string | ((event: Event) => void);
-  oncommand?: string | ((event: Event) => void);
-  oncontextlost?: string | ((event: Event) => void);
-  oncontextmenu?: string | ((event: MouseEvent) => void);
-  oncontextrestored?: string | ((event: Event) => void);
-  oncopy?: string | ((event: ClipboardEvent) => void);
-  oncuechange?: string | ((event: Event) => void);
-  oncut?: string | ((event: ClipboardEvent) => void);
-  ondblclick?: string | ((event: MouseEvent) => void);
-  ondrag?: string | ((event: DragEvent) => void);
-  ondragend?: string | ((event: DragEvent) => void);
-  ondragenter?: string | ((event: DragEvent) => void);
-  ondragleave?: string | ((event: DragEvent) => void);
-  ondragover?: string | ((event: DragEvent) => void);
-  ondragstart?: string | ((event: DragEvent) => void);
-  ondrop?: string | ((event: DragEvent) => void);
-  ondurationchange?: string | ((event: Event) => void);
-  onemptied?: string | ((event: Event) => void);
-  onended?: string | ((event: Event) => void);
-  onerror?: string | ((event: ErrorEvent) => void);
-  onfocus?: string | ((event: FocusEvent) => void);
-  onformdata?: string | ((event: FormDataEvent) => void);
-  oninput?: string | ((event: InputEvent) => void);
-  oninvalid?: string | ((event: Event) => void);
-  onkeydown?: string | ((event: KeyboardEvent) => void);
-  onkeypress?: string | ((event: KeyboardEvent) => void);
-  onkeyup?: string | ((event: KeyboardEvent) => void);
-  onload?: string | ((event: Event) => void);
-  onloadeddata?: string | ((event: Event) => void);
-  onloadedmetadata?: string | ((event: Event) => void);
-  onloadstart?: string | ((event: Event) => void);
-  onmousedown?: string | ((event: MouseEvent) => void);
-  onmouseenter?: string | ((event: MouseEvent) => void);
-  onmouseleave?: string | ((event: MouseEvent) => void);
-  onmousemove?: string | ((event: MouseEvent) => void);
-  onmouseout?: string | ((event: MouseEvent) => void);
-  onmouseover?: string | ((event: MouseEvent) => void);
-  onmouseup?: string | ((event: MouseEvent) => void);
-  onpaste?: string | ((event: ClipboardEvent) => void);
-  onpause?: string | ((event: Event) => void);
-  onplay?: string | ((event: Event) => void);
-  onplaying?: string | ((event: Event) => void);
-  onprogress?: string | ((event: ProgressEvent) => void);
-  onratechange?: string | ((event: Event) => void);
-  onreset?: string | ((event: Event) => void);
-  onresize?: string | ((event: Event) => void);
-  onscroll?: string | ((event: Event) => void);
-  onscrollend?: string | ((event: Event) => void);
-  onsecuritypolicyviolation?: string | ((event: SecurityPolicyViolationEvent) => void);
-  onseeked?: string | ((event: Event) => void);
-  onseeking?: string | ((event: Event) => void);
-  onselect?: string | ((event: Event) => void);
-  onslotchange?: string | ((event: Event) => void);
-  onstalled?: string | ((event: Event) => void);
-  onsubmit?: string | ((event: SubmitEvent) => void);
-  onsuspend?: string | ((event: Event) => void);
-  ontimeupdate?: string | ((event: Event) => void);
-  ontoggle?: string | ((event: Event) => void);
-  onvolumechange?: string | ((event: Event) => void);
-  onwaiting?: string | ((event: Event) => void);
-  onwheel?: string | ((event: WheelEvent) => void);
-  on?: Record<string, (event: any) => void>;
+/** The DOM supplies currentTarget during dispatch. Capture it before awaiting in a handler. */
+type BoundEvent<T extends Event, E extends EventTarget | null> = T & { readonly currentTarget: E };
+type EventMapFor<E extends EventTarget | null> =
+  E extends SVGElement ? SVGElementEventMap :
+  E extends MathMLElement ? MathMLElementEventMap :
+  HTMLElementEventMap;
+type LegacyEventHandlers = Record<string, (event: any) => void>;
+// Form updates and resource or media notifications can dispatch plain DOM events.
+type EventHandlers<E extends EventTarget | null> = {
+  [K in keyof EventMapFor<E>]?: (event: BoundEvent<
+    K extends 'abort' | 'error' | 'input' | 'progress' | 'resize' ? Event : EventMapFor<E>[K] & Event, E
+  >) => void;
+} & LegacyEventHandlers;
+
+// A custom event can use a standard name. Try this overload after the inferred DOM handlers.
+type WithLegacyOn<Attributes> = Omit<Attributes, 'on'> & { on?: LegacyEventHandlers };
+
+export type GlobalEvents<E extends EventTarget | null = EventTarget | null> = {
+  onauxclick?: string | ((event: BoundEvent<MouseEvent, E>) => void);
+  onbeforeinput?: string | ((event: BoundEvent<InputEvent, E>) => void);
+  onbeforematch?: string | ((event: BoundEvent<Event, E>) => void);
+  onbeforetoggle?: string | ((event: BoundEvent<Event, E>) => void);
+  onblur?: string | ((event: BoundEvent<FocusEvent, E>) => void);
+  oncancel?: string | ((event: BoundEvent<Event, E>) => void);
+  oncanplay?: string | ((event: BoundEvent<Event, E>) => void);
+  oncanplaythrough?: string | ((event: BoundEvent<Event, E>) => void);
+  onchange?: string | ((event: BoundEvent<Event, E>) => void);
+  onclick?: string | ((event: BoundEvent<MouseEvent, E>) => void);
+  onclose?: string | ((event: BoundEvent<Event, E>) => void);
+  oncommand?: string | ((event: BoundEvent<Event, E>) => void);
+  oncontextlost?: string | ((event: BoundEvent<Event, E>) => void);
+  oncontextmenu?: string | ((event: BoundEvent<MouseEvent, E>) => void);
+  oncontextrestored?: string | ((event: BoundEvent<Event, E>) => void);
+  oncopy?: string | ((event: BoundEvent<ClipboardEvent, E>) => void);
+  oncuechange?: string | ((event: BoundEvent<Event, E>) => void);
+  oncut?: string | ((event: BoundEvent<ClipboardEvent, E>) => void);
+  ondblclick?: string | ((event: BoundEvent<MouseEvent, E>) => void);
+  ondrag?: string | ((event: BoundEvent<DragEvent, E>) => void);
+  ondragend?: string | ((event: BoundEvent<DragEvent, E>) => void);
+  ondragenter?: string | ((event: BoundEvent<DragEvent, E>) => void);
+  ondragleave?: string | ((event: BoundEvent<DragEvent, E>) => void);
+  ondragover?: string | ((event: BoundEvent<DragEvent, E>) => void);
+  ondragstart?: string | ((event: BoundEvent<DragEvent, E>) => void);
+  ondrop?: string | ((event: BoundEvent<DragEvent, E>) => void);
+  ondurationchange?: string | ((event: BoundEvent<Event, E>) => void);
+  onemptied?: string | ((event: BoundEvent<Event, E>) => void);
+  onended?: string | ((event: BoundEvent<Event, E>) => void);
+  onerror?: string | ((event: BoundEvent<Event, E>) => void);
+  onfocus?: string | ((event: BoundEvent<FocusEvent, E>) => void);
+  onformdata?: string | ((event: BoundEvent<FormDataEvent, E>) => void);
+  oninput?: string | ((event: BoundEvent<Event, E>) => void);
+  oninvalid?: string | ((event: BoundEvent<Event, E>) => void);
+  onkeydown?: string | ((event: BoundEvent<KeyboardEvent, E>) => void);
+  onkeypress?: string | ((event: BoundEvent<KeyboardEvent, E>) => void);
+  onkeyup?: string | ((event: BoundEvent<KeyboardEvent, E>) => void);
+  onload?: string | ((event: BoundEvent<Event, E>) => void);
+  onloadeddata?: string | ((event: BoundEvent<Event, E>) => void);
+  onloadedmetadata?: string | ((event: BoundEvent<Event, E>) => void);
+  onloadstart?: string | ((event: BoundEvent<Event, E>) => void);
+  onmousedown?: string | ((event: BoundEvent<MouseEvent, E>) => void);
+  onmouseenter?: string | ((event: BoundEvent<MouseEvent, E>) => void);
+  onmouseleave?: string | ((event: BoundEvent<MouseEvent, E>) => void);
+  onmousemove?: string | ((event: BoundEvent<MouseEvent, E>) => void);
+  onmouseout?: string | ((event: BoundEvent<MouseEvent, E>) => void);
+  onmouseover?: string | ((event: BoundEvent<MouseEvent, E>) => void);
+  onmouseup?: string | ((event: BoundEvent<MouseEvent, E>) => void);
+  onpaste?: string | ((event: BoundEvent<ClipboardEvent, E>) => void);
+  onpause?: string | ((event: BoundEvent<Event, E>) => void);
+  onplay?: string | ((event: BoundEvent<Event, E>) => void);
+  onplaying?: string | ((event: BoundEvent<Event, E>) => void);
+  onprogress?: string | ((event: BoundEvent<Event, E>) => void);
+  onratechange?: string | ((event: BoundEvent<Event, E>) => void);
+  onreset?: string | ((event: BoundEvent<Event, E>) => void);
+  onresize?: string | ((event: BoundEvent<Event, E>) => void);
+  onscroll?: string | ((event: BoundEvent<Event, E>) => void);
+  onscrollend?: string | ((event: BoundEvent<Event, E>) => void);
+  onsecuritypolicyviolation?: string | ((event: BoundEvent<SecurityPolicyViolationEvent, E>) => void);
+  onseeked?: string | ((event: BoundEvent<Event, E>) => void);
+  onseeking?: string | ((event: BoundEvent<Event, E>) => void);
+  onselect?: string | ((event: BoundEvent<Event, E>) => void);
+  onslotchange?: string | ((event: BoundEvent<Event, E>) => void);
+  onstalled?: string | ((event: BoundEvent<Event, E>) => void);
+  onsubmit?: string | ((event: BoundEvent<SubmitEvent, E>) => void);
+  onsuspend?: string | ((event: BoundEvent<Event, E>) => void);
+  ontimeupdate?: string | ((event: BoundEvent<Event, E>) => void);
+  ontoggle?: string | ((event: BoundEvent<Event, E>) => void);
+  onvolumechange?: string | ((event: BoundEvent<Event, E>) => void);
+  onwaiting?: string | ((event: BoundEvent<Event, E>) => void);
+  onwheel?: string | ((event: BoundEvent<WheelEvent, E>) => void);
+  on?: Element extends E ? LegacyEventHandlers : EventHandlers<E>;
 }
 type SvgGlobalAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -353,9 +378,9 @@ type SvgGlobalAttributes = {
   'xml:space'?: Reactive<"default" | "preserve">;
 }
 
-type SvgGlobalEvents = {
-  'ondragexit'?: Reactive<string | ((event: Event) => void)>;
-  'onshow'?: Reactive<string | ((event: Event) => void)>;
+type SvgGlobalEvents<E extends Element> = {
+  'ondragexit'?: Reactive<string | ((event: BoundEvent<Event, E>) => void)>;
+  'onshow'?: Reactive<string | ((event: BoundEvent<Event, E>) => void)>;
 }
 
 type SvgConditionalAttributes = {
@@ -493,11 +518,11 @@ type AAttributes = {
   'scriptlevel'?: Reactive<string>;
   'target'?: Reactive<string>;
   'type'?: Reactive<string>;
-} & TagOptions<ContextualPropFor<'a'>> & SvgPresentationAttributes & SvgConditionalAttributes & SvgXLinkAttributes & NameSpaceAttributes & GlobalAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<ContextualPropFor<'a'>> & SvgPresentationAttributes & SvgConditionalAttributes & SvgXLinkAttributes & NameSpaceAttributes & GlobalAttributes & SvgGlobalAttributes & GlobalEvents<HtmlElementFor<'a'> | SvgElementFor<'a'> | MathMLElement> & SvgGlobalEvents<HtmlElementFor<'a'> | SvgElementFor<'a'> | MathMLElement>;
 
-type AbbrAttributes = TagOptions<PropFor<'abbr'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type AbbrAttributes = TagOptions<PropFor<'abbr'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'abbr'>>;
 
-type AddressAttributes = TagOptions<PropFor<'address'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type AddressAttributes = TagOptions<PropFor<'address'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'address'>>;
 
 type AnimateAttributes = {
   'accumulate'?: Reactive<"none" | "sum">;
@@ -523,7 +548,7 @@ type AnimateAttributes = {
   'restart'?: Reactive<"always" | "never" | "whenNotActive">;
   'to'?: Reactive<string>;
   'values'?: Reactive<string>;
-} & TagOptions<PropFor<'animate'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'animate'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'animate'>> & SvgGlobalEvents<SvgElementFor<'animate'>>;
 
 type AnimateMotionAttributes = {
   'accumulate'?: Reactive<"none" | "sum">;
@@ -552,7 +577,7 @@ type AnimateMotionAttributes = {
   'rotate'?: Reactive<string>;
   'to'?: Reactive<string>;
   'values'?: Reactive<string>;
-} & TagOptions<PropFor<'animateMotion'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'animateMotion'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'animateMotion'>> & SvgGlobalEvents<SvgElementFor<'animateMotion'>>;
 
 type AnimateTransformAttributes = {
   'accumulate'?: Reactive<"none" | "sum">;
@@ -579,7 +604,7 @@ type AnimateTransformAttributes = {
   'to'?: Reactive<string>;
   'type'?: Reactive<"translate" | "scale" | "rotate" | "skewX" | "skewY">;
   'values'?: Reactive<string>;
-} & TagOptions<PropFor<'animateTransform'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'animateTransform'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'animateTransform'>> & SvgGlobalEvents<SvgElementFor<'animateTransform'>>;
 
 type AnnotationAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -595,7 +620,7 @@ type AnnotationAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'annotation'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'annotation'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
 type AnnotationXmlAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -612,7 +637,7 @@ type AnnotationXmlAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'annotation-xml'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'annotation-xml'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
 type AreaAttributes = {
   'alt'?: Reactive<string>;
@@ -624,11 +649,11 @@ type AreaAttributes = {
   'rel'?: Reactive<string>;
   'shape'?: Reactive<"circle" | "CIRCLE" | "default" | "DEFAULT" | "poly" | "POLY" | "rect" | "RECT">;
   'target'?: Reactive<string>;
-} & TagOptions<PropFor<'area'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'area'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'area'>>;
 
-type ArticleAttributes = TagOptions<PropFor<'article'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type ArticleAttributes = TagOptions<PropFor<'article'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'article'>>;
 
-type AsideAttributes = TagOptions<PropFor<'aside'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type AsideAttributes = TagOptions<PropFor<'aside'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'aside'>>;
 
 type AudioAttributes = {
   'autoplay'?: Reactive<boolean>;
@@ -639,22 +664,22 @@ type AudioAttributes = {
   'muted'?: Reactive<boolean>;
   'preload'?: Reactive<"none" | "metadata" | "auto">;
   'src'?: Reactive<string>;
-} & TagOptions<PropFor<'audio'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'audio'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'audio'>>;
 
-type BAttributes = TagOptions<PropFor<'b'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type BAttributes = TagOptions<PropFor<'b'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'b'>>;
 
 type BaseAttributes = {
   'href'?: Reactive<string>;
   'target'?: Reactive<string>;
-} & TagOptions<PropFor<'base'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'base'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'base'>>;
 
-type BdiAttributes = TagOptions<PropFor<'bdi'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type BdiAttributes = TagOptions<PropFor<'bdi'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'bdi'>>;
 
-type BdoAttributes = TagOptions<PropFor<'bdo'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type BdoAttributes = TagOptions<PropFor<'bdo'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'bdo'>>;
 
 type BlockquoteAttributes = {
   'cite'?: Reactive<string>;
-} & TagOptions<PropFor<'blockquote'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'blockquote'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'blockquote'>>;
 
 type BodyAttributes = {
   'onafterprint'?: Reactive<string | ((event: Event) => void)>;
@@ -675,9 +700,9 @@ type BodyAttributes = {
   'onstorage'?: Reactive<string | ((event: Event) => void)>;
   'onunhandledrejection'?: Reactive<string | ((event: Event) => void)>;
   'onunload'?: Reactive<string | ((event: Event) => void)>;
-} & TagOptions<PropFor<'body'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'body'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'body'>>;
 
-type BrAttributes = TagOptions<PropFor<'br'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type BrAttributes = TagOptions<PropFor<'br'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'br'>>;
 
 type ButtonAttributes = {
   'command'?: Reactive<string>;
@@ -694,72 +719,72 @@ type ButtonAttributes = {
   'popovertargetaction'?: Reactive<"toggle" | "show" | "hide">;
   'type'?: Reactive<"submit" | "SUBMIT" | "reset" | "RESET" | "button" | "BUTTON">;
   'value'?: Reactive<number | string>;
-} & TagOptions<PropFor<'button'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'button'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'button'>>;
 
 type CanvasAttributes = {
   'height'?: Reactive<number | `${number}`>;
   'width'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'canvas'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'canvas'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'canvas'>>;
 
-type CaptionAttributes = TagOptions<PropFor<'caption'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type CaptionAttributes = TagOptions<PropFor<'caption'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'caption'>>;
 
 type CircleAttributes = {
   'cx'?: Reactive<number | string>;
   'cy'?: Reactive<number | string>;
   'pathLength'?: Reactive<number | `${number}`>;
   'r'?: Reactive<number | string>;
-} & TagOptions<PropFor<'circle'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'circle'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'circle'>> & SvgGlobalEvents<SvgElementFor<'circle'>>;
 
-type CiteAttributes = TagOptions<PropFor<'cite'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type CiteAttributes = TagOptions<PropFor<'cite'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'cite'>>;
 
 type ClipPathAttributes = {
   'externalResourcesRequired'?: Reactive<"true" | "false">;
   'requiredFeatures'?: Reactive<string>;
-} & TagOptions<PropFor<'clipPath'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'clipPath'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'clipPath'>> & SvgGlobalEvents<SvgElementFor<'clipPath'>>;
 
-type CodeAttributes = TagOptions<PropFor<'code'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type CodeAttributes = TagOptions<PropFor<'code'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'code'>>;
 
 type ColAttributes = {
   'span'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'col'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'col'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'col'>>;
 
 type ColgroupAttributes = {
   'span'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'colgroup'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'colgroup'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'colgroup'>>;
 
 type DataAttributes = {
   'value'?: Reactive<number | string>;
-} & TagOptions<PropFor<'data'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'data'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'data'>>;
 
-type DatalistAttributes = TagOptions<PropFor<'datalist'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type DatalistAttributes = TagOptions<PropFor<'datalist'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'datalist'>>;
 
-type DdAttributes = TagOptions<PropFor<'dd'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type DdAttributes = TagOptions<PropFor<'dd'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'dd'>>;
 
-type DefsAttributes = TagOptions<PropFor<'defs'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type DefsAttributes = TagOptions<PropFor<'defs'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'defs'>> & SvgGlobalEvents<SvgElementFor<'defs'>>;
 
 type DelAttributes = {
   'cite'?: Reactive<string>;
   'datetime'?: Reactive<string>;
-} & TagOptions<PropFor<'del'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'del'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'del'>>;
 
-type DescAttributes = TagOptions<PropFor<'desc'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type DescAttributes = TagOptions<PropFor<'desc'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'desc'>> & SvgGlobalEvents<SvgElementFor<'desc'>>;
 
 type DetailsAttributes = {
   'name'?: Reactive<string>;
   'open'?: Reactive<boolean>;
-} & TagOptions<PropFor<'details'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'details'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'details'>>;
 
-type DfnAttributes = TagOptions<PropFor<'dfn'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type DfnAttributes = TagOptions<PropFor<'dfn'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'dfn'>>;
 
 type DialogAttributes = {
   'open'?: Reactive<boolean>;
-} & TagOptions<PropFor<'dialog'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'dialog'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'dialog'>>;
 
-type DivAttributes = TagOptions<PropFor<'div'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type DivAttributes = TagOptions<PropFor<'div'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'div'>>;
 
-type DlAttributes = TagOptions<PropFor<'dl'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type DlAttributes = TagOptions<PropFor<'dl'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'dl'>>;
 
-type DtAttributes = TagOptions<PropFor<'dt'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type DtAttributes = TagOptions<PropFor<'dt'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'dt'>>;
 
 type EllipseAttributes = {
   'cx'?: Reactive<number | string>;
@@ -767,91 +792,91 @@ type EllipseAttributes = {
   'pathLength'?: Reactive<number | `${number}`>;
   'rx'?: Reactive<number | string>;
   'ry'?: Reactive<number | string>;
-} & TagOptions<PropFor<'ellipse'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'ellipse'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'ellipse'>> & SvgGlobalEvents<SvgElementFor<'ellipse'>>;
 
-type EmAttributes = TagOptions<PropFor<'em'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type EmAttributes = TagOptions<PropFor<'em'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'em'>>;
 
 type EmbedAttributes = {
   'height'?: Reactive<number | `${number}`>;
   'src'?: Reactive<string>;
   'type'?: Reactive<string>;
   'width'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'embed'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'embed'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'embed'>>;
 
-type FeBlendAttributes = TagOptions<PropFor<'feBlend'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeBlendAttributes = TagOptions<PropFor<'feBlend'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'feBlend'>> & SvgGlobalEvents<SvgElementFor<'feBlend'>>;
 
-type FeColorMatrixAttributes = TagOptions<PropFor<'feColorMatrix'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeColorMatrixAttributes = TagOptions<PropFor<'feColorMatrix'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'feColorMatrix'>> & SvgGlobalEvents<SvgElementFor<'feColorMatrix'>>;
 
-type FeComponentTransferAttributes = TagOptions<PropFor<'feComponentTransfer'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeComponentTransferAttributes = TagOptions<PropFor<'feComponentTransfer'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'feComponentTransfer'>> & SvgGlobalEvents<SvgElementFor<'feComponentTransfer'>>;
 
-type FeCompositeAttributes = TagOptions<PropFor<'feComposite'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeCompositeAttributes = TagOptions<PropFor<'feComposite'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'feComposite'>> & SvgGlobalEvents<SvgElementFor<'feComposite'>>;
 
-type FeConvolveMatrixAttributes = TagOptions<PropFor<'feConvolveMatrix'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeConvolveMatrixAttributes = TagOptions<PropFor<'feConvolveMatrix'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'feConvolveMatrix'>> & SvgGlobalEvents<SvgElementFor<'feConvolveMatrix'>>;
 
-type FeDiffuseLightingAttributes = TagOptions<PropFor<'feDiffuseLighting'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeDiffuseLightingAttributes = TagOptions<PropFor<'feDiffuseLighting'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'feDiffuseLighting'>> & SvgGlobalEvents<SvgElementFor<'feDiffuseLighting'>>;
 
-type FeDisplacementMapAttributes = TagOptions<PropFor<'feDisplacementMap'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeDisplacementMapAttributes = TagOptions<PropFor<'feDisplacementMap'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'feDisplacementMap'>> & SvgGlobalEvents<SvgElementFor<'feDisplacementMap'>>;
 
-type FeDistantLightAttributes = TagOptions<PropFor<'feDistantLight'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeDistantLightAttributes = TagOptions<PropFor<'feDistantLight'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'feDistantLight'>> & SvgGlobalEvents<SvgElementFor<'feDistantLight'>>;
 
-type FeDropShadowAttributes = TagOptions<PropFor<'feDropShadow'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeDropShadowAttributes = TagOptions<PropFor<'feDropShadow'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'feDropShadow'>> & SvgGlobalEvents<SvgElementFor<'feDropShadow'>>;
 
-type FeFloodAttributes = TagOptions<PropFor<'feFlood'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeFloodAttributes = TagOptions<PropFor<'feFlood'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'feFlood'>> & SvgGlobalEvents<SvgElementFor<'feFlood'>>;
 
-type FeFuncAAttributes = TagOptions<PropFor<'feFuncA'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeFuncAAttributes = TagOptions<PropFor<'feFuncA'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'feFuncA'>> & SvgGlobalEvents<SvgElementFor<'feFuncA'>>;
 
-type FeFuncBAttributes = TagOptions<PropFor<'feFuncB'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeFuncBAttributes = TagOptions<PropFor<'feFuncB'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'feFuncB'>> & SvgGlobalEvents<SvgElementFor<'feFuncB'>>;
 
-type FeFuncGAttributes = TagOptions<PropFor<'feFuncG'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeFuncGAttributes = TagOptions<PropFor<'feFuncG'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'feFuncG'>> & SvgGlobalEvents<SvgElementFor<'feFuncG'>>;
 
-type FeFuncRAttributes = TagOptions<PropFor<'feFuncR'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeFuncRAttributes = TagOptions<PropFor<'feFuncR'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'feFuncR'>> & SvgGlobalEvents<SvgElementFor<'feFuncR'>>;
 
-type FeGaussianBlurAttributes = TagOptions<PropFor<'feGaussianBlur'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeGaussianBlurAttributes = TagOptions<PropFor<'feGaussianBlur'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'feGaussianBlur'>> & SvgGlobalEvents<SvgElementFor<'feGaussianBlur'>>;
 
 type FeImageAttributes = {
   'externalResourcesRequired'?: Reactive<"true" | "false">;
-} & TagOptions<PropFor<'feImage'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'feImage'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'feImage'>> & SvgGlobalEvents<SvgElementFor<'feImage'>>;
 
-type FeMergeAttributes = TagOptions<PropFor<'feMerge'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeMergeAttributes = TagOptions<PropFor<'feMerge'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'feMerge'>> & SvgGlobalEvents<SvgElementFor<'feMerge'>>;
 
-type FeMergeNodeAttributes = TagOptions<PropFor<'feMergeNode'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeMergeNodeAttributes = TagOptions<PropFor<'feMergeNode'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'feMergeNode'>> & SvgGlobalEvents<SvgElementFor<'feMergeNode'>>;
 
-type FeMorphologyAttributes = TagOptions<PropFor<'feMorphology'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeMorphologyAttributes = TagOptions<PropFor<'feMorphology'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'feMorphology'>> & SvgGlobalEvents<SvgElementFor<'feMorphology'>>;
 
-type FeOffsetAttributes = TagOptions<PropFor<'feOffset'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeOffsetAttributes = TagOptions<PropFor<'feOffset'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'feOffset'>> & SvgGlobalEvents<SvgElementFor<'feOffset'>>;
 
-type FePointLightAttributes = TagOptions<PropFor<'fePointLight'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FePointLightAttributes = TagOptions<PropFor<'fePointLight'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'fePointLight'>> & SvgGlobalEvents<SvgElementFor<'fePointLight'>>;
 
-type FeSpecularLightingAttributes = TagOptions<PropFor<'feSpecularLighting'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeSpecularLightingAttributes = TagOptions<PropFor<'feSpecularLighting'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'feSpecularLighting'>> & SvgGlobalEvents<SvgElementFor<'feSpecularLighting'>>;
 
-type FeSpotLightAttributes = TagOptions<PropFor<'feSpotLight'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeSpotLightAttributes = TagOptions<PropFor<'feSpotLight'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'feSpotLight'>> & SvgGlobalEvents<SvgElementFor<'feSpotLight'>>;
 
-type FeTileAttributes = TagOptions<PropFor<'feTile'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeTileAttributes = TagOptions<PropFor<'feTile'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'feTile'>> & SvgGlobalEvents<SvgElementFor<'feTile'>>;
 
-type FeTurbulenceAttributes = TagOptions<PropFor<'feTurbulence'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type FeTurbulenceAttributes = TagOptions<PropFor<'feTurbulence'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'feTurbulence'>> & SvgGlobalEvents<SvgElementFor<'feTurbulence'>>;
 
 type FieldsetAttributes = {
   'disabled'?: Reactive<boolean>;
   'form'?: Reactive<string>;
   'name'?: Reactive<string>;
-} & TagOptions<PropFor<'fieldset'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'fieldset'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'fieldset'>>;
 
-type FigcaptionAttributes = TagOptions<PropFor<'figcaption'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type FigcaptionAttributes = TagOptions<PropFor<'figcaption'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'figcaption'>>;
 
-type FigureAttributes = TagOptions<PropFor<'figure'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type FigureAttributes = TagOptions<PropFor<'figure'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'figure'>>;
 
 type FilterAttributes = {
   'externalResourcesRequired'?: Reactive<"true" | "false">;
-} & TagOptions<PropFor<'filter'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'filter'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'filter'>> & SvgGlobalEvents<SvgElementFor<'filter'>>;
 
-type FooterAttributes = TagOptions<PropFor<'footer'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type FooterAttributes = TagOptions<PropFor<'footer'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'footer'>>;
 
 type ForeignObjectAttributes = {
   'height'?: Reactive<number | string>;
   'width'?: Reactive<number | string>;
   'x'?: Reactive<number | string>;
   'y'?: Reactive<number | string>;
-} & TagOptions<PropFor<'foreignObject'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'foreignObject'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'foreignObject'>> & SvgGlobalEvents<SvgElementFor<'foreignObject'>>;
 
 type FormAttributes = {
   'accept-charset'?: Reactive<string>;
@@ -864,33 +889,33 @@ type FormAttributes = {
   'novalidate'?: Reactive<boolean>;
   'rel'?: Reactive<string>;
   'target'?: Reactive<string>;
-} & TagOptions<PropFor<'form'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'form'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'form'>>;
 
-type GAttributes = TagOptions<PropFor<'g'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type GAttributes = TagOptions<PropFor<'g'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'g'>> & SvgGlobalEvents<SvgElementFor<'g'>>;
 
-type H1Attributes = TagOptions<PropFor<'h1'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type H1Attributes = TagOptions<PropFor<'h1'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'h1'>>;
 
-type H2Attributes = TagOptions<PropFor<'h2'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type H2Attributes = TagOptions<PropFor<'h2'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'h2'>>;
 
-type H3Attributes = TagOptions<PropFor<'h3'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type H3Attributes = TagOptions<PropFor<'h3'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'h3'>>;
 
-type H4Attributes = TagOptions<PropFor<'h4'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type H4Attributes = TagOptions<PropFor<'h4'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'h4'>>;
 
-type H5Attributes = TagOptions<PropFor<'h5'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type H5Attributes = TagOptions<PropFor<'h5'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'h5'>>;
 
-type H6Attributes = TagOptions<PropFor<'h6'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type H6Attributes = TagOptions<PropFor<'h6'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'h6'>>;
 
-type HeadAttributes = TagOptions<PropFor<'head'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type HeadAttributes = TagOptions<PropFor<'head'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'head'>>;
 
-type HeaderAttributes = TagOptions<PropFor<'header'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type HeaderAttributes = TagOptions<PropFor<'header'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'header'>>;
 
-type HgroupAttributes = TagOptions<PropFor<'hgroup'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type HgroupAttributes = TagOptions<PropFor<'hgroup'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'hgroup'>>;
 
-type HrAttributes = TagOptions<PropFor<'hr'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type HrAttributes = TagOptions<PropFor<'hr'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'hr'>>;
 
-type HtmlAttributes = TagOptions<PropFor<'html'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type HtmlAttributes = TagOptions<PropFor<'html'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'html'>>;
 
-type IAttributes = TagOptions<PropFor<'i'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type IAttributes = TagOptions<PropFor<'i'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'i'>>;
 
 type IframeAttributes = {
   'allow'?: Reactive<string>;
@@ -903,7 +928,7 @@ type IframeAttributes = {
   'src'?: Reactive<string>;
   'srcdoc'?: Reactive<string>;
   'width'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'iframe'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'iframe'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'iframe'>>;
 
 type ImageAttributes = {
   'crossorigin'?: Reactive<"anonymous" | "use-credentials">;
@@ -913,7 +938,7 @@ type ImageAttributes = {
   'width'?: Reactive<number | string>;
   'x'?: Reactive<number | string>;
   'y'?: Reactive<number | string>;
-} & TagOptions<PropFor<'image'>> & SvgPresentationAttributes & SvgConditionalAttributes & SvgXLinkAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'image'>> & SvgPresentationAttributes & SvgConditionalAttributes & SvgXLinkAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'image'>> & SvgGlobalEvents<SvgElementFor<'image'>>;
 
 type ImgAttributes = {
   'alt'?: Reactive<string>;
@@ -930,7 +955,7 @@ type ImgAttributes = {
   'srcset'?: Reactive<string>;
   'usemap'?: Reactive<string>;
   'width'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'img'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'img'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'img'>>;
 
 type InputAttributes = {
   'accept'?: Reactive<string>;
@@ -967,24 +992,24 @@ type InputAttributes = {
   'type'?: Reactive<"hidden" | "text" | "search" | "tel" | "url" | "email" | "password" | "date" | "month" | "week" | "time" | "datetime-local" | "number" | "range" | "color" | "checkbox" | "radio" | "file" | "submit" | "image" | "reset" | "button">;
   'value'?: Reactive<number | string>;
   'width'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'input'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'input'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'input'>>;
 
 type InsAttributes = {
   'cite'?: Reactive<string>;
   'datetime'?: Reactive<string>;
-} & TagOptions<PropFor<'ins'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'ins'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'ins'>>;
 
-type KbdAttributes = TagOptions<PropFor<'kbd'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type KbdAttributes = TagOptions<PropFor<'kbd'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'kbd'>>;
 
 type LabelAttributes = {
   'for'?: Reactive<string>;
-} & TagOptions<PropFor<'label'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'label'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'label'>>;
 
-type LegendAttributes = TagOptions<PropFor<'legend'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type LegendAttributes = TagOptions<PropFor<'legend'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'legend'>>;
 
 type LiAttributes = {
   'value'?: Reactive<number | string>;
-} & TagOptions<PropFor<'li'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'li'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'li'>>;
 
 type LineAttributes = {
   'pathLength'?: Reactive<number | `${number}`>;
@@ -992,7 +1017,7 @@ type LineAttributes = {
   'x2'?: Reactive<number | string>;
   'y1'?: Reactive<number | string>;
   'y2'?: Reactive<number | string>;
-} & TagOptions<PropFor<'line'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'line'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'line'>> & SvgGlobalEvents<SvgElementFor<'line'>>;
 
 type LinearGradientAttributes = {
   'gradientTransform'?: Reactive<string>;
@@ -1003,7 +1028,7 @@ type LinearGradientAttributes = {
   'x2'?: Reactive<number | string>;
   'y1'?: Reactive<number | string>;
   'y2'?: Reactive<number | string>;
-} & TagOptions<PropFor<'linearGradient'>> & SvgPresentationAttributes & SvgXLinkAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'linearGradient'>> & SvgPresentationAttributes & SvgXLinkAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'linearGradient'>> & SvgGlobalEvents<SvgElementFor<'linearGradient'>>;
 
 type LinkAttributes = {
   'as'?: Reactive<string>;
@@ -1022,7 +1047,7 @@ type LinkAttributes = {
   'rel'?: Reactive<string>;
   'sizes'?: Reactive<string>;
   'type'?: Reactive<string>;
-} & TagOptions<PropFor<'link'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'link'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'link'>>;
 
 type MactionAttributes = {
   'actiontype'?: Reactive<string>;
@@ -1040,15 +1065,15 @@ type MactionAttributes = {
   'selection'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'maction'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'maction'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
-type MainAttributes = TagOptions<PropFor<'main'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type MainAttributes = TagOptions<PropFor<'main'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'main'>>;
 
 type MapAttributes = {
   'name'?: Reactive<string>;
-} & TagOptions<PropFor<'map'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'map'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'map'>>;
 
-type MarkAttributes = TagOptions<PropFor<'mark'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type MarkAttributes = TagOptions<PropFor<'mark'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'mark'>>;
 
 type MarkerAttributes = {
   'markerHeight'?: Reactive<string>;
@@ -1059,11 +1084,11 @@ type MarkerAttributes = {
   'refX'?: Reactive<string>;
   'refY'?: Reactive<string>;
   'viewBox'?: Reactive<string>;
-} & TagOptions<PropFor<'marker'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'marker'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'marker'>> & SvgGlobalEvents<SvgElementFor<'marker'>>;
 
 type MaskAttributes = {
   'requiredFeatures'?: Reactive<string>;
-} & TagOptions<PropFor<'mask'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'mask'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'mask'>> & SvgGlobalEvents<SvgElementFor<'mask'>>;
 
 type MathAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1081,7 +1106,7 @@ type MathAttributes = {
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'xmlns'?: Reactive<string>;
-} & TagOptions<PropFor<'math'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'math'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
 type MencloseAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1098,9 +1123,9 @@ type MencloseAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'menclose'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'menclose'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
-type MenuAttributes = TagOptions<PropFor<'menu'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type MenuAttributes = TagOptions<PropFor<'menu'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'menu'>>;
 
 type MerrorAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1116,7 +1141,7 @@ type MerrorAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'merror'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'merror'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
 type MetaAttributes = {
   'charset'?: Reactive<"utf-8" | "UTF-8">;
@@ -1125,9 +1150,9 @@ type MetaAttributes = {
   'httpEquiv'?: Reactive<"content-type" | "CONTENT-TYPE" | "default-style" | "DEFAULT-STYLE" | "refresh" | "REFRESH" | "x-ua-compatible" | "X-UA-COMPATIBLE" | "content-security-policy" | "CONTENT-SECURITY-POLICY">;
   'media'?: Reactive<string>;
   'name'?: Reactive<string>;
-} & TagOptions<PropFor<'meta'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'meta'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'meta'>>;
 
-type MetadataAttributes = TagOptions<PropFor<'metadata'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type MetadataAttributes = TagOptions<PropFor<'metadata'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'metadata'>> & SvgGlobalEvents<SvgElementFor<'metadata'>>;
 
 type MeterAttributes = {
   'high'?: Reactive<number | string>;
@@ -1136,7 +1161,7 @@ type MeterAttributes = {
   'min'?: Reactive<number | string>;
   'optimum'?: Reactive<number | string>;
   'value'?: Reactive<number | string>;
-} & TagOptions<PropFor<'meter'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'meter'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'meter'>>;
 
 type MfencedAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1155,7 +1180,7 @@ type MfencedAttributes = {
   'separators'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'mfenced'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mfenced'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
 type MfracAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1174,7 +1199,7 @@ type MfracAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'mfrac'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mfrac'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
 type MiAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1190,7 +1215,7 @@ type MiAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'mi'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mi'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
 type MmultiscriptsAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1208,7 +1233,7 @@ type MmultiscriptsAttributes = {
   'subscriptshift'?: Reactive<string>;
   'superscriptshift'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'mmultiscripts'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mmultiscripts'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
 type MnAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1224,7 +1249,7 @@ type MnAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'mn'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mn'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
 type MoAttributes = {
   'accent'?: Reactive<string>;
@@ -1250,7 +1275,7 @@ type MoAttributes = {
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'symmetric'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'mo'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mo'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
 type MoverAttributes = {
   'accent'?: Reactive<string>;
@@ -1267,7 +1292,7 @@ type MoverAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'mover'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mover'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
 type MpaddedAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1288,11 +1313,11 @@ type MpaddedAttributes = {
   'tabindex'?: Reactive<number | `${number}`>;
   'voffset'?: Reactive<string>;
   'width'?: Reactive<number | string>;
-} & TagOptions<PropFor<'mpadded'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mpadded'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
 type MpathAttributes = {
   'href'?: Reactive<string>;
-} & TagOptions<PropFor<'mpath'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'mpath'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'mpath'>> & SvgGlobalEvents<SvgElementFor<'mpath'>>;
 
 type MphantomAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1308,7 +1333,7 @@ type MphantomAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'mphantom'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mphantom'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
 type MprescriptsAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1324,7 +1349,7 @@ type MprescriptsAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'mprescripts'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mprescripts'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
 type MrootAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1340,7 +1365,7 @@ type MrootAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'mroot'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mroot'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
 type MrowAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1356,7 +1381,7 @@ type MrowAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'mrow'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mrow'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
 type MsAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1374,7 +1399,7 @@ type MsAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'ms'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'ms'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
 type MspaceAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1392,7 +1417,7 @@ type MspaceAttributes = {
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'width'?: Reactive<number | string>;
-} & TagOptions<PropFor<'mspace'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mspace'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
 type MsqrtAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1408,7 +1433,7 @@ type MsqrtAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'msqrt'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'msqrt'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
 type MstyleAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1432,7 +1457,7 @@ type MstyleAttributes = {
   'scriptsizemultiplier'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'mstyle'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mstyle'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
 type MsubAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1449,7 +1474,7 @@ type MsubAttributes = {
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'subscriptshift'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'msub'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'msub'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
 type MsubsupAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1467,7 +1492,7 @@ type MsubsupAttributes = {
   'subscriptshift'?: Reactive<string>;
   'superscriptshift'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'msubsup'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'msubsup'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
 type MsupAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1484,7 +1509,7 @@ type MsupAttributes = {
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'superscriptshift'?: Reactive<string>;
   'tabindex'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'msup'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'msup'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
 type MtableAttributes = {
   'align'?: Reactive<string>;
@@ -1510,7 +1535,7 @@ type MtableAttributes = {
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
   'width'?: Reactive<number | string>;
-} & TagOptions<PropFor<'mtable'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mtable'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
 type MtdAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1530,7 +1555,7 @@ type MtdAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'mtd'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mtd'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
 type MtextAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1546,7 +1571,7 @@ type MtextAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'mtext'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mtext'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
 type MtrAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1564,7 +1589,7 @@ type MtrAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'mtr'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'mtr'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
 type MunderAttributes = {
   'accentunder'?: Reactive<string>;
@@ -1581,7 +1606,7 @@ type MunderAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'munder'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'munder'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
 type MunderoverAttributes = {
   'accent'?: Reactive<string>;
@@ -1599,11 +1624,11 @@ type MunderoverAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'munderover'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'munderover'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
-type NavAttributes = TagOptions<PropFor<'nav'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type NavAttributes = TagOptions<PropFor<'nav'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'nav'>>;
 
-type NoscriptAttributes = TagOptions<PropFor<'noscript'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type NoscriptAttributes = TagOptions<PropFor<'noscript'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'noscript'>>;
 
 type ObjectAttributes = {
   'data'?: Reactive<string>;
@@ -1612,38 +1637,38 @@ type ObjectAttributes = {
   'name'?: Reactive<string>;
   'type'?: Reactive<string>;
   'width'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'object'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'object'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'object'>>;
 
 type OlAttributes = {
   'reversed'?: Reactive<boolean>;
   'start'?: Reactive<number | `${number}`>;
   'type'?: Reactive<"1" | "a" | "A" | "i" | "I">;
-} & TagOptions<PropFor<'ol'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'ol'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'ol'>>;
 
 type OptgroupAttributes = {
   'disabled'?: Reactive<boolean>;
   'label'?: Reactive<string>;
-} & TagOptions<PropFor<'optgroup'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'optgroup'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'optgroup'>>;
 
 type OptionAttributes = {
   'disabled'?: Reactive<boolean>;
   'label'?: Reactive<string>;
   'selected'?: Reactive<boolean>;
   'value'?: Reactive<number | string>;
-} & TagOptions<PropFor<'option'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'option'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'option'>>;
 
 type OutputAttributes = {
   'for'?: Reactive<string>;
   'form'?: Reactive<string>;
   'name'?: Reactive<string>;
-} & TagOptions<PropFor<'output'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'output'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'output'>>;
 
-type PAttributes = TagOptions<PropFor<'p'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type PAttributes = TagOptions<PropFor<'p'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'p'>>;
 
 type PathAttributes = {
   'd'?: Reactive<string>;
   'pathLength'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'path'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'path'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'path'>> & SvgGlobalEvents<SvgElementFor<'path'>>;
 
 type PatternAttributes = {
   'height'?: Reactive<number | string>;
@@ -1656,30 +1681,30 @@ type PatternAttributes = {
   'width'?: Reactive<number | string>;
   'x'?: Reactive<number | string>;
   'y'?: Reactive<number | string>;
-} & TagOptions<PropFor<'pattern'>> & SvgPresentationAttributes & SvgXLinkAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'pattern'>> & SvgPresentationAttributes & SvgXLinkAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'pattern'>> & SvgGlobalEvents<SvgElementFor<'pattern'>>;
 
-type PictureAttributes = TagOptions<PropFor<'picture'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type PictureAttributes = TagOptions<PropFor<'picture'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'picture'>>;
 
 type PolygonAttributes = {
   'pathLength'?: Reactive<number | `${number}`>;
   'points'?: Reactive<string>;
-} & TagOptions<PropFor<'polygon'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'polygon'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'polygon'>> & SvgGlobalEvents<SvgElementFor<'polygon'>>;
 
 type PolylineAttributes = {
   'pathLength'?: Reactive<number | `${number}`>;
   'points'?: Reactive<string>;
-} & TagOptions<PropFor<'polyline'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'polyline'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'polyline'>> & SvgGlobalEvents<SvgElementFor<'polyline'>>;
 
-type PreAttributes = TagOptions<PropFor<'pre'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type PreAttributes = TagOptions<PropFor<'pre'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'pre'>>;
 
 type ProgressAttributes = {
   'max'?: Reactive<number | string>;
   'value'?: Reactive<number | string>;
-} & TagOptions<PropFor<'progress'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'progress'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'progress'>>;
 
 type QAttributes = {
   'cite'?: Reactive<string>;
-} & TagOptions<PropFor<'q'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'q'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'q'>>;
 
 type RadialGradientAttributes = {
   'cx'?: Reactive<number | string>;
@@ -1692,7 +1717,7 @@ type RadialGradientAttributes = {
   'href'?: Reactive<string>;
   'r'?: Reactive<number | string>;
   'spreadMethod'?: Reactive<string>;
-} & TagOptions<PropFor<'radialGradient'>> & SvgPresentationAttributes & SvgXLinkAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'radialGradient'>> & SvgPresentationAttributes & SvgXLinkAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'radialGradient'>> & SvgGlobalEvents<SvgElementFor<'radialGradient'>>;
 
 type RectAttributes = {
   'height'?: Reactive<number | string>;
@@ -1702,17 +1727,17 @@ type RectAttributes = {
   'width'?: Reactive<number | string>;
   'x'?: Reactive<number | string>;
   'y'?: Reactive<number | string>;
-} & TagOptions<PropFor<'rect'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'rect'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'rect'>> & SvgGlobalEvents<SvgElementFor<'rect'>>;
 
-type RpAttributes = TagOptions<PropFor<'rp'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type RpAttributes = TagOptions<PropFor<'rp'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'rp'>>;
 
-type RtAttributes = TagOptions<PropFor<'rt'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type RtAttributes = TagOptions<PropFor<'rt'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'rt'>>;
 
-type RubyAttributes = TagOptions<PropFor<'ruby'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type RubyAttributes = TagOptions<PropFor<'ruby'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'ruby'>>;
 
-type SAttributes = TagOptions<PropFor<'s'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type SAttributes = TagOptions<PropFor<'s'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'s'>>;
 
-type SampAttributes = TagOptions<PropFor<'samp'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type SampAttributes = TagOptions<PropFor<'samp'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'samp'>>;
 
 type ScriptAttributes = {
   'async'?: Reactive<boolean>;
@@ -1727,11 +1752,11 @@ type ScriptAttributes = {
   'src'?: Reactive<string>;
   'type'?: Reactive<string>;
   'xml:space'?: Reactive<"preserve">;
-} & TagOptions<ContextualPropFor<'script'>> & SvgPresentationAttributes & SvgXLinkAttributes & NameSpaceAttributes & GlobalAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<ContextualPropFor<'script'>> & SvgPresentationAttributes & SvgXLinkAttributes & NameSpaceAttributes & GlobalAttributes & SvgGlobalAttributes & GlobalEvents<HtmlElementFor<'script'> | SvgElementFor<'script'>> & SvgGlobalEvents<HtmlElementFor<'script'> | SvgElementFor<'script'>>;
 
-type SearchAttributes = TagOptions<PropFor<'search'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type SearchAttributes = TagOptions<PropFor<'search'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'search'>>;
 
-type SectionAttributes = TagOptions<PropFor<'section'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type SectionAttributes = TagOptions<PropFor<'section'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'section'>>;
 
 type SelectAttributes = {
   'autocomplete'?: Reactive<string>;
@@ -1741,9 +1766,9 @@ type SelectAttributes = {
   'name'?: Reactive<string>;
   'required'?: Reactive<boolean>;
   'size'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'select'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'select'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'select'>>;
 
-type SelectedcontentAttributes = TagOptions<PropFor<'selectedcontent'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type SelectedcontentAttributes = TagOptions<PropFor<'selectedcontent'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'selectedcontent'>>;
 
 type SemanticsAttributes = {
   'autofocus'?: Reactive<boolean>;
@@ -1759,7 +1784,7 @@ type SemanticsAttributes = {
   'scriptlevel'?: Reactive<string>;
   'style'?: Reactive<string | (csstype.Properties<string | number> & csstype.PropertiesHyphen<string | number> & CustomCSSProperties)> | ReactiveStyleProperties;
   'tabindex'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'semantics'>> & NameSpaceAttributes & GlobalEvents;
+} & TagOptions<PropFor<'semantics'>> & NameSpaceAttributes & GlobalEvents<MathMLElement>;
 
 type SetAttributes = {
   'attributeName'?: Reactive<string>;
@@ -1777,13 +1802,13 @@ type SetAttributes = {
   'repeatDur'?: Reactive<string>;
   'restart'?: Reactive<"always" | "never" | "whenNotActive">;
   'to'?: Reactive<string>;
-} & TagOptions<PropFor<'set'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'set'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'set'>> & SvgGlobalEvents<SvgElementFor<'set'>>;
 
 type SlotAttributes = {
   'name'?: Reactive<string>;
-} & TagOptions<PropFor<'slot'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'slot'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'slot'>>;
 
-type SmallAttributes = TagOptions<PropFor<'small'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type SmallAttributes = TagOptions<PropFor<'small'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'small'>>;
 
 type SourceAttributes = {
   'height'?: Reactive<number | `${number}`>;
@@ -1793,27 +1818,27 @@ type SourceAttributes = {
   'srcset'?: Reactive<string>;
   'type'?: Reactive<string>;
   'width'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'source'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'source'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'source'>>;
 
-type SpanAttributes = TagOptions<PropFor<'span'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type SpanAttributes = TagOptions<PropFor<'span'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'span'>>;
 
 type StopAttributes = {
   'offset'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'stop'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'stop'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'stop'>> & SvgGlobalEvents<SvgElementFor<'stop'>>;
 
-type StrongAttributes = TagOptions<PropFor<'strong'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type StrongAttributes = TagOptions<PropFor<'strong'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'strong'>>;
 
 type StyleAttributes = {
   'blocking'?: Reactive<string>;
   'media'?: Reactive<string>;
   'type'?: Reactive<string>;
-} & TagOptions<ContextualPropFor<'style'>> & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<ContextualPropFor<'style'>> & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & SvgGlobalAttributes & GlobalEvents<HtmlElementFor<'style'> | SvgElementFor<'style'>> & SvgGlobalEvents<HtmlElementFor<'style'> | SvgElementFor<'style'>>;
 
-type SubAttributes = TagOptions<PropFor<'sub'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type SubAttributes = TagOptions<PropFor<'sub'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'sub'>>;
 
-type SummaryAttributes = TagOptions<PropFor<'summary'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type SummaryAttributes = TagOptions<PropFor<'summary'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'summary'>>;
 
-type SupAttributes = TagOptions<PropFor<'sup'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type SupAttributes = TagOptions<PropFor<'sup'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'sup'>>;
 
 type SvgAttributes = {
   'height'?: Reactive<number | string>;
@@ -1825,9 +1850,9 @@ type SvgAttributes = {
   'x'?: Reactive<number | string>;
   'xmlns'?: Reactive<string>;
   'y'?: Reactive<number | string>;
-} & TagOptions<PropFor<'svg'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'svg'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'svg'>> & SvgGlobalEvents<SvgElementFor<'svg'>>;
 
-type SwitchAttributes = TagOptions<PropFor<'switch'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type SwitchAttributes = TagOptions<PropFor<'switch'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'switch'>> & SvgGlobalEvents<SvgElementFor<'switch'>>;
 
 type SymbolAttributes = {
   'height'?: Reactive<number | string>;
@@ -1838,17 +1863,17 @@ type SymbolAttributes = {
   'width'?: Reactive<number | string>;
   'x'?: Reactive<number | string>;
   'y'?: Reactive<number | string>;
-} & TagOptions<PropFor<'symbol'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'symbol'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'symbol'>> & SvgGlobalEvents<SvgElementFor<'symbol'>>;
 
-type TableAttributes = TagOptions<PropFor<'table'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type TableAttributes = TagOptions<PropFor<'table'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'table'>>;
 
-type TbodyAttributes = TagOptions<PropFor<'tbody'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type TbodyAttributes = TagOptions<PropFor<'tbody'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'tbody'>>;
 
 type TdAttributes = {
   'colspan'?: Reactive<number | `${number}`>;
   'headers'?: Reactive<string>;
   'rowspan'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'td'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'td'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'td'>>;
 
 type TemplateAttributes = {
   'for'?: Reactive<string>;
@@ -1858,7 +1883,7 @@ type TemplateAttributes = {
   'shadowrootmode'?: Reactive<"open" | "closed">;
   'shadowrootserializable'?: Reactive<boolean>;
   'shadowrootslotassignment'?: Reactive<"named" | "manual">;
-} & TagOptions<PropFor<'template'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'template'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'template'>>;
 
 type TextAttributes = {
   'dx'?: Reactive<string>;
@@ -1868,7 +1893,7 @@ type TextAttributes = {
   'textLength'?: Reactive<string>;
   'x'?: Reactive<number | string>;
   'y'?: Reactive<number | string>;
-} & TagOptions<PropFor<'text'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'text'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'text'>> & SvgGlobalEvents<SvgElementFor<'text'>>;
 
 type TextareaAttributes = {
   'autocomplete'?: Reactive<string>;
@@ -1884,7 +1909,7 @@ type TextareaAttributes = {
   'required'?: Reactive<boolean>;
   'rows'?: Reactive<number | `${number}`>;
   'wrap'?: Reactive<"soft" | "hard">;
-} & TagOptions<PropFor<'textarea'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'textarea'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'textarea'>>;
 
 type TextPathAttributes = {
   'href'?: Reactive<string>;
@@ -1895,9 +1920,9 @@ type TextPathAttributes = {
   'spacing'?: Reactive<string>;
   'startOffset'?: Reactive<string>;
   'textLength'?: Reactive<string>;
-} & TagOptions<PropFor<'textPath'>> & SvgPresentationAttributes & SvgConditionalAttributes & SvgXLinkAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'textPath'>> & SvgPresentationAttributes & SvgConditionalAttributes & SvgXLinkAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'textPath'>> & SvgGlobalEvents<SvgElementFor<'textPath'>>;
 
-type TfootAttributes = TagOptions<PropFor<'tfoot'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type TfootAttributes = TagOptions<PropFor<'tfoot'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'tfoot'>>;
 
 type ThAttributes = {
   'abbr'?: Reactive<string>;
@@ -1905,17 +1930,17 @@ type ThAttributes = {
   'headers'?: Reactive<string>;
   'rowspan'?: Reactive<number | `${number}`>;
   'scope'?: Reactive<"row" | "ROW" | "col" | "COL" | "rowgroup" | "ROWGROUP" | "colgroup" | "COLGROUP">;
-} & TagOptions<PropFor<'th'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'th'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'th'>>;
 
-type TheadAttributes = TagOptions<PropFor<'thead'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type TheadAttributes = TagOptions<PropFor<'thead'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'thead'>>;
 
 type TimeAttributes = {
   'datetime'?: Reactive<string>;
-} & TagOptions<PropFor<'time'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'time'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'time'>>;
 
-type TitleAttributes = TagOptions<ContextualPropFor<'title'>> & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+type TitleAttributes = TagOptions<ContextualPropFor<'title'>> & SvgPresentationAttributes & NameSpaceAttributes & GlobalAttributes & SvgGlobalAttributes & GlobalEvents<HtmlElementFor<'title'> | SvgElementFor<'title'>> & SvgGlobalEvents<HtmlElementFor<'title'> | SvgElementFor<'title'>>;
 
-type TrAttributes = TagOptions<PropFor<'tr'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type TrAttributes = TagOptions<PropFor<'tr'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'tr'>>;
 
 type TrackAttributes = {
   'default'?: Reactive<boolean>;
@@ -1923,7 +1948,7 @@ type TrackAttributes = {
   'label'?: Reactive<string>;
   'src'?: Reactive<string>;
   'srclang'?: Reactive<string>;
-} & TagOptions<PropFor<'track'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'track'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'track'>>;
 
 type TspanAttributes = {
   'dx'?: Reactive<string>;
@@ -1933,11 +1958,11 @@ type TspanAttributes = {
   'textLength'?: Reactive<string>;
   'x'?: Reactive<number | string>;
   'y'?: Reactive<number | string>;
-} & TagOptions<PropFor<'tspan'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'tspan'>> & SvgPresentationAttributes & SvgConditionalAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'tspan'>> & SvgGlobalEvents<SvgElementFor<'tspan'>>;
 
-type UAttributes = TagOptions<PropFor<'u'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type UAttributes = TagOptions<PropFor<'u'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'u'>>;
 
-type UlAttributes = TagOptions<PropFor<'ul'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type UlAttributes = TagOptions<PropFor<'ul'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'ul'>>;
 
 type UseAttributes = {
   'height'?: Reactive<number | string>;
@@ -1945,9 +1970,9 @@ type UseAttributes = {
   'width'?: Reactive<number | string>;
   'x'?: Reactive<number | string>;
   'y'?: Reactive<number | string>;
-} & TagOptions<PropFor<'use'>> & SvgPresentationAttributes & SvgConditionalAttributes & SvgXLinkAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'use'>> & SvgPresentationAttributes & SvgConditionalAttributes & SvgXLinkAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'use'>> & SvgGlobalEvents<SvgElementFor<'use'>>;
 
-type VarAttributes = TagOptions<PropFor<'var'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type VarAttributes = TagOptions<PropFor<'var'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'var'>>;
 
 type VideoAttributes = {
   'autoplay'?: Reactive<boolean>;
@@ -1962,14 +1987,14 @@ type VideoAttributes = {
   'preload'?: Reactive<"none" | "metadata" | "auto">;
   'src'?: Reactive<string>;
   'width'?: Reactive<number | `${number}`>;
-} & TagOptions<PropFor<'video'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+} & TagOptions<PropFor<'video'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'video'>>;
 
 type ViewAttributes = {
   'preserveAspectRatio'?: Reactive<string>;
   'viewBox'?: Reactive<string>;
-} & TagOptions<PropFor<'view'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents & SvgGlobalEvents;
+} & TagOptions<PropFor<'view'>> & SvgPresentationAttributes & NameSpaceAttributes & SvgGlobalAttributes & GlobalEvents<SvgElementFor<'view'>> & SvgGlobalEvents<SvgElementFor<'view'>>;
 
-type WbrAttributes = TagOptions<PropFor<'wbr'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+type WbrAttributes = TagOptions<PropFor<'wbr'>> & NameSpaceAttributes & GlobalAttributes & GlobalEvents<HtmlElementFor<'wbr'>>;
 
 type ColgroupContentItem = ColTag | TemplateTag | LiteralTag | CommentTag | ReadonlySignal<any> | null | undefined | boolean;
 type ColgroupContent = ColgroupContentItem | readonly ColgroupContent[];
@@ -2013,7 +2038,8 @@ type UlContent = UlContentItem | readonly UlContent[];
 export type ContentItem = ContentTag | VoidTag | LiteralTag | CommentTag | ReadonlySignal<any> | string | number | boolean | null | undefined;
 export type Content = ContentItem | readonly Content[];
 
-export type UniversalAttributes = NameSpaceAttributes & GlobalAttributes & GlobalEvents;
+export type UniversalAttributes<E extends EventTarget | null = EventTarget | null> =
+  NameSpaceAttributes & GlobalAttributes & GlobalEvents<E>;
 
 /** Kensington options shared by built-in and custom element methods. */
 type TagOptions<P> = {
@@ -2024,6 +2050,8 @@ type TagOptions<P> = {
   /** Pause reactive bindings on removal and resume them on reconnection. Default false. */
   persist?: boolean;
 };
+
+type CustomTagAttributes<E extends Element> = UniversalAttributes<E> & TagOptions<PropFor<string>>;
 
 /**
  * The type of a custom element method created with `createCustomTag`.
@@ -2036,9 +2064,10 @@ type TagOptions<P> = {
  *     this.createCustomTag('my-card', { 'card-type': ['primary', 'secondary'] });
  * }
  */
-export interface ContentMethod<T = {}> {
-  (attributes: T & UniversalAttributes & TagOptions<PropFor<string>>, content?: Content): ContentTag;
-  (content?: Content): ContentTag;
+export interface ContentMethod<T = {}, E extends Element = Element> {
+  (attributes: T & CustomTagAttributes<E>, content?: Content): ContentTag<E>;
+  (attributes: T & WithLegacyOn<CustomTagAttributes<E>>, content?: Content): ContentTag<E>;
+  (content?: Content): ContentTag<E>;
 }
 
 type PrimitiveConstructor = StringConstructor | NumberConstructor | BooleanConstructor | FunctionConstructor;
@@ -2116,7 +2145,9 @@ export class Kensington {
   createCustomTag<const A extends Record<string, AttributeValue> = Record<never, AttributeValue>>(
     tagName: string,
     allowedAttributes?: A
-  ): ContentMethod<{ [K in keyof A as K | CamelCase<K & string> | KebabCase<K & string>]?: Reactive<ResolveAttrValue<A[K]>> }>
+  ): ContentMethod<{
+    [K in keyof A as K | CamelCase<K & string> | KebabCase<K & string>]?: Reactive<ResolveAttrValue<A[K]>>
+  }, HTMLElement>
 
   /**
    * Embeds a raw markup string verbatim into the output. Live DOM fragments are
@@ -2147,403 +2178,608 @@ export class Kensington {
    * @example
    * t.htmlWithDocType({ lang: 'en' }, t.body('hello')).toString();
    */
-  htmlWithDocType(attributes: HtmlAttributes, content?: HtmlContent): ContentTag;
-  htmlWithDocType(content?: HtmlContent): ContentTag;
+  htmlWithDocType(attributes: HtmlAttributes, content?: HtmlContent): ContentTag<HTMLHtmlElement>;
+  htmlWithDocType(attributes: WithLegacyOn<HtmlAttributes>, content?: HtmlContent): ContentTag<HTMLHtmlElement>;
+  htmlWithDocType(content?: HtmlContent): ContentTag<HTMLHtmlElement>;
 
-  a(attributes: AAttributes, content?: Content): ContentTag;
-  a(content?: Content): ContentTag;
-  abbr(attributes: AbbrAttributes, content?: Content): ContentTag;
-  abbr(content?: Content): ContentTag;
-  address(attributes: AddressAttributes, content?: Content): ContentTag;
-  address(content?: Content): ContentTag;
-  animate(attributes: AnimateAttributes, content?: Content): ContentTag;
-  animate(content?: Content): ContentTag;
-  animateMotion(attributes: AnimateMotionAttributes, content?: Content): ContentTag;
-  animateMotion(content?: Content): ContentTag;
-  animateTransform(attributes: AnimateTransformAttributes, content?: Content): ContentTag;
-  animateTransform(content?: Content): ContentTag;
-  annotation(attributes: AnnotationAttributes, content?: Content): ContentTag;
-  annotation(content?: Content): ContentTag;
-  annotationXml(attributes: AnnotationXmlAttributes, content?: Content): ContentTag;
-  annotationXml(content?: Content): ContentTag;
-  area(attributes?: AreaAttributes): VoidTag;
-  article(attributes: ArticleAttributes, content?: Content): ContentTag;
-  article(content?: Content): ContentTag;
-  aside(attributes: AsideAttributes, content?: Content): ContentTag;
-  aside(content?: Content): ContentTag;
-  audio(attributes: AudioAttributes, content?: Content): ContentTag;
-  audio(content?: Content): ContentTag;
-  b(attributes: BAttributes, content?: Content): ContentTag;
-  b(content?: Content): ContentTag;
-  base(attributes?: BaseAttributes): VoidTag;
-  bdi(attributes: BdiAttributes, content?: Content): ContentTag;
-  bdi(content?: Content): ContentTag;
-  bdo(attributes: BdoAttributes, content?: Content): ContentTag;
-  bdo(content?: Content): ContentTag;
-  blockquote(attributes: BlockquoteAttributes, content?: Content): ContentTag;
-  blockquote(content?: Content): ContentTag;
+  a(attributes: AAttributes, content?: Content): ContentTag<HtmlElementFor<'a'> | SvgElementFor<'a'> | MathMLElement>;
+  a(attributes: WithLegacyOn<AAttributes>, content?: Content): ContentTag<HtmlElementFor<'a'> | SvgElementFor<'a'> | MathMLElement>;
+  a(content?: Content): ContentTag<HtmlElementFor<'a'> | SvgElementFor<'a'> | MathMLElement>;
+  abbr(attributes: AbbrAttributes, content?: Content): ContentTag<HtmlElementFor<'abbr'>>;
+  abbr(attributes: WithLegacyOn<AbbrAttributes>, content?: Content): ContentTag<HtmlElementFor<'abbr'>>;
+  abbr(content?: Content): ContentTag<HtmlElementFor<'abbr'>>;
+  address(attributes: AddressAttributes, content?: Content): ContentTag<HtmlElementFor<'address'>>;
+  address(attributes: WithLegacyOn<AddressAttributes>, content?: Content): ContentTag<HtmlElementFor<'address'>>;
+  address(content?: Content): ContentTag<HtmlElementFor<'address'>>;
+  animate(attributes: AnimateAttributes, content?: Content): ContentTag<SvgElementFor<'animate'>>;
+  animate(attributes: WithLegacyOn<AnimateAttributes>, content?: Content): ContentTag<SvgElementFor<'animate'>>;
+  animate(content?: Content): ContentTag<SvgElementFor<'animate'>>;
+  animateMotion(attributes: AnimateMotionAttributes, content?: Content): ContentTag<SvgElementFor<'animateMotion'>>;
+  animateMotion(attributes: WithLegacyOn<AnimateMotionAttributes>, content?: Content): ContentTag<SvgElementFor<'animateMotion'>>;
+  animateMotion(content?: Content): ContentTag<SvgElementFor<'animateMotion'>>;
+  animateTransform(attributes: AnimateTransformAttributes, content?: Content): ContentTag<SvgElementFor<'animateTransform'>>;
+  animateTransform(attributes: WithLegacyOn<AnimateTransformAttributes>, content?: Content): ContentTag<SvgElementFor<'animateTransform'>>;
+  animateTransform(content?: Content): ContentTag<SvgElementFor<'animateTransform'>>;
+  annotation(attributes: AnnotationAttributes, content?: Content): ContentTag<MathMLElement>;
+  annotation(attributes: WithLegacyOn<AnnotationAttributes>, content?: Content): ContentTag<MathMLElement>;
+  annotation(content?: Content): ContentTag<MathMLElement>;
+  annotationXml(attributes: AnnotationXmlAttributes, content?: Content): ContentTag<MathMLElement>;
+  annotationXml(attributes: WithLegacyOn<AnnotationXmlAttributes>, content?: Content): ContentTag<MathMLElement>;
+  annotationXml(content?: Content): ContentTag<MathMLElement>;
+  area(attributes?: AreaAttributes): VoidTag<HtmlElementFor<'area'>>;
+  area(attributes?: WithLegacyOn<AreaAttributes>): VoidTag<HtmlElementFor<'area'>>;
+  article(attributes: ArticleAttributes, content?: Content): ContentTag<HtmlElementFor<'article'>>;
+  article(attributes: WithLegacyOn<ArticleAttributes>, content?: Content): ContentTag<HtmlElementFor<'article'>>;
+  article(content?: Content): ContentTag<HtmlElementFor<'article'>>;
+  aside(attributes: AsideAttributes, content?: Content): ContentTag<HtmlElementFor<'aside'>>;
+  aside(attributes: WithLegacyOn<AsideAttributes>, content?: Content): ContentTag<HtmlElementFor<'aside'>>;
+  aside(content?: Content): ContentTag<HtmlElementFor<'aside'>>;
+  audio(attributes: AudioAttributes, content?: Content): ContentTag<HtmlElementFor<'audio'>>;
+  audio(attributes: WithLegacyOn<AudioAttributes>, content?: Content): ContentTag<HtmlElementFor<'audio'>>;
+  audio(content?: Content): ContentTag<HtmlElementFor<'audio'>>;
+  b(attributes: BAttributes, content?: Content): ContentTag<HtmlElementFor<'b'>>;
+  b(attributes: WithLegacyOn<BAttributes>, content?: Content): ContentTag<HtmlElementFor<'b'>>;
+  b(content?: Content): ContentTag<HtmlElementFor<'b'>>;
+  base(attributes?: BaseAttributes): VoidTag<HtmlElementFor<'base'>>;
+  base(attributes?: WithLegacyOn<BaseAttributes>): VoidTag<HtmlElementFor<'base'>>;
+  bdi(attributes: BdiAttributes, content?: Content): ContentTag<HtmlElementFor<'bdi'>>;
+  bdi(attributes: WithLegacyOn<BdiAttributes>, content?: Content): ContentTag<HtmlElementFor<'bdi'>>;
+  bdi(content?: Content): ContentTag<HtmlElementFor<'bdi'>>;
+  bdo(attributes: BdoAttributes, content?: Content): ContentTag<HtmlElementFor<'bdo'>>;
+  bdo(attributes: WithLegacyOn<BdoAttributes>, content?: Content): ContentTag<HtmlElementFor<'bdo'>>;
+  bdo(content?: Content): ContentTag<HtmlElementFor<'bdo'>>;
+  blockquote(attributes: BlockquoteAttributes, content?: Content): ContentTag<HtmlElementFor<'blockquote'>>;
+  blockquote(attributes: WithLegacyOn<BlockquoteAttributes>, content?: Content): ContentTag<HtmlElementFor<'blockquote'>>;
+  blockquote(content?: Content): ContentTag<HtmlElementFor<'blockquote'>>;
   body(attributes: BodyAttributes, content?: Content): BodyTag;
+  body(attributes: WithLegacyOn<BodyAttributes>, content?: Content): BodyTag;
   body(content?: Content): BodyTag;
-  br(attributes?: BrAttributes): VoidTag;
+  br(attributes?: BrAttributes): VoidTag<HtmlElementFor<'br'>>;
+  br(attributes?: WithLegacyOn<BrAttributes>): VoidTag<HtmlElementFor<'br'>>;
   button(attributes: ButtonAttributes, content?: Content): ButtonTag;
+  button(attributes: WithLegacyOn<ButtonAttributes>, content?: Content): ButtonTag;
   button(content?: Content): ButtonTag;
-  canvas(attributes: CanvasAttributes, content?: Content): ContentTag;
-  canvas(content?: Content): ContentTag;
+  canvas(attributes: CanvasAttributes, content?: Content): ContentTag<HtmlElementFor<'canvas'>>;
+  canvas(attributes: WithLegacyOn<CanvasAttributes>, content?: Content): ContentTag<HtmlElementFor<'canvas'>>;
+  canvas(content?: Content): ContentTag<HtmlElementFor<'canvas'>>;
   caption(attributes: CaptionAttributes, content?: Content): CaptionTag;
+  caption(attributes: WithLegacyOn<CaptionAttributes>, content?: Content): CaptionTag;
   caption(content?: Content): CaptionTag;
-  circle(attributes: CircleAttributes, content?: Content): ContentTag;
-  circle(content?: Content): ContentTag;
-  cite(attributes: CiteAttributes, content?: Content): ContentTag;
-  cite(content?: Content): ContentTag;
-  clipPath(attributes: ClipPathAttributes, content?: Content): ContentTag;
-  clipPath(content?: Content): ContentTag;
-  code(attributes: CodeAttributes, content?: Content): ContentTag;
-  code(content?: Content): ContentTag;
+  circle(attributes: CircleAttributes, content?: Content): ContentTag<SvgElementFor<'circle'>>;
+  circle(attributes: WithLegacyOn<CircleAttributes>, content?: Content): ContentTag<SvgElementFor<'circle'>>;
+  circle(content?: Content): ContentTag<SvgElementFor<'circle'>>;
+  cite(attributes: CiteAttributes, content?: Content): ContentTag<HtmlElementFor<'cite'>>;
+  cite(attributes: WithLegacyOn<CiteAttributes>, content?: Content): ContentTag<HtmlElementFor<'cite'>>;
+  cite(content?: Content): ContentTag<HtmlElementFor<'cite'>>;
+  clipPath(attributes: ClipPathAttributes, content?: Content): ContentTag<SvgElementFor<'clipPath'>>;
+  clipPath(attributes: WithLegacyOn<ClipPathAttributes>, content?: Content): ContentTag<SvgElementFor<'clipPath'>>;
+  clipPath(content?: Content): ContentTag<SvgElementFor<'clipPath'>>;
+  code(attributes: CodeAttributes, content?: Content): ContentTag<HtmlElementFor<'code'>>;
+  code(attributes: WithLegacyOn<CodeAttributes>, content?: Content): ContentTag<HtmlElementFor<'code'>>;
+  code(content?: Content): ContentTag<HtmlElementFor<'code'>>;
   col(attributes?: ColAttributes): ColTag;
+  col(attributes?: WithLegacyOn<ColAttributes>): ColTag;
   colgroup(attributes: ColgroupAttributes, content?: ColgroupContent): ColgroupTag;
+  colgroup(attributes: WithLegacyOn<ColgroupAttributes>, content?: ColgroupContent): ColgroupTag;
   colgroup(content?: ColgroupContent): ColgroupTag;
-  data(attributes: DataAttributes, content?: Content): ContentTag;
-  data(content?: Content): ContentTag;
-  datalist(attributes: DatalistAttributes, content?: Content): ContentTag;
-  datalist(content?: Content): ContentTag;
+  data(attributes: DataAttributes, content?: Content): ContentTag<HtmlElementFor<'data'>>;
+  data(attributes: WithLegacyOn<DataAttributes>, content?: Content): ContentTag<HtmlElementFor<'data'>>;
+  data(content?: Content): ContentTag<HtmlElementFor<'data'>>;
+  datalist(attributes: DatalistAttributes, content?: Content): ContentTag<HtmlElementFor<'datalist'>>;
+  datalist(attributes: WithLegacyOn<DatalistAttributes>, content?: Content): ContentTag<HtmlElementFor<'datalist'>>;
+  datalist(content?: Content): ContentTag<HtmlElementFor<'datalist'>>;
   dd(attributes: DdAttributes, content?: Content): DdTag;
+  dd(attributes: WithLegacyOn<DdAttributes>, content?: Content): DdTag;
   dd(content?: Content): DdTag;
-  defs(attributes: DefsAttributes, content?: Content): ContentTag;
-  defs(content?: Content): ContentTag;
-  del(attributes: DelAttributes, content?: Content): ContentTag;
-  del(content?: Content): ContentTag;
-  desc(attributes: DescAttributes, content?: Content): ContentTag;
-  desc(content?: Content): ContentTag;
-  details(attributes: DetailsAttributes, content?: Content): ContentTag;
-  details(content?: Content): ContentTag;
-  dfn(attributes: DfnAttributes, content?: Content): ContentTag;
-  dfn(content?: Content): ContentTag;
-  dialog(attributes: DialogAttributes, content?: Content): ContentTag;
-  dialog(content?: Content): ContentTag;
+  defs(attributes: DefsAttributes, content?: Content): ContentTag<SvgElementFor<'defs'>>;
+  defs(attributes: WithLegacyOn<DefsAttributes>, content?: Content): ContentTag<SvgElementFor<'defs'>>;
+  defs(content?: Content): ContentTag<SvgElementFor<'defs'>>;
+  del(attributes: DelAttributes, content?: Content): ContentTag<HtmlElementFor<'del'>>;
+  del(attributes: WithLegacyOn<DelAttributes>, content?: Content): ContentTag<HtmlElementFor<'del'>>;
+  del(content?: Content): ContentTag<HtmlElementFor<'del'>>;
+  desc(attributes: DescAttributes, content?: Content): ContentTag<SvgElementFor<'desc'>>;
+  desc(attributes: WithLegacyOn<DescAttributes>, content?: Content): ContentTag<SvgElementFor<'desc'>>;
+  desc(content?: Content): ContentTag<SvgElementFor<'desc'>>;
+  details(attributes: DetailsAttributes, content?: Content): ContentTag<HtmlElementFor<'details'>>;
+  details(attributes: WithLegacyOn<DetailsAttributes>, content?: Content): ContentTag<HtmlElementFor<'details'>>;
+  details(content?: Content): ContentTag<HtmlElementFor<'details'>>;
+  dfn(attributes: DfnAttributes, content?: Content): ContentTag<HtmlElementFor<'dfn'>>;
+  dfn(attributes: WithLegacyOn<DfnAttributes>, content?: Content): ContentTag<HtmlElementFor<'dfn'>>;
+  dfn(content?: Content): ContentTag<HtmlElementFor<'dfn'>>;
+  dialog(attributes: DialogAttributes, content?: Content): ContentTag<HtmlElementFor<'dialog'>>;
+  dialog(attributes: WithLegacyOn<DialogAttributes>, content?: Content): ContentTag<HtmlElementFor<'dialog'>>;
+  dialog(content?: Content): ContentTag<HtmlElementFor<'dialog'>>;
   div(attributes: DivAttributes, content?: Content): DivTag;
+  div(attributes: WithLegacyOn<DivAttributes>, content?: Content): DivTag;
   div(content?: Content): DivTag;
   dl(attributes: DlAttributes, content?: DlContent): DlTag;
+  dl(attributes: WithLegacyOn<DlAttributes>, content?: DlContent): DlTag;
   dl(content?: DlContent): DlTag;
   dt(attributes: DtAttributes, content?: Content): DtTag;
+  dt(attributes: WithLegacyOn<DtAttributes>, content?: Content): DtTag;
   dt(content?: Content): DtTag;
-  ellipse(attributes: EllipseAttributes, content?: Content): ContentTag;
-  ellipse(content?: Content): ContentTag;
-  em(attributes: EmAttributes, content?: Content): ContentTag;
-  em(content?: Content): ContentTag;
-  embed(attributes?: EmbedAttributes): VoidTag;
-  feBlend(attributes: FeBlendAttributes, content?: Content): ContentTag;
-  feBlend(content?: Content): ContentTag;
-  feColorMatrix(attributes: FeColorMatrixAttributes, content?: Content): ContentTag;
-  feColorMatrix(content?: Content): ContentTag;
-  feComponentTransfer(attributes: FeComponentTransferAttributes, content?: Content): ContentTag;
-  feComponentTransfer(content?: Content): ContentTag;
-  feComposite(attributes: FeCompositeAttributes, content?: Content): ContentTag;
-  feComposite(content?: Content): ContentTag;
-  feConvolveMatrix(attributes: FeConvolveMatrixAttributes, content?: Content): ContentTag;
-  feConvolveMatrix(content?: Content): ContentTag;
-  feDiffuseLighting(attributes: FeDiffuseLightingAttributes, content?: Content): ContentTag;
-  feDiffuseLighting(content?: Content): ContentTag;
-  feDisplacementMap(attributes: FeDisplacementMapAttributes, content?: Content): ContentTag;
-  feDisplacementMap(content?: Content): ContentTag;
-  feDistantLight(attributes: FeDistantLightAttributes, content?: Content): ContentTag;
-  feDistantLight(content?: Content): ContentTag;
-  feDropShadow(attributes: FeDropShadowAttributes, content?: Content): ContentTag;
-  feDropShadow(content?: Content): ContentTag;
-  feFlood(attributes: FeFloodAttributes, content?: Content): ContentTag;
-  feFlood(content?: Content): ContentTag;
-  feFuncA(attributes: FeFuncAAttributes, content?: Content): ContentTag;
-  feFuncA(content?: Content): ContentTag;
-  feFuncB(attributes: FeFuncBAttributes, content?: Content): ContentTag;
-  feFuncB(content?: Content): ContentTag;
-  feFuncG(attributes: FeFuncGAttributes, content?: Content): ContentTag;
-  feFuncG(content?: Content): ContentTag;
-  feFuncR(attributes: FeFuncRAttributes, content?: Content): ContentTag;
-  feFuncR(content?: Content): ContentTag;
-  feGaussianBlur(attributes: FeGaussianBlurAttributes, content?: Content): ContentTag;
-  feGaussianBlur(content?: Content): ContentTag;
-  feImage(attributes: FeImageAttributes, content?: Content): ContentTag;
-  feImage(content?: Content): ContentTag;
-  feMerge(attributes: FeMergeAttributes, content?: Content): ContentTag;
-  feMerge(content?: Content): ContentTag;
-  feMergeNode(attributes: FeMergeNodeAttributes, content?: Content): ContentTag;
-  feMergeNode(content?: Content): ContentTag;
-  feMorphology(attributes: FeMorphologyAttributes, content?: Content): ContentTag;
-  feMorphology(content?: Content): ContentTag;
-  feOffset(attributes: FeOffsetAttributes, content?: Content): ContentTag;
-  feOffset(content?: Content): ContentTag;
-  fePointLight(attributes: FePointLightAttributes, content?: Content): ContentTag;
-  fePointLight(content?: Content): ContentTag;
-  feSpecularLighting(attributes: FeSpecularLightingAttributes, content?: Content): ContentTag;
-  feSpecularLighting(content?: Content): ContentTag;
-  feSpotLight(attributes: FeSpotLightAttributes, content?: Content): ContentTag;
-  feSpotLight(content?: Content): ContentTag;
-  feTile(attributes: FeTileAttributes, content?: Content): ContentTag;
-  feTile(content?: Content): ContentTag;
-  feTurbulence(attributes: FeTurbulenceAttributes, content?: Content): ContentTag;
-  feTurbulence(content?: Content): ContentTag;
-  fieldset(attributes: FieldsetAttributes, content?: Content): ContentTag;
-  fieldset(content?: Content): ContentTag;
-  figcaption(attributes: FigcaptionAttributes, content?: Content): ContentTag;
-  figcaption(content?: Content): ContentTag;
-  figure(attributes: FigureAttributes, content?: Content): ContentTag;
-  figure(content?: Content): ContentTag;
-  filter(attributes: FilterAttributes, content?: Content): ContentTag;
-  filter(content?: Content): ContentTag;
-  footer(attributes: FooterAttributes, content?: Content): ContentTag;
-  footer(content?: Content): ContentTag;
-  foreignObject(attributes: ForeignObjectAttributes, content?: Content): ContentTag;
-  foreignObject(content?: Content): ContentTag;
-  form(attributes: FormAttributes, content?: Content): ContentTag;
-  form(content?: Content): ContentTag;
-  g(attributes: GAttributes, content?: Content): ContentTag;
-  g(content?: Content): ContentTag;
+  ellipse(attributes: EllipseAttributes, content?: Content): ContentTag<SvgElementFor<'ellipse'>>;
+  ellipse(attributes: WithLegacyOn<EllipseAttributes>, content?: Content): ContentTag<SvgElementFor<'ellipse'>>;
+  ellipse(content?: Content): ContentTag<SvgElementFor<'ellipse'>>;
+  em(attributes: EmAttributes, content?: Content): ContentTag<HtmlElementFor<'em'>>;
+  em(attributes: WithLegacyOn<EmAttributes>, content?: Content): ContentTag<HtmlElementFor<'em'>>;
+  em(content?: Content): ContentTag<HtmlElementFor<'em'>>;
+  embed(attributes?: EmbedAttributes): VoidTag<HtmlElementFor<'embed'>>;
+  embed(attributes?: WithLegacyOn<EmbedAttributes>): VoidTag<HtmlElementFor<'embed'>>;
+  feBlend(attributes: FeBlendAttributes, content?: Content): ContentTag<SvgElementFor<'feBlend'>>;
+  feBlend(attributes: WithLegacyOn<FeBlendAttributes>, content?: Content): ContentTag<SvgElementFor<'feBlend'>>;
+  feBlend(content?: Content): ContentTag<SvgElementFor<'feBlend'>>;
+  feColorMatrix(attributes: FeColorMatrixAttributes, content?: Content): ContentTag<SvgElementFor<'feColorMatrix'>>;
+  feColorMatrix(attributes: WithLegacyOn<FeColorMatrixAttributes>, content?: Content): ContentTag<SvgElementFor<'feColorMatrix'>>;
+  feColorMatrix(content?: Content): ContentTag<SvgElementFor<'feColorMatrix'>>;
+  feComponentTransfer(attributes: FeComponentTransferAttributes, content?: Content): ContentTag<SvgElementFor<'feComponentTransfer'>>;
+  feComponentTransfer(attributes: WithLegacyOn<FeComponentTransferAttributes>, content?: Content): ContentTag<SvgElementFor<'feComponentTransfer'>>;
+  feComponentTransfer(content?: Content): ContentTag<SvgElementFor<'feComponentTransfer'>>;
+  feComposite(attributes: FeCompositeAttributes, content?: Content): ContentTag<SvgElementFor<'feComposite'>>;
+  feComposite(attributes: WithLegacyOn<FeCompositeAttributes>, content?: Content): ContentTag<SvgElementFor<'feComposite'>>;
+  feComposite(content?: Content): ContentTag<SvgElementFor<'feComposite'>>;
+  feConvolveMatrix(attributes: FeConvolveMatrixAttributes, content?: Content): ContentTag<SvgElementFor<'feConvolveMatrix'>>;
+  feConvolveMatrix(attributes: WithLegacyOn<FeConvolveMatrixAttributes>, content?: Content): ContentTag<SvgElementFor<'feConvolveMatrix'>>;
+  feConvolveMatrix(content?: Content): ContentTag<SvgElementFor<'feConvolveMatrix'>>;
+  feDiffuseLighting(attributes: FeDiffuseLightingAttributes, content?: Content): ContentTag<SvgElementFor<'feDiffuseLighting'>>;
+  feDiffuseLighting(attributes: WithLegacyOn<FeDiffuseLightingAttributes>, content?: Content): ContentTag<SvgElementFor<'feDiffuseLighting'>>;
+  feDiffuseLighting(content?: Content): ContentTag<SvgElementFor<'feDiffuseLighting'>>;
+  feDisplacementMap(attributes: FeDisplacementMapAttributes, content?: Content): ContentTag<SvgElementFor<'feDisplacementMap'>>;
+  feDisplacementMap(attributes: WithLegacyOn<FeDisplacementMapAttributes>, content?: Content): ContentTag<SvgElementFor<'feDisplacementMap'>>;
+  feDisplacementMap(content?: Content): ContentTag<SvgElementFor<'feDisplacementMap'>>;
+  feDistantLight(attributes: FeDistantLightAttributes, content?: Content): ContentTag<SvgElementFor<'feDistantLight'>>;
+  feDistantLight(attributes: WithLegacyOn<FeDistantLightAttributes>, content?: Content): ContentTag<SvgElementFor<'feDistantLight'>>;
+  feDistantLight(content?: Content): ContentTag<SvgElementFor<'feDistantLight'>>;
+  feDropShadow(attributes: FeDropShadowAttributes, content?: Content): ContentTag<SvgElementFor<'feDropShadow'>>;
+  feDropShadow(attributes: WithLegacyOn<FeDropShadowAttributes>, content?: Content): ContentTag<SvgElementFor<'feDropShadow'>>;
+  feDropShadow(content?: Content): ContentTag<SvgElementFor<'feDropShadow'>>;
+  feFlood(attributes: FeFloodAttributes, content?: Content): ContentTag<SvgElementFor<'feFlood'>>;
+  feFlood(attributes: WithLegacyOn<FeFloodAttributes>, content?: Content): ContentTag<SvgElementFor<'feFlood'>>;
+  feFlood(content?: Content): ContentTag<SvgElementFor<'feFlood'>>;
+  feFuncA(attributes: FeFuncAAttributes, content?: Content): ContentTag<SvgElementFor<'feFuncA'>>;
+  feFuncA(attributes: WithLegacyOn<FeFuncAAttributes>, content?: Content): ContentTag<SvgElementFor<'feFuncA'>>;
+  feFuncA(content?: Content): ContentTag<SvgElementFor<'feFuncA'>>;
+  feFuncB(attributes: FeFuncBAttributes, content?: Content): ContentTag<SvgElementFor<'feFuncB'>>;
+  feFuncB(attributes: WithLegacyOn<FeFuncBAttributes>, content?: Content): ContentTag<SvgElementFor<'feFuncB'>>;
+  feFuncB(content?: Content): ContentTag<SvgElementFor<'feFuncB'>>;
+  feFuncG(attributes: FeFuncGAttributes, content?: Content): ContentTag<SvgElementFor<'feFuncG'>>;
+  feFuncG(attributes: WithLegacyOn<FeFuncGAttributes>, content?: Content): ContentTag<SvgElementFor<'feFuncG'>>;
+  feFuncG(content?: Content): ContentTag<SvgElementFor<'feFuncG'>>;
+  feFuncR(attributes: FeFuncRAttributes, content?: Content): ContentTag<SvgElementFor<'feFuncR'>>;
+  feFuncR(attributes: WithLegacyOn<FeFuncRAttributes>, content?: Content): ContentTag<SvgElementFor<'feFuncR'>>;
+  feFuncR(content?: Content): ContentTag<SvgElementFor<'feFuncR'>>;
+  feGaussianBlur(attributes: FeGaussianBlurAttributes, content?: Content): ContentTag<SvgElementFor<'feGaussianBlur'>>;
+  feGaussianBlur(attributes: WithLegacyOn<FeGaussianBlurAttributes>, content?: Content): ContentTag<SvgElementFor<'feGaussianBlur'>>;
+  feGaussianBlur(content?: Content): ContentTag<SvgElementFor<'feGaussianBlur'>>;
+  feImage(attributes: FeImageAttributes, content?: Content): ContentTag<SvgElementFor<'feImage'>>;
+  feImage(attributes: WithLegacyOn<FeImageAttributes>, content?: Content): ContentTag<SvgElementFor<'feImage'>>;
+  feImage(content?: Content): ContentTag<SvgElementFor<'feImage'>>;
+  feMerge(attributes: FeMergeAttributes, content?: Content): ContentTag<SvgElementFor<'feMerge'>>;
+  feMerge(attributes: WithLegacyOn<FeMergeAttributes>, content?: Content): ContentTag<SvgElementFor<'feMerge'>>;
+  feMerge(content?: Content): ContentTag<SvgElementFor<'feMerge'>>;
+  feMergeNode(attributes: FeMergeNodeAttributes, content?: Content): ContentTag<SvgElementFor<'feMergeNode'>>;
+  feMergeNode(attributes: WithLegacyOn<FeMergeNodeAttributes>, content?: Content): ContentTag<SvgElementFor<'feMergeNode'>>;
+  feMergeNode(content?: Content): ContentTag<SvgElementFor<'feMergeNode'>>;
+  feMorphology(attributes: FeMorphologyAttributes, content?: Content): ContentTag<SvgElementFor<'feMorphology'>>;
+  feMorphology(attributes: WithLegacyOn<FeMorphologyAttributes>, content?: Content): ContentTag<SvgElementFor<'feMorphology'>>;
+  feMorphology(content?: Content): ContentTag<SvgElementFor<'feMorphology'>>;
+  feOffset(attributes: FeOffsetAttributes, content?: Content): ContentTag<SvgElementFor<'feOffset'>>;
+  feOffset(attributes: WithLegacyOn<FeOffsetAttributes>, content?: Content): ContentTag<SvgElementFor<'feOffset'>>;
+  feOffset(content?: Content): ContentTag<SvgElementFor<'feOffset'>>;
+  fePointLight(attributes: FePointLightAttributes, content?: Content): ContentTag<SvgElementFor<'fePointLight'>>;
+  fePointLight(attributes: WithLegacyOn<FePointLightAttributes>, content?: Content): ContentTag<SvgElementFor<'fePointLight'>>;
+  fePointLight(content?: Content): ContentTag<SvgElementFor<'fePointLight'>>;
+  feSpecularLighting(attributes: FeSpecularLightingAttributes, content?: Content): ContentTag<SvgElementFor<'feSpecularLighting'>>;
+  feSpecularLighting(attributes: WithLegacyOn<FeSpecularLightingAttributes>, content?: Content): ContentTag<SvgElementFor<'feSpecularLighting'>>;
+  feSpecularLighting(content?: Content): ContentTag<SvgElementFor<'feSpecularLighting'>>;
+  feSpotLight(attributes: FeSpotLightAttributes, content?: Content): ContentTag<SvgElementFor<'feSpotLight'>>;
+  feSpotLight(attributes: WithLegacyOn<FeSpotLightAttributes>, content?: Content): ContentTag<SvgElementFor<'feSpotLight'>>;
+  feSpotLight(content?: Content): ContentTag<SvgElementFor<'feSpotLight'>>;
+  feTile(attributes: FeTileAttributes, content?: Content): ContentTag<SvgElementFor<'feTile'>>;
+  feTile(attributes: WithLegacyOn<FeTileAttributes>, content?: Content): ContentTag<SvgElementFor<'feTile'>>;
+  feTile(content?: Content): ContentTag<SvgElementFor<'feTile'>>;
+  feTurbulence(attributes: FeTurbulenceAttributes, content?: Content): ContentTag<SvgElementFor<'feTurbulence'>>;
+  feTurbulence(attributes: WithLegacyOn<FeTurbulenceAttributes>, content?: Content): ContentTag<SvgElementFor<'feTurbulence'>>;
+  feTurbulence(content?: Content): ContentTag<SvgElementFor<'feTurbulence'>>;
+  fieldset(attributes: FieldsetAttributes, content?: Content): ContentTag<HtmlElementFor<'fieldset'>>;
+  fieldset(attributes: WithLegacyOn<FieldsetAttributes>, content?: Content): ContentTag<HtmlElementFor<'fieldset'>>;
+  fieldset(content?: Content): ContentTag<HtmlElementFor<'fieldset'>>;
+  figcaption(attributes: FigcaptionAttributes, content?: Content): ContentTag<HtmlElementFor<'figcaption'>>;
+  figcaption(attributes: WithLegacyOn<FigcaptionAttributes>, content?: Content): ContentTag<HtmlElementFor<'figcaption'>>;
+  figcaption(content?: Content): ContentTag<HtmlElementFor<'figcaption'>>;
+  figure(attributes: FigureAttributes, content?: Content): ContentTag<HtmlElementFor<'figure'>>;
+  figure(attributes: WithLegacyOn<FigureAttributes>, content?: Content): ContentTag<HtmlElementFor<'figure'>>;
+  figure(content?: Content): ContentTag<HtmlElementFor<'figure'>>;
+  filter(attributes: FilterAttributes, content?: Content): ContentTag<SvgElementFor<'filter'>>;
+  filter(attributes: WithLegacyOn<FilterAttributes>, content?: Content): ContentTag<SvgElementFor<'filter'>>;
+  filter(content?: Content): ContentTag<SvgElementFor<'filter'>>;
+  footer(attributes: FooterAttributes, content?: Content): ContentTag<HtmlElementFor<'footer'>>;
+  footer(attributes: WithLegacyOn<FooterAttributes>, content?: Content): ContentTag<HtmlElementFor<'footer'>>;
+  footer(content?: Content): ContentTag<HtmlElementFor<'footer'>>;
+  foreignObject(attributes: ForeignObjectAttributes, content?: Content): ContentTag<SvgElementFor<'foreignObject'>>;
+  foreignObject(attributes: WithLegacyOn<ForeignObjectAttributes>, content?: Content): ContentTag<SvgElementFor<'foreignObject'>>;
+  foreignObject(content?: Content): ContentTag<SvgElementFor<'foreignObject'>>;
+  form(attributes: FormAttributes, content?: Content): ContentTag<HtmlElementFor<'form'>>;
+  form(attributes: WithLegacyOn<FormAttributes>, content?: Content): ContentTag<HtmlElementFor<'form'>>;
+  form(content?: Content): ContentTag<HtmlElementFor<'form'>>;
+  g(attributes: GAttributes, content?: Content): ContentTag<SvgElementFor<'g'>>;
+  g(attributes: WithLegacyOn<GAttributes>, content?: Content): ContentTag<SvgElementFor<'g'>>;
+  g(content?: Content): ContentTag<SvgElementFor<'g'>>;
   h1(attributes: H1Attributes, content?: Content): H1Tag;
+  h1(attributes: WithLegacyOn<H1Attributes>, content?: Content): H1Tag;
   h1(content?: Content): H1Tag;
   h2(attributes: H2Attributes, content?: Content): H2Tag;
+  h2(attributes: WithLegacyOn<H2Attributes>, content?: Content): H2Tag;
   h2(content?: Content): H2Tag;
   h3(attributes: H3Attributes, content?: Content): H3Tag;
+  h3(attributes: WithLegacyOn<H3Attributes>, content?: Content): H3Tag;
   h3(content?: Content): H3Tag;
   h4(attributes: H4Attributes, content?: Content): H4Tag;
+  h4(attributes: WithLegacyOn<H4Attributes>, content?: Content): H4Tag;
   h4(content?: Content): H4Tag;
   h5(attributes: H5Attributes, content?: Content): H5Tag;
+  h5(attributes: WithLegacyOn<H5Attributes>, content?: Content): H5Tag;
   h5(content?: Content): H5Tag;
   h6(attributes: H6Attributes, content?: Content): H6Tag;
+  h6(attributes: WithLegacyOn<H6Attributes>, content?: Content): H6Tag;
   h6(content?: Content): H6Tag;
   head(attributes: HeadAttributes, content?: Content): HeadTag;
+  head(attributes: WithLegacyOn<HeadAttributes>, content?: Content): HeadTag;
   head(content?: Content): HeadTag;
-  header(attributes: HeaderAttributes, content?: Content): ContentTag;
-  header(content?: Content): ContentTag;
+  header(attributes: HeaderAttributes, content?: Content): ContentTag<HtmlElementFor<'header'>>;
+  header(attributes: WithLegacyOn<HeaderAttributes>, content?: Content): ContentTag<HtmlElementFor<'header'>>;
+  header(content?: Content): ContentTag<HtmlElementFor<'header'>>;
   hgroup(attributes: HgroupAttributes, content?: HgroupContent): HgroupTag;
+  hgroup(attributes: WithLegacyOn<HgroupAttributes>, content?: HgroupContent): HgroupTag;
   hgroup(content?: HgroupContent): HgroupTag;
   hr(attributes?: HrAttributes): HrTag;
+  hr(attributes?: WithLegacyOn<HrAttributes>): HrTag;
   html(attributes: HtmlAttributes, content?: HtmlContent): HtmlTag;
+  html(attributes: WithLegacyOn<HtmlAttributes>, content?: HtmlContent): HtmlTag;
   html(content?: HtmlContent): HtmlTag;
-  i(attributes: IAttributes, content?: Content): ContentTag;
-  i(content?: Content): ContentTag;
-  iframe(attributes: IframeAttributes, content?: Content): ContentTag;
-  iframe(content?: Content): ContentTag;
-  image(attributes: ImageAttributes, content?: Content): ContentTag;
-  image(content?: Content): ContentTag;
+  i(attributes: IAttributes, content?: Content): ContentTag<HtmlElementFor<'i'>>;
+  i(attributes: WithLegacyOn<IAttributes>, content?: Content): ContentTag<HtmlElementFor<'i'>>;
+  i(content?: Content): ContentTag<HtmlElementFor<'i'>>;
+  iframe(attributes: IframeAttributes, content?: Content): ContentTag<HtmlElementFor<'iframe'>>;
+  iframe(attributes: WithLegacyOn<IframeAttributes>, content?: Content): ContentTag<HtmlElementFor<'iframe'>>;
+  iframe(content?: Content): ContentTag<HtmlElementFor<'iframe'>>;
+  image(attributes: ImageAttributes, content?: Content): ContentTag<SvgElementFor<'image'>>;
+  image(attributes: WithLegacyOn<ImageAttributes>, content?: Content): ContentTag<SvgElementFor<'image'>>;
+  image(content?: Content): ContentTag<SvgElementFor<'image'>>;
   img(attributes?: ImgAttributes): ImgTag;
-  input(attributes?: InputAttributes): VoidTag;
-  ins(attributes: InsAttributes, content?: Content): ContentTag;
-  ins(content?: Content): ContentTag;
-  kbd(attributes: KbdAttributes, content?: Content): ContentTag;
-  kbd(content?: Content): ContentTag;
-  label(attributes: LabelAttributes, content?: Content): ContentTag;
-  label(content?: Content): ContentTag;
+  img(attributes?: WithLegacyOn<ImgAttributes>): ImgTag;
+  input(attributes?: InputAttributes): VoidTag<HtmlElementFor<'input'>>;
+  input(attributes?: WithLegacyOn<InputAttributes>): VoidTag<HtmlElementFor<'input'>>;
+  ins(attributes: InsAttributes, content?: Content): ContentTag<HtmlElementFor<'ins'>>;
+  ins(attributes: WithLegacyOn<InsAttributes>, content?: Content): ContentTag<HtmlElementFor<'ins'>>;
+  ins(content?: Content): ContentTag<HtmlElementFor<'ins'>>;
+  kbd(attributes: KbdAttributes, content?: Content): ContentTag<HtmlElementFor<'kbd'>>;
+  kbd(attributes: WithLegacyOn<KbdAttributes>, content?: Content): ContentTag<HtmlElementFor<'kbd'>>;
+  kbd(content?: Content): ContentTag<HtmlElementFor<'kbd'>>;
+  label(attributes: LabelAttributes, content?: Content): ContentTag<HtmlElementFor<'label'>>;
+  label(attributes: WithLegacyOn<LabelAttributes>, content?: Content): ContentTag<HtmlElementFor<'label'>>;
+  label(content?: Content): ContentTag<HtmlElementFor<'label'>>;
   legend(attributes: LegendAttributes, content?: Content): LegendTag;
+  legend(attributes: WithLegacyOn<LegendAttributes>, content?: Content): LegendTag;
   legend(content?: Content): LegendTag;
   li(attributes: LiAttributes, content?: Content): LiTag;
+  li(attributes: WithLegacyOn<LiAttributes>, content?: Content): LiTag;
   li(content?: Content): LiTag;
-  line(attributes: LineAttributes, content?: Content): ContentTag;
-  line(content?: Content): ContentTag;
-  linearGradient(attributes: LinearGradientAttributes, content?: Content): ContentTag;
-  linearGradient(content?: Content): ContentTag;
-  link(attributes?: LinkAttributes): VoidTag;
-  maction(attributes: MactionAttributes, content?: Content): ContentTag;
-  maction(content?: Content): ContentTag;
-  main(attributes: MainAttributes, content?: Content): ContentTag;
-  main(content?: Content): ContentTag;
-  map(attributes: MapAttributes, content?: Content): ContentTag;
-  map(content?: Content): ContentTag;
-  mark(attributes: MarkAttributes, content?: Content): ContentTag;
-  mark(content?: Content): ContentTag;
-  marker(attributes: MarkerAttributes, content?: Content): ContentTag;
-  marker(content?: Content): ContentTag;
-  mask(attributes: MaskAttributes, content?: Content): ContentTag;
-  mask(content?: Content): ContentTag;
-  math(attributes: MathAttributes, content?: Content): ContentTag;
-  math(content?: Content): ContentTag;
-  menclose(attributes: MencloseAttributes, content?: Content): ContentTag;
-  menclose(content?: Content): ContentTag;
+  line(attributes: LineAttributes, content?: Content): ContentTag<SvgElementFor<'line'>>;
+  line(attributes: WithLegacyOn<LineAttributes>, content?: Content): ContentTag<SvgElementFor<'line'>>;
+  line(content?: Content): ContentTag<SvgElementFor<'line'>>;
+  linearGradient(attributes: LinearGradientAttributes, content?: Content): ContentTag<SvgElementFor<'linearGradient'>>;
+  linearGradient(attributes: WithLegacyOn<LinearGradientAttributes>, content?: Content): ContentTag<SvgElementFor<'linearGradient'>>;
+  linearGradient(content?: Content): ContentTag<SvgElementFor<'linearGradient'>>;
+  link(attributes?: LinkAttributes): VoidTag<HtmlElementFor<'link'>>;
+  link(attributes?: WithLegacyOn<LinkAttributes>): VoidTag<HtmlElementFor<'link'>>;
+  maction(attributes: MactionAttributes, content?: Content): ContentTag<MathMLElement>;
+  maction(attributes: WithLegacyOn<MactionAttributes>, content?: Content): ContentTag<MathMLElement>;
+  maction(content?: Content): ContentTag<MathMLElement>;
+  main(attributes: MainAttributes, content?: Content): ContentTag<HtmlElementFor<'main'>>;
+  main(attributes: WithLegacyOn<MainAttributes>, content?: Content): ContentTag<HtmlElementFor<'main'>>;
+  main(content?: Content): ContentTag<HtmlElementFor<'main'>>;
+  map(attributes: MapAttributes, content?: Content): ContentTag<HtmlElementFor<'map'>>;
+  map(attributes: WithLegacyOn<MapAttributes>, content?: Content): ContentTag<HtmlElementFor<'map'>>;
+  map(content?: Content): ContentTag<HtmlElementFor<'map'>>;
+  mark(attributes: MarkAttributes, content?: Content): ContentTag<HtmlElementFor<'mark'>>;
+  mark(attributes: WithLegacyOn<MarkAttributes>, content?: Content): ContentTag<HtmlElementFor<'mark'>>;
+  mark(content?: Content): ContentTag<HtmlElementFor<'mark'>>;
+  marker(attributes: MarkerAttributes, content?: Content): ContentTag<SvgElementFor<'marker'>>;
+  marker(attributes: WithLegacyOn<MarkerAttributes>, content?: Content): ContentTag<SvgElementFor<'marker'>>;
+  marker(content?: Content): ContentTag<SvgElementFor<'marker'>>;
+  mask(attributes: MaskAttributes, content?: Content): ContentTag<SvgElementFor<'mask'>>;
+  mask(attributes: WithLegacyOn<MaskAttributes>, content?: Content): ContentTag<SvgElementFor<'mask'>>;
+  mask(content?: Content): ContentTag<SvgElementFor<'mask'>>;
+  math(attributes: MathAttributes, content?: Content): ContentTag<MathMLElement>;
+  math(attributes: WithLegacyOn<MathAttributes>, content?: Content): ContentTag<MathMLElement>;
+  math(content?: Content): ContentTag<MathMLElement>;
+  menclose(attributes: MencloseAttributes, content?: Content): ContentTag<MathMLElement>;
+  menclose(attributes: WithLegacyOn<MencloseAttributes>, content?: Content): ContentTag<MathMLElement>;
+  menclose(content?: Content): ContentTag<MathMLElement>;
   menu(attributes: MenuAttributes, content?: MenuContent): MenuTag;
+  menu(attributes: WithLegacyOn<MenuAttributes>, content?: MenuContent): MenuTag;
   menu(content?: MenuContent): MenuTag;
-  merror(attributes: MerrorAttributes, content?: Content): ContentTag;
-  merror(content?: Content): ContentTag;
-  meta(attributes?: MetaAttributes): VoidTag;
-  metadata(attributes: MetadataAttributes, content?: Content): ContentTag;
-  metadata(content?: Content): ContentTag;
-  meter(attributes: MeterAttributes, content?: Content): ContentTag;
-  meter(content?: Content): ContentTag;
-  mfenced(attributes: MfencedAttributes, content?: Content): ContentTag;
-  mfenced(content?: Content): ContentTag;
-  mfrac(attributes: MfracAttributes, content?: Content): ContentTag;
-  mfrac(content?: Content): ContentTag;
-  mi(attributes: MiAttributes, content?: Content): ContentTag;
-  mi(content?: Content): ContentTag;
-  mmultiscripts(attributes: MmultiscriptsAttributes, content?: Content): ContentTag;
-  mmultiscripts(content?: Content): ContentTag;
-  mn(attributes: MnAttributes, content?: Content): ContentTag;
-  mn(content?: Content): ContentTag;
-  mo(attributes: MoAttributes, content?: Content): ContentTag;
-  mo(content?: Content): ContentTag;
-  mover(attributes: MoverAttributes, content?: Content): ContentTag;
-  mover(content?: Content): ContentTag;
-  mpadded(attributes: MpaddedAttributes, content?: Content): ContentTag;
-  mpadded(content?: Content): ContentTag;
-  mpath(attributes: MpathAttributes, content?: Content): ContentTag;
-  mpath(content?: Content): ContentTag;
-  mphantom(attributes: MphantomAttributes, content?: Content): ContentTag;
-  mphantom(content?: Content): ContentTag;
-  mprescripts(attributes: MprescriptsAttributes, content?: Content): ContentTag;
-  mprescripts(content?: Content): ContentTag;
-  mroot(attributes: MrootAttributes, content?: Content): ContentTag;
-  mroot(content?: Content): ContentTag;
-  mrow(attributes: MrowAttributes, content?: Content): ContentTag;
-  mrow(content?: Content): ContentTag;
-  ms(attributes: MsAttributes, content?: Content): ContentTag;
-  ms(content?: Content): ContentTag;
-  mspace(attributes: MspaceAttributes, content?: Content): ContentTag;
-  mspace(content?: Content): ContentTag;
-  msqrt(attributes: MsqrtAttributes, content?: Content): ContentTag;
-  msqrt(content?: Content): ContentTag;
-  mstyle(attributes: MstyleAttributes, content?: Content): ContentTag;
-  mstyle(content?: Content): ContentTag;
-  msub(attributes: MsubAttributes, content?: Content): ContentTag;
-  msub(content?: Content): ContentTag;
-  msubsup(attributes: MsubsupAttributes, content?: Content): ContentTag;
-  msubsup(content?: Content): ContentTag;
-  msup(attributes: MsupAttributes, content?: Content): ContentTag;
-  msup(content?: Content): ContentTag;
-  mtable(attributes: MtableAttributes, content?: Content): ContentTag;
-  mtable(content?: Content): ContentTag;
-  mtd(attributes: MtdAttributes, content?: Content): ContentTag;
-  mtd(content?: Content): ContentTag;
-  mtext(attributes: MtextAttributes, content?: Content): ContentTag;
-  mtext(content?: Content): ContentTag;
-  mtr(attributes: MtrAttributes, content?: Content): ContentTag;
-  mtr(content?: Content): ContentTag;
-  munder(attributes: MunderAttributes, content?: Content): ContentTag;
-  munder(content?: Content): ContentTag;
-  munderover(attributes: MunderoverAttributes, content?: Content): ContentTag;
-  munderover(content?: Content): ContentTag;
-  nav(attributes: NavAttributes, content?: Content): ContentTag;
-  nav(content?: Content): ContentTag;
+  merror(attributes: MerrorAttributes, content?: Content): ContentTag<MathMLElement>;
+  merror(attributes: WithLegacyOn<MerrorAttributes>, content?: Content): ContentTag<MathMLElement>;
+  merror(content?: Content): ContentTag<MathMLElement>;
+  meta(attributes?: MetaAttributes): VoidTag<HtmlElementFor<'meta'>>;
+  meta(attributes?: WithLegacyOn<MetaAttributes>): VoidTag<HtmlElementFor<'meta'>>;
+  metadata(attributes: MetadataAttributes, content?: Content): ContentTag<SvgElementFor<'metadata'>>;
+  metadata(attributes: WithLegacyOn<MetadataAttributes>, content?: Content): ContentTag<SvgElementFor<'metadata'>>;
+  metadata(content?: Content): ContentTag<SvgElementFor<'metadata'>>;
+  meter(attributes: MeterAttributes, content?: Content): ContentTag<HtmlElementFor<'meter'>>;
+  meter(attributes: WithLegacyOn<MeterAttributes>, content?: Content): ContentTag<HtmlElementFor<'meter'>>;
+  meter(content?: Content): ContentTag<HtmlElementFor<'meter'>>;
+  mfenced(attributes: MfencedAttributes, content?: Content): ContentTag<MathMLElement>;
+  mfenced(attributes: WithLegacyOn<MfencedAttributes>, content?: Content): ContentTag<MathMLElement>;
+  mfenced(content?: Content): ContentTag<MathMLElement>;
+  mfrac(attributes: MfracAttributes, content?: Content): ContentTag<MathMLElement>;
+  mfrac(attributes: WithLegacyOn<MfracAttributes>, content?: Content): ContentTag<MathMLElement>;
+  mfrac(content?: Content): ContentTag<MathMLElement>;
+  mi(attributes: MiAttributes, content?: Content): ContentTag<MathMLElement>;
+  mi(attributes: WithLegacyOn<MiAttributes>, content?: Content): ContentTag<MathMLElement>;
+  mi(content?: Content): ContentTag<MathMLElement>;
+  mmultiscripts(attributes: MmultiscriptsAttributes, content?: Content): ContentTag<MathMLElement>;
+  mmultiscripts(attributes: WithLegacyOn<MmultiscriptsAttributes>, content?: Content): ContentTag<MathMLElement>;
+  mmultiscripts(content?: Content): ContentTag<MathMLElement>;
+  mn(attributes: MnAttributes, content?: Content): ContentTag<MathMLElement>;
+  mn(attributes: WithLegacyOn<MnAttributes>, content?: Content): ContentTag<MathMLElement>;
+  mn(content?: Content): ContentTag<MathMLElement>;
+  mo(attributes: MoAttributes, content?: Content): ContentTag<MathMLElement>;
+  mo(attributes: WithLegacyOn<MoAttributes>, content?: Content): ContentTag<MathMLElement>;
+  mo(content?: Content): ContentTag<MathMLElement>;
+  mover(attributes: MoverAttributes, content?: Content): ContentTag<MathMLElement>;
+  mover(attributes: WithLegacyOn<MoverAttributes>, content?: Content): ContentTag<MathMLElement>;
+  mover(content?: Content): ContentTag<MathMLElement>;
+  mpadded(attributes: MpaddedAttributes, content?: Content): ContentTag<MathMLElement>;
+  mpadded(attributes: WithLegacyOn<MpaddedAttributes>, content?: Content): ContentTag<MathMLElement>;
+  mpadded(content?: Content): ContentTag<MathMLElement>;
+  mpath(attributes: MpathAttributes, content?: Content): ContentTag<SvgElementFor<'mpath'>>;
+  mpath(attributes: WithLegacyOn<MpathAttributes>, content?: Content): ContentTag<SvgElementFor<'mpath'>>;
+  mpath(content?: Content): ContentTag<SvgElementFor<'mpath'>>;
+  mphantom(attributes: MphantomAttributes, content?: Content): ContentTag<MathMLElement>;
+  mphantom(attributes: WithLegacyOn<MphantomAttributes>, content?: Content): ContentTag<MathMLElement>;
+  mphantom(content?: Content): ContentTag<MathMLElement>;
+  mprescripts(attributes: MprescriptsAttributes, content?: Content): ContentTag<MathMLElement>;
+  mprescripts(attributes: WithLegacyOn<MprescriptsAttributes>, content?: Content): ContentTag<MathMLElement>;
+  mprescripts(content?: Content): ContentTag<MathMLElement>;
+  mroot(attributes: MrootAttributes, content?: Content): ContentTag<MathMLElement>;
+  mroot(attributes: WithLegacyOn<MrootAttributes>, content?: Content): ContentTag<MathMLElement>;
+  mroot(content?: Content): ContentTag<MathMLElement>;
+  mrow(attributes: MrowAttributes, content?: Content): ContentTag<MathMLElement>;
+  mrow(attributes: WithLegacyOn<MrowAttributes>, content?: Content): ContentTag<MathMLElement>;
+  mrow(content?: Content): ContentTag<MathMLElement>;
+  ms(attributes: MsAttributes, content?: Content): ContentTag<MathMLElement>;
+  ms(attributes: WithLegacyOn<MsAttributes>, content?: Content): ContentTag<MathMLElement>;
+  ms(content?: Content): ContentTag<MathMLElement>;
+  mspace(attributes: MspaceAttributes, content?: Content): ContentTag<MathMLElement>;
+  mspace(attributes: WithLegacyOn<MspaceAttributes>, content?: Content): ContentTag<MathMLElement>;
+  mspace(content?: Content): ContentTag<MathMLElement>;
+  msqrt(attributes: MsqrtAttributes, content?: Content): ContentTag<MathMLElement>;
+  msqrt(attributes: WithLegacyOn<MsqrtAttributes>, content?: Content): ContentTag<MathMLElement>;
+  msqrt(content?: Content): ContentTag<MathMLElement>;
+  mstyle(attributes: MstyleAttributes, content?: Content): ContentTag<MathMLElement>;
+  mstyle(attributes: WithLegacyOn<MstyleAttributes>, content?: Content): ContentTag<MathMLElement>;
+  mstyle(content?: Content): ContentTag<MathMLElement>;
+  msub(attributes: MsubAttributes, content?: Content): ContentTag<MathMLElement>;
+  msub(attributes: WithLegacyOn<MsubAttributes>, content?: Content): ContentTag<MathMLElement>;
+  msub(content?: Content): ContentTag<MathMLElement>;
+  msubsup(attributes: MsubsupAttributes, content?: Content): ContentTag<MathMLElement>;
+  msubsup(attributes: WithLegacyOn<MsubsupAttributes>, content?: Content): ContentTag<MathMLElement>;
+  msubsup(content?: Content): ContentTag<MathMLElement>;
+  msup(attributes: MsupAttributes, content?: Content): ContentTag<MathMLElement>;
+  msup(attributes: WithLegacyOn<MsupAttributes>, content?: Content): ContentTag<MathMLElement>;
+  msup(content?: Content): ContentTag<MathMLElement>;
+  mtable(attributes: MtableAttributes, content?: Content): ContentTag<MathMLElement>;
+  mtable(attributes: WithLegacyOn<MtableAttributes>, content?: Content): ContentTag<MathMLElement>;
+  mtable(content?: Content): ContentTag<MathMLElement>;
+  mtd(attributes: MtdAttributes, content?: Content): ContentTag<MathMLElement>;
+  mtd(attributes: WithLegacyOn<MtdAttributes>, content?: Content): ContentTag<MathMLElement>;
+  mtd(content?: Content): ContentTag<MathMLElement>;
+  mtext(attributes: MtextAttributes, content?: Content): ContentTag<MathMLElement>;
+  mtext(attributes: WithLegacyOn<MtextAttributes>, content?: Content): ContentTag<MathMLElement>;
+  mtext(content?: Content): ContentTag<MathMLElement>;
+  mtr(attributes: MtrAttributes, content?: Content): ContentTag<MathMLElement>;
+  mtr(attributes: WithLegacyOn<MtrAttributes>, content?: Content): ContentTag<MathMLElement>;
+  mtr(content?: Content): ContentTag<MathMLElement>;
+  munder(attributes: MunderAttributes, content?: Content): ContentTag<MathMLElement>;
+  munder(attributes: WithLegacyOn<MunderAttributes>, content?: Content): ContentTag<MathMLElement>;
+  munder(content?: Content): ContentTag<MathMLElement>;
+  munderover(attributes: MunderoverAttributes, content?: Content): ContentTag<MathMLElement>;
+  munderover(attributes: WithLegacyOn<MunderoverAttributes>, content?: Content): ContentTag<MathMLElement>;
+  munderover(content?: Content): ContentTag<MathMLElement>;
+  nav(attributes: NavAttributes, content?: Content): ContentTag<HtmlElementFor<'nav'>>;
+  nav(attributes: WithLegacyOn<NavAttributes>, content?: Content): ContentTag<HtmlElementFor<'nav'>>;
+  nav(content?: Content): ContentTag<HtmlElementFor<'nav'>>;
   noscript(attributes: NoscriptAttributes, content?: Content): NoscriptTag;
+  noscript(attributes: WithLegacyOn<NoscriptAttributes>, content?: Content): NoscriptTag;
   noscript(content?: Content): NoscriptTag;
-  object(attributes: ObjectAttributes, content?: Content): ContentTag;
-  object(content?: Content): ContentTag;
+  object(attributes: ObjectAttributes, content?: Content): ContentTag<HtmlElementFor<'object'>>;
+  object(attributes: WithLegacyOn<ObjectAttributes>, content?: Content): ContentTag<HtmlElementFor<'object'>>;
+  object(content?: Content): ContentTag<HtmlElementFor<'object'>>;
   ol(attributes: OlAttributes, content?: OlContent): OlTag;
+  ol(attributes: WithLegacyOn<OlAttributes>, content?: OlContent): OlTag;
   ol(content?: OlContent): OlTag;
   optgroup(attributes: OptgroupAttributes, content?: OptgroupContent): OptgroupTag;
+  optgroup(attributes: WithLegacyOn<OptgroupAttributes>, content?: OptgroupContent): OptgroupTag;
   optgroup(content?: OptgroupContent): OptgroupTag;
   option(attributes: OptionAttributes, content?: Content): OptionTag;
+  option(attributes: WithLegacyOn<OptionAttributes>, content?: Content): OptionTag;
   option(content?: Content): OptionTag;
-  output(attributes: OutputAttributes, content?: Content): ContentTag;
-  output(content?: Content): ContentTag;
+  output(attributes: OutputAttributes, content?: Content): ContentTag<HtmlElementFor<'output'>>;
+  output(attributes: WithLegacyOn<OutputAttributes>, content?: Content): ContentTag<HtmlElementFor<'output'>>;
+  output(content?: Content): ContentTag<HtmlElementFor<'output'>>;
   p(attributes: PAttributes, content?: Content): PTag;
+  p(attributes: WithLegacyOn<PAttributes>, content?: Content): PTag;
   p(content?: Content): PTag;
-  path(attributes: PathAttributes, content?: Content): ContentTag;
-  path(content?: Content): ContentTag;
-  pattern(attributes: PatternAttributes, content?: Content): ContentTag;
-  pattern(content?: Content): ContentTag;
+  path(attributes: PathAttributes, content?: Content): ContentTag<SvgElementFor<'path'>>;
+  path(attributes: WithLegacyOn<PathAttributes>, content?: Content): ContentTag<SvgElementFor<'path'>>;
+  path(content?: Content): ContentTag<SvgElementFor<'path'>>;
+  pattern(attributes: PatternAttributes, content?: Content): ContentTag<SvgElementFor<'pattern'>>;
+  pattern(attributes: WithLegacyOn<PatternAttributes>, content?: Content): ContentTag<SvgElementFor<'pattern'>>;
+  pattern(content?: Content): ContentTag<SvgElementFor<'pattern'>>;
   picture(attributes: PictureAttributes, content?: PictureContent): PictureTag;
+  picture(attributes: WithLegacyOn<PictureAttributes>, content?: PictureContent): PictureTag;
   picture(content?: PictureContent): PictureTag;
-  polygon(attributes: PolygonAttributes, content?: Content): ContentTag;
-  polygon(content?: Content): ContentTag;
-  polyline(attributes: PolylineAttributes, content?: Content): ContentTag;
-  polyline(content?: Content): ContentTag;
-  pre(attributes: PreAttributes, content?: Content): ContentTag;
-  pre(content?: Content): ContentTag;
-  progress(attributes: ProgressAttributes, content?: Content): ContentTag;
-  progress(content?: Content): ContentTag;
-  q(attributes: QAttributes, content?: Content): ContentTag;
-  q(content?: Content): ContentTag;
-  radialGradient(attributes: RadialGradientAttributes, content?: Content): ContentTag;
-  radialGradient(content?: Content): ContentTag;
-  rect(attributes: RectAttributes, content?: Content): ContentTag;
-  rect(content?: Content): ContentTag;
-  rp(attributes: RpAttributes, content?: Content): ContentTag;
-  rp(content?: Content): ContentTag;
-  rt(attributes: RtAttributes, content?: Content): ContentTag;
-  rt(content?: Content): ContentTag;
-  ruby(attributes: RubyAttributes, content?: Content): ContentTag;
-  ruby(content?: Content): ContentTag;
-  s(attributes: SAttributes, content?: Content): ContentTag;
-  s(content?: Content): ContentTag;
-  samp(attributes: SampAttributes, content?: Content): ContentTag;
-  samp(content?: Content): ContentTag;
+  polygon(attributes: PolygonAttributes, content?: Content): ContentTag<SvgElementFor<'polygon'>>;
+  polygon(attributes: WithLegacyOn<PolygonAttributes>, content?: Content): ContentTag<SvgElementFor<'polygon'>>;
+  polygon(content?: Content): ContentTag<SvgElementFor<'polygon'>>;
+  polyline(attributes: PolylineAttributes, content?: Content): ContentTag<SvgElementFor<'polyline'>>;
+  polyline(attributes: WithLegacyOn<PolylineAttributes>, content?: Content): ContentTag<SvgElementFor<'polyline'>>;
+  polyline(content?: Content): ContentTag<SvgElementFor<'polyline'>>;
+  pre(attributes: PreAttributes, content?: Content): ContentTag<HtmlElementFor<'pre'>>;
+  pre(attributes: WithLegacyOn<PreAttributes>, content?: Content): ContentTag<HtmlElementFor<'pre'>>;
+  pre(content?: Content): ContentTag<HtmlElementFor<'pre'>>;
+  progress(attributes: ProgressAttributes, content?: Content): ContentTag<HtmlElementFor<'progress'>>;
+  progress(attributes: WithLegacyOn<ProgressAttributes>, content?: Content): ContentTag<HtmlElementFor<'progress'>>;
+  progress(content?: Content): ContentTag<HtmlElementFor<'progress'>>;
+  q(attributes: QAttributes, content?: Content): ContentTag<HtmlElementFor<'q'>>;
+  q(attributes: WithLegacyOn<QAttributes>, content?: Content): ContentTag<HtmlElementFor<'q'>>;
+  q(content?: Content): ContentTag<HtmlElementFor<'q'>>;
+  radialGradient(attributes: RadialGradientAttributes, content?: Content): ContentTag<SvgElementFor<'radialGradient'>>;
+  radialGradient(attributes: WithLegacyOn<RadialGradientAttributes>, content?: Content): ContentTag<SvgElementFor<'radialGradient'>>;
+  radialGradient(content?: Content): ContentTag<SvgElementFor<'radialGradient'>>;
+  rect(attributes: RectAttributes, content?: Content): ContentTag<SvgElementFor<'rect'>>;
+  rect(attributes: WithLegacyOn<RectAttributes>, content?: Content): ContentTag<SvgElementFor<'rect'>>;
+  rect(content?: Content): ContentTag<SvgElementFor<'rect'>>;
+  rp(attributes: RpAttributes, content?: Content): ContentTag<HtmlElementFor<'rp'>>;
+  rp(attributes: WithLegacyOn<RpAttributes>, content?: Content): ContentTag<HtmlElementFor<'rp'>>;
+  rp(content?: Content): ContentTag<HtmlElementFor<'rp'>>;
+  rt(attributes: RtAttributes, content?: Content): ContentTag<HtmlElementFor<'rt'>>;
+  rt(attributes: WithLegacyOn<RtAttributes>, content?: Content): ContentTag<HtmlElementFor<'rt'>>;
+  rt(content?: Content): ContentTag<HtmlElementFor<'rt'>>;
+  ruby(attributes: RubyAttributes, content?: Content): ContentTag<HtmlElementFor<'ruby'>>;
+  ruby(attributes: WithLegacyOn<RubyAttributes>, content?: Content): ContentTag<HtmlElementFor<'ruby'>>;
+  ruby(content?: Content): ContentTag<HtmlElementFor<'ruby'>>;
+  s(attributes: SAttributes, content?: Content): ContentTag<HtmlElementFor<'s'>>;
+  s(attributes: WithLegacyOn<SAttributes>, content?: Content): ContentTag<HtmlElementFor<'s'>>;
+  s(content?: Content): ContentTag<HtmlElementFor<'s'>>;
+  samp(attributes: SampAttributes, content?: Content): ContentTag<HtmlElementFor<'samp'>>;
+  samp(attributes: WithLegacyOn<SampAttributes>, content?: Content): ContentTag<HtmlElementFor<'samp'>>;
+  samp(content?: Content): ContentTag<HtmlElementFor<'samp'>>;
   script(attributes: ScriptAttributes, content?: Content): ScriptTag;
+  script(attributes: WithLegacyOn<ScriptAttributes>, content?: Content): ScriptTag;
   script(content?: Content): ScriptTag;
-  search(attributes: SearchAttributes, content?: Content): ContentTag;
-  search(content?: Content): ContentTag;
-  section(attributes: SectionAttributes, content?: Content): ContentTag;
-  section(content?: Content): ContentTag;
+  search(attributes: SearchAttributes, content?: Content): ContentTag<HtmlElementFor<'search'>>;
+  search(attributes: WithLegacyOn<SearchAttributes>, content?: Content): ContentTag<HtmlElementFor<'search'>>;
+  search(content?: Content): ContentTag<HtmlElementFor<'search'>>;
+  section(attributes: SectionAttributes, content?: Content): ContentTag<HtmlElementFor<'section'>>;
+  section(attributes: WithLegacyOn<SectionAttributes>, content?: Content): ContentTag<HtmlElementFor<'section'>>;
+  section(content?: Content): ContentTag<HtmlElementFor<'section'>>;
   select(attributes: SelectAttributes, content?: SelectContent): SelectTag;
+  select(attributes: WithLegacyOn<SelectAttributes>, content?: SelectContent): SelectTag;
   select(content?: SelectContent): SelectTag;
-  selectedcontent(attributes?: SelectedcontentAttributes): VoidTag;
-  semantics(attributes: SemanticsAttributes, content?: Content): ContentTag;
-  semantics(content?: Content): ContentTag;
-  set(attributes: SetAttributes, content?: Content): ContentTag;
-  set(content?: Content): ContentTag;
-  slot(attributes: SlotAttributes, content?: Content): ContentTag;
-  slot(content?: Content): ContentTag;
-  small(attributes: SmallAttributes, content?: Content): ContentTag;
-  small(content?: Content): ContentTag;
+  selectedcontent(attributes?: SelectedcontentAttributes): VoidTag<HtmlElementFor<'selectedcontent'>>;
+  selectedcontent(attributes?: WithLegacyOn<SelectedcontentAttributes>): VoidTag<HtmlElementFor<'selectedcontent'>>;
+  semantics(attributes: SemanticsAttributes, content?: Content): ContentTag<MathMLElement>;
+  semantics(attributes: WithLegacyOn<SemanticsAttributes>, content?: Content): ContentTag<MathMLElement>;
+  semantics(content?: Content): ContentTag<MathMLElement>;
+  set(attributes: SetAttributes, content?: Content): ContentTag<SvgElementFor<'set'>>;
+  set(attributes: WithLegacyOn<SetAttributes>, content?: Content): ContentTag<SvgElementFor<'set'>>;
+  set(content?: Content): ContentTag<SvgElementFor<'set'>>;
+  slot(attributes: SlotAttributes, content?: Content): ContentTag<HtmlElementFor<'slot'>>;
+  slot(attributes: WithLegacyOn<SlotAttributes>, content?: Content): ContentTag<HtmlElementFor<'slot'>>;
+  slot(content?: Content): ContentTag<HtmlElementFor<'slot'>>;
+  small(attributes: SmallAttributes, content?: Content): ContentTag<HtmlElementFor<'small'>>;
+  small(attributes: WithLegacyOn<SmallAttributes>, content?: Content): ContentTag<HtmlElementFor<'small'>>;
+  small(content?: Content): ContentTag<HtmlElementFor<'small'>>;
   source(attributes?: SourceAttributes): SourceTag;
-  span(attributes: SpanAttributes, content?: Content): ContentTag;
-  span(content?: Content): ContentTag;
-  stop(attributes: StopAttributes, content?: Content): ContentTag;
-  stop(content?: Content): ContentTag;
-  strong(attributes: StrongAttributes, content?: Content): ContentTag;
-  strong(content?: Content): ContentTag;
-  style(attributes: StyleAttributes, content?: Content): ContentTag;
-  style(content?: Content): ContentTag;
-  sub(attributes: SubAttributes, content?: Content): ContentTag;
-  sub(content?: Content): ContentTag;
-  summary(attributes: SummaryAttributes, content?: Content): ContentTag;
-  summary(content?: Content): ContentTag;
-  sup(attributes: SupAttributes, content?: Content): ContentTag;
-  sup(content?: Content): ContentTag;
-  svg(attributes: SvgAttributes, content?: Content): ContentTag;
-  svg(content?: Content): ContentTag;
-  switch(attributes: SwitchAttributes, content?: Content): ContentTag;
-  switch(content?: Content): ContentTag;
-  symbol(attributes: SymbolAttributes, content?: Content): ContentTag;
-  symbol(content?: Content): ContentTag;
+  source(attributes?: WithLegacyOn<SourceAttributes>): SourceTag;
+  span(attributes: SpanAttributes, content?: Content): ContentTag<HtmlElementFor<'span'>>;
+  span(attributes: WithLegacyOn<SpanAttributes>, content?: Content): ContentTag<HtmlElementFor<'span'>>;
+  span(content?: Content): ContentTag<HtmlElementFor<'span'>>;
+  stop(attributes: StopAttributes, content?: Content): ContentTag<SvgElementFor<'stop'>>;
+  stop(attributes: WithLegacyOn<StopAttributes>, content?: Content): ContentTag<SvgElementFor<'stop'>>;
+  stop(content?: Content): ContentTag<SvgElementFor<'stop'>>;
+  strong(attributes: StrongAttributes, content?: Content): ContentTag<HtmlElementFor<'strong'>>;
+  strong(attributes: WithLegacyOn<StrongAttributes>, content?: Content): ContentTag<HtmlElementFor<'strong'>>;
+  strong(content?: Content): ContentTag<HtmlElementFor<'strong'>>;
+  style(attributes: StyleAttributes, content?: Content): ContentTag<HtmlElementFor<'style'> | SvgElementFor<'style'>>;
+  style(attributes: WithLegacyOn<StyleAttributes>, content?: Content): ContentTag<HtmlElementFor<'style'> | SvgElementFor<'style'>>;
+  style(content?: Content): ContentTag<HtmlElementFor<'style'> | SvgElementFor<'style'>>;
+  sub(attributes: SubAttributes, content?: Content): ContentTag<HtmlElementFor<'sub'>>;
+  sub(attributes: WithLegacyOn<SubAttributes>, content?: Content): ContentTag<HtmlElementFor<'sub'>>;
+  sub(content?: Content): ContentTag<HtmlElementFor<'sub'>>;
+  summary(attributes: SummaryAttributes, content?: Content): ContentTag<HtmlElementFor<'summary'>>;
+  summary(attributes: WithLegacyOn<SummaryAttributes>, content?: Content): ContentTag<HtmlElementFor<'summary'>>;
+  summary(content?: Content): ContentTag<HtmlElementFor<'summary'>>;
+  sup(attributes: SupAttributes, content?: Content): ContentTag<HtmlElementFor<'sup'>>;
+  sup(attributes: WithLegacyOn<SupAttributes>, content?: Content): ContentTag<HtmlElementFor<'sup'>>;
+  sup(content?: Content): ContentTag<HtmlElementFor<'sup'>>;
+  svg(attributes: SvgAttributes, content?: Content): ContentTag<SvgElementFor<'svg'>>;
+  svg(attributes: WithLegacyOn<SvgAttributes>, content?: Content): ContentTag<SvgElementFor<'svg'>>;
+  svg(content?: Content): ContentTag<SvgElementFor<'svg'>>;
+  switch(attributes: SwitchAttributes, content?: Content): ContentTag<SvgElementFor<'switch'>>;
+  switch(attributes: WithLegacyOn<SwitchAttributes>, content?: Content): ContentTag<SvgElementFor<'switch'>>;
+  switch(content?: Content): ContentTag<SvgElementFor<'switch'>>;
+  symbol(attributes: SymbolAttributes, content?: Content): ContentTag<SvgElementFor<'symbol'>>;
+  symbol(attributes: WithLegacyOn<SymbolAttributes>, content?: Content): ContentTag<SvgElementFor<'symbol'>>;
+  symbol(content?: Content): ContentTag<SvgElementFor<'symbol'>>;
   table(attributes: TableAttributes, content?: TableContent): TableTag;
+  table(attributes: WithLegacyOn<TableAttributes>, content?: TableContent): TableTag;
   table(content?: TableContent): TableTag;
   tbody(attributes: TbodyAttributes, content?: TbodyContent): TbodyTag;
+  tbody(attributes: WithLegacyOn<TbodyAttributes>, content?: TbodyContent): TbodyTag;
   tbody(content?: TbodyContent): TbodyTag;
   td(attributes: TdAttributes, content?: Content): TdTag;
+  td(attributes: WithLegacyOn<TdAttributes>, content?: Content): TdTag;
   td(content?: Content): TdTag;
   template(attributes: TemplateAttributes, content?: Content): TemplateTag;
+  template(attributes: WithLegacyOn<TemplateAttributes>, content?: Content): TemplateTag;
   template(content?: Content): TemplateTag;
-  text(attributes: TextAttributes, content?: Content): ContentTag;
-  text(content?: Content): ContentTag;
-  textarea(attributes: TextareaAttributes, content?: Content): ContentTag;
-  textarea(content?: Content): ContentTag;
-  textPath(attributes: TextPathAttributes, content?: Content): ContentTag;
-  textPath(content?: Content): ContentTag;
+  text(attributes: TextAttributes, content?: Content): ContentTag<SvgElementFor<'text'>>;
+  text(attributes: WithLegacyOn<TextAttributes>, content?: Content): ContentTag<SvgElementFor<'text'>>;
+  text(content?: Content): ContentTag<SvgElementFor<'text'>>;
+  textarea(attributes: TextareaAttributes, content?: Content): ContentTag<HtmlElementFor<'textarea'>>;
+  textarea(attributes: WithLegacyOn<TextareaAttributes>, content?: Content): ContentTag<HtmlElementFor<'textarea'>>;
+  textarea(content?: Content): ContentTag<HtmlElementFor<'textarea'>>;
+  textPath(attributes: TextPathAttributes, content?: Content): ContentTag<SvgElementFor<'textPath'>>;
+  textPath(attributes: WithLegacyOn<TextPathAttributes>, content?: Content): ContentTag<SvgElementFor<'textPath'>>;
+  textPath(content?: Content): ContentTag<SvgElementFor<'textPath'>>;
   tfoot(attributes: TfootAttributes, content?: TfootContent): TfootTag;
+  tfoot(attributes: WithLegacyOn<TfootAttributes>, content?: TfootContent): TfootTag;
   tfoot(content?: TfootContent): TfootTag;
   th(attributes: ThAttributes, content?: Content): ThTag;
+  th(attributes: WithLegacyOn<ThAttributes>, content?: Content): ThTag;
   th(content?: Content): ThTag;
   thead(attributes: TheadAttributes, content?: TheadContent): TheadTag;
+  thead(attributes: WithLegacyOn<TheadAttributes>, content?: TheadContent): TheadTag;
   thead(content?: TheadContent): TheadTag;
-  time(attributes: TimeAttributes, content?: Content): ContentTag;
-  time(content?: Content): ContentTag;
-  title(attributes: TitleAttributes, content?: Content): ContentTag;
-  title(content?: Content): ContentTag;
+  time(attributes: TimeAttributes, content?: Content): ContentTag<HtmlElementFor<'time'>>;
+  time(attributes: WithLegacyOn<TimeAttributes>, content?: Content): ContentTag<HtmlElementFor<'time'>>;
+  time(content?: Content): ContentTag<HtmlElementFor<'time'>>;
+  title(attributes: TitleAttributes, content?: Content): ContentTag<HtmlElementFor<'title'> | SvgElementFor<'title'>>;
+  title(attributes: WithLegacyOn<TitleAttributes>, content?: Content): ContentTag<HtmlElementFor<'title'> | SvgElementFor<'title'>>;
+  title(content?: Content): ContentTag<HtmlElementFor<'title'> | SvgElementFor<'title'>>;
   tr(attributes: TrAttributes, content?: TrContent): TrTag;
+  tr(attributes: WithLegacyOn<TrAttributes>, content?: TrContent): TrTag;
   tr(content?: TrContent): TrTag;
-  track(attributes?: TrackAttributes): VoidTag;
-  tspan(attributes: TspanAttributes, content?: Content): ContentTag;
-  tspan(content?: Content): ContentTag;
-  u(attributes: UAttributes, content?: Content): ContentTag;
-  u(content?: Content): ContentTag;
+  track(attributes?: TrackAttributes): VoidTag<HtmlElementFor<'track'>>;
+  track(attributes?: WithLegacyOn<TrackAttributes>): VoidTag<HtmlElementFor<'track'>>;
+  tspan(attributes: TspanAttributes, content?: Content): ContentTag<SvgElementFor<'tspan'>>;
+  tspan(attributes: WithLegacyOn<TspanAttributes>, content?: Content): ContentTag<SvgElementFor<'tspan'>>;
+  tspan(content?: Content): ContentTag<SvgElementFor<'tspan'>>;
+  u(attributes: UAttributes, content?: Content): ContentTag<HtmlElementFor<'u'>>;
+  u(attributes: WithLegacyOn<UAttributes>, content?: Content): ContentTag<HtmlElementFor<'u'>>;
+  u(content?: Content): ContentTag<HtmlElementFor<'u'>>;
   ul(attributes: UlAttributes, content?: UlContent): UlTag;
+  ul(attributes: WithLegacyOn<UlAttributes>, content?: UlContent): UlTag;
   ul(content?: UlContent): UlTag;
-  use(attributes: UseAttributes, content?: Content): ContentTag;
-  use(content?: Content): ContentTag;
-  var(attributes: VarAttributes, content?: Content): ContentTag;
-  var(content?: Content): ContentTag;
-  video(attributes: VideoAttributes, content?: Content): ContentTag;
-  video(content?: Content): ContentTag;
-  view(attributes: ViewAttributes, content?: Content): ContentTag;
-  view(content?: Content): ContentTag;
-  wbr(attributes?: WbrAttributes): VoidTag;
+  use(attributes: UseAttributes, content?: Content): ContentTag<SvgElementFor<'use'>>;
+  use(attributes: WithLegacyOn<UseAttributes>, content?: Content): ContentTag<SvgElementFor<'use'>>;
+  use(content?: Content): ContentTag<SvgElementFor<'use'>>;
+  var(attributes: VarAttributes, content?: Content): ContentTag<HtmlElementFor<'var'>>;
+  var(attributes: WithLegacyOn<VarAttributes>, content?: Content): ContentTag<HtmlElementFor<'var'>>;
+  var(content?: Content): ContentTag<HtmlElementFor<'var'>>;
+  video(attributes: VideoAttributes, content?: Content): ContentTag<HtmlElementFor<'video'>>;
+  video(attributes: WithLegacyOn<VideoAttributes>, content?: Content): ContentTag<HtmlElementFor<'video'>>;
+  video(content?: Content): ContentTag<HtmlElementFor<'video'>>;
+  view(attributes: ViewAttributes, content?: Content): ContentTag<SvgElementFor<'view'>>;
+  view(attributes: WithLegacyOn<ViewAttributes>, content?: Content): ContentTag<SvgElementFor<'view'>>;
+  view(content?: Content): ContentTag<SvgElementFor<'view'>>;
+  wbr(attributes?: WbrAttributes): VoidTag<HtmlElementFor<'wbr'>>;
+  wbr(attributes?: WithLegacyOn<WbrAttributes>): VoidTag<HtmlElementFor<'wbr'>>;
 }
 
 export default Kensington;

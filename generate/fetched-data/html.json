@@ -1998,6 +1998,9 @@
         "hreflang",
         "type",
         "referrerpolicy"
+      ],
+      "interfaces": [
+        "HTMLAnchorElement"
       ]
     },
     {
@@ -2007,6 +2010,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2016,6 +2022,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2034,6 +2043,9 @@
         "ping",
         "rel",
         "referrerpolicy"
+      ],
+      "interfaces": [
+        "HTMLAreaElement"
       ]
     },
     {
@@ -2043,6 +2055,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2052,6 +2067,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2071,6 +2089,9 @@
         "loop",
         "muted",
         "controls"
+      ],
+      "interfaces": [
+        "HTMLAudioElement"
       ]
     },
     {
@@ -2080,6 +2101,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2091,6 +2115,9 @@
         "globals",
         "href",
         "target"
+      ],
+      "interfaces": [
+        "HTMLBaseElement"
       ]
     },
     {
@@ -2100,6 +2127,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2109,6 +2139,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2119,6 +2152,9 @@
       "attributes": [
         "globals",
         "cite"
+      ],
+      "interfaces": [
+        "HTMLQuoteElement"
       ]
     },
     {
@@ -2146,6 +2182,9 @@
         "onstorage",
         "onunhandledrejection",
         "onunload"
+      ],
+      "interfaces": [
+        "HTMLBodyElement"
       ]
     },
     {
@@ -2155,6 +2194,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLBRElement"
       ]
     },
     {
@@ -2178,6 +2220,9 @@
         "popovertargetaction",
         "type",
         "value"
+      ],
+      "interfaces": [
+        "HTMLButtonElement"
       ]
     },
     {
@@ -2189,6 +2234,9 @@
         "globals",
         "width",
         "height"
+      ],
+      "interfaces": [
+        "HTMLCanvasElement"
       ]
     },
     {
@@ -2198,6 +2246,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLTableCaptionElement"
       ]
     },
     {
@@ -2207,6 +2258,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2216,6 +2270,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2226,6 +2283,9 @@
       "attributes": [
         "globals",
         "span"
+      ],
+      "interfaces": [
+        "HTMLTableColElement"
       ]
     },
     {
@@ -2237,6 +2297,9 @@
       "attributes": [
         "globals",
         "span"
+      ],
+      "interfaces": [
+        "HTMLTableColElement"
       ]
     },
     {
@@ -2247,6 +2310,9 @@
       "attributes": [
         "globals",
         "value"
+      ],
+      "interfaces": [
+        "HTMLDataElement"
       ]
     },
     {
@@ -2258,6 +2324,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLDataListElement"
       ]
     },
     {
@@ -2267,6 +2336,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2278,6 +2350,9 @@
         "globals",
         "cite",
         "datetime"
+      ],
+      "interfaces": [
+        "HTMLModElement"
       ]
     },
     {
@@ -2290,6 +2365,9 @@
         "globals",
         "name",
         "open"
+      ],
+      "interfaces": [
+        "HTMLDetailsElement"
       ]
     },
     {
@@ -2299,6 +2377,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2309,6 +2390,9 @@
       "attributes": [
         "globals",
         "open"
+      ],
+      "interfaces": [
+        "HTMLDialogElement"
       ]
     },
     {
@@ -2318,6 +2402,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLDivElement"
       ]
     },
     {
@@ -2330,6 +2417,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLDListElement"
       ]
     },
     {
@@ -2339,6 +2429,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2348,6 +2441,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2362,6 +2458,9 @@
         "width",
         "height",
         "any*"
+      ],
+      "interfaces": [
+        "HTMLEmbedElement"
       ]
     },
     {
@@ -2375,6 +2474,9 @@
         "disabled",
         "form",
         "name"
+      ],
+      "interfaces": [
+        "HTMLFieldSetElement"
       ]
     },
     {
@@ -2384,6 +2486,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2394,6 +2499,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2403,6 +2511,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2421,6 +2532,9 @@
         "novalidate",
         "rel",
         "target"
+      ],
+      "interfaces": [
+        "HTMLFormElement"
       ]
     },
     {
@@ -2430,6 +2544,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLHeadingElement"
       ]
     },
     {
@@ -2439,6 +2556,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLHeadElement"
       ]
     },
     {
@@ -2448,6 +2568,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2464,6 +2587,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2473,6 +2599,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLHRElement"
       ]
     },
     {
@@ -2483,6 +2612,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLHtmlElement"
       ]
     },
     {
@@ -2492,6 +2624,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2511,6 +2646,9 @@
         "height",
         "referrerpolicy",
         "loading"
+      ],
+      "interfaces": [
+        "HTMLIFrameElement"
       ]
     },
     {
@@ -2534,6 +2672,9 @@
         "decoding",
         "loading",
         "fetchpriority"
+      ],
+      "interfaces": [
+        "HTMLImageElement"
       ]
     },
     {
@@ -2577,6 +2718,9 @@
         "type",
         "value",
         "width"
+      ],
+      "interfaces": [
+        "HTMLInputElement"
       ]
     },
     {
@@ -2588,6 +2732,9 @@
         "globals",
         "cite",
         "datetime"
+      ],
+      "interfaces": [
+        "HTMLModElement"
       ]
     },
     {
@@ -2597,6 +2744,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2607,6 +2757,9 @@
       "attributes": [
         "globals",
         "for"
+      ],
+      "interfaces": [
+        "HTMLLabelElement"
       ]
     },
     {
@@ -2617,6 +2770,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLLegendElement"
       ]
     },
     {
@@ -2627,6 +2783,9 @@
       "attributes": [
         "globals",
         "value*"
+      ],
+      "interfaces": [
+        "HTMLLIElement"
       ]
     },
     {
@@ -2652,6 +2811,9 @@
         "color",
         "disabled",
         "fetchpriority"
+      ],
+      "interfaces": [
+        "HTMLLinkElement"
       ]
     },
     {
@@ -2661,6 +2823,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2672,6 +2837,9 @@
       "attributes": [
         "globals",
         "name"
+      ],
+      "interfaces": [
+        "HTMLMapElement"
       ]
     },
     {
@@ -2681,6 +2849,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2690,6 +2861,9 @@
       ],
       "attributes": [
         "per [MATHML]"
+      ],
+      "interfaces": [
+        "Element"
       ]
     },
     {
@@ -2700,6 +2874,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLMenuElement"
       ]
     },
     {
@@ -2714,6 +2891,9 @@
         "content",
         "charset",
         "media"
+      ],
+      "interfaces": [
+        "HTMLMetaElement"
       ]
     },
     {
@@ -2729,6 +2909,9 @@
         "low",
         "high",
         "optimum"
+      ],
+      "interfaces": [
+        "HTMLMeterElement"
       ]
     },
     {
@@ -2738,6 +2921,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2747,6 +2933,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2762,6 +2951,9 @@
         "form",
         "width",
         "height"
+      ],
+      "interfaces": [
+        "HTMLObjectElement"
       ]
     },
     {
@@ -2775,6 +2967,9 @@
         "reversed",
         "start",
         "type"
+      ],
+      "interfaces": [
+        "HTMLOListElement"
       ]
     },
     {
@@ -2790,6 +2985,9 @@
         "globals",
         "disabled",
         "label"
+      ],
+      "interfaces": [
+        "HTMLOptGroupElement"
       ]
     },
     {
@@ -2805,6 +3003,9 @@
         "label",
         "selected",
         "value"
+      ],
+      "interfaces": [
+        "HTMLOptionElement"
       ]
     },
     {
@@ -2817,6 +3018,9 @@
         "for",
         "form",
         "name"
+      ],
+      "interfaces": [
+        "HTMLOutputElement"
       ]
     },
     {
@@ -2826,6 +3030,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLParagraphElement"
       ]
     },
     {
@@ -2837,6 +3044,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLPictureElement"
       ]
     },
     {
@@ -2846,6 +3056,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLPreElement"
       ]
     },
     {
@@ -2857,6 +3070,9 @@
         "globals",
         "value",
         "max"
+      ],
+      "interfaces": [
+        "HTMLProgressElement"
       ]
     },
     {
@@ -2867,6 +3083,9 @@
       "attributes": [
         "globals",
         "cite"
+      ],
+      "interfaces": [
+        "HTMLQuoteElement"
       ]
     },
     {
@@ -2876,6 +3095,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2885,6 +3107,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2896,6 +3121,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2905,6 +3133,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2914,6 +3145,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2933,6 +3167,9 @@
         "referrerpolicy",
         "blocking",
         "fetchpriority"
+      ],
+      "interfaces": [
+        "HTMLScriptElement"
       ]
     },
     {
@@ -2942,6 +3179,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2951,6 +3191,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -2973,6 +3216,9 @@
         "name",
         "required",
         "size"
+      ],
+      "interfaces": [
+        "HTMLSelectElement"
       ]
     },
     {
@@ -2982,6 +3228,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLSelectedContentElement"
       ]
     },
     {
@@ -2992,6 +3241,9 @@
       "attributes": [
         "globals",
         "name"
+      ],
+      "interfaces": [
+        "HTMLSlotElement"
       ]
     },
     {
@@ -3001,6 +3253,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -3017,6 +3272,9 @@
         "sizes",
         "width",
         "height"
+      ],
+      "interfaces": [
+        "HTMLSourceElement"
       ]
     },
     {
@@ -3026,6 +3284,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLSpanElement"
       ]
     },
     {
@@ -3035,6 +3296,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -3046,6 +3310,9 @@
         "globals",
         "media",
         "blocking"
+      ],
+      "interfaces": [
+        "HTMLStyleElement"
       ]
     },
     {
@@ -3055,6 +3322,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -3065,6 +3335,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -3074,6 +3347,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -3083,6 +3359,9 @@
       ],
       "attributes": [
         "per [SVG]"
+      ],
+      "interfaces": [
+        "SVGSVGElement"
       ]
     },
     {
@@ -3098,6 +3377,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLTableElement"
       ]
     },
     {
@@ -3108,6 +3390,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLTableSectionElement"
       ]
     },
     {
@@ -3120,6 +3405,9 @@
         "colspan",
         "rowspan",
         "headers"
+      ],
+      "interfaces": [
+        "HTMLTableCellElement"
       ]
     },
     {
@@ -3136,6 +3424,9 @@
         "shadowrootclonable",
         "shadowrootserializable",
         "shadowrootcustomelementregistry"
+      ],
+      "interfaces": [
+        "HTMLTemplateElement"
       ]
     },
     {
@@ -3158,6 +3449,9 @@
         "required",
         "rows",
         "wrap"
+      ],
+      "interfaces": [
+        "HTMLTextAreaElement"
       ]
     },
     {
@@ -3168,6 +3462,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLTableSectionElement"
       ]
     },
     {
@@ -3182,6 +3479,9 @@
         "headers",
         "scope",
         "abbr"
+      ],
+      "interfaces": [
+        "HTMLTableCellElement"
       ]
     },
     {
@@ -3192,6 +3492,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLTableSectionElement"
       ]
     },
     {
@@ -3202,6 +3505,9 @@
       "attributes": [
         "globals",
         "datetime"
+      ],
+      "interfaces": [
+        "HTMLTimeElement"
       ]
     },
     {
@@ -3211,6 +3517,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLTitleElement"
       ]
     },
     {
@@ -3222,6 +3531,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLTableRowElement"
       ]
     },
     {
@@ -3236,6 +3548,9 @@
         "label",
         "src",
         "srclang"
+      ],
+      "interfaces": [
+        "HTMLTrackElement"
       ]
     },
     {
@@ -3245,6 +3560,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -3255,6 +3573,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLUListElement"
       ]
     },
     {
@@ -3264,6 +3585,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -3287,6 +3611,9 @@
         "controls",
         "width",
         "height"
+      ],
+      "interfaces": [
+        "HTMLVideoElement"
       ]
     },
     {
@@ -3296,6 +3623,9 @@
       ],
       "attributes": [
         "globals"
+      ],
+      "interfaces": [
+        "HTMLElement"
       ]
     },
     {
@@ -3306,6 +3636,9 @@
       "attributes": [
         "globals",
         "any, as decided by the element's author"
+      ],
+      "interfaces": [
+        "Supplied by the element's author (inherits from HTMLElement)"
       ]
     }
   ]

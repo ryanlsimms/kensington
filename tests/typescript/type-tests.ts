@@ -2,6 +2,7 @@ import Kensington, {
   type ContentMethod,
   type Content,
   type ContentTag,
+  type GlobalEvents,
   type CommentTag,
   type VoidTag,
   type LiteralTag,
@@ -44,13 +45,138 @@ declare module 'kensington' {
 // ─── custom element subclass ────────────────────────────────────────────────
 
 class MyEngine extends Kensington {
-  myCard: ContentMethod<{ 'card-type'?: 'primary' | 'secondary' }> =
+  myCard: ContentMethod<{ 'card-type'?: 'primary' | 'secondary' }, HTMLElement> =
     this.createCustomTag('my-card', { 'card-type': ['primary', 'secondary'] });
 
   simpleWidget: ContentMethod = this.createCustomTag('simple-widget');
 }
 
 const t = new MyEngine({ validationLevel: 'warn', additionalNamespaces: ['hx'] });
+
+// Factories keep the element type through rendering, lookup, and chaining.
+const _divElement: HTMLDivElement = t.div().toElement();
+const _chainedDiv: HTMLDivElement = t.div().addConnectedCallback(() => {}).toElement();
+const _inputElement: HTMLInputElement = t.input().toElement();
+const _inputLookup: HTMLInputElement | null = t.input().getDomElement();
+const _selectedContentElement: HTMLElement = t.selectedcontent().toElement();
+const _circleElement: SVGCircleElement = t.circle().toElement();
+const _mathElement: MathMLElement = t.mi('x').toElement();
+const _htmlElement: HTMLHtmlElement = t.htmlWithDocType().toElement();
+const _customElement: HTMLElement = t.myCard({ 'card-type': 'primary' }).toElement();
+const _anchorElement: HTMLAnchorElement | SVGAElement | MathMLElement = t.a().toElement();
+const _genericTag: ContentTag = t.div();
+const _wrappedTag: ContentMethod = (): ContentTag => t.div();
+const _inputOptions: Parameters<typeof t.input>[0] = { type: 'search' };
+// @ts-expect-error - shared anchors can also be rendered in SVG or MathML
+const _htmlAnchor: HTMLAnchorElement = t.a().toElement();
+// @ts-expect-error - an input is not a select
+const _selectElement: HTMLSelectElement = t.input().toElement();
+
+t.input({
+  onchange(event) {
+    event.currentTarget.checked = true;
+    // @ts-expect-error - the event target can be a different element
+    event.target.checked = true;
+  },
+  on: {
+    input(event) {
+      const element: HTMLInputElement = event.currentTarget;
+      // @ts-expect-error - input can be a plain Event
+      event.inputType;
+      if (event instanceof InputEvent) { element.value = event.data ?? ''; }
+      // @ts-expect-error - the event target can be a different element
+      event.target.value;
+    },
+    'selection-confirmed': (event: CustomEvent<{ checked: boolean }>) => {
+      const checked: boolean = event.detail.checked;
+      void checked;
+    },
+  },
+});
+t.circle({
+  onclick(event) { event.currentTarget.r.baseVal.value = event.clientX; },
+  on: {
+    keydown(event) {
+      const element: SVGCircleElement = event.currentTarget;
+      // @ts-expect-error - an SVG circle has no input value
+      element.value = event.key;
+    },
+  },
+});
+t.mi({ on: { click(event) { const element: MathMLElement = event.currentTarget; void element; } } });
+t.img({
+  onerror(event) {
+    const src: string = event.currentTarget.src;
+    // @ts-expect-error - resource errors can be plain events
+    console.log(event.message);
+    if (event instanceof ErrorEvent) { console.log(src, event.message); }
+  },
+  on: {
+    error(event) {
+      const element: HTMLImageElement = event.currentTarget;
+      // @ts-expect-error - resource errors can be plain events
+      console.log(element, event.message);
+    },
+  },
+});
+t.audio({
+  onprogress(event) {
+    const element: HTMLAudioElement = event.currentTarget;
+    // @ts-expect-error - media progress can be a plain Event
+    console.log(element, event.total);
+  },
+  on: {
+    progress(event) {
+      const element: HTMLAudioElement = event.currentTarget;
+      // @ts-expect-error - media progress can be a plain Event
+      console.log(element, event.total);
+    },
+    abort(event) {
+      const element: HTMLAudioElement = event.currentTarget;
+      // @ts-expect-error - media abort can be a plain Event
+      console.log(element, event.view);
+    },
+  },
+});
+t.video({
+  on: {
+    resize(event) {
+      const element: HTMLVideoElement = event.currentTarget;
+      // @ts-expect-error - video resize can be a plain Event
+      console.log(element, event.detail);
+    },
+  },
+});
+const picker = t.createCustomTag('my-picker');
+const _pickerElement: HTMLElement = picker().toElement();
+picker({ on: { click(event) {
+  const element: HTMLElement = event.currentTarget;
+  void element;
+  // @ts-expect-error - known events on inferred custom factories are typed
+  event.notAClickEventProperty;
+} } });
+
+const onCustomChange = (event: CustomEvent<{ value: string }>) => {
+  const value: string = event.detail.value;
+  void value;
+};
+picker({ on: { change: onCustomChange } });
+t.div({ on: { change: onCustomChange } });
+t.input({ on: { change: onCustomChange } });
+const legacyEvents: NonNullable<GlobalEvents['on']> = { change: onCustomChange };
+t.simpleWidget({ on: legacyEvents });
+const standaloneEvents: GlobalEvents = { onclick: event => { console.log(event.clientX); } };
+if (typeof standaloneEvents.onclick === 'function') {
+  standaloneEvents.onclick(new MouseEvent('click'));
+  document.addEventListener('click', standaloneEvents.onclick);
+}
+
+declare const requiresReady: ContentMethod<{ on: { ready: (event: Event) => void } }, HTMLElement>;
+requiresReady({ on: { ready: () => {}, change: onCustomChange } });
+// @ts-expect-error - the compatibility overload preserves the required on map
+requiresReady({ id: 'test' });
+// @ts-expect-error - the compatibility overload preserves required entries in on
+requiresReady({ on: { change: onCustomChange } });
 
 const _updatesResult: void = applyPendingReactiveUpdates();
 const _reactiveUpdatesResult: void = reactiveUpdates();
@@ -201,7 +327,17 @@ t.div({ onmouseover: () => {} });
 
 // specific event types — no cast needed
 t.button({ onclick: (e: MouseEvent) => { console.log(e.clientX); } });
-t.input({ oninput: (e: InputEvent) => { console.log(e.data); } });
+t.input({
+  dispatchOnPropChange: true,
+  prop: { value: signal('') },
+  oninput(e) {
+    const value: string = e.currentTarget.value;
+    // @ts-expect-error - programmatic input can be a plain Event
+    e.data;
+    if (e instanceof InputEvent) { console.log(value, e.data); }
+  },
+  onbeforeinput(e) { console.log(e.inputType); },
+});
 t.div({ onkeydown: (e: KeyboardEvent) => { console.log(e.key); } });
 t.div({ onblur: (e: FocusEvent) => { console.log(e.relatedTarget); } });
 t.div({ ondragstart: (e: DragEvent) => { console.log(e.dataTransfer); } });
